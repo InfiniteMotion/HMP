@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.model.BottomNavItem
-import com.example.hearablemusicplayer.model.rememberBottomNavItems
+import com.example.hearablemusicplayer.ui.components.BottomNavItem
+import com.example.hearablemusicplayer.ui.components.rememberBottomNavItems
 
 @Composable
 fun CustomBottomNavBar(
@@ -36,8 +35,8 @@ fun CustomBottomNavBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .padding(bottom = 12.dp),
+            .height(72.dp)
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -57,12 +56,6 @@ fun CustomNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val contentColor = if (isSelected) {
-        colorResource(R.color.HDRed)
-    } else {
-        colorResource(R.color.black)
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -74,17 +67,11 @@ fun CustomNavItem(
             modifier = Modifier.size(24.dp)
         ) {
             Icon(
-                painter = painterResource(item.icon),
+                painter = painterResource(if (isSelected) item.icond else item.icon),
                 contentDescription = item.label,
-                tint = contentColor
+                tint = colorResource(R.color.black)
             )
         }
-        Text(
-            text = item.label,
-            color = contentColor,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
     }
 }
 

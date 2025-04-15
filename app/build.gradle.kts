@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.0.21"
-//    id("com.google.devtools.ksp")
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -53,6 +53,9 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.datastore.core.android)
+    implementation(libs.androidx.datastore.preferences.core.jvm)
+    implementation(libs.androidx.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -76,21 +79,29 @@ dependencies {
 
     implementation ("androidx.compose.material:material:1.6.4")
 
-//    val room_version = "2.6.1"
-//    implementation("androidx.room:room-runtime:$room_version")
-//    // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
-//    ksp("androidx.room:room-compiler:$room_version")
-//    // optional - Kotlin Extensions and Coroutines support for Room
-//    implementation("androidx.room:room-ktx:$room_version")
-//    // optional - RxJava2 support for Room
-//    implementation("androidx.room:room-rxjava2:$room_version")
-//    // optional - RxJava3 support for Room
-//    implementation("androidx.room:room-rxjava3:$room_version")
-//    // optional - Guava support for Room, including Optional and ListenableFuture
-//    implementation("androidx.room:room-guava:$room_version")
-//    // optional - Test helpers
-//    testImplementation("androidx.room:room-testing:$room_version")
-//    // optional - Paging 3 Integration
-//    implementation("androidx.room:room-paging:$room_version")
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
+    ksp("androidx.room:room-compiler:$room_version")
+    // optional - Kotlin Extensions and Coroutines support for Room
+    implementation("androidx.room:room-ktx:$room_version")
+    // optional - RxJava2 support for Room
+    implementation("androidx.room:room-rxjava2:$room_version")
+    // optional - RxJava3 support for Room
+    implementation("androidx.room:room-rxjava3:$room_version")
+    // optional - Guava support for Room, including Optional and ListenableFuture
+    implementation("androidx.room:room-guava:$room_version")
+    // optional - Test helpers
+    testImplementation("androidx.room:room-testing:$room_version")
+    // optional - Paging 3 Integration
+    implementation("androidx.room:room-paging:$room_version")
+
+    implementation ("androidx.datastore:datastore-preferences:1.0.0")
+    implementation ("androidx.compose.runtime:runtime-livedata:1.6.4")
+    implementation ("io.coil-kt:coil-compose:2.2.2")
+
+    implementation ("androidx.media3:media3-exoplayer:1.6.0")
+    implementation ("androidx.media3:media3-ui:1.6.0")
+    implementation ("androidx.media3:media3-common:1.6.0")
 
 }

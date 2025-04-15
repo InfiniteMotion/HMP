@@ -1,67 +1,143 @@
 package com.example.hearablemusicplayer.ui.components
 
-import MusicViewModel
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.model.Music
-import com.example.hearablemusicplayer.repository.MusicRepository
+import com.example.hearablemusicplayer.database.AppPreferences
+import com.example.hearablemusicplayer.database.Music
+import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 
 @Composable
-fun MusicList(viewModel: MusicViewModel) {
-    val musicList by viewModel.musicList.collectAsState()
-
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+fun MusicList(
+    viewModel: MusicViewModel,
+    navController: NavController
+) {
+    val musicList by viewModel.allMusic.observeAsState(emptyList())
+    LazyColumn {
         items(musicList) { music ->
-            MusicItem(music)
+            MusicItem(music = music,viewModel ,navController)
         }
     }
 }
 
-
 @Composable
-fun MusicItem(music: Music) {
-    Card(
+fun MusicItem(
+    music: Music,
+    viewModel: MusicViewModel,
+    navController: NavController
+) {
+    var isLiked by remember { mutableStateOf(false) }
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(vertical = 8.dp, horizontal = 16.dp)
+            .clickable {
+                // 跳转到音乐播放页，并传递音乐 ID
+                AppPreferences.saveCurrentPlayingMusicId(music.id.toString())
+                viewModel.changePlayingOn()
+                navController.navigate("player")
+            },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val defaultCoverBitmap: Bitmap = BitmapFactory.decodeResource(
-                LocalContext.current.resources,
-                R.drawable.example_cover_3 // 默认封面图片资源
+        // 专辑封面
+        AsyncImage(
+            model = music.albumArtUri,
+            contentDescription = "Album art",
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(10.dp))
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(
+            modifier = Modifier.width(180.dp)
+        ) {
+            Text(
+                text = music.title,
+                style = MaterialTheme.typography.titleSmall,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                modifier = Modifier.widthIn(max = 180.dp)
             )
-            Image(
-                painter = BitmapPainter(music.albumCover?.asImageBitmap() ?: defaultCoverBitmap.asImageBitmap()),
-                contentDescription = "Music Cover Art",
-                modifier = Modifier
-                    .size(200.dp)
-                    .padding(8.dp),
-                contentScale = ContentScale.Crop
+            Text(
+                text = "${music.artist} • ${music.album}",
+                style = MaterialTheme.typography.bodySmall,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                modifier = Modifier.widthIn(max = 180.dp)
             )
-            Text(text = "Music: ${music.title}")
-            Text(text= "Artist: ${music.artist}")
-            Text(text = "Album: ${music.album}")
-            Text(text = "Duration: ${music.duration / 1000}s")
-            Text(text= "Path: ${music.path}")
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        IconButton(
+            onClick = {
+                isLiked = !isLiked // 切换点赞状态
+            },
+            modifier = Modifier
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (isLiked) R.drawable.heart_fill // 已点赞状态的图标
+                    else R.drawable.heart // 未点赞状态的图标
+                ),
+                contentDescription = "Like Button",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = {},
+            modifier = Modifier
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.plus_square),
+                contentDescription = "Add Button",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = {},
+            modifier = Modifier
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.dot_grid_1x2),
+                contentDescription = "Meum Button",
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
