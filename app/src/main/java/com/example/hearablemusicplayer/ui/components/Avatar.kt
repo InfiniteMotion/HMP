@@ -13,19 +13,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.database.AppPreferences
+import com.example.hearablemusicplayer.viewmodel.MusicViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Composable
 fun Avatar(
-    aSize: Int
+    aSize: Int,
+    viewModel: MusicViewModel
 ){
-    val imageUri=AppPreferences.getAvatarUri()
-    if (imageUri != null) {
+    val imageUri by viewModel.avatarUri.collectAsState(initial = 0)
+    if (imageUri != 0) {
         AsyncImage(
             model = imageUri,
             contentDescription = "User Avatar",
             modifier = Modifier
                 .size(aSize.dp)
+                .clip(CircleShape)
+                .shadow(elevation = 8.dp, shape = CircleShape, clip = true)
+                .border(width = 4.dp, color = colorResource(R.color.HDBlue), shape = CircleShape)
         )
     } else {
         Image(
@@ -36,6 +42,7 @@ fun Avatar(
                 .clip(CircleShape)
                 .shadow(elevation = 8.dp, shape = CircleShape, clip = true)
                 .border(width = 4.dp, color = colorResource(R.color.HDBlue), shape = CircleShape)
+
         )
     }
 }

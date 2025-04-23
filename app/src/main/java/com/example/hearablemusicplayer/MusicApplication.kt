@@ -1,23 +1,30 @@
 package com.example.hearablemusicplayer
 import android.app.Application
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.room.Room
 import com.example.hearablemusicplayer.database.AppDatabase
-import com.example.hearablemusicplayer.database.AppPreferences
 import com.example.hearablemusicplayer.repository.MusicRepository
+import com.example.hearablemusicplayer.repository.SettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 
 class MusicApplication : Application() {
-    private val database by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "music-database"
-        ).build()
+
+    val MusicRepo by lazy {
+        val db = AppDatabase.getDatabase(this)
+        MusicRepository(
+            db.musicDao(),
+            db.playlistDao(),
+            db.playlistItemDao(),
+            db.playbackHistoryDao(),
+            applicationContext
+        )
     }
 
-    val repository by lazy {
-        MusicRepository(database.musicDao(), applicationContext)
+    val SettingsRepo by lazy {
+        SettingsRepository(
+            applicationContext
+        )
     }
 
     companion object {
@@ -28,6 +35,6 @@ class MusicApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        AppPreferences.init(this)
     }
 }
+

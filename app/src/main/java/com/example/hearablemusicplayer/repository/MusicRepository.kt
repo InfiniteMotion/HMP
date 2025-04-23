@@ -1,18 +1,72 @@
 package com.example.hearablemusicplayer.repository
 
+import android.net.Uri
 import android.content.Context
-import androidx.lifecycle.LiveData
-import com.example.hearablemusicplayer.database.Music
-import com.example.hearablemusicplayer.database.MusicDao
 import android.provider.MediaStore
 import android.content.ContentUris
-import android.net.Uri
 import kotlinx.coroutines.flow.Flow
+import com.example.hearablemusicplayer.database.Music
+import com.example.hearablemusicplayer.database.MusicDao
+import com.example.hearablemusicplayer.database.PlaybackHistory
+import com.example.hearablemusicplayer.database.PlaybackHistoryDao
+import com.example.hearablemusicplayer.database.Playlist
+import com.example.hearablemusicplayer.database.PlaylistDao
+import com.example.hearablemusicplayer.database.PlaylistItem
+import com.example.hearablemusicplayer.database.PlaylistItemDao
+import com.example.hearablemusicplayer.database.myClass.PlayCountEntry
+
 
 class MusicRepository(
     private val musicDao: MusicDao,
+    private val playlistDao: PlaylistDao,
+    private val playlistItemDao: PlaylistItemDao,
+    private val playbackHistoryDao: PlaybackHistoryDao,
     private val context: Context
 ) {
+
+    // ------------------- 音乐相关操作 -------------------
+
+    // 将音乐数据保存到数据库，同时保留用户之前标记的“红心”状态
+    suspend fun saveMusicToDatabase(musics: List<Music>) {
+        val existingMusic = musicDao.getAllAsList()
+        val likedMap = existingMusic.associateBy({ it.id }, { it.liked })
+
+        val updatedList = musics.map { newMusic ->
+            newMusic.copy(liked = likedMap[newMusic.id] ?: false)
+        }
+
+        musicDao.insertAll(updatedList)
+    }
+
+    // 清空音乐数据库
+    suspend fun clearMusicDatabase() {
+        musicDao.deleteAllMusic()
+    }
+
+    // 获取所有音乐 Flow
+    fun getAllMusic(): Flow<List<Music>> = musicDao.getAll()
+
+    // 获取所有音乐 Flow
+    suspend fun getAllMusicAsList(): List<Music> = musicDao.getAllAsList()
+
+    // 根据 ID 获取音乐信息（用于状态监听）
+    fun getMusicById(musicId: Long): Flow<Music?> = musicDao.getMusicById(musicId)
+
+    // 获取指定音乐的路径
+    suspend fun getMusicPathById(musicId: Long): String = musicDao.getMusicPathById(musicId)
+
+    // 获取随机的 5 首音乐
+    suspend fun getRandomMusic(): List<Music> = musicDao.getRandomMusic()
+
+    // 更新音乐的红心状态（用户喜欢与否）
+    suspend fun updateLikedStatus(id: Long, liked: Boolean) {
+        musicDao.updateLikedStatus(id, liked)
+    }
+
+    // 根据关键词搜索音乐（匹配标题或艺术家名）
+    fun searchMusic(query: String): List<Music> = musicDao.searchMusic(query)
+
+    // 从设备本地加载音乐文件（过滤掉时长少于 1 分钟的）
     suspend fun loadMusicFromDevice(): List<Music> {
         val musicList = mutableListOf<Music>()
 
@@ -27,7 +81,7 @@ class MusicRepository(
         )
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > ?"
-        val selectionArgs = arrayOf("60000") // 仅获取时长大于 60 秒的音乐
+        val selectionArgs = arrayOf("60000") // 大于 1 分钟
         val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
 
         context.contentResolver.query(
@@ -59,42 +113,93 @@ class MusicRepository(
                         album = album,
                         duration = duration,
                         path = path,
-                        albumArtUri = albumArtUri
+                        albumArtUri = albumArtUri,
+                        liked = false
                     )
                 )
             }
         }
-
         return musicList
     }
 
-    // 向数据库插入音乐
-    suspend fun saveMusicToDatabase(musics: List<Music>) {
-        musicDao.insertAll(musics)
+    // ------------------- 播放列表相关操作 -------------------
+
+    // 创建一个新的播放列表并返回其 ID
+    suspend fun createPlaylist(name: String): Long {
+        return playlistDao.insert(Playlist(name = name))
     }
 
-    // 清空数据库中的音乐列表
-    suspend fun clearMusicDatabase() {
-        musicDao.deleteAllMusic()
+    // 向指定播放列表中添加一首音乐
+    suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {
+        val item = PlaylistItem(
+            songUrl = musicPath,
+            songId = musicId,
+            playlistId = playlistId,
+            playedAt = System.currentTimeMillis()
+        )
+        playlistItemDao.insert(item)
     }
 
-    // 获取数据库中的所有音乐
-    fun getAllMusic(): LiveData<List<Music>> {
-        return musicDao.getAll()
+    // 向指定播放列表中添加一个播放项
+    suspend fun addPlaylistItem(item: PlaylistItem?) {
+        if (item != null) {
+            playlistItemDao.insert(item)
+        }
     }
 
-    // 依据id获取数据库中的音乐
-    fun getMusicById(musicId: String): Flow<Music?> {
-        return musicDao.getMusicById(musicId)
+    // 从播放列表中移除一项（通过 item 的 ID）
+    suspend fun removeItemFromPlaylist(id: Long) {
+        playlistItemDao.deleteItem(id)
     }
 
-    // 随机顺序与数量获取数据库中的音乐列表
-    suspend fun getRandomMusic(): List<Music> {
-        return musicDao.getRandomMusic()
+    // 从播放列表中移除一项（通过歌曲与播放列表的 ID）
+    suspend fun removeItemFromPlaylist(musicId: Long, playlistId: Long) {
+        playlistItemDao.deleteItemByIds(musicId,playlistId)
     }
 
-    // 根据关键词搜索音乐
-    fun searchMusic(query: String): List<Music> {
-        return musicDao.searchMusic(query)
+    // 删除某个播放列表
+    suspend fun deletePlaylist(id: Long) {
+        playlistDao.deletePlaylist(id)
+    }
+
+    // 更新播放列表
+    suspend fun resetPlaylistItems(playlistId: Long, musicList: List<Music>) {
+        playlistItemDao.resetPlaylistItems(playlistId, musicList)
+    }
+
+    // 获取播放列表
+    fun getSongsAfterById(currentId: Long): Flow<List<Music>> {
+        return musicDao.getSongsAfterById(currentId)
+    }
+    fun getMusicInPlaylist(playlistId: Long): Flow<List<Music>> {
+        return playlistItemDao.getMusicInPlaylist(playlistId)
+    }
+    fun getMusicInPlaylist(playlistId: Long,limit:Int): Flow<List<Music>> {
+        return playlistItemDao.getMusicInPlaylistLimit(playlistId,limit)
+    }
+
+
+
+    // ------------------- 用户播放记录相关操作 -------------------
+
+    //插入一条播放记录
+    suspend fun insertPlayback(history: PlaybackHistory) {
+        playbackHistoryDao.insert(history)
+    }
+
+    //获取最近播放记录
+    fun getRecentHistory(limit: Int): Flow<List<PlaybackHistory>> {
+        return playbackHistoryDao.getRecentHistory(limit)
+    }
+
+    //获取某首歌曲的所有播放记录
+    fun getHistoryForMusic(musicId: Long): Flow<List<PlaybackHistory>> {
+        return playbackHistoryDao.getHistoryForMusic(musicId)
+    }
+
+    //获取播放次数最多的歌曲排行
+    fun getTopPlayed(): Flow<List<PlayCountEntry>> {
+        return playbackHistoryDao.getTopPlayed()
     }
 }
+

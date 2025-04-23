@@ -1,10 +1,11 @@
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,8 +19,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,26 +28,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.database.AppPreferences
 import com.example.hearablemusicplayer.database.Music
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun MusicList(
-    viewModel: MusicViewModel,
+    musicViewModel: MusicViewModel,
+    playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
-    val musicList by viewModel.allMusic.observeAsState(emptyList())
-    LazyColumn {
+    val musicList by musicViewModel.allMusic.collectAsState()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
         items(musicList) { music ->
-            MusicItem(music = music,viewModel ,navController)
+            MusicItem(music = music,playControlViewModel,navController)
         }
     }
 }
@@ -54,7 +56,7 @@ fun MusicList(
 @Composable
 fun MusicItem(
     music: Music,
-    viewModel: MusicViewModel,
+    playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
     var isLiked by remember { mutableStateOf(false) }
@@ -64,13 +66,14 @@ fun MusicItem(
             .padding(vertical = 8.dp, horizontal = 16.dp)
             .clickable {
                 // 跳转到音乐播放页，并传递音乐 ID
-                AppPreferences.saveCurrentPlayingMusicId(music.id.toString())
-                viewModel.changePlayingOn()
+                playControlViewModel.playWith(music)
+                playControlViewModel.recordPlayback(music.id, "Gallery")
                 navController.navigate("player")
             },
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        // 专辑封面
+        //专辑封面
         AsyncImage(
             model = music.albumArtUri,
             contentDescription = "Album art",
@@ -78,9 +81,8 @@ fun MusicItem(
                 .size(48.dp)
                 .clip(RoundedCornerShape(10.dp))
         )
-
         Spacer(modifier = Modifier.width(16.dp))
-
+        //音乐信息
         Column(
             modifier = Modifier.width(180.dp)
         ) {
@@ -99,45 +101,50 @@ fun MusicItem(
                 modifier = Modifier.widthIn(max = 180.dp)
             )
         }
-
         Spacer(modifier = Modifier.width(16.dp))
+        //点赞按钮
+        Row {
+            IconButton(
+                onClick = {
+                    isLiked = !isLiked // 切换点赞状态
+                    playControlViewModel.updateMusicLikedStatus(music, isLiked)
+                },
+                modifier = Modifier
+            ) {
+                isLiked = music.liked
+                Icon(
+                    painter = painterResource(
+                        if (isLiked) R.drawable.heart_fill // 已点赞状态的图标
+                        else R.drawable.heart // 未点赞状态的图标
+                    ),
+                    contentDescription = "Like Button",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
-        IconButton(
-            onClick = {
-                isLiked = !isLiked // 切换点赞状态
-            },
-            modifier = Modifier
-        ) {
-            Icon(
-                painter = painterResource(
-                    if (isLiked) R.drawable.heart_fill // 已点赞状态的图标
-                    else R.drawable.heart // 未点赞状态的图标
-                ),
-                contentDescription = "Like Button",
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            IconButton(
+                onClick = {
+                    playControlViewModel.addToPlaylist(music)
+                },
+                modifier = Modifier
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.plus_square),
+                    contentDescription = "Add Button",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
-        IconButton(
-            onClick = {},
-            modifier = Modifier
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.plus_square),
-                contentDescription = "Add Button",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        IconButton(
-            onClick = {},
-            modifier = Modifier
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.dot_grid_1x2),
-                contentDescription = "Meum Button",
-                modifier = Modifier.size(24.dp)
-            )
+            IconButton(
+                onClick = {},
+                modifier = Modifier
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.dot_grid_1x2),
+                    contentDescription = "Meum Button",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

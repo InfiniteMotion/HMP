@@ -27,29 +27,39 @@ import com.example.hearablemusicplayer.ui.pages.UserScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.MusicViewModelFactory
+import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.viewmodel.PlayControlViewModelFactory
 
 class MainActivity : ComponentActivity() {
-
-    private val musicViewModel by viewModels<MusicViewModel> {
-        MusicViewModelFactory(
-            (application as MusicApplication).repository,
-        )
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            musicViewModel.refreshMusicList()
-            // 权限被授予，通知 ViewModel 加载音乐
-        } else {
-            // 处理权限被拒绝的情况
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val musicViewModel by viewModels<MusicViewModel> {
+            MusicViewModelFactory(
+                (application as MusicApplication).MusicRepo,
+                (application as MusicApplication).SettingsRepo
+            )
+        }
+
+        val playControlViewModel by viewModels<PlayControlViewModel> {
+            PlayControlViewModelFactory(
+                application = application,
+                (application as MusicApplication).MusicRepo,
+                (application as MusicApplication).SettingsRepo
+            )
+        }
+        playControlViewModel.initializeDefaultPlaylistsIfNeeded()
+
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                musicViewModel.refreshMusicList()
+                // 权限被授予，通知 ViewModel 加载音乐
+            } else {
+                // 处理权限被拒绝的情况
+            }
+        }
         enableEdgeToEdge()
 
         setContent {
@@ -82,20 +92,24 @@ class MainActivity : ComponentActivity() {
                         startDestination = "home",
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        composable("home") { HomeScreen(musicViewModel,navController) }
-                        composable("gallery") { GalleryScreen(musicViewModel,navController) }
-                        composable("player") { PlayerScreen(musicViewModel,navController) }
-                        composable("list") { ListScreen(musicViewModel) }
+                        composable("home") { HomeScreen(musicViewModel,playControlViewModel,navController) }
+                        composable("gallery") { GalleryScreen(musicViewModel,playControlViewModel,navController) }
+                        composable("player") { PlayerScreen(playControlViewModel,navController) }
+                        composable("list") { ListScreen(musicViewModel,playControlViewModel,navController) }
                         composable("user") { UserScreen() }
                     }
                 }
 
-                if (!hasReadStoragePermission()) {
-                    // 如果没有权限，请求权限
+                if (hasReadStoragePermission()) {
+                    LaunchedEffect(Unit) {
+                        musicViewModel.refreshMusicList()
+                    }
+                } else {
                     LaunchedEffect(Unit) {
                         requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
                     }
                 }
+
             }
         }
     }

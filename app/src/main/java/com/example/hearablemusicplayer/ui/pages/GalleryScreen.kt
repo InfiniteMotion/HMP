@@ -17,10 +17,12 @@ import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
 import com.example.hearablemusicplayer.ui.components.SearchArea
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun GalleryScreen(
-    viewModel: MusicViewModel,
+    musicViewModel: MusicViewModel,
+    playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
     Box(
@@ -33,14 +35,14 @@ fun GalleryScreen(
             ){
                 GalleryShiftButton()
                 Spacer(modifier = Modifier.width(16.dp))
-                SearchArea(viewModel)
+                SearchArea(musicViewModel)
             }
             Row(
                 modifier = Modifier.padding(vertical = 16.dp)
             ){
-                PlayControlButtonOne()
+                PlayControlButtonOne(navController,playControlViewModel)
             }
-            MusicList(viewModel, navController)
+            MusicList(musicViewModel,playControlViewModel,navController)
         }
     }
 }

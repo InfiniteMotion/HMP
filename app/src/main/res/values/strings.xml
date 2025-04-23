@@ -7,9 +7,9 @@
     <string name="tab_list">List</string>
     <string name="tab_user">User</string>
 <!--    Banner Labels-->
-    <string name="banner_daily_FF">每日推荐</string>
-    <string name="banner_daily_FS">Daily</string>
-    <string name="banner_daily_SF">个人歌单</string>
+    <string name="banner_daily_FF">默认列表</string>
+    <string name="banner_daily_FS">Current</string>
+    <string name="banner_daily_SF">个人喜好</string>
     <string name="banner_daily_SS">Personal</string>
     <string name="banner_daily_TF">最近播放</string>
     <string name="banner_daily_TS">Resent</string>

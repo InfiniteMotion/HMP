@@ -26,7 +26,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
+import com.example.hearablemusicplayer.database.myClass.PlaybackMode
+import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun GalleryShiftButton() {
@@ -96,7 +99,10 @@ fun GalleryShiftButton() {
 }
 
 @Composable
-fun PlayControlButtonOne() {
+fun PlayControlButtonOne(
+    navController: NavController,
+    playControlViewModel: PlayControlViewModel
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -114,7 +120,10 @@ fun PlayControlButtonOne() {
             )
         }
         IconButton(
-            onClick = {},
+            onClick = {
+                playControlViewModel.addAllToPlaylistInOrder()
+                navController.navigate("player")
+            },
             modifier = Modifier
                 .size(32.dp)
         ) {
@@ -125,7 +134,10 @@ fun PlayControlButtonOne() {
             )
         }
         IconButton(
-            onClick = {},
+            onClick = {
+                playControlViewModel.addAllToPlaylistByShuffle()
+                navController.navigate("player")
+            },
             modifier = Modifier
                 .size(32.dp)
         ) {
@@ -136,7 +148,9 @@ fun PlayControlButtonOne() {
             )
         }
         IconButton(
-            onClick = {},
+            onClick = {
+
+            },
             modifier = Modifier
                 .size(32.dp)
         ) {
