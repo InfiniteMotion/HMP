@@ -166,7 +166,7 @@ class MusicViewModel(
     fun getDailyMusic() {
         viewModelScope.launch {
             dailyMusic.value = musicRepo.getRandomMusicInfo()
-//            parseQuestionAndAnswer(dailyMusic.value)
+            parseQuestionAndAnswer(dailyMusic.value)
         }
     }
     private val dailyMusicInfo = MutableStateFlow<DailyMusicInfo?>(null)
