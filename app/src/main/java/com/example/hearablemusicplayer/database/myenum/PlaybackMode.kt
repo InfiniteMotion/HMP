@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.database.myClass
+package com.example.hearablemusicplayer.database.myenum
 
 enum class PlaybackMode {
     SEQUENTIAL, // 顺序播放

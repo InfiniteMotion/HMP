@@ -12,10 +12,10 @@ android {
 
     defaultConfig {
         applicationId = "com.example.hearablemusicplayer"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,44 +67,46 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    val nav_version = "2.8.8"
-    // Jetpack Compose integration
-    implementation("androidx.navigation:navigation-compose:$nav_version")
-    // Views/Fragments integration
-    implementation("androidx.navigation:navigation-fragment:$nav_version")
-    implementation("androidx.navigation:navigation-ui:$nav_version")
-    // Feature module support for Fragments
-    implementation("androidx.navigation:navigation-dynamic-features-fragment:$nav_version")
-    // Testing Navigation
-    androidTestImplementation("androidx.navigation:navigation-testing:$nav_version")
-    // JSON serialization library, works with the Kotlin serialization plugin
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
+    implementation(libs.logging.interceptor)
 
-    implementation ("androidx.compose.material:material:1.6.4")
+    implementation (libs.jaudiotagger)
 
-    val room_version = "2.6.1"
-    implementation("androidx.room:room-runtime:$room_version")
+    implementation(libs.androidx.room.runtime)
     // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
-    ksp("androidx.room:room-compiler:$room_version")
+    ksp(libs.androidx.room.compiler)
     // optional - Kotlin Extensions and Coroutines support for Room
-    implementation("androidx.room:room-ktx:$room_version")
+    implementation(libs.androidx.room.ktx)
     // optional - RxJava2 support for Room
-    implementation("androidx.room:room-rxjava2:$room_version")
+    implementation(libs.androidx.room.rxjava2)
     // optional - RxJava3 support for Room
-    implementation("androidx.room:room-rxjava3:$room_version")
+    implementation(libs.androidx.room.rxjava3)
     // optional - Guava support for Room, including Optional and ListenableFuture
-    implementation("androidx.room:room-guava:$room_version")
+    implementation(libs.androidx.room.guava)
     // optional - Test helpers
-    testImplementation("androidx.room:room-testing:$room_version")
+    testImplementation(libs.androidx.room.testing)
     // optional - Paging 3 Integration
-    implementation("androidx.room:room-paging:$room_version")
+    implementation(libs.androidx.room.paging)
+
+    implementation ("androidx.compose.foundation:foundation:1.7.0")
+    implementation ("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.navigation:navigation-compose:2.8.8")
+    implementation ("androidx.compose.material3:material3:1.2.1")
+
+
 
     implementation ("androidx.datastore:datastore-preferences:1.0.0")
-    implementation ("androidx.compose.runtime:runtime-livedata:1.6.4")
-    implementation ("io.coil-kt:coil-compose:2.2.2")
+    implementation (libs.androidx.runtime.livedata.v164)
+    implementation (libs.coil.compose)
+    implementation (libs.androidx.palette.ktx)
 
     implementation ("androidx.media3:media3-exoplayer:1.6.0")
     implementation ("androidx.media3:media3-ui:1.6.0")
     implementation ("androidx.media3:media3-common:1.6.0")
+
+
 
 }

@@ -5,9 +5,12 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
-import androidx.room.Query
-import com.example.hearablemusicplayer.database.myClass.PlayCountEntry
-import kotlinx.coroutines.flow.Flow
+
+////播放排行榜中的单条数据
+//data class PlayCountEntry(
+//    val musicId: Long,
+//    val playCount: Int
+//)
 
 //用户每次播放音乐的记录实体类
 @Entity
@@ -27,16 +30,16 @@ interface PlaybackHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(playback: PlaybackHistory)
 
-    //获取最近播放的记录（按播放时间倒序排列）
-    @Query("SELECT * FROM PlaybackHistory ORDER BY playedAt DESC LIMIT :limit")
-    fun getRecentHistory(limit: Int): Flow<List<PlaybackHistory>>
-
-    //获取某首音乐的播放历史（按播放时间倒序）
-    @Query("SELECT * FROM PlaybackHistory WHERE musicId = :musicId ORDER BY playedAt DESC")
-    fun getHistoryForMusic(musicId: Long): Flow<List<PlaybackHistory>>
-
-    //获取播放次数最多的音乐（排行榜）
-    @Query("SELECT musicId, COUNT(*) as playCount FROM PlaybackHistory GROUP BY musicId ORDER BY playCount DESC")
-    fun getTopPlayed(): Flow<List<PlayCountEntry>>
+//    //获取最近播放的记录（按播放时间倒序排列）
+//    @Query("SELECT * FROM PlaybackHistory ORDER BY playedAt DESC LIMIT :limit")
+//    fun getRecentHistory(limit: Int): Flow<List<PlaybackHistory>>
+//
+//    //获取某首音乐的播放历史（按播放时间倒序）
+//    @Query("SELECT * FROM PlaybackHistory WHERE musicId = :musicId ORDER BY playedAt DESC")
+//    fun getHistoryForMusic(musicId: Long): Flow<List<PlaybackHistory>>
+//
+//    //获取播放次数最多的音乐（排行榜）
+//    @Query("SELECT musicId, COUNT(*) as playCount FROM PlaybackHistory GROUP BY musicId ORDER BY playCount DESC")
+//    fun getTopPlayed(): Flow<List<PlayCountEntry>>
 
 }

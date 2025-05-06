@@ -54,7 +54,7 @@ class MusicPlayService : Service() {
     }
 
     // 播放指定音乐
-    fun playSingleMusic(music: Music) {
+    fun prepareMusic(music: Music) {
         val mediaItem = MediaItem.Builder()
             .setUri(music.path)
             .setMediaId(music.id.toString())
@@ -62,6 +62,10 @@ class MusicPlayService : Service() {
             .build()
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
+    }
+
+    fun playSingleMusic(music: Music) {
+        prepareMusic(music)
         exoPlayer.play()
     }
 

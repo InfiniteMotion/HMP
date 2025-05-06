@@ -1,21 +1,34 @@
 package com.example.hearablemusicplayer.viewmodel
 
 import android.app.Application
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.IBinder
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.MusicPlayService
-import com.example.hearablemusicplayer.database.Music
+import com.example.hearablemusicplayer.database.MusicInfo
+import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.PlaybackHistory
-import com.example.hearablemusicplayer.database.myClass.PlaybackMode
+import com.example.hearablemusicplayer.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.repository.MusicRepository
 import com.example.hearablemusicplayer.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -33,34 +46,40 @@ class PlayControlViewModel(
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
     // 原始播放列表（用于顺序或打乱）
-    private var _originalPlaylist: List<Music> = emptyList()
-    private val _currentPlaylist = MutableStateFlow<List<Music>>(emptyList())
-    val currentPlaylist: StateFlow<List<Music>> = _currentPlaylist.asStateFlow()
+    private var _originalPlaylist: List<MusicInfo> = emptyList()
+    private val _currentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val currentPlaylist: StateFlow<List<MusicInfo>> = _currentPlaylist.asStateFlow()
 
     // SHUFFLE 模式缓存打乱后的列表
-    private var _shuffledPlaylist: List<Music>? = null
+    private var _shuffledPlaylist: List<MusicInfo>? = null
 
     // 当前播放列表ID和收藏/最近播放列表ID
-    val currentPlayListId = settingsRepo.currentPlaylistId
-    val likedPlayListId = settingsRepo.likedPlaylistId
-    val recentPlayListId = settingsRepo.recentPlaylistId
+    private val currentPlayListId = settingsRepo.currentPlaylistId
+    private val likedPlayListId = settingsRepo.likedPlaylistId
+    private val recentPlayListId = settingsRepo.recentPlaylistId
 
     // 当前播放索引
     private val _currentIndex = MutableStateFlow(0)
     val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
 
-    // 当前正在播放的音乐
-    val currentMusicId: StateFlow<Long?> = combine(_currentPlaylist, _currentIndex) { list, index ->
-        list.getOrNull(index)?.id
+    // 当前播放的音乐（自动更新）
+    val currentPlayingMusic: StateFlow<MusicInfo?> = combine(
+        currentPlaylist,
+        currentIndex
+    ) { playlist, index ->
+        playlist.getOrNull(index)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val currentPlayingMusic: StateFlow<Music?> = currentMusicId
-        .flatMapLatest { id ->
-            if (id == null) flowOf(null)
-            else musicRepo.getMusicById(id)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    // 喜爱状态
+    var likeStatus = MutableStateFlow(false)
 
+    // 歌曲标签
+    private val _currentMusicLabels = MutableStateFlow<List<MusicLabel?>>(emptyList())
+    val currentMusicLabels: StateFlow<List<MusicLabel?>> = _currentMusicLabels
+
+    // 歌曲歌词
+    private val _currentMusicLyrics = MutableStateFlow<String?>(null)
+    val currentMusicLyrics: StateFlow<String?> = _currentMusicLyrics
 
     // 播放模式（顺序、单曲循环、随机）
     private val _playbackMode = MutableStateFlow(PlaybackMode.SEQUENTIAL)
@@ -95,10 +114,10 @@ class PlayControlViewModel(
         viewModelScope.launch {
             val playlistId = currentPlayListId.first() ?: return@launch
             val currentMusicId = settingsRepo.currentMusicId.first()
-            val list = musicRepo.getMusicInPlaylist(playlistId).first()
+            val list = musicRepo.getMusicInfoInPlaylist(playlistId).first()
             _originalPlaylist = list
             _currentPlaylist.value = list
-            _currentIndex.value = list.indexOfFirst { it.id == currentMusicId }.takeIf { it >= 0 } ?: 0
+            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
         }
 
         // 监听播放模式变更并更新播放列表
@@ -150,14 +169,13 @@ class PlayControlViewModel(
 
 
     // 向播放列表添加歌曲
-    fun addToPlaylist(music: Music) {
+    private fun saveToPlaylist(musicInfo: MusicInfo) {
         viewModelScope.launch {
             currentPlayListId.firstOrNull()?.let { playlistId ->
-                musicRepo.addToPlaylist(playlistId, music.id, music.path)
+                musicRepo.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
             }
         }
     }
-
 
     // 播放或恢复当前歌曲
     fun playOrResume() {
@@ -195,11 +213,11 @@ class PlayControlViewModel(
         }
         // 更新当前播放索引
         _currentIndex.value = currentTrack?.let { track ->
-            _currentPlaylist.value.indexOfFirst { it.id == track.id }
+            _currentPlaylist.value.indexOfFirst { it.music.id == track.music.id }
         }?.takeIf { it >= 0 } ?: 0
     }
 
-    fun togglePlaybackMode(newMode: PlaybackMode) {
+    private fun togglePlaybackMode(newMode: PlaybackMode) {
         _playbackMode.value = newMode
         persistPlaybackMode(newMode)
         // 切换播放模式时：清空旧的 SHUFFLE 列表（确保每次进入 SHUFFLE 是新打乱）
@@ -221,7 +239,7 @@ class PlayControlViewModel(
     // 播放全部歌曲（顺序）
     fun addAllToPlaylistInOrder() {
         viewModelScope.launch {
-            _originalPlaylist = musicRepo.getAllMusicAsList()
+            _originalPlaylist = musicRepo.getAllMusicInfoAsList()
             togglePlaybackMode(PlaybackMode.SEQUENTIAL)
             _currentPlaylist.value = _originalPlaylist
             _currentIndex.value = 0
@@ -233,7 +251,7 @@ class PlayControlViewModel(
     // 播放全部歌曲（随机）
     fun addAllToPlaylistByShuffle() {
         viewModelScope.launch {
-            _originalPlaylist = musicRepo.getAllMusicAsList()
+            _originalPlaylist = musicRepo.getAllMusicInfoAsList()
             togglePlaybackMode(PlaybackMode.SHUFFLE)
             _currentPlaylist.value = _shuffledPlaylist!!
             _currentIndex.value = 0
@@ -271,49 +289,62 @@ class PlayControlViewModel(
         }
     }
 
-    // 从指定音乐开始播放(不确定是否在播放列表中)
-    fun playWith(music: Music) {
-        viewModelScope.launch {
-            if (_originalPlaylist.none { it.id == music.id }) {
-                _originalPlaylist = _originalPlaylist + music
-                updateCurrentPlaylist()
-                addToPlaylist(music)
-                Toast.makeText(context, "歌曲${music.title}已被添加至播放列表", Toast.LENGTH_SHORT).show()
-            }
-            else {
-                Toast.makeText(context, "该歌曲已在播放列表中", Toast.LENGTH_SHORT).show()
-            }
-            val index = _currentPlaylist.value.indexOfFirst { it.id == music.id }
-            _currentIndex.value = if (index != -1) index else 0
-            playCurrentTrack("ManualPlay")
-        }
+    // 将音乐添加到准备
+    fun  prepareMusic(musicInfo: MusicInfo){
+        musicService?.prepareMusic(musicInfo.music)
     }
-
-    // 从指定音乐开始播放(已经在播放列表中)
-    fun playAt(music: Music) {
-        viewModelScope.launch {
-            val index = _currentPlaylist.value.indexOfFirst { it.id == music.id }
-            _currentIndex.value = if (index != -1) index else 0
-            playCurrentTrack("ManualPlay")
-        }
-    }
-
 
     // 播放当前索引对应的歌曲
     private suspend fun playCurrentTrack(source: String) {
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
         recentPlayListId.first()?.let {
-            musicRepo.addToPlaylist(it, track.id, track.path)
+            musicRepo.addToPlaylist(it, track.music.id, track.music.path)
         }
-        persistCurrentMusic(track.id)
-        musicService?.playSingleMusic(track)
+        persistCurrentMusic(track.music.id)
+        musicService?.playSingleMusic(track.music)
         _isPlaying.value = true
-        recordPlayback(track.id, source)
+        recordPlayback(track.music.id, source)
+    }
+
+    // 将音乐加入播放队列(不确定是否在播放列表中)
+    fun addToPlaylist(musicInfo: MusicInfo) {
+        viewModelScope.launch {
+            if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
+                _originalPlaylist = _originalPlaylist + musicInfo
+                updateCurrentPlaylist()
+                saveToPlaylist(musicInfo)
+                Toast.makeText(context, "歌曲${musicInfo.music.title}已被添加至播放列表", Toast.LENGTH_SHORT).show()
+            }
+            else {
+                Toast.makeText(context, "该歌曲已在播放列表中", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun switchToMusicInPlaylist(musicInfo: MusicInfo) {
+        val index = _currentPlaylist.value.indexOfFirst { it.music.id == musicInfo.music.id }
+        _currentIndex.value = if (index != -1) index else 0
+    }
+
+    // 从指定音乐开始播放(已经在播放列表中)
+    fun playAt(musicInfo: MusicInfo) {
+        viewModelScope.launch {
+            switchToMusicInPlaylist(musicInfo)
+            playCurrentTrack("ManualPlay")
+        }
+    }
+
+    // 从指定音乐开始播放(不确定是否在播放列表中)
+    fun playWith(musicInfo: MusicInfo) {
+        viewModelScope.launch {
+            addToPlaylist(musicInfo)
+            playAt(musicInfo)
+        }
     }
 
     // 获取当前音乐路径
     private fun currentMusicPath(): String? {
-        return _currentPlaylist.value.getOrNull(_currentIndex.value)?.path
+        return _currentPlaylist.value.getOrNull(_currentIndex.value)?.music?.path
     }
 
     // 记录播放历史
@@ -331,18 +362,40 @@ class PlayControlViewModel(
     }
 
     // 更改音乐喜爱状态
-    fun updateMusicLikedStatus(music: Music,liked: Boolean) {
+    fun updateMusicLikedStatus(musicInfo: MusicInfo,liked: Boolean) {
         viewModelScope.launch {
-            musicRepo.updateLikedStatus(music.id, liked)
+            musicRepo.updateLikedStatus(musicInfo.music.id, liked)
             likedPlayListId.filterNotNull().collectLatest {
-                if (liked) musicRepo.addToPlaylist(it, music.id, music.path)
-                else musicRepo.removeItemFromPlaylist(music.id, it)
+                if (liked) musicRepo.addToPlaylist(it, musicInfo.music.id, musicInfo.music.path)
+                else musicRepo.removeItemFromPlaylist(musicInfo.music.id, it)
             }
+            getLikedStatus(musicInfo.music.id)
+        }
+    }
+
+    // 获取音乐喜爱状态
+    fun getLikedStatus(musicId: Long) {
+        viewModelScope.launch {
+            likeStatus.value = musicRepo.getLikedStatus(musicId)
+        }
+    }
+
+    // 获取音乐标签
+    fun getMusicLabels(musicId: Long) {
+        viewModelScope.launch {
+            _currentMusicLabels.value=musicRepo.getMusicLabels(musicId)
+        }
+    }
+
+    // 获取音乐歌词
+    fun getMusicLyrics(musicId: Long) {
+        viewModelScope.launch {
+            _currentMusicLyrics.value=musicRepo.getMusicLyrics(musicId)
         }
     }
 
     // 初始化默认播放列表（首次安装时）
-    fun initializeDefaultPlaylistsIfNeeded() {
+    fun initializeDefaultPlaylists() {
         viewModelScope.launch(Dispatchers.IO) {
             val currentId = settingsRepo.currentPlaylistId.first()
             if (currentId == null) {
@@ -368,7 +421,7 @@ class PlayControlViewModel(
     }
 
     // 保存默认播放列表
-    fun persistCurrentPlaylistToDatabase() {
+    private fun persistCurrentPlaylistToDatabase() {
         viewModelScope.launch {
             currentPlayListId.filterNotNull().collectLatest {
                 val playlist = _currentPlaylist.value

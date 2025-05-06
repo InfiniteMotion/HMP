@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.database.Music
+import com.example.hearablemusicplayer.database.MusicInfo
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
@@ -43,19 +43,19 @@ fun MusicList(
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
-    val musicList by musicViewModel.allMusic.collectAsState()
+    val musicInfoList by musicViewModel.allMusic.collectAsState()
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
-        items(musicList) { music ->
-            MusicItem(music = music,playControlViewModel,navController)
+        items(musicInfoList) { musicInfo ->
+            MusicItem(musicInfo = musicInfo,playControlViewModel,navController)
         }
     }
 }
 
 @Composable
 fun MusicItem(
-    music: Music,
+    musicInfo: MusicInfo,
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
@@ -66,8 +66,8 @@ fun MusicItem(
             .padding(vertical = 8.dp, horizontal = 16.dp)
             .clickable {
                 // 跳转到音乐播放页，并传递音乐 ID
-                playControlViewModel.playWith(music)
-                playControlViewModel.recordPlayback(music.id, "Gallery")
+                playControlViewModel.playWith(musicInfo)
+                playControlViewModel.recordPlayback(musicInfo.music.id, "Gallery")
                 navController.navigate("player")
             },
         verticalAlignment = Alignment.CenterVertically,
@@ -75,7 +75,7 @@ fun MusicItem(
     ) {
         //专辑封面
         AsyncImage(
-            model = music.albumArtUri,
+            model = musicInfo.extra?.albumArtUri,
             contentDescription = "Album art",
             modifier = Modifier
                 .size(48.dp)
@@ -87,14 +87,14 @@ fun MusicItem(
             modifier = Modifier.width(180.dp)
         ) {
             Text(
-                text = music.title,
+                text = musicInfo.music.title,
                 style = MaterialTheme.typography.titleSmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
                 modifier = Modifier.widthIn(max = 180.dp)
             )
             Text(
-                text = "${music.artist} • ${music.album}",
+                text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
                 style = MaterialTheme.typography.bodySmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -107,24 +107,30 @@ fun MusicItem(
             IconButton(
                 onClick = {
                     isLiked = !isLiked // 切换点赞状态
-                    playControlViewModel.updateMusicLikedStatus(music, isLiked)
+                    playControlViewModel.updateMusicLikedStatus(musicInfo, isLiked)
                 },
                 modifier = Modifier
             ) {
-                isLiked = music.liked
-                Icon(
-                    painter = painterResource(
-                        if (isLiked) R.drawable.heart_fill // 已点赞状态的图标
-                        else R.drawable.heart // 未点赞状态的图标
-                    ),
-                    contentDescription = "Like Button",
-                    modifier = Modifier.size(24.dp)
-                )
+                isLiked = musicInfo.userInfo?.liked ?: false
+                if (isLiked) {
+                    Icon(
+                        painter = painterResource(R.drawable.heart_fill),
+                        contentDescription = "Favorite",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }else{
+                    Icon(
+                        painter = painterResource(R.drawable.heart),
+                        contentDescription = "Favorite",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             IconButton(
                 onClick = {
-                    playControlViewModel.addToPlaylist(music)
+                    playControlViewModel.addToPlaylist(musicInfo)
                 },
                 modifier = Modifier
             ) {

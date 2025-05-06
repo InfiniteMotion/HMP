@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
     )],
     indices = [Index(value = ["playlistId"])]
 )
+
 data class PlaylistItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val songUrl: String,
@@ -36,6 +37,24 @@ interface PlaylistItemDao {
     @Insert
     suspend fun insertPlaylist(items: List<PlaylistItem>)
 
+    @Transaction
+    @Query("""
+        SELECT music.* FROM music 
+        INNER JOIN playlist_item ON music.id = playlist_item.songId 
+        WHERE playlist_item.playlistId = :playlistId
+    """)
+    fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>>
+
+    @Transaction
+    @Query("""
+    SELECT music.* FROM music 
+    INNER JOIN playlist_item ON music.id = playlist_item.songId 
+    WHERE playlist_item.playlistId = :playlistId
+    ORDER BY playlist_item.id DESC
+    LIMIT :limit
+""")
+    fun getMusicInfoInPlaylistLimit(playlistId: Long,limit:Int): Flow<List<MusicInfo>>
+
     @Query("""
         SELECT music.* FROM music 
         INNER JOIN playlist_item ON music.id = playlist_item.songId 
@@ -51,9 +70,9 @@ interface PlaylistItemDao {
     LIMIT :limit
 """)
     fun getMusicInPlaylistLimit(playlistId: Long,limit:Int): Flow<List<Music>>
-
-    @Query("DELETE FROM playlist_item WHERE id = :id")
-    suspend fun deleteItem(id: Long)
+//
+//    @Query("DELETE FROM playlist_item WHERE id = :id")
+//    suspend fun deleteItem(id: Long)
 
     @Query("DELETE FROM playlist_item WHERE playlistId = :playlistId")
     suspend fun deletePlaylistItem(playlistId: Long)
@@ -62,13 +81,13 @@ interface PlaylistItemDao {
     suspend fun deleteItemByIds(musicId: Long, playlistId: Long)
 
     @Transaction
-    suspend fun resetPlaylistItems(playlistId: Long, musicList: List<Music>) {
+    suspend fun resetPlaylistItems(playlistId: Long, musicList: List<MusicInfo>) {
         deletePlaylistItem(playlistId)
         val items = musicList.map {
             PlaylistItem(
                 playlistId = playlistId,
-                songId = it.id,
-                songUrl = it.path,
+                songId = it.music.id,
+                songUrl = it.music.path,
                 playedAt = System.currentTimeMillis()
             )
         }

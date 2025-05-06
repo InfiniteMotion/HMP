@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -15,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,7 +28,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
-import com.example.hearablemusicplayer.database.myClass.PlaybackMode
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
@@ -83,7 +82,7 @@ fun GalleryShiftButton() {
                 modifier = Modifier
                     .size(28.dp)
                     .background(
-                        color = if (!isLeftSelected) colorResource(R.color.HDRed) else Color.Transparent,
+                        color = if (!isLeftSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = CircleShape
                     )
             ) {

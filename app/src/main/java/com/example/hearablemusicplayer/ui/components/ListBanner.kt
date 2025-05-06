@@ -33,18 +33,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.database.Music
+import com.example.hearablemusicplayer.database.MusicInfo
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun ListBanner(
     bannerNameF: String,
     bannerNameS: String,
-    musicList: List<Music>,
+    musicList: List<MusicInfo>,
     themeColorResId: Int,
     playControlViewModel: PlayControlViewModel,
     navController: NavController,
-    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = Modifier
@@ -85,9 +84,9 @@ fun ListBanner(
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(musicList) { music ->
+            items(musicList) { musicInfo ->
                 Banner(
-                    music = music,
+                    musicInfo = musicInfo,
                     viewModel = playControlViewModel,
                     navController = navController
                 )
@@ -98,7 +97,7 @@ fun ListBanner(
 
 @Composable
 fun Banner(
-    music: Music,
+    musicInfo: MusicInfo,
     viewModel: PlayControlViewModel,
     navController: NavController
 ) {
@@ -112,20 +111,20 @@ fun Banner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                viewModel.playWith(music)
-                viewModel.recordPlayback(music.id, "Banner")
+                viewModel.playWith(musicInfo)
+                viewModel.recordPlayback(musicInfo.music.id, "Banner")
                 navController.navigate("player")
             }
     ) {
         AsyncImage(
-            model = music.albumArtUri,
+            model = musicInfo.extra?.albumArtUri,
             contentDescription = "Album art",
             contentScale = ContentScale.Crop,
             modifier = imageModifier
         )
         Spacer(modifier = Modifier.height(5.dp))
         Text(
-            text = music.title,
+            text = musicInfo.music.title,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.widthIn(max = 120.dp),
             overflow = TextOverflow.Ellipsis,

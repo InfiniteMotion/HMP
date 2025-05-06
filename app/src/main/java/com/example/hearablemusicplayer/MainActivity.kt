@@ -1,29 +1,19 @@
 package com.example.hearablemusicplayer
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.LaunchedEffect
+import androidx.annotation.RequiresApi
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import com.example.hearablemusicplayer.ui.pages.CustomBottomNavBar
-import com.example.hearablemusicplayer.ui.pages.GalleryScreen
-import com.example.hearablemusicplayer.ui.pages.HomeScreen
-import com.example.hearablemusicplayer.ui.pages.ListScreen
-import com.example.hearablemusicplayer.ui.pages.PlayerScreen
-import com.example.hearablemusicplayer.ui.pages.UserScreen
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
+import com.example.hearablemusicplayer.ui.dialogs.PermissionRequest
+import com.example.hearablemusicplayer.ui.pages.MainScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.MusicViewModelFactory
@@ -31,6 +21,7 @@ import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModelFactory
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,6 +31,7 @@ class MainActivity : ComponentActivity() {
                 (application as MusicApplication).SettingsRepo
             )
         }
+        musicViewModel.initializeDefaultDailyMusic()
 
         val playControlViewModel by viewModels<PlayControlViewModel> {
             PlayControlViewModelFactory(
@@ -48,74 +40,31 @@ class MainActivity : ComponentActivity() {
                 (application as MusicApplication).SettingsRepo
             )
         }
-        playControlViewModel.initializeDefaultPlaylistsIfNeeded()
+        playControlViewModel.initializeDefaultPlaylists()
 
-        val requestPermissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                musicViewModel.refreshMusicList()
-                // 权限被授予，通知 ViewModel 加载音乐
-            } else {
-                // 处理权限被拒绝的情况
-            }
-        }
         enableEdgeToEdge()
 
         setContent {
-            HearableMusicPlayerTheme {
-                val navController = rememberNavController()
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-                // 定义一个函数来判断是否显示底栏
-                val shouldShowBottomBar = currentRoute != "player"
-                Scaffold(
-                    bottomBar = {
-                        if(shouldShowBottomBar) {
-                            CustomBottomNavBar(
-                                currentRoute = currentRoute,
-                                onNavigate = { route ->
-                                    navController.navigate(route) {
-                                        launchSingleTop = true
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        restoreState = true
-                                    }
-                                }
-                            )
-                        }
-                    }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = "home",
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable("home") { HomeScreen(musicViewModel,playControlViewModel,navController) }
-                        composable("gallery") { GalleryScreen(musicViewModel,playControlViewModel,navController) }
-                        composable("player") { PlayerScreen(playControlViewModel,navController) }
-                        composable("list") { ListScreen(musicViewModel,playControlViewModel,navController) }
-                        composable("user") { UserScreen() }
-                    }
-                }
-
-                if (hasReadStoragePermission()) {
-                    LaunchedEffect(Unit) {
+            val mainColor by musicViewModel.dominantColor.collectAsState()
+            HearableMusicPlayerTheme(domainColor = mainColor) {
+                val isLoadMusic by musicViewModel.isLoadMusic.collectAsState(initial = false)
+                val isPermissionGiven = remember { mutableStateOf(false) }
+                isPermissionGiven.value = PermissionRequest()
+                if(!isLoadMusic) {
+                    if(isPermissionGiven.value){
                         musicViewModel.refreshMusicList()
-                    }
-                } else {
-                    LaunchedEffect(Unit) {
-                        requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
+                        val isScanning by musicViewModel.isScanning.collectAsState(initial = false)
+                        MusicScanDialog(isLoading = isScanning, onDismiss = {})
                     }
                 }
-
+                if (isLoadMusic && isPermissionGiven.value){
+                    MainScreen(
+                        musicViewModel = musicViewModel,
+                        playControlViewModel = playControlViewModel
+                    )
+                }
             }
         }
-    }
-
-    private fun hasReadStoragePermission(): Boolean {
-        return checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED
     }
 
 }

@@ -3,9 +3,6 @@ import android.app.Application
 import com.example.hearablemusicplayer.database.AppDatabase
 import com.example.hearablemusicplayer.repository.MusicRepository
 import com.example.hearablemusicplayer.repository.SettingsRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 
 class MusicApplication : Application() {
@@ -14,6 +11,10 @@ class MusicApplication : Application() {
         val db = AppDatabase.getDatabase(this)
         MusicRepository(
             db.musicDao(),
+            db.musicExtraDao(),
+            db.userInfoDao(),
+            db.musicAllDao(),
+            db.musicLabelDao(),
             db.playlistDao(),
             db.playlistItemDao(),
             db.playbackHistoryDao(),

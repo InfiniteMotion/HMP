@@ -1,12 +1,12 @@
 <resources>
     <string name="app_name">Hearable Music Player</string>
-<!--    Tab labels-->
+    <!--    Tab labels-->
     <string name="tab_home">Home</string>
     <string name="tab_gallery">Gallery</string>
     <string name="tab_player">Player</string>
     <string name="tab_list">List</string>
     <string name="tab_user">User</string>
-<!--    Banner Labels-->
+    <!--    Banner Labels-->
     <string name="banner_daily_FF">默认列表</string>
     <string name="banner_daily_FS">Current</string>
     <string name="banner_daily_SF">个人喜好</string>
