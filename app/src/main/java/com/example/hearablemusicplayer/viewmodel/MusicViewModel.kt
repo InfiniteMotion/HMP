@@ -229,8 +229,8 @@ class MusicViewModel(
                 val messages = listOf(message)
                 val chatRequest = ChatRequest(messages = messages)
                 val response = DeepSeekService.createChatCompletion(
-                    authToken = "Bearer sk-6f67067abbd04e68baedf13c0aeb8c0a" , //DeepSeek
-//                    authToken = "Bearer sk-omziazqxshdmbbysffnhtyegsaeepfnziyhlsknhhzqyqveu" , //SiliconFlow
+                    authToken = "你的key" , //DeepSeek
+//                    authToken = "你的key" , //SiliconFlow
                     request = chatRequest
                 )
 
