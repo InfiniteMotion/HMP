@@ -80,7 +80,6 @@ fun PlayContent(
         }
     } else {
         // 有音乐时显示播放器内容和播放列表
-        musicViewModel.extractMainColor(musicInfo!!.music.path)
         viewModel.prepareMusic(musicInfo!!)
         viewModel.getLikedStatus(musicInfo!!.music.id)
         viewModel.getMusicLabels(musicInfo!!.music.id)

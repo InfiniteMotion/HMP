@@ -1,13 +1,8 @@
 package com.example.hearablemusicplayer.viewmodel
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.palette.graphics.Palette
 import com.example.hearablemusicplayer.ChatRequest
 import com.example.hearablemusicplayer.DeepSeekService
 import com.example.hearablemusicplayer.Message
@@ -26,55 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MusicViewModel(
     private val musicRepo: MusicRepository,
     private val settingsRepo: SettingsRepository
 ) : ViewModel() {
-
-    // 主题色（默认值：0xFFC92C2C）
-    private val _dominantColor = MutableStateFlow(Color(0xFFC92C2C))
-    val dominantColor: StateFlow<Color> = _dominantColor
-    // 从路径提取主色
-    fun extractMainColor(path: String) {
-        println(path)
-        viewModelScope.launch {
-            // 1. 加载 Bitmap（优化：降采样防止OOM）
-            val bitmap = decodeSampledBitmap(path) // 缩放到最大200px宽度
-            // 2. 处理失败情况
-            if (bitmap == null) {
-                _dominantColor.value = Color(0xFFC92C2C)
-                return@launch
-            }
-            // 3. 提取主色（后台线程执行）
-            val color = withContext(Dispatchers.Default) {
-                val palette = Palette.from(bitmap).maximumColorCount(5).generate()
-                Color(palette.vibrantSwatch?.rgb ?: palette.dominantSwatch?.rgb ?: 0xFFC92C2C.toInt())
-            }
-            _dominantColor.value = color
-        }
-    }
-
-    // 降采样加载大图
-    private fun decodeSampledBitmap(path: String): Bitmap? {
-        return try {
-            val options = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-                BitmapFactory.decodeFile(path, this)
-                val width = this.outWidth
-                var sampleSize = 1
-                while (width / sampleSize > 200) {
-                    sampleSize *= 2
-                }
-                inSampleSize = sampleSize
-                inJustDecodeBounds = false
-            }
-            BitmapFactory.decodeFile(path, options)
-        } catch (e: Exception) {
-            null
-        }
-    }
 
     // 音乐读取状态
     val isLoadMusic = settingsRepo.isLoadMusic
@@ -126,7 +77,6 @@ class MusicViewModel(
 
     // 从本地读取音乐到数据库的方法
     val isScanning = musicRepo.isScanning
-    @RequiresApi(Build.VERSION_CODES.S)
     fun refreshMusicList() {
         viewModelScope.launch(Dispatchers.IO) {
            musicRepo.loadMusicFromDevice()
@@ -229,8 +179,7 @@ class MusicViewModel(
                 val messages = listOf(message)
                 val chatRequest = ChatRequest(messages = messages)
                 val response = DeepSeekService.createChatCompletion(
-                    authToken = "你的key" , //DeepSeek
-//                    authToken = "你的key" , //SiliconFlow
+                    authToken = "" , //DeepSeek Key
                     request = chatRequest
                 )
 

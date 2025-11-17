@@ -1,12 +1,10 @@
 package com.example.hearablemusicplayer
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +19,6 @@ import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModelFactory
 
 class MainActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -45,8 +42,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val mainColor by musicViewModel.dominantColor.collectAsState()
-            HearableMusicPlayerTheme(domainColor = mainColor) {
+            HearableMusicPlayerTheme() {
                 val isLoadMusic by musicViewModel.isLoadMusic.collectAsState(initial = false)
                 val isPermissionGiven = remember { mutableStateOf(false) }
                 isPermissionGiven.value = PermissionRequest()
