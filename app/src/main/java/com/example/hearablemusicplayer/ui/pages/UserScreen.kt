@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,25 +26,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
 import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.ListeningChart
 import com.example.hearablemusicplayer.ui.components.SquareCard
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun UserScreen(
-    viewModel: MusicViewModel
+    viewModel: MusicViewModel,
+    navController: NavController
 ) {
     var visible by remember { mutableStateOf(false) }
+    val userName by viewModel.userName.collectAsState("")
+    val listeningData by viewModel.recentListeningDurations.collectAsState()
 
     LaunchedEffect(Unit) {
         visible = true
+        viewModel.getAvatarUri()
     }
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut()
+        enter = fadeIn(animationSpec = tween(500)),
+        exit = fadeOut(animationSpec = tween(500))
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -61,21 +69,33 @@ fun UserScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Avatar(120, viewModel)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Avatar(112, viewModel)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "曦",
+                        text = userName,
                         style = MaterialTheme.typography.displayLarge
                     )
                 }
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // 自定义柱状图组件
+                val sortedListeningData = listeningData.sortedBy { it.date }.takeLast(7)
+
                 ListeningChart(
-                    text = "近期收听时长",
-                    data = listOf(3, 4, 2, 1, 5, 3, 2),
-                    days = listOf("03.05", "03.06", "03.07", "03.08", "03.09", "03.10", "Today")
+                    text = "近期听歌时长(Minutes)",
+                    data = sortedListeningData.map { (it.duration / (1000 * 60)).toInt() },
+                    days = sortedListeningData.map { duration ->
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val outputFormat = SimpleDateFormat("MM.dd", Locale.getDefault())
+                        try {
+                            dateFormat.parse(duration.date)?.let { date ->
+                                outputFormat.format(date)
+                            } ?: "--"
+                        } catch (e: Exception) {
+                            "--"
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -91,9 +111,17 @@ fun UserScreen(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        SquareCard("主题定制", R.drawable.identify_song)
+                        SquareCard(
+                            "主题定制",
+                            R.drawable.identify_song,
+                            onClick = {}
+                            )
                         Spacer(modifier = Modifier.width(30.dp))
-                        SquareCard("音效效果", R.drawable.slider_vertical_3)
+                        SquareCard(
+                            "音效效果",
+                            R.drawable.slider_vertical_3,
+                            onClick = {}
+                        )
                     }
                     Spacer(modifier = Modifier.height(30.dp))
                     // 第二行
@@ -101,9 +129,17 @@ fun UserScreen(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        SquareCard("云服务", R.drawable.icloud)
+                        SquareCard(
+                            "云服务",
+                            R.drawable.icloud,
+                            onClick = {}
+                        )
                         Spacer(modifier = Modifier.width(30.dp))
-                        SquareCard("设置", R.drawable.gearshape)
+                        SquareCard(
+                            "设置",
+                            R.drawable.gearshape,
+                            onClick = { navController.navigate("setting") }
+                        )
                     }
                 }
             }

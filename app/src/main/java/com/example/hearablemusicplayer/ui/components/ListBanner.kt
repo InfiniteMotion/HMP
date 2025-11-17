@@ -2,11 +2,8 @@ package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -33,17 +27,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.database.MusicInfo
-import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.database.myenum.LabelName
+import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 
 @Composable
-fun ListBanner(
+fun ListGroupName(
     bannerNameF: String,
     bannerNameS: String,
-    musicList: List<MusicInfo>,
     themeColorResId: Int,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController,
 ) {
     Column(
         modifier = Modifier
@@ -73,58 +64,77 @@ fun ListBanner(
                 style = MaterialTheme.typography.headlineMedium
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
-
-        val listState = rememberLazyListState()
-        val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
-        // 横向滚动列表部分
-        LazyRow(
-            state = listState,
-            flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(musicList) { musicInfo ->
-                Banner(
-                    musicInfo = musicInfo,
-                    viewModel = playControlViewModel,
-                    navController = navController
-                )
-            }
-        }
     }
 }
 
 @Composable
-fun Banner(
-    musicInfo: MusicInfo,
-    viewModel: PlayControlViewModel,
+fun ListBanner(
+    listName: String = "",
+    listCoverUri: Any,
+    musicViewModel: MusicViewModel,
     navController: NavController
 ) {
     val imageModifier = Modifier
         .size(100.dp)
-        .shadow(elevation = 5.dp, shape = RoundedCornerShape(10.dp))
-        .clip(RoundedCornerShape(10.dp))
+        .shadow(elevation = 5.dp, shape = RoundedCornerShape(15.dp))
+        .clip(RoundedCornerShape(15.dp))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                viewModel.playWith(musicInfo)
-                viewModel.recordPlayback(musicInfo.music.id, "Banner")
-                navController.navigate("player")
+                musicViewModel.getSelectedPlaylist(listName)
+                navController.navigate("playlist")
             }
     ) {
         AsyncImage(
-            model = musicInfo.extra?.albumArtUri,
+            model = listCoverUri,
             contentDescription = "Album art",
             contentScale = ContentScale.Crop,
             modifier = imageModifier
         )
         Spacer(modifier = Modifier.height(5.dp))
         Text(
-            text = musicInfo.music.title,
+            text = listName,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.widthIn(max = 120.dp),
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun ListBanner(
+    listName: LabelName,
+    listCoverUri: Any,
+    musicViewModel: MusicViewModel,
+    navController: NavController
+) {
+    val imageModifier = Modifier
+        .size(100.dp)
+        .shadow(elevation = 5.dp, shape = RoundedCornerShape(15.dp))
+        .clip(RoundedCornerShape(15.dp))
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(110.dp)
+            .clickable {
+                musicViewModel.getSelectedPlaylist(listName)
+                navController.navigate("playlist")
+            }
+    ) {
+        AsyncImage(
+            model = listCoverUri,
+            contentDescription = "Album art",
+            contentScale = ContentScale.Crop,
+            modifier = imageModifier
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            text = listName.name,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.widthIn(max = 120.dp),
             overflow = TextOverflow.Ellipsis,

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
+import androidx.room.Query
 
 
 //Playlist 表：存储播放列表的基本信息（如播放列表名称、ID 等）
@@ -17,6 +18,9 @@ interface PlaylistDao {
     @Insert
     suspend fun insert(playlist: Playlist): Long
 
-//    @Query("DELETE FROM playlist WHERE id = :id")
-//    suspend fun deletePlaylist(id: Long)
+    @Query("DELETE FROM playlist WHERE name = :name")
+    suspend fun deletePlaylist(name: String)
+
+    @Query("Delete FROM playlist")
+    suspend fun deleteAll()
 }

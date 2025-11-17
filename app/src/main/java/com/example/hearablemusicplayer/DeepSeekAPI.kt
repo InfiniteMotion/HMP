@@ -21,13 +21,11 @@ interface DeepSeekAPI {
 
 // 请求体
 data class ChatRequest(
-    val model: String = "deepseek-chat",
-//    val model: String = "Pro/deepseek-ai/DeepSeek-V3",
+    val model: String = "deepseek-chat", // DeepSeek Request
     val messages: List<Message>,
     val temperature: Float = 1.3f,
     val response_format: Map<String, String> = mapOf("type" to "json_object")
 )
-
 
 data class Message(
     val role: String, // "user"
@@ -55,7 +53,6 @@ val okHttpClient = OkHttpClient.Builder()
 
 val retrofit = Retrofit.Builder()
     .baseUrl("https://api.deepseek.com") // DeepSeek Base URL
-//    .baseUrl("https://api.siliconflow.cn/v1/") // SiliconFlow Base URL
     .client(okHttpClient)
     .addConverterFactory(GsonConverterFactory.create()) // JSON 解析
     .build()

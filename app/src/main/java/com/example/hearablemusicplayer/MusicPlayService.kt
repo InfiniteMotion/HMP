@@ -1,14 +1,56 @@
 package com.example.hearablemusicplayer
 
+import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.os.Binder
 import android.os.IBinder
+import android.support.v4.media.session.MediaSessionCompat
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.example.hearablemusicplayer.database.Music
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class MusicPlayService : Service() {
+interface PlayControl {
+    fun play()
+    fun pause()
+    fun playSingleMusic(music: Music)
+    fun seekTo(position: Long)
+    fun getCurrentPosition(): Long
+    fun getDuration(): Long
+    fun stopMusic()
+    fun prepareMusic(music: Music)
+    fun isMusicLoaded(path: String): Boolean
+    fun isReady():Boolean
+    fun proceedMusic()
+}
+
+@UnstableApi
+class MusicPlayService : Service(),PlayControl {
+
+    companion object {
+        const val ACTION_PLAY = "com.example.hearablemusicplayer.ACTION_PLAY"
+        const val ACTION_PAUSE = "com.example.hearablemusicplayer.ACTION_PAUSE"
+        const val ACTION_NEXT = "com.example.hearablemusicplayer.ACTION_NEXT"
+        const val ACTION_PREV = "com.example.hearablemusicplayer.ACTION_PREV"
+    }
+
+    @SuppressLint("RestrictedApi")
+    private lateinit var mediaSession: MediaSessionCompat
+
 
     // 提供给绑定组件访问 Service 的 Binder
     private val binder = MusicPlayServiceBinder()
@@ -19,6 +61,8 @@ class MusicPlayService : Service() {
     // 播放完成监听器接口
     interface OnMusicCompleteListener {
         fun onPlaybackEnded()
+        fun onPlaybackPrev()
+        fun onPlayStateChanged(isPlaying: Boolean) // 新增
     }
 
     private var playbackListener: OnMusicCompleteListener? = null
@@ -35,17 +79,113 @@ class MusicPlayService : Service() {
         fun getService(): MusicPlayService = this@MusicPlayService
     }
 
+
+    // 创建通知频道
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            "music_channel", // 通知频道 ID
+            "音乐播放",         // 通知频道名称
+            NotificationManager.IMPORTANCE_LOW // 重要性：低，避免打扰
+        ).apply {
+            description = "播放控制通知"
+        }
+
+        val notificationManager =
+            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    // 创建通知
+    private fun buildNotification(
+        music: Music,
+        albumArtBitmap: Bitmap?
+    ): Notification {
+        val mainPendingIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val prevPending = PendingIntent.getService(
+            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PREV),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val pausePending = PendingIntent.getService(
+            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PAUSE),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val playPending = PendingIntent.getService(
+            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PLAY),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val nextPending = PendingIntent.getService(
+            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_NEXT),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val isPlaying = exoPlayer.isPlaying
+
+        val builder = NotificationCompat.Builder(this, "music_channel")
+            .setContentTitle(music.title)
+            .setContentText(music.artist)
+            .setSmallIcon(R.drawable.player_d)
+            .setContentIntent(mainPendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(
+                NotificationCompat.Action.Builder(
+                    R.drawable.backward_end_fill, "上一首", prevPending
+                ).build()
+            )
+            .addAction(
+                if (isPlaying)
+                    NotificationCompat.Action.Builder(R.drawable.pause, "暂停", pausePending).build()
+                else
+                    NotificationCompat.Action.Builder(R.drawable.play_fill, "播放", playPending).build()
+            )
+            .addAction(
+                NotificationCompat.Action.Builder(
+                    R.drawable.forward_end_fill, "下一首", nextPending
+                ).build()
+            )
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setMediaSession(mediaSession.sessionToken)
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOnlyAlertOnce(true)
+            .setOngoing(isPlaying)
+
+        // 只在有封面时设置大图标
+        if (albumArtBitmap != null) {
+            builder.setLargeIcon(albumArtBitmap)
+        }
+
+        return builder.build()
+    }
+
+    @SuppressLint("RestrictedApi")
     override fun onCreate() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this).build().apply {
-            addListener(object : androidx.media3.common.Player.Listener {
+            addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
+                    if (playbackState == Player.STATE_READY) {
+                        getCurrentPlayingMusic()?.let { updateNotificationWithCover(it) }
+                    }
+                    if (playbackState == Player.STATE_ENDED) {
                         playbackListener?.onPlaybackEnded()
                     }
                 }
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    getCurrentPlayingMusic()?.let { updateNotificationPlaybackState(it) }
+                    playbackListener?.onPlayStateChanged(isPlaying)
+                }
             })
         }
+        createNotificationChannel()
+
+        mediaSession = MediaSessionCompat(this, "MusicService")
+        mediaSession.setCallback(object : MediaSessionCompat.Callback() {})
+        mediaSession.isActive = true
+
     }
 
     override fun onDestroy() {
@@ -54,47 +194,155 @@ class MusicPlayService : Service() {
     }
 
     // 播放指定音乐
-    fun prepareMusic(music: Music) {
+    override fun prepareMusic(music: Music) {
         val mediaItem = MediaItem.Builder()
             .setUri(music.path)
-            .setMediaId(music.id.toString())
-            .setTag(music)
+            .setMediaId(music.id.toString()) // 用id作为唯一标识
+            .setMediaMetadata(
+                androidx.media3.common.MediaMetadata.Builder()
+                    .setTitle(music.title)
+                    .setArtist(music.artist)
+                    .setAlbumTitle(music.album)
+                    .build()
+            )
             .build()
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
+
     }
 
-    fun playSingleMusic(music: Music) {
+    override fun play() { exoPlayer.play() }
+    override fun pause() { exoPlayer.pause() }
+
+    override fun playSingleMusic(music: Music) {
+        cacheMusic(music)
         prepareMusic(music)
         exoPlayer.play()
     }
 
-    // 暂停播放
-    fun pauseMusic() = exoPlayer.pause()
-
     // 继续播放
-    fun proceedMusic() = exoPlayer.play()
+    override fun proceedMusic() = exoPlayer.play()
 
     // 停止播放并清空播放内容
-    fun stopMusic() {
+    override fun stopMusic() {
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
     }
 
     // 判断是否已加载目标音频
-    fun isMusicLoaded(path: String): Boolean {
+    override fun isMusicLoaded(path: String): Boolean {
         val current = exoPlayer.currentMediaItem?.localConfiguration?.uri?.toString()
-        return current == path && exoPlayer.playbackState != androidx.media3.common.Player.STATE_IDLE
+        return current == path && exoPlayer.playbackState != Player.STATE_IDLE
+    }
+
+    // 判断是否就绪
+    override fun isReady():Boolean{
+        return exoPlayer.playbackState == Player.STATE_READY
     }
 
     // 跳转到指定位置（毫秒）
-    fun seekTo(position: Long) {
+     override fun seekTo(position: Long) {
         exoPlayer.seekTo(position)
     }
 
     // 获取当前播放进度（毫秒）
-    fun getCurrentPosition(): Long = exoPlayer.currentPosition
+    override fun getCurrentPosition(): Long = exoPlayer.currentPosition
 
     // 获取当前音频总时长（毫秒）
-    fun getDuration(): Long = exoPlayer.duration
+    override fun getDuration(): Long = exoPlayer.duration
+
+    // 假设你有一个 musicMap: Map<Long, Music>
+    private val musicMap = mutableMapOf<Long, Music>()
+
+    // 添加音乐时同步到 map
+    private fun cacheMusic(music: Music) {
+        musicMap[music.id] = music
+    }
+
+    // 获取当前播放音乐
+    private fun getCurrentPlayingMusic(): Music? {
+        val mediaId = exoPlayer.currentMediaItem?.mediaId?.toLongOrNull() ?: return null
+        return musicMap[mediaId]
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_PLAY -> {
+                exoPlayer.play()
+                getCurrentPlayingMusic()?.let { updateNotificationPlaybackState(it) }
+                playbackListener?.onPlayStateChanged(true) // 新增
+            }
+            ACTION_PAUSE -> {
+                exoPlayer.pause()
+                getCurrentPlayingMusic()?.let { updateNotificationPlaybackState(it) }
+                playbackListener?.onPlayStateChanged(false) // 新增
+            }
+            ACTION_NEXT -> playbackListener?.onPlaybackEnded()
+            ACTION_PREV -> playbackListener?.onPlaybackPrev()
+        }
+
+        val music = getCurrentPlayingMusic()
+        music?.let {
+            // 切换到主线程
+            CoroutineScope(Dispatchers.Main).launch {
+                val notification = buildNotification(it, null)
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+
+                // 异步加载封面
+                CoroutineScope(Dispatchers.IO).launch {
+                    val request = ImageRequest.Builder(this@MusicPlayService)
+                        .data(music.albumArtUri)
+                        .allowHardware(false)
+                        .build()
+                    val result = imageLoader.execute(request)
+                    val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    if (bitmap != null) {
+                        // 回到主线程更新通知
+                        CoroutineScope(Dispatchers.Main).launch {
+                            val updatedNotification = buildNotification(it, bitmap)
+                            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                            manager.notify(1, updatedNotification)
+                        }
+                    }
+                }
+            }
+        }
+        return START_STICKY
+    }
+
+    // 只用已有封面刷新通知（不重新加载封面）
+    private fun updateNotificationPlaybackState(music: Music) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notification = buildNotification(music, currentAlbumArtBitmap)
+            manager.notify(1, notification)
+        }
+    }
+
+    private var currentAlbumArtBitmap: Bitmap? = null
+    // 刷新通知（重新加载封面）
+    private fun updateNotificationWithCover(music: Music) {
+        // 先显示默认封面
+        val notification = buildNotification(music, null)
+        startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+
+        // 异步加载封面
+        CoroutineScope(Dispatchers.IO).launch {
+            val request = ImageRequest.Builder(this@MusicPlayService)
+                .data(music.albumArtUri)
+                .size(256)
+                .allowHardware(false)
+                .build()
+            val result = imageLoader.execute(request)
+            val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+            if (bitmap != null) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    currentAlbumArtBitmap = bitmap // 缓存封面
+                    val updatedNotification = buildNotification(music, bitmap)
+                    val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                    manager.notify(1, updatedNotification)
+                }
+            }
+        }
+    }
 }

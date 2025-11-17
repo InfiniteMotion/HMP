@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
@@ -19,6 +20,11 @@ fun AlbumCover(
     place: Arrangement.Horizontal,
     size: Int,
 ) {
+    val imageModifier = Modifier
+        .size(size.dp)
+        .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp))
+        .clip(RoundedCornerShape(20.dp))
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -29,9 +35,7 @@ fun AlbumCover(
             AsyncImage(
                 model = targetUri,
                 contentDescription = "Album art",
-                modifier = Modifier
-                    .size(size.dp)
-                    .clip(RoundedCornerShape(20.dp)),
+                modifier = imageModifier
             )
         }
     }

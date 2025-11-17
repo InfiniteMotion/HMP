@@ -2,12 +2,26 @@ package com.example.hearablemusicplayer.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val HDBlack = Color(0x000000)
-val HDWhite = Color(0xFFFFFF)
-val HDBlue = Color(0x002FA7)
-val HDPurple = Color(0x6A0DAD)
-val HDGreen = Color(0x4E6E45)
-val HDRed = Color(0xC92C2C)
-val HDOrange = Color(0xFFBF00)
-val HDGreyD = Color(0x36454F)
-val HDGreyL = Color(0xE5E5E5)
+
+val HDBlue = Color(0xFF002FA7)
+val HDRed = Color(0xFFC92C2C)
+
+// 浅色主题颜色
+val LightPrimary = HDRed
+val LightOnPrimary = Color(0xFFFFFFFF)
+val LightPrimaryContainer = Color(0xFF1976D2)
+val LightOnPrimaryContainer = Color(0xFFB00020)
+val LightSecondary = HDBlue
+val LightBackground = Color(0xFFFFFFFF)
+val LightSurface = Color(0xFFFFFFFF)
+val LightError = Color(0xFF1976D2)
+
+// 深色主题颜色
+val DarkPrimary = Color(0xFF90CAF9)
+val DarkOnPrimary = Color(0xFF000000)
+val DarkPrimaryContainer = Color(0xFFCF6679)
+val DarkOnPrimaryContainer = Color(0xFF1976D2)
+val DarkSecondary = Color(0xFFF48FB1)
+val DarkBackground = Color(0xFF121212)
+val DarkSurface = Color(0xFF121212)
+val DarkError = Color(0xFFCF6679)

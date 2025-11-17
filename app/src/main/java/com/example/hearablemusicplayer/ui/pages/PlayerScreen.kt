@@ -1,5 +1,8 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.pages
 
+import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -23,6 +26,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
@@ -50,16 +54,17 @@ fun PlayerScreen(
 ) {
     val density = LocalDensity.current
     val dismissThreshold = with(density) { 220.dp.toPx() }
-
     val offsetY = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-
     val listState = rememberLazyListState()
-
     var visible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         visible = true
+        viewModel.toastEvent.collect { event ->
+            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     AnimatedVisibility(

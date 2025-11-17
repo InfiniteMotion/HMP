@@ -1,17 +1,12 @@
 package com.example.hearablemusicplayer.viewmodel
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.palette.graphics.Palette
 import com.example.hearablemusicplayer.ChatRequest
 import com.example.hearablemusicplayer.DeepSeekService
 import com.example.hearablemusicplayer.Message
 import com.example.hearablemusicplayer.database.DailyMusicInfo
+import com.example.hearablemusicplayer.database.ListeningDuration
 import com.example.hearablemusicplayer.database.MusicInfo
 import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.myenum.LabelCategory
@@ -20,10 +15,10 @@ import com.example.hearablemusicplayer.repository.MusicRepository
 import com.example.hearablemusicplayer.repository.SettingsRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,75 +28,133 @@ class MusicViewModel(
     private val settingsRepo: SettingsRepository
 ) : ViewModel() {
 
-    // 主题色（默认值：0xFFC92C2C）
-    private val _dominantColor = MutableStateFlow(Color(0xFFC92C2C))
-    val dominantColor: StateFlow<Color> = _dominantColor
-    // 从路径提取主色
-    fun extractMainColor(path: String) {
-        println(path)
+    val isFirstLaunch = settingsRepo.isFirstLaunch
+    fun saveIsFirstLaunchStatus(status:Boolean){
         viewModelScope.launch {
-            // 1. 加载 Bitmap（优化：降采样防止OOM）
-            val bitmap = decodeSampledBitmap(path) // 缩放到最大200px宽度
-            // 2. 处理失败情况
-            if (bitmap == null) {
-                _dominantColor.value = Color(0xFFC92C2C)
-                return@launch
-            }
-            // 3. 提取主色（后台线程执行）
-            val color = withContext(Dispatchers.Default) {
-                val palette = Palette.from(bitmap).maximumColorCount(5).generate()
-                Color(palette.vibrantSwatch?.rgb ?: palette.dominantSwatch?.rgb ?: 0xFFC92C2C.toInt())
-            }
-            _dominantColor.value = color
-        }
-    }
-
-    // 降采样加载大图
-    private fun decodeSampledBitmap(path: String): Bitmap? {
-        return try {
-            val options = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-                BitmapFactory.decodeFile(path, this)
-                val width = this.outWidth
-                var sampleSize = 1
-                while (width / sampleSize > 200) {
-                    sampleSize *= 2
-                }
-                inSampleSize = sampleSize
-                inJustDecodeBounds = false
-            }
-            BitmapFactory.decodeFile(path, options)
-        } catch (e: Exception) {
-            null
+            settingsRepo.saveIsFirstLaunch(status)
         }
     }
 
     // 音乐读取状态
     val isLoadMusic = settingsRepo.isLoadMusic
 
+    val musicWithoutExtraCount = musicRepo.musicWithoutExtraCount
+
+    //用户名
+    val userName = settingsRepo.userName
+    fun saveUserName(name: String) {
+        viewModelScope.launch {
+            settingsRepo.saveUserName(name)
+        }
+    }
+
     // 头像
-    private val _avatarUri = MutableStateFlow(0)
-    val avatarUri: StateFlow<Int> = _avatarUri
+    private val _avatarUri = MutableStateFlow("")
+    val avatarUri: StateFlow<String> = _avatarUri
     fun getAvatarUri() {
         viewModelScope.launch {
-            _avatarUri.value= settingsRepo.getAvatarUri()!!
+            _avatarUri.value= settingsRepo.getAvatarUri()?:""
+        }
+    }
+    fun saveAvatarUri(uri: String) {
+        viewModelScope.launch {
+            settingsRepo.saveAvatarUri(uri)
         }
     }
 
     // 所有音乐
-    val allMusic: StateFlow<List<MusicInfo>> = musicRepo
-        .getAllMusic()
+    private val _orderBy = MutableStateFlow("title")
+    val orderBy: StateFlow<String> = _orderBy
+    fun updateOrderBy(orderBy: String) {
+        _orderBy.value = orderBy
+    }
+    private val _orderType = MutableStateFlow("ASC")
+    val orderType: StateFlow<String> = _orderType
+    fun updateOrderType(orderType: String) {
+        _orderType.value = orderType
+    }
+    private val _allMusic = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val allMusic: StateFlow<List<MusicInfo>> = _allMusic
+    fun getAllMusic() {
+        viewModelScope.launch {
+            _allMusic.value = musicRepo.getAllMusicInfoAsList(_orderBy.value,_orderType.value)
+        }
+    }
+    
+    // 数据库中的音乐数量
+    val musicCount:StateFlow<Int> = musicRepo
+        .getMusicCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    // 数据库中已获得额外信息的音乐数量
+    val musicWithExtraCount:StateFlow<Int> = musicRepo
+        .getMusicWithExtraCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    // 基于风格的播放列表名 List<LabelName>
+    val genrePlaylistName:StateFlow<List<LabelName>> = musicRepo
+        .getLabelNamesByType(LabelCategory.GENRE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // 基于情绪的播放列表名 List<LabelName>
+    val moodPlaylistName:StateFlow<List<LabelName>> = musicRepo
+        .getLabelNamesByType(LabelCategory.MOOD)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // 基于场景的播放列表名 List<LabelName>
+    val scenarioPlaylistName:StateFlow<List<LabelName>> = musicRepo
+        .getLabelNamesByType(LabelCategory.SCENARIO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // 基于语言的播放列表名 List<LabelName>
+    val languagePlaylistName:StateFlow<List<LabelName>> = musicRepo
+        .getLabelNamesByType(LabelCategory.LANGUAGE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // 基于年代的播放列表名 List<LabelName>
+    val eraPlaylistName:StateFlow<List<LabelName>> = musicRepo
+        .getLabelNamesByType(LabelCategory.ERA)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // 当前播放列表
-    private val _currentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
-    val currentPlaylist: StateFlow<List<MusicInfo>> = _currentPlaylist
-    // 红心播放列表
-    private val _likedPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
-    val likedPlaylist: StateFlow<List<MusicInfo>> = _likedPlaylist
-    // 最近播放列表
-    private val _recentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
-    val recentPlaylist: StateFlow<List<MusicInfo>> = _recentPlaylist
+    private val _selectedPlaylistName = MutableStateFlow("")
+    val selectedPlaylistName: StateFlow<String> = _selectedPlaylistName
+    private val _selectedPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val selectedPlaylist: StateFlow<List<MusicInfo>> = _selectedPlaylist
+
+    // 初始化默认播放列表
+    private fun initializeDefaultPlaylists() {
+        viewModelScope.launch {
+            musicRepo.removePlaylist(name = "默认播放列表")
+            musicRepo.removePlaylist(name = "红心")
+            musicRepo.removePlaylist(name = "最近播放")
+            val defaultId = musicRepo.createPlaylist(name = "默认播放列表")
+            val likedId = musicRepo.createPlaylist(name = "红心")
+            val recentId = musicRepo.createPlaylist(name = "最近播放")
+
+            settingsRepo.saveCurrentPlaylistId(defaultId)
+            settingsRepo.saveLikedPlaylistId(likedId)
+            settingsRepo.saveRecentPlaylistId(recentId)
+
+        }
+    }
+
+    // 依据标签获取音乐列表
+    fun getSelectedPlaylist(label: LabelName) {
+        _selectedPlaylistName.value = label.name
+        viewModelScope.launch {
+            val idList = musicRepo.getMusicIdListByType(label)
+            _selectedPlaylist.value = musicRepo.getPlaylistByIdList(idList)
+        }
+    }
+    // 依据标签获取音乐列表
+    fun getSelectedPlaylist(label: String) {
+        _selectedPlaylistName.value = label
+        viewModelScope.launch {
+            val id = when(label) {
+                "默认列表" -> settingsRepo.getCurrentPlaylistId()
+                "红心列表" -> settingsRepo.getLikedPlaylistId()
+                "最近播放" -> settingsRepo.getRecentPlaylistId()
+                else -> 0
+            }
+            _selectedPlaylist.value = musicRepo.getPlaylistById(id?:0)
+        }
+    }
 
     // 搜索音乐的方法
     private val _searchResults = MutableStateFlow<List<MusicInfo>>(emptyList())
@@ -112,24 +165,13 @@ class MusicViewModel(
         }
     }
 
-    // 初始化默认音乐列表
-    fun initPlaylists() {
-        viewModelScope.launch {
-            val currentId = settingsRepo.getCurrentPlaylistId()?:1
-            val likedId = settingsRepo.getLikedPlaylistId()?:2
-            val recentId = settingsRepo.getRecentPlaylistId()?:3
-            _currentPlaylist.value = musicRepo.getMusicInfoInPlaylist(currentId,7).first()
-            _likedPlaylist.value = musicRepo.getMusicInfoInPlaylist(likedId,7).first()
-            _recentPlaylist.value = musicRepo.getMusicInfoInPlaylist(recentId,7).first()
-        }
-    }
-
     // 从本地读取音乐到数据库的方法
     val isScanning = musicRepo.isScanning
-    @RequiresApi(Build.VERSION_CODES.S)
     fun refreshMusicList() {
         viewModelScope.launch(Dispatchers.IO) {
-           musicRepo.loadMusicFromDevice()
+            musicRepo.clearAllDataBase()
+            musicRepo.loadMusicFromDevice()
+            initializeDefaultPlaylists()
             settingsRepo.saveIsLoadMusic(true)
         }
     }
@@ -151,59 +193,53 @@ class MusicViewModel(
         }
     }
 
-    // 获取音乐标签的方法
-    fun getMusicLabel(musicId: Long): List<MusicLabel> {
-        var labels = mutableListOf<MusicLabel>()
-        viewModelScope.launch {
-            labels= musicRepo.getMusicLabels(musicId).toMutableList()
-        }
-        return labels
-    }
-
     // 每日推荐歌曲
-    // 新获取的dailyMusicInfo存储起来
-    private val dailyMusic = MutableStateFlow<MusicInfo?>(null)
-    fun getDailyMusic() {
-        viewModelScope.launch {
-            dailyMusic.value = musicRepo.getRandomMusicInfo()
-            parseQuestionAndAnswer(dailyMusic.value)
-        }
-    }
-    private val dailyMusicInfo = MutableStateFlow<DailyMusicInfo?>(null)
-    // 上次获取的dailyMusicInfo供ui使用
-    private val _dailyMusicCache = MutableStateFlow<MusicInfo?>(null)
-    val dailyMusicCache: StateFlow<MusicInfo?> = _dailyMusicCache
-    fun getDailyMusicCache() {
-        viewModelScope.launch {
-            val musicId = settingsRepo.getDaliyMusicInfoId()
-            _dailyMusicCache.value = musicId?.let { musicRepo.getMusicInfoById(it).first() }
-        }
-    }
-    private val _dailyMusicInfoCache = MutableStateFlow<DailyMusicInfo?>(null)
-    val dailyMusicInfoCache: StateFlow<DailyMusicInfo?> = _dailyMusicInfoCache
-    fun getDailyMusicInfoCache() {
-        viewModelScope.launch {
-            _dailyMusicInfoCache.value = settingsRepo.getDaliyMusicInfo()
-        }
-    }
+    val dailyMusic = MutableStateFlow<MusicInfo?>(null)
+    private val _dailyMusicInfo = MutableStateFlow<DailyMusicInfo?>(null)
+    val dailyMusicInfo: StateFlow<DailyMusicInfo?> = _dailyMusicInfo
     private val _dailyMusicLabel = MutableStateFlow<List<MusicLabel?>>(emptyList())
     val dailyMusicLabel: StateFlow<List<MusicLabel?>> = _dailyMusicLabel
-    fun getDailyMusicLabel() {
+    fun getDailyMusicInfo() {
         viewModelScope.launch {
-            val musicId = settingsRepo.getDaliyMusicInfoId()
-            if (musicId != null) {
-                _dailyMusicLabel.value=musicRepo.getMusicLabels(musicId)
-            }
+            dailyMusic.value = musicRepo.getRandomMusicInfoWithExtra()
+            _dailyMusicInfo.value = musicRepo.getMusicExtraById(dailyMusic.value?.music?.id?:0)
+            _dailyMusicLabel.value = musicRepo.getMusicLabels(dailyMusic.value?.music?.id?:0)
         }
     }
-    // 从DeepSeek获取更多信息
-    private fun parseQuestionAndAnswer(input: MusicInfo?) {
+
+    // 添加任务状态追踪
+    private val _isProcessingExtraInfo = MutableStateFlow(false)
+    val isProcessingExtraInfo: StateFlow<Boolean> = _isProcessingExtraInfo
+    
+    // 添加自动获取扩展信息的任务
+    private val musicWithoutExtraInfo = MutableStateFlow<MusicInfo?>(null)
+    fun startAutoProcessExtraInfo() {
         viewModelScope.launch {
-            if (input != null) {
-                val message = Message(
-                    "user",
-                    """
-                        请根据由 ${input.music.artist} 演唱的歌曲《${input.music.title}》，用中文以下面的JSON格式回复相关信息（不要添加任何其他内容）：
+        if (_isProcessingExtraInfo.value) return@launch
+        _isProcessingExtraInfo.value = true
+        try {
+            while (true) {
+                val music = musicRepo.getRandomMusicInfoWithMissingExtra()
+                if (music == null) break
+                // 挂起直到本首处理完
+                getMusicExtraInfoFromLLM(music)
+                delay(500) // 避免API限制
+            }
+        } catch (e: Exception) {
+            println("处理扩展信息时发生错误: ${e.message}")
+        } finally {
+            _isProcessingExtraInfo.value = false
+        }
+    }
+}
+    
+    // 从DeepSeek获取更多信息
+    private suspend fun getMusicExtraInfoFromLLM(input: MusicInfo) {
+        withContext(Dispatchers.IO) {
+            val message = Message(
+                "user",
+                """
+                        请根据由 ${input.music.artist} 演唱的歌曲《${input.music.title}》，用中文以下面的JSON格式依据提示回复相关信息（不要添加任何其他内容）：
                         {
                           "genre": [
                             "ROCK", "POP", "JAZZ", "CLASSICAL", "HIPHOP", "ELECTRONIC", "FOLK", "RNB", "METAL", "COUNTRY", "BLUES", "REGGAE", "PUNK", "FUNK", "SOUL", "INDIE"
@@ -214,79 +250,66 @@ class MusicViewModel(
                           "scenario": [
                             "WORKOUT", "SLEEP", "PARTY", "DRIVING", "STUDY", "RELAX", "DINNER", "MEDITATION", "FOCUS", "TRAVEL", "MORNING", "NIGHT"
                           ],
-                          "language":"ENGLISH/CHINESE/JAPANESE/KOREAN/OTHERS", 
-                          "era":"SIXTIES/SEVENTIES/EIGHTIES/NINETIES,TWO_THOUSANDS/TWENTY_TENS/TWENTY_TWENTIES",
-                          "rewards": "歌曲成就",
-                          "lyric": "热门歌词",
-                          "singerIntroduce": "歌手介绍",
-                          "backgroundIntroduce": "创作背景",
-                          "description": "歌曲介绍",
-                          "relevantMusic": "类似音乐",
+                          "language":"ENGLISH/CHINESE/JAPANESE/KOREAN/OTHERS(单选)", 
+                          "era":"SIXTIES/SEVENTIES/EIGHTIES/NINETIES/TWO_THOUSANDS/TWENTY_TENS/TWENTY_TWENTIES(单选)",
+                          "rewards": "歌曲成就(若无返回-暂无)",
+                          "lyric": "热门歌词(两句，若无返回-暂无)",
+                          "singerIntroduce": "歌手介绍(100字左右)",
+                          "backgroundIntroduce": "创作背景(出处、创作者采访等信息，100字左右)",
+                          "description": "歌曲主题(主题，100字左右)",
+                          "relevantMusic": "类似音乐(一到两首，若无返回-暂无)",
                           "errorInfo": "None"
                         }
                         """.trimIndent()
-                )
-                val messages = listOf(message)
-                val chatRequest = ChatRequest(messages = messages)
-                val response = DeepSeekService.createChatCompletion(
-                    authToken = "你的key" , //DeepSeek
-//                    authToken = "你的key" , //SiliconFlow
-                    request = chatRequest
-                )
-
-                if (response.isSuccessful) {
-                    val json = response.body()?.choices?.firstOrNull()?.message?.content
-                    try {
-                        val intro = Gson().fromJson(json, DailyMusicInfo::class.java)
-                        dailyMusicInfo.value = intro
-                        settingsRepo.saveDaliyMusicInfoId(input.music.id)
-                        settingsRepo.saveDaliyMusicInfo(intro)
-                        saveMusicLabel(input.music.id,intro)
-                    } catch (e: Exception) {
-                        dailyMusicInfo.value = DailyMusicInfo(
-                            genre = emptyList(),
-                            mood = emptyList(),
-                            scenario = emptyList(),
-                            language = "",
-                            era = "",
-                            rewards = "",
-                            lyric = "",
-                            singerIntroduce = "",
-                            backgroundIntroduce = "",
-                            description = "",
-                            relevantMusic = "",
-                            errorInfo = "Exception: ${e.message}"
-                        )
-                    }
-                } else {
-                    dailyMusicInfo.value = DailyMusicInfo(
-                        genre = emptyList(),
-                        mood = emptyList(),
-                        scenario = emptyList(),
-                        language = "",
-                        era = "",
-                        rewards = "",
-                        lyric = "",
-                        singerIntroduce = "",
-                        backgroundIntroduce = "",
-                        description = "",
-                        relevantMusic = "",
-                        errorInfo = "Error: ${response.errorBody()?.string()}"
-                    )
+            )
+            val messages = listOf(message)
+            val chatRequest = ChatRequest(messages = messages)
+            val response = DeepSeekService.createChatCompletion(
+                authToken = settingsRepo.getDeepSeekApiKey(),
+                request = chatRequest
+            )
+            if (response.isSuccessful) {
+                val json = response.body()?.choices?.firstOrNull()?.message?.content
+                try {
+                    val intro = Gson().fromJson(json, DailyMusicInfo::class.java)
+                    musicRepo.insertMusicExtra(input.music.id, intro)
+                    saveMusicLabel(input.music.id, intro)
+                } catch (e: Exception) {
+                    println("gson failed")
                 }
+            } else {
+                println("response failed")
             }
         }
     }
-
-    fun initializeDefaultDailyMusic(){
-        viewModelScope.launch(Dispatchers.IO) {
-            val currentDailyMusicId = settingsRepo.getDaliyMusicInfoId()
-            if (currentDailyMusicId == null) {
-                val defaultMusic = musicRepo.getRandomMusicInfo()
-                if (defaultMusic != null) {
-                    settingsRepo.saveDaliyMusicInfoId(defaultMusic.music.id)
-                }
-            }
+    // 修改 DeepSeek API-Key
+    fun saveDeepSeekApiKey(deepSeekApiKey: String) {
+        viewModelScope.launch {
+            settingsRepo.saveDeepSeekApiKey(deepSeekApiKey)
         }
     }
+
+    // 检查 DeepSeek API-Key 是否有效
+    fun checkApiAccess(deepSeekApiKey:String): Boolean {
+        var result = false
+        viewModelScope.launch {
+            val message = Message("User", """{"content": "Hello"}""".trimIndent())
+            val messages = listOf(message)
+            val chatRequest = ChatRequest(messages = messages)
+            val response = DeepSeekService.createChatCompletion(
+                authToken = deepSeekApiKey,
+                request = chatRequest
+            )
+
+            if (response.isSuccessful) {
+                println(response.body())
+                result = true
+            }
+        }
+        return result
+    }
+
+    val recentListeningDurations: StateFlow<List<ListeningDuration>> = musicRepo
+        .getRecentListeningDurations()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }

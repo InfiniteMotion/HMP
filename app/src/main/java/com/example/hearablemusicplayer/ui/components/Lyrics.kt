@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
@@ -39,7 +40,7 @@ fun Lyrics(
         if (lyrics==null) {
             Text("未识别到歌词")
         }else{
-            val timeLyricRegex = """\[(\d{2}:\d{2}\.\d{2})\]([^\[]+)""".toRegex()
+            val timeLyricRegex = """^\[(\d{2}:\d{2}\.\d{2})\](.*)$""".toRegex(RegexOption.MULTILINE)
             val lyricListWithTimestamp = timeLyricRegex.findAll(lyrics)
                 .map { matchResult ->
                     val (timeStr, lyric) = matchResult.destructured
@@ -74,6 +75,8 @@ fun Lyrics(
                         .padding(vertical = 16.dp)
                     Text(
                         text = text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         color = if (isCurrent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
                         style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
                         modifier = Modifier

@@ -1,6 +1,5 @@
 package com.example.hearablemusicplayer.ui.dialogs
 
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,16 +8,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun PermissionRequest(): Boolean {
-    val context = LocalContext.current
+fun PermissionRequest(){
+
     // 权限状态
     val hasPermission = remember { mutableStateOf(false) }
 
@@ -27,15 +23,6 @@ fun PermissionRequest(): Boolean {
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasPermission.value = isGranted
-    }
-
-    // 首次检查权限
-    LaunchedEffect(Unit) {
-        val status = ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.READ_MEDIA_AUDIO
-        )
-        hasPermission.value = status == PackageManager.PERMISSION_GRANTED
     }
 
     // 按需请求权限
@@ -53,7 +40,5 @@ fun PermissionRequest(): Boolean {
             }
         )
     }
-
-    return hasPermission.value
 }
 

@@ -31,17 +31,21 @@ fun ListeningChart(
     data: List<Int>,
     days: List<String>
 ) {
+    val maxBarHeight = 70.dp
+    val maxValue = (data.maxOrNull() ?: 1).toFloat() // 避免除以0
+
     Card(
         modifier = Modifier
             .size(height = 200.dp, width = 340.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.background
         ),
         border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
-    ){
+    ) {
         Row(
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .padding(top = 16.dp),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
@@ -52,6 +56,7 @@ fun ListeningChart(
                 style = MaterialTheme.typography.titleLarge,
             )
         }
+
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -60,24 +65,34 @@ fun ListeningChart(
             verticalAlignment = Alignment.Bottom
         ) {
             data.forEachIndexed { index, value ->
-                Column (horizontalAlignment = Alignment.CenterHorizontally) {
+                val barHeight = if (maxValue == 0f) 0.dp
+                else (value / maxValue * maxBarHeight.value).dp
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = value.toString(),
+                        fontSize = 10.sp,
+                        color = Color.Gray
+                    )
                     Box(
                         modifier = Modifier
                             .width(16.dp)
-                            .height((value * 16).dp)
+                            .height(barHeight)
                             .background(
-                                if (index == data.lastIndex) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
+                                if (index == data.lastIndex) MaterialTheme.colorScheme.secondary
+                                else MaterialTheme.colorScheme.tertiary,
                                 RoundedCornerShape(4.dp)
                             )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = days[index],
-                        fontSize = 10.sp,
-                        color = Color.Gray
+                        fontSize = 12.sp,
                     )
                 }
             }
         }
     }
 }
+
+

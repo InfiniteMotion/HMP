@@ -18,6 +18,7 @@ class MusicApplication : Application() {
             db.playlistDao(),
             db.playlistItemDao(),
             db.playbackHistoryDao(),
+            db.listeningDurationDao(),
             applicationContext
         )
     }

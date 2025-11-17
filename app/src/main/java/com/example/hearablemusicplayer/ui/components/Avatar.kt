@@ -10,7 +10,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -22,15 +21,15 @@ fun Avatar(
     aSize: Int,
     viewModel: MusicViewModel
 ){
-    val imageUri by viewModel.avatarUri.collectAsState(initial = 0)
-    if (imageUri != 0) {
+    val imageUri by viewModel.avatarUri.collectAsState(initial = "")
+    if (imageUri != "") {
         AsyncImage(
             model = imageUri,
             contentDescription = "User Avatar",
             modifier = Modifier
                 .size(aSize.dp)
                 .clip(CircleShape)
-                .border(width = 4.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.secondary, CircleShape)
         )
     } else {
         Image(
@@ -39,9 +38,7 @@ fun Avatar(
             modifier = Modifier
                 .size(aSize.dp)
                 .clip(CircleShape)
-                .shadow(elevation = 8.dp, shape = CircleShape, clip = true)
-                .border(width = 4.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape)
-
+                .border(3.dp, MaterialTheme.colorScheme.secondary, CircleShape)
         )
     }
 }

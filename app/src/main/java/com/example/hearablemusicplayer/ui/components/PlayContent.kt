@@ -1,3 +1,4 @@
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.components
 
 import DotPager
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +29,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -40,12 +43,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
 import com.example.hearablemusicplayer.database.Music
 import com.example.hearablemusicplayer.database.MusicInfo
 import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.pages.formatTime
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
@@ -72,22 +77,34 @@ fun PlayContent(
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
     val playbackMode by viewModel.playbackMode.collectAsState()
+    val remainingTime by viewModel.timerRemaining.collectAsState()
 
     if (musicInfo == null) {
         // 当前没有播放的音乐时显示文字
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter)
+            ){
+                PlayerHeader(navController)
+            }
             Text("当前音乐: 无")
         }
     } else {
-        // 有音乐时显示播放器内容和播放列表
-        musicViewModel.extractMainColor(musicInfo!!.music.path)
-        viewModel.prepareMusic(musicInfo!!)
+        if(viewModel.isReady()!=true) {
+            viewModel.prepareMusic(musicInfo!!)
+        }
         viewModel.getLikedStatus(musicInfo!!.music.id)
         viewModel.getMusicLabels(musicInfo!!.music.id)
         viewModel.getMusicLyrics(musicInfo!!.music.id)
         val isLiked by viewModel.likeStatus.collectAsState()
         val labels by viewModel.currentMusicLabels.collectAsState()
         val lyrics by viewModel.currentMusicLyrics.collectAsState()
+        var showTimerDialog by remember { mutableStateOf(false) }
+        var showFullList by remember { mutableStateOf(false) }
+
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -95,15 +112,17 @@ fun PlayContent(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.Top
         ) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item { PlayerHeader(navController) }
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            item { Spacer(modifier = Modifier.height(24.dp)) }
             item { MusicInfo(musicInfo!!.music) }
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            item { Spacer(modifier = Modifier.height(24.dp)) }
             item {
                 MusicInfoExtra(musicInfo!!,labels,lyrics,currentPosition) }
             item { Spacer(modifier = Modifier.height(16.dp)) }
             item {
                 SeekBar(
+                    isPlaying = isPlaying,
                     currentPosition = currentPosition,
                     duration = duration,
                     onSeek = viewModel::seekTo
@@ -115,6 +134,7 @@ fun PlayContent(
                     isPlaying = isPlaying,
                     playbackMode = playbackMode,
                     isLike = isLiked,
+                    remainingTime = remainingTime,
                     onPlayPause = {
                         if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume()
                     },
@@ -122,19 +142,106 @@ fun PlayContent(
                     onPrevious = viewModel::playPrevious,
                     onPlaybackModeChange = viewModel::togglePlaybackModeByOrder,
                     onFavorite = { viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked) },
-                    onTimerClick = {  },
-                    onMoreOptions = {  }
+                    onTimerClick = { showTimerDialog = true },
+                    onHeartMode = { viewModel.playHeartMode() }
                 )
             }
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
             item {
-                PlaylistSection(
-                    currentIndex = currentIndex,
-                    playlist = playlist,
-                    onSelect = viewModel::playAt,
-                    onClear = viewModel::clearPlaylist
-                ) // 播放列表
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "播放列表 (${playlist.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row {
+                        if (playlist.size > 8) {
+                            Text(
+                                text = if (showFullList) "收起" else "展开",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier
+                                    .padding(end = 16.dp, bottom = 8.dp)
+                                    .clickable { showFullList = !showFullList }
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "清空",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier
+                                .padding(bottom = 8.dp)
+                                .clickable { viewModel.clearPlaylist() }
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .size(2.dp)
+                        .padding(horizontal = 16.dp)
+                )
             }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            // 使用 items 显示播放列表项
+            val displayItems = if (!showFullList) {
+                playlist.filterIndexed { index, _ ->
+                    index >= (currentIndex - 2) && index < currentIndex ||
+                            index == currentIndex ||
+                            index > currentIndex && index <= (currentIndex + 5)
+                }
+            } else {
+                playlist
+            }
+
+            items(
+                items = displayItems,
+                key = { it.music.id }
+            ) { item ->
+                val index = playlist.indexOf(item)
+                PlaylistItem(
+                    musicInfo = item,
+                    isPlaying = index == currentIndex,
+                    onClick = { viewModel.playAt(item) },
+                    onRemove = { viewModel.removeFromPlaylist(item) }
+                )
+            }
+
+            // 显示更多提示
+            if (!showFullList && playlist.size > 8) {
+                item {
+                    Text(
+                        text = "还有 ${playlist.size - displayItems.size} 首歌曲",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                            .clickable { showFullList = true }
+                    )
+                }
+            }
+        }
+
+        if (showTimerDialog) {
+            TimerDialog(
+                onDismiss = { showTimerDialog = false },
+                onConfirm = { minutes ->
+                    if(minutes==0){
+                        viewModel.cancelTimer()
+                    }else{
+                        viewModel.startTimer(minutes)
+                    }
+                    showTimerDialog = false
+                }
+            )
         }
     }
 }
@@ -190,7 +297,7 @@ fun MusicInfoExtra(
 ) {
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
-        { AlbumCover(musicInfo.extra?.albumArtUri, Arrangement.Center,300) },
+        { AlbumCover(musicInfo.music.albumArtUri, Arrangement.Center,300) },
         { Lyrics(lyrics,currentPosition)}
     )
     Row (
@@ -209,12 +316,24 @@ fun MusicInfoExtra(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeekBar(
+    isPlaying: Boolean,
     currentPosition: Long,
     duration: Long,
     onSeek: (Long) -> Unit
 ) {
+    // 关键修改：独立维护滑块位置状态
     var sliderPosition by remember { mutableFloatStateOf(0f) }
+    var lastValidPosition by remember { mutableFloatStateOf(0f) }
     val isDragging = remember { mutableStateOf(false) }
+
+    // 监听位置变化（修复点1）
+    LaunchedEffect(currentPosition, isPlaying) {
+        if (!isDragging.value && duration > 0) {
+            val newPosition = currentPosition.toFloat() / duration
+            sliderPosition = newPosition
+            lastValidPosition = newPosition // 保留最后一次有效位置
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -228,7 +347,7 @@ fun SeekBar(
             ),
             // 形状定制
             thumb = {
-                // 你可以在这里自定义 Thumb 的形状、颜色、大小等
+                // 自定义 Thumb 的形状、颜色、大小等
                 Box(
                     modifier = Modifier
                         .size(16.dp, 16.dp)
@@ -238,18 +357,19 @@ fun SeekBar(
                         )
                 )
             },
-            value = if (duration > 0) {
-                if (isDragging.value) sliderPosition else currentPosition.toFloat() / duration
-            } else 0f,
+            value = when {
+                isDragging.value -> sliderPosition
+                duration > 0 -> currentPosition.toFloat() / duration
+                else -> lastValidPosition
+            },
             onValueChange = {
-                sliderPosition = it
+                sliderPosition = it.coerceIn(0f, 1f)
                 isDragging.value = true
             },
             onValueChangeFinished = {
-                val seekPosition = (sliderPosition * duration).toLong()
-                onSeek(seekPosition)
+                onSeek((sliderPosition * duration).toLong())
                 isDragging.value = false
-            }
+            },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -267,13 +387,14 @@ fun PlaybackControls(
     isPlaying: Boolean,
     playbackMode: PlaybackMode,
     isLike: Boolean,
+    remainingTime:Long?,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onPlaybackModeChange: () -> Unit,
     onFavorite: () -> Unit,
     onTimerClick: () -> Unit,
-    onMoreOptions: () -> Unit
+    onHeartMode: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -353,78 +474,76 @@ fun PlaybackControls(
                     )
                 }
             }
-
-            IconButton(onClick = onTimerClick) {
-                Icon(painter = painterResource(R.drawable.timer), contentDescription = "Timer")
+            IconButton(onClick = onHeartMode) {
+                Icon(painter = painterResource(R.drawable.identify_song), contentDescription = "RecommendationMode")
             }
-
-            IconButton(onClick = onMoreOptions) {
-                Icon(painter = painterResource(R.drawable.dot_grid_1x2), contentDescription = "More Options")
+            if(remainingTime == null){
+                IconButton(onClick = onTimerClick) {
+                    Icon(painter = painterResource(R.drawable.timer), contentDescription = "Timer.kt")
+                }
+            }else{
+                Text(
+                    text = formatTime(remainingTime),  // 使用 formatTime 函数
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { onTimerClick() }
+                )
             }
         }
     }
 }
 
-
-// 播放列表组件
 @Composable
-fun PlaylistSection(
-    currentIndex: Int,
-    playlist: List<MusicInfo>,
-    onSelect: (MusicInfo) -> Unit,
-    onClear: () -> Unit
+private fun PlaylistItem(
+    musicInfo: MusicInfo,
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,         // 新增
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 16.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .then(
+                if (isPlaying) {
+                    Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                } else Modifier
+            ),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column {
             Text(
-                text = "播放列表",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
+                text = musicInfo.music.title,
+                style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = "清空列表",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-                    .clickable { onClear() }
+                text = musicInfo.music.artist,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
-        HorizontalDivider(
-            modifier = Modifier.fillMaxWidth()
-                .size(2.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        playlist.forEachIndexed { index, item ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onSelect(item) }
-                    .then(
-                        if (index == currentIndex) { // 当前播放项的特殊样式
-                            Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-                        } else Modifier
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Spacer(modifier = Modifier.width(12.dp))
 
-                Column {
-                    Text(
-                        text = item.music.title,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = item.music.artist,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+        Spacer(modifier = Modifier.weight(1f))
+
+        // 新增的移除和置顶按钮
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.padding(end = 8.dp)
+        ) {
+
+            // 移除按钮
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.minus_circle),
+                    contentDescription = "Remove",
+                )
             }
         }
     }

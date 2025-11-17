@@ -5,14 +5,17 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
-import androidx.room.PrimaryKey
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 //PlaylistItem 表：存储播放列表中的歌曲信息，并通过外键关联到 Playlist 表
-@Entity(tableName = "playlist_item", foreignKeys = [
-    ForeignKey(
+@Entity(
+    tableName = "playlist_item", 
+    primaryKeys = ["songId", "playlistId"],
+    foreignKeys = [
+        ForeignKey(
         entity = Playlist::class,
         parentColumns = ["id"],
         childColumns = ["playlistId"],
@@ -22,19 +25,17 @@ import kotlinx.coroutines.flow.Flow
 )
 
 data class PlaylistItem(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val songUrl: String,
     val songId: Long,
-    val playlistId: Long, // 外键，关联到 Playlist 表
-    val playedAt: Long    // 时间戳
+    val playlistId: Long,
 )
 
 @Dao
 interface PlaylistItemDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(item: PlaylistItem): Long
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertPlaylist(items: List<PlaylistItem>)
 
     @Transaction
@@ -50,27 +51,9 @@ interface PlaylistItemDao {
     SELECT music.* FROM music 
     INNER JOIN playlist_item ON music.id = playlist_item.songId 
     WHERE playlist_item.playlistId = :playlistId
-    ORDER BY playlist_item.id DESC
-    LIMIT :limit
 """)
-    fun getMusicInfoInPlaylistLimit(playlistId: Long,limit:Int): Flow<List<MusicInfo>>
+    suspend fun getPlaylistById(playlistId: Long): List<MusicInfo>
 
-    @Query("""
-        SELECT music.* FROM music 
-        INNER JOIN playlist_item ON music.id = playlist_item.songId 
-        WHERE playlist_item.playlistId = :playlistId
-    """)
-    fun getMusicInPlaylist(playlistId: Long): Flow<List<Music>>
-
-    @Query("""
-    SELECT music.* FROM music 
-    INNER JOIN playlist_item ON music.id = playlist_item.songId 
-    WHERE playlist_item.playlistId = :playlistId
-    ORDER BY playlist_item.id DESC
-    LIMIT :limit
-""")
-    fun getMusicInPlaylistLimit(playlistId: Long,limit:Int): Flow<List<Music>>
-//
 //    @Query("DELETE FROM playlist_item WHERE id = :id")
 //    suspend fun deleteItem(id: Long)
 
@@ -88,7 +71,6 @@ interface PlaylistItemDao {
                 playlistId = playlistId,
                 songId = it.music.id,
                 songUrl = it.music.path,
-                playedAt = System.currentTimeMillis()
             )
         }
         insertPlaylist(items)

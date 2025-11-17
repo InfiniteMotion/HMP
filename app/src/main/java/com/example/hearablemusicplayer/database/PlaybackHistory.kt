@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
+import androidx.room.Query
 
 ////播放排行榜中的单条数据
 //data class PlayCountEntry(
@@ -42,4 +43,6 @@ interface PlaybackHistoryDao {
 //    @Query("SELECT musicId, COUNT(*) as playCount FROM PlaybackHistory GROUP BY musicId ORDER BY playCount DESC")
 //    fun getTopPlayed(): Flow<List<PlayCountEntry>>
 
+    @Query("DELETE FROM PlaybackHistory")
+    suspend fun deleteAll()
 }

@@ -15,7 +15,7 @@ android {
         minSdk = 31
         targetSdk = 35
         versionCode = 4
-        versionName = "4.0"
+        versionName = "4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -53,8 +53,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.datastore.core.android)
-    implementation(libs.androidx.datastore.preferences.core.jvm)
+
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.room.runtime.android)
@@ -91,22 +90,21 @@ dependencies {
     // optional - Paging 3 Integration
     implementation(libs.androidx.room.paging)
 
-    implementation ("androidx.compose.foundation:foundation:1.7.0")
-    implementation ("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.navigation:navigation-compose:2.8.8")
-    implementation ("androidx.compose.material3:material3:1.2.1")
+    implementation (libs.ui)
+    implementation (libs.androidx.foundation)
+    implementation(libs.androidx.navigation.compose)
+    implementation (libs.androidx.animation)
 
-
-
-    implementation ("androidx.datastore:datastore-preferences:1.0.0")
-    implementation (libs.androidx.runtime.livedata.v164)
+    implementation (libs.androidx.datastore.preferences)
     implementation (libs.coil.compose)
     implementation (libs.androidx.palette.ktx)
 
-    implementation ("androidx.media3:media3-exoplayer:1.6.0")
-    implementation ("androidx.media3:media3-ui:1.6.0")
-    implementation ("androidx.media3:media3-common:1.6.0")
+    implementation (libs.androidx.media3.exoplayer)
+    implementation (libs.androidx.media3.ui)
+    implementation (libs.androidx.media3.common)
+    implementation (libs.androidx.media)
 
+    implementation (libs.androidx.security.crypto)
 
 
 }

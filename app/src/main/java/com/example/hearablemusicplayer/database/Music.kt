@@ -7,8 +7,10 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Relation
 import androidx.room.Transaction
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "music")
@@ -19,12 +21,12 @@ data class Music(
     val album: String,
     val duration: Long,
     val path: String,
+    val albumArtUri: String,
 )
 
 @Entity(tableName = "musicExtra")
 data class MusicExtra(
     @PrimaryKey val id: Long,
-    val albumArtUri: String? = null,
     val lyrics: String? = null,
     val bitRate: Int? = null,           // 比特率 kbps
     val sampleRate: Int? = null,        // 采样率 Hz
@@ -32,7 +34,15 @@ data class MusicExtra(
     val format: String? = null,         // 文件格式 mp3/flac
     val language: String? = null,       // 语言
     val year: Int? = null,              // 年份
-    val recommendationIds: String? = null  // 推荐关联的音乐ID列表
+    val recommendationIds: String? = null,  // 推荐关联的音乐ID列表
+    // 其他额外信息
+    val isGetExtraInfo : Boolean,
+    val rewards : String? = null,
+    val popLyric : String? = null,
+    val singerIntroduce : String? = null,
+    val backgroundIntroduce : String? = null,
+    val description : String? = null,
+    val relevantMusic : String? = null
 )
 
 @Entity(tableName = "userInfo")
@@ -63,12 +73,6 @@ data class MusicInfo(
     val userInfo: UserInfo?
 )
 
-data class MusicAll(
-    val music: Music,
-    val extra: MusicExtra?,
-    val userInfo: UserInfo?
-)
-
 @Dao
 interface MusicDao {
 
@@ -81,6 +85,9 @@ interface MusicDao {
 
     @Query("SELECT * FROM music WHERE id = :id")
     fun getMusicById(id: Long): Flow<Music?>
+
+    @Query("SELECT COUNT(*) FROM music")
+    fun getMusicCount(): Flow<Int>
 
     // 删除
     @Query("DELETE FROM music WHERE id IN (:ids)")
@@ -124,6 +131,39 @@ interface MusicExtraDao {
 
     @Query("DELETE FROM musicExtra")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM musicExtra WHERE id=:id")
+    suspend fun getExtraFieldsById(id: Long): MusicExtra?
+
+    @Query("SELECT COUNT(*) FROM musicExtra WHERE isGetExtraInfo = true")
+    fun getExtraInfoNum(): Flow<Int>
+
+    @Query("""
+        UPDATE musicExtra SET 
+            isGetExtraInfo = true,
+            rewards = :rewards,
+            popLyric = :popLyric,
+            singerIntroduce = :singerIntroduce,
+            backgroundIntroduce = :backgroundIntroduce,
+            description = :description,
+            relevantMusic = :relevantMusic
+        WHERE id = :id
+    """)
+    suspend fun updateExtraFieldsById(
+        id: Long,
+        rewards: String?,
+        popLyric: String?,
+        singerIntroduce: String?,
+        backgroundIntroduce: String?,
+        description: String?,
+        relevantMusic: String?
+    )
+
+    @Query("""
+        SELECT COUNT(*) FROM musicExtra
+        WHERE  isGetExtraInfo = false
+    """)
+    fun getMusicWithoutExtraCount(): Flow<Int>
 }
 
 @Dao
@@ -156,24 +196,50 @@ interface UserInfoDao {
 @Dao
 interface MusicAllDao {
 
-    @Transaction
-    @Query("SELECT * FROM music")
-    suspend fun getAllMusicInfo(): List<MusicInfo>
-
-    @Transaction
-    @Query("SELECT * FROM music")
-    fun getAllMusicInfoAsFlow(): Flow<List<MusicInfo>>
+    @RawQuery(observedEntities = [Music::class, MusicExtra::class, UserInfo::class])
+    suspend fun getAllMusicInfoAsList(query: SupportSQLiteQuery): List<MusicInfo>
 
     @Transaction
     @Query("SELECT * FROM music WHERE id = :id")
     fun getMusicInfoById(id: Long): Flow<MusicInfo?>
 
+    // 获取还未获得额外信息的音乐
+    @Transaction
+    @Query("SELECT * FROM music WHERE id IN (SELECT id FROM musicExtra WHERE isGetExtraInfo = false)")
+    fun getMusicInfoWithMissingExtra(): Flow<List<MusicInfo>>
+
     // 搜索音乐标题或艺术家名中包含关键词的记录
     @Transaction
     @Query("SELECT * FROM music WHERE title LIKE :query OR artist LIKE :query")
-    fun searchMusic(query: String): List<MusicInfo>
+    suspend fun searchMusic(query: String): List<MusicInfo>
 
     @Transaction
     @Query("SELECT * FROM music ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomMusicInfo(): MusicInfo?
+
+    @Transaction
+    @Query("""
+        SELECT * FROM music 
+        WHERE id IN (
+            SELECT id FROM musicExtra WHERE isGetExtraInfo = 0
+        ) 
+        ORDER BY RANDOM() 
+        LIMIT 1
+    """)
+    suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo?
+
+    @Transaction
+    @Query("""
+        SELECT * FROM music 
+        WHERE id IN (
+            SELECT id FROM musicExtra WHERE isGetExtraInfo = 1
+        ) 
+        ORDER BY RANDOM() 
+        LIMIT 1
+    """)
+    suspend fun getRandomMusicInfoWithExtra(): MusicInfo?
+
+    @Transaction
+    @Query("SELECT * FROM music WHERE id IN (:ids)")
+    suspend fun getPlaylistByIdList(ids: List<Long>): List<MusicInfo>
 }

@@ -3,11 +3,13 @@ package com.example.hearablemusicplayer.repository
 import android.content.ContentUris
 import android.content.Context
 import android.media.MediaMetadataRetriever
-import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
+import androidx.sqlite.db.SimpleSQLiteQuery
+import com.example.hearablemusicplayer.database.DailyMusicInfo
+import com.example.hearablemusicplayer.database.ListeningDuration
+import com.example.hearablemusicplayer.database.ListeningDurationDao
 import com.example.hearablemusicplayer.database.Music
 import com.example.hearablemusicplayer.database.MusicAllDao
 import com.example.hearablemusicplayer.database.MusicDao
@@ -24,6 +26,7 @@ import com.example.hearablemusicplayer.database.PlaylistItem
 import com.example.hearablemusicplayer.database.PlaylistItemDao
 import com.example.hearablemusicplayer.database.UserInfo
 import com.example.hearablemusicplayer.database.UserInfoDao
+import com.example.hearablemusicplayer.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.database.myenum.LabelName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +35,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MusicRepository(
     private val musicDao: MusicDao,
@@ -42,24 +48,54 @@ class MusicRepository(
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
     private val playbackHistoryDao: PlaybackHistoryDao,
+    private val listeningDurationDao: ListeningDurationDao,
     private val context: Context
 ) {
 
     // ------------------- 音乐相关操作 -------------------
 
-    // 随机获取一首歌曲
-    suspend fun getRandomMusicInfo(): MusicInfo? {
-        return musicAllDao.getRandomMusicInfo()
+    // 排序音乐
+    private val musicFields = listOf("id", "title", "artist", "album", "duration")
+    private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "year")
+    private val userInfoFields = listOf("liked", "disLiked", "lastPlayed", "playCount", "skippedCount", "userRating")
+    suspend fun getAllMusicInfoAsList(orderBy: String = "id", orderType: String = "ASC"): List<MusicInfo> {
+        val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
+        val tablePrefix = when {
+            musicFields.contains(orderBy) -> "music"
+            extraFields.contains(orderBy) -> "musicExtra"
+            userInfoFields.contains(orderBy) -> "userInfo"
+            else -> "music"
+        }
+
+        val queryString = """
+            SELECT * FROM music 
+            LEFT JOIN musicExtra ON music.id = musicExtra.id
+            LEFT JOIN userInfo ON music.id = userInfo.id
+            ORDER BY $tablePrefix.$orderBy $safeOrderType
+        """.trimIndent()
+
+        val query = SimpleSQLiteQuery(queryString)
+        return musicAllDao.getAllMusicInfoAsList(query)
     }
 
-    // 获取所有音乐 Flow
-    fun getAllMusic(): Flow<List<MusicInfo>> = musicAllDao.getAllMusicInfoAsFlow()
+    // 随机获取一首歌曲
+    suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo? {
+        return musicAllDao.getRandomMusicInfoWithMissingExtra()
+    }
 
-    // 获取所有音乐 Flow
-    suspend fun getAllMusicInfoAsList(): List<MusicInfo> = musicAllDao.getAllMusicInfo()
+    suspend fun getRandomMusicInfoWithExtra(): MusicInfo? {
+        return musicAllDao.getRandomMusicInfoWithExtra()
+    }
+
+    // 获取当前数据库音乐数量
+    fun getMusicCount(): Flow<Int> = musicDao.getMusicCount()
+
+    // 获取当前已获得额外信息的音乐数量
+    fun getMusicWithExtraCount(): Flow<Int> = musicExtraDao.getExtraInfoNum()
+
+    val musicWithoutExtraCount : Flow<Int> = musicExtraDao.getMusicWithoutExtraCount()
 
     // 根据 ID 获取音乐信息（用于状态监听）
-    fun getMusicById(musicId: Long): Flow<Music?> = musicDao.getMusicById(musicId)
     fun getMusicInfoById(musicId: Long): Flow<MusicInfo?> = musicAllDao.getMusicInfoById(musicId)
 
     // 更新音乐的红心状态（用户喜欢与否）
@@ -73,12 +109,22 @@ class MusicRepository(
     }
 
     // 根据关键词搜索音乐（匹配标题或艺术家名）
-    fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic(query)
+    suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%")
 
     // 添加音乐标签
     suspend fun addMusicLabel(label: MusicLabel) {
         if(label.label!=LabelName.UNKNOWN) musicLabelDao.insert(label)
         else println("UNKNOWN Label!")
+    }
+
+    // 依据 LabelType获取 LabelName
+    fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>> {
+        return musicLabelDao.getLabelsByType(type)
+    }
+
+    // 依据 LabelName 获取 Music
+    suspend fun getMusicIdListByType(label: LabelName): List<Long>{
+        return musicLabelDao.getMusicIdListByType(label)
     }
 
     // 获取音乐标签
@@ -91,11 +137,41 @@ class MusicRepository(
         return musicExtraDao.getLyricsById(musicId)
     }
 
+    // 插入音乐额外信息
+    suspend fun insertMusicExtra(musicId:Long, musicExtraInfo: DailyMusicInfo) {
+        musicExtraDao.updateExtraFieldsById(
+            id = musicId,
+            rewards = musicExtraInfo.rewards,
+            popLyric = musicExtraInfo.lyric,
+            singerIntroduce = musicExtraInfo.singerIntroduce,
+            backgroundIntroduce = musicExtraInfo.backgroundIntroduce,
+            description = musicExtraInfo.description,
+            relevantMusic = musicExtraInfo.relevantMusic
+        )
+    }
+    // 获取音乐额外信息
+    suspend fun getMusicExtraById(musicId:Long):DailyMusicInfo {
+        val info = musicExtraDao.getExtraFieldsById(musicId)
+        return DailyMusicInfo(
+            genre = emptyList(),
+            mood = emptyList(),
+            scenario = emptyList(),
+            language = "",
+            era = "",
+            rewards = info?.rewards ?: "",
+            lyric = info?.popLyric ?: "",
+            singerIntroduce = info?.singerIntroduce ?: "",
+            backgroundIntroduce = info?.backgroundIntroduce ?: "",
+            description = info?.description ?: "",
+            relevantMusic = info?.relevantMusic ?: "",
+            errorInfo = "None"
+        )
+    }
+
     // 从设备本地加载音乐文件（过滤掉时长少于 1 分钟的）
     // 用 StateFlow 通知外部扫描状态
     private val _isScanning = MutableStateFlow(true)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
-    @RequiresApi(Build.VERSION_CODES.S)
     suspend fun loadMusicFromDevice(){
         _isScanning.value = true
         try {
@@ -111,7 +187,7 @@ class MusicRepository(
         }
     }
 
-    fun getLyrics(file: File): String? {
+    private fun getLyrics(file: File): String? {
         return try {
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tag
@@ -127,7 +203,6 @@ class MusicRepository(
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.S)
     private fun performMusicScan(): Triple<List<Music>, List<MusicExtra>, List<UserInfo>> {
         val musicList = mutableListOf<Music>()
         val musicExtraList = mutableListOf<MusicExtra>()
@@ -197,18 +272,19 @@ class MusicRepository(
                         album = album,
                         duration = duration,
                         path = path,
+                        albumArtUri = albumArtUri
                     )
                 )
 
                 musicExtraList.add(
                     MusicExtra(
                         id = id,
-                        albumArtUri = albumArtUri,
                         lyrics = lyrics,
                         bitRate = bitRate,
                         sampleRate = sampleRate,
                         fileSize = fileSize,
                         format = mimeType,
+                        isGetExtraInfo = false
                     )
                 )
 
@@ -223,6 +299,15 @@ class MusicRepository(
         return Triple(musicList,musicExtraList,userInfoList)
     }
 
+    // 删除所有信息
+    suspend fun clearAllDataBase() {
+        musicDao.deleteAll()
+        musicExtraDao.deleteAll()
+        userInfoDao.deleteAll()
+        playlistDao.deleteAll()
+        playbackHistoryDao.deleteAll()
+    }
+
 
     // ------------------- 播放列表相关操作 -------------------
 
@@ -231,13 +316,17 @@ class MusicRepository(
         return playlistDao.insert(Playlist(name = name))
     }
 
+    // 删除一个播放列表
+    suspend fun removePlaylist(name: String){
+        playlistDao.deletePlaylist(name = name)
+    }
+
     // 向指定播放列表中添加一首音乐
     suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {
         val item = PlaylistItem(
             songUrl = musicPath,
             songId = musicId,
             playlistId = playlistId,
-            playedAt = System.currentTimeMillis()
         )
         playlistItemDao.insert(item)
     }
@@ -253,17 +342,60 @@ class MusicRepository(
     }
 
     // 获取播放列表
-    fun getMusicInPlaylist(playlistId: Long): Flow<List<Music>> {
-        return playlistItemDao.getMusicInPlaylist(playlistId)
-    }
-    fun getMusicInPlaylist(playlistId: Long,limit:Int): Flow<List<Music>> {
-        return playlistItemDao.getMusicInPlaylistLimit(playlistId,limit)
-    }
     fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>> {
         return playlistItemDao.getMusicInfoInPlaylist(playlistId)
     }
-    fun getMusicInfoInPlaylist(playlistId: Long,limit:Int): Flow<List<MusicInfo>> {
-        return playlistItemDao.getMusicInfoInPlaylistLimit(playlistId,limit)
+    suspend fun getPlaylistById(playlistId: Long): List<MusicInfo> {
+        return playlistItemDao.getPlaylistById(playlistId)
+    }
+    suspend fun getPlaylistByIdList(playlistIdList: List<Long>): List<MusicInfo> {
+        return musicAllDao.getPlaylistByIdList(playlistIdList)
+    }
+
+    val labelCategoryWeight = mapOf(
+        LabelCategory.GENRE to 3,
+        LabelCategory.MOOD to 4,
+        LabelCategory.SCENARIO to 2,
+        LabelCategory.LANGUAGE to 1,
+        LabelCategory.ERA to 1
+    )
+
+    private fun calcSimilarity(
+        baseLabels: List<MusicLabel>,
+        targetLabels: List<MusicLabel>
+    ): Int {
+        var score = 0
+        for (base in baseLabels) {
+            for (target in targetLabels) {
+                if (base.label == target.label) {
+                    score += labelCategoryWeight[base.type] ?: 1
+                } else if (base.type == target.type) {
+                    score += 0
+                }
+            }
+        }
+        return score
+    }
+
+    suspend fun getSimilarSongsByWeightedLabels(
+        musicId: Long,
+        limit: Int = 10
+    ): List<MusicInfo> {
+        val baseLabels = getMusicLabels(musicId)
+        if (baseLabels.isEmpty()) return emptyList()
+
+        val allMusic = getAllMusicInfoAsList()
+        return allMusic
+            .filter { it.music.id != musicId }
+            .map { musicInfo ->
+                val targetLabels = getMusicLabels(musicInfo.music.id)
+                val similarity = calcSimilarity(baseLabels, targetLabels)
+                musicInfo to similarity
+            }
+            .filter { it.second > 0 }
+            .sortedByDescending { it.second }
+            .take(limit)
+            .map { it.first }
     }
 
 
@@ -289,5 +421,31 @@ class MusicRepository(
 //    fun getTopPlayed(): Flow<List<PlayCountEntry>> {
 //        return playbackHistoryDao.getTopPlayed()
 //    }
+
+    // 记录收听时长
+    suspend fun recordListeningDuration(duration: Long) {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val existing = listeningDurationDao.getDurationByDate(today)
+        
+        if (existing == null) {
+            listeningDurationDao.insert(
+                ListeningDuration(
+                    date = today,
+                    duration = duration
+                )
+            )
+        } else {
+            listeningDurationDao.updateDuration(
+                date = today,
+                additionalDuration = duration,
+                updateTime = System.currentTimeMillis()
+            )
+        }
+    }
+    
+    // 获取最近7天的收听记录
+    fun getRecentListeningDurations(): Flow<List<ListeningDuration>> {
+        return listeningDurationDao.getRecentDurations(7)
+    }
 }
 

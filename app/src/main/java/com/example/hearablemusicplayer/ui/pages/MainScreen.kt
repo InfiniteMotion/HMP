@@ -89,10 +89,19 @@ fun MainScreen(
                     PlayerScreen(musicViewModel, playControlViewModel,navController)
                 }
                 composable("list") {
-                    ListScreen(musicViewModel, playControlViewModel, navController)
+                    ListScreen(musicViewModel, navController)
                 }
                 composable("user") {
-                    UserScreen(musicViewModel)
+                    UserScreen(musicViewModel, navController)
+                }
+                composable("setting") {
+                    SettingScreen(musicViewModel, navController)
+                }
+                composable ("search") {
+                    SearchScreen(musicViewModel,playControlViewModel,navController)
+                }
+                composable("playlist") {
+                    PlaylistScreen(musicViewModel,playControlViewModel,navController)
                 }
             }
         }

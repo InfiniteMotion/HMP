@@ -33,7 +33,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,19 +46,22 @@ import com.example.hearablemusicplayer.database.MusicInfo
 import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.ui.components.AlbumCover
-import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.Capsule
-import com.example.hearablemusicplayer.ui.components.SearchArea
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun HomeScreen(
     musicViewModel: MusicViewModel,
-    playControlViewModel: PlayControlViewModel
+    playControlViewModel: PlayControlViewModel,
 ) {
 
     var visible by remember { mutableStateOf(false) }
+    val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
+    val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
+    val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
+    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
 
     LaunchedEffect(Unit) {
         visible = true
@@ -67,51 +69,28 @@ fun HomeScreen(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut()
+        enter = fadeIn(animationSpec = tween(500)),
+        exit = fadeOut(animationSpec = tween(500))
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            val isFirstLaunch = rememberSaveable { mutableStateOf(true) }
-
-            if (isFirstLaunch.value) {
-                musicViewModel.getDailyMusic()
-                musicViewModel.getDailyMusicCache()
-                musicViewModel.getDailyMusicInfoCache()
-                musicViewModel.getDailyMusicLabel()
-                isFirstLaunch.value = false
-            }
-
-            val dailyMusic by musicViewModel.dailyMusicCache.collectAsState(null)
-            val dailyMusicInfo by musicViewModel.dailyMusicInfoCache.collectAsState()
-            val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
-            val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
-            val isPlaying by playControlViewModel.isPlaying.collectAsState()
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp, horizontal = 16.dp)
-                ) {
-                    Avatar(56, musicViewModel)
-                    Spacer(modifier = Modifier.width(16.dp))
-                    SearchArea(musicViewModel)
-                }
+                Spacer(modifier = Modifier.height(16.dp))
                 if (dailyMusic == null) {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Spacer(modifier = Modifier.height(128.dp))
                         Text(
-                            text = "加载中...",
+                            text = "暂未加载到 Daily Music",
                             style = MaterialTheme.typography.displayMedium
                         )
                     }
@@ -120,46 +99,47 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
-                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
+                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 32.dp)
                         ) {
                             Text(
                                 text = "每日一曲",
                                 textAlign = TextAlign.Left,
                                 style = MaterialTheme.typography.displayLarge
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Make Music Hearable!",
                                 textAlign = TextAlign.Left,
                                 style = MaterialTheme.typography.displaySmall
                             )
                         }
-                        Spacer(modifier = Modifier.width(64.dp))
-                        IconButton(
-                            modifier = Modifier.size(72.dp),
-                            onClick = {
-                                dailyMusic?.let {
-                                    if (!isPlaying) {
-                                        if ((currentPlayingMusic != dailyMusic!!)) {
+                        Spacer(modifier = Modifier.width(48.dp))
+                        Box(
+                            contentAlignment = Alignment.Center,
+                        ){
+                            IconButton(
+                                modifier = Modifier.size(48.dp),
+                                onClick = {
+                                    dailyMusic?.let {
+                                        if (currentPlayingMusic != dailyMusic!!) {
                                             playControlViewModel.playWith(dailyMusic!!)
                                         } else {
-                                            playControlViewModel.playOrResume()
+                                            if (isPlaying) playControlViewModel.pauseMusic()
+                                            else playControlViewModel.playOrResume()
                                         }
-                                    } else {
-                                        playControlViewModel.pauseMusic()
                                     }
                                 }
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (currentPlayingMusic == dailyMusic!! && isPlaying) R.drawable.pause else R.drawable.play_fill
+                                    ),
+                                    contentDescription = "Play / Pause",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
                             }
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    if (currentPlayingMusic == dailyMusic!! && isPlaying) R.drawable.pause else R.drawable.play_fill
-                                ),
-                                contentDescription = "Play / Pause",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                     DailyRecommendSectionOne(dailyMusic!!)
                     Spacer(modifier = Modifier.height(16.dp))
                     DailyRecommendSectionTwo(dailyMusicInfo, dailyMusicLabel)
@@ -184,7 +164,7 @@ fun DailyRecommendSectionOne(
                 contentAlignment = Alignment.Center
             ) {
                 AlbumCover(
-                    dailyMusic.extra?.albumArtUri,
+                    dailyMusic.music.albumArtUri,
                     Arrangement.Start,
                     150
 
@@ -266,21 +246,22 @@ fun DailyRecommendSectionTwo(
             }
             Spacer(modifier = Modifier.height(16.dp))
             val labelListTwo = listOf(
-                "歌曲成就" to dailyMusicInfo.rewards,
-                "热门歌词" to dailyMusicInfo.lyric,
+                "歌曲介绍" to dailyMusicInfo.description,
                 "歌手介绍" to dailyMusicInfo.singerIntroduce,
                 "创作背景" to dailyMusicInfo.backgroundIntroduce,
-                "歌曲介绍" to dailyMusicInfo.description,
+                "热门歌词" to dailyMusicInfo.lyric,
+                "歌曲成就" to dailyMusicInfo.rewards,
                 "类似音乐" to dailyMusicInfo.relevantMusic
             )
             labelListTwo.forEach { (category, label) ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.background
                     ),
                     border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier
+                        .padding(vertical = 16.dp)
                         .fillMaxWidth()
                 ) {
                     Column(

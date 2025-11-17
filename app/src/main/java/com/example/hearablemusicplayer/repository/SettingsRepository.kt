@@ -3,12 +3,11 @@ package com.example.hearablemusicplayer.repository
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.example.hearablemusicplayer.database.DailyMusicInfo
 import com.example.hearablemusicplayer.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.tools.SecureStorageHelper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -22,26 +21,27 @@ class SettingsRepository(
 ) {
     // 定义 DataStore 中的键
     private object PreferencesKeys {
+        val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
         val IS_LOAD_MUSIC = booleanPreferencesKey("is_load_music")
         val CURRENT_MUSIC_ID = longPreferencesKey("current_music_id")
         val PLAYBACK_MODE = stringPreferencesKey("playback_mode")
         val CURRENT_PLAYLIST_ID = longPreferencesKey("current_playlist_id")
         val LIKED_PLAYLIST_ID = longPreferencesKey("liked_playlist_id")
         val RECENT_PLAYLIST_ID = longPreferencesKey("recent_playlist_id")
-//        val USER_NAME = stringPreferencesKey("user_name")
-        val AVATAR_URI = intPreferencesKey("avatar_uri")
-
-        val DAILY_MUSIC_ID = longPreferencesKey("daily_music_id")
-        val DAILY_MUSIC_REWARDS = stringPreferencesKey("daily_music_rewards")
-        val DAILY_MUSIC_LYRIC = stringPreferencesKey("daily_music_lyric")
-        val DAILY_MUSIC_SINGER_INTRO = stringPreferencesKey("daily_music_singer_introduce")
-        val DAILY_MUSIC_BACKGROUND_INTRO = stringPreferencesKey("daily_music_background_introduce")
-        val DAILY_MUSIC_DESCRIPTION = stringPreferencesKey("daily_music_description")
-        val DAILY_MUSIC_RELEVANT_MUSIC = stringPreferencesKey("daily_music_relevant_music")
+        val USER_NAME = stringPreferencesKey("user_name")
+        val AVATAR_URI = stringPreferencesKey("avatar_uri")
+        val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
     }
 
     // DataStore 访问实例
     private val dataStore = context.dataStore
+
+    val isFirstLaunch: Flow<Boolean> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.IS_FIRST_LAUNCH] ?: true }
+
+    // 用户名
+    val userName: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.USER_NAME] ?: "User" }
 
     // 应用是否已加载音乐，如果未设置则为 0
     val isLoadMusic: Flow<Boolean> = dataStore.data
@@ -71,34 +71,37 @@ class SettingsRepository(
     val recentPlaylistId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.RECENT_PLAYLIST_ID] }
 
+    // DeepSeek API KEY
+    val deepSeekApiKey: Flow<String?> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DEEPSEEK_API_KEY] }
 
-    suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
+    suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
         dataStore.edit { prefs ->
-            prefs[PreferencesKeys.IS_LOAD_MUSIC]=isLoadMusic
+            prefs[PreferencesKeys.IS_FIRST_LAUNCH] = isFirstLaunch
         }
     }
 
-//    // 保存用户名
-//    suspend fun saveUserName(uri: String) {
-//        dataStore.edit { prefs ->
-//            prefs[PreferencesKeys.USER_NAME] = uri
-//        }
-//    }
-//
-//    // 获取用户名
-//    suspend fun getUserName(): String? {
-//        return context.dataStore.data.first()[PreferencesKeys.USER_NAME]
-//    }
+    suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.IS_LOAD_MUSIC] = isLoadMusic
+        }
+    }
 
-//    // 保存用户头像 URI
-//    suspend fun saveAvatarUri(uri: Int) {
-//        dataStore.edit { prefs ->
-//            prefs[PreferencesKeys.AVATAR_URI] = uri
-//        }
-//    }
+    // 保存用户名
+    suspend fun saveUserName(uri: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.USER_NAME] = uri
+        }
+    }
 
+    // 保存用户头像 URI
+    suspend fun saveAvatarUri(uri: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.AVATAR_URI] = uri
+        }
+    }
     // 获取用户头像 URI
-    suspend fun getAvatarUri(): Int? {
+    suspend fun getAvatarUri(): String? {
         return context.dataStore.data.first()[PreferencesKeys.AVATAR_URI]
     }
 
@@ -149,43 +152,20 @@ class SettingsRepository(
         }
     }
 
-    // 获取最近播放列表 ID
-    suspend fun getDaliyMusicInfoId(): Long? {
-        return context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_ID]
-    }
-    // 保存最近播放列表 ID
-    suspend fun saveDaliyMusicInfoId(musicId: Long) {
+    // 保存 DeepSeek API KEY
+    suspend fun saveDeepSeekApiKey(apiKey: String) {
         dataStore.edit { prefs ->
-            prefs[PreferencesKeys.DAILY_MUSIC_ID] = musicId
+            prefs[PreferencesKeys.DEEPSEEK_API_KEY] = SecureStorageHelper.encrypt(apiKey)
         }
+    }
+    // 获取 DeepSeek API KEY
+    suspend fun getDeepSeekApiKey(): String {
+        val apiKey = context.dataStore.data.first()[PreferencesKeys.DEEPSEEK_API_KEY]?.let {
+            SecureStorageHelper.decrypt(
+                it
+            )
+        }
+        return apiKey?:"Bearer sk-6f67067abbd04e68baedf13c0aeb8c0a"
     }
 
-    // 获取最近播放列表 ID
-    suspend fun getDaliyMusicInfo(): DailyMusicInfo? {
-        return DailyMusicInfo(
-            genre = emptyList(),
-            mood = emptyList(),
-            scenario = emptyList(),
-            language = "",
-            era = "",
-            rewards = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_REWARDS]?:"",
-            lyric = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_LYRIC]?:"",
-            singerIntroduce = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_SINGER_INTRO]?:"",
-            backgroundIntroduce = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_BACKGROUND_INTRO]?:"",
-            description = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_DESCRIPTION]?:"",
-            relevantMusic = context.dataStore.data.first()[PreferencesKeys.DAILY_MUSIC_RELEVANT_MUSIC]?:"",
-            errorInfo = "None"
-        )
-    }
-    // 保存最近播放列表 ID
-    suspend fun saveDaliyMusicInfo(dailyMusicInfo: DailyMusicInfo) {
-        dataStore.edit { prefs ->
-            prefs[PreferencesKeys.DAILY_MUSIC_REWARDS] = dailyMusicInfo.rewards
-            prefs[PreferencesKeys.DAILY_MUSIC_LYRIC] = dailyMusicInfo.lyric
-            prefs[PreferencesKeys.DAILY_MUSIC_SINGER_INTRO] = dailyMusicInfo.singerIntroduce
-            prefs[PreferencesKeys.DAILY_MUSIC_BACKGROUND_INTRO] = dailyMusicInfo.backgroundIntroduce
-            prefs[PreferencesKeys.DAILY_MUSIC_DESCRIPTION] = dailyMusicInfo.description
-            prefs[PreferencesKeys.DAILY_MUSIC_RELEVANT_MUSIC] = dailyMusicInfo.relevantMusic
-        }
-    }
 }

@@ -1,161 +1,303 @@
 package com.example.hearablemusicplayer.ui.components
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
+import com.example.hearablemusicplayer.database.MusicInfo
+import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
-fun GalleryShiftButton() {
-    var isLeftSelected by remember { mutableStateOf(true) } // 默认选中左边图标
-    val lColor = if (isLeftSelected) {
-        colorResource(R.color.white)
-    } else {
-        colorResource(R.color.black)
-    }
-    val rColor = if (isLeftSelected) {
-        colorResource(R.color.black)
-    } else {
-        colorResource(R.color.white)
-    }
+fun PlayControlButtonOne(
+    musicViewModel: MusicViewModel,
+    playControlViewModel: PlayControlViewModel,
+    navController: NavController
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedGenre by musicViewModel.orderBy.collectAsState("title")
+    val selectedOrder by musicViewModel.orderType.collectAsState("ASC")
+    val playlist by musicViewModel.allMusic.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .border(
-                width = 2.dp, // 边框宽度
-                color = Color.Black, // 边框颜色
-                shape = RoundedCornerShape(32.dp) // 边框形状，可以自定义为圆形或其他形状
-            )
-            .padding(14.dp)
-    ) {
+    Column {
         Row(
-            modifier = Modifier
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // 左边图标
             IconButton(
-                onClick = {isLeftSelected = true},
+                onClick = { expanded = !expanded },
                 modifier = Modifier
-                    .size(28.dp)
-                    .background(
-                        color = if (isLeftSelected) colorResource(R.color.HDRed) else Color.Transparent,
-                        shape = CircleShape
-                    )
+                    .size(32.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.externaldrive),
-                    contentDescription = "File Button",
+                    painter = painterResource(R.drawable.slider_vertical_3),
+                    contentDescription = "select Button",
                     modifier = Modifier.size(24.dp),
-                    tint = lColor
                 )
             }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // 右边图标
             IconButton(
-                onClick = {isLeftSelected = false},
+                onClick = {
+                    playControlViewModel.addAllToPlaylistInOrder(playlist)
+                    navController.navigate("player")
+                },
                 modifier = Modifier
-                    .size(28.dp)
-                    .background(
-                        color = if (!isLeftSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = CircleShape
-                    )
+                    .size(32.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.icloud),
-                    contentDescription = "Cloud Button",
+                    painter = painterResource(R.drawable.order_play),
+                    contentDescription = "order play Button",
                     modifier = Modifier.size(24.dp),
-                    tint = rColor
                 )
+            }
+            IconButton(
+                onClick = {
+                    playControlViewModel.addAllToPlaylistByShuffle(playlist)
+                    navController.navigate("player")
+                },
+                modifier = Modifier
+                    .size(32.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.shuffle),
+                    contentDescription = "shuffle play Button",
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            IconButton(
+                onClick = {
+
+                },
+                modifier = Modifier
+                    .size(32.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.lightbulb),
+                    contentDescription = "self play Button",
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+        // 可隐藏的内容块
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                val genres = listOf(
+                    "歌曲名" to "title",
+                    "歌手名" to "artist",
+                    "时长" to "duration",
+                    "大小" to "fileSize",
+                    "播放次数" to "playCount",
+                    "添加时间" to "id"
+                )
+                val orders = listOf(
+                    "升序" to "ASC",
+                    "降序" to "DESC"
+                )
+                Column(
+                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "排序",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        FlowRow(
+                            maxItemsInEachRow = 3,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            genres.forEach { (genre,eGenre) ->
+                                FilterChip(
+                                    selected = selectedGenre == eGenre,
+                                    onClick = {
+                                        (if (selectedGenre == eGenre) null else eGenre)?.let {
+                                            musicViewModel.updateOrderBy(
+                                                it
+                                            )
+                                            musicViewModel.getAllMusic()
+                                        }
+                                    },
+                                    label = { Text(text = genre, style = MaterialTheme.typography.titleSmall) },
+                                    // 选中状态样式
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "方式",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            orders.forEach{ (order,eOrder) ->
+                                FilterChip(
+                                    selected = selectedOrder == eOrder,
+                                    onClick = {
+                                        (if (selectedOrder == eOrder) null else eOrder)?.let {
+                                            musicViewModel.updateOrderType(
+                                                it
+                                            )
+                                            musicViewModel.getAllMusic()
+                                        }
+                                    },
+                                    label = { Text(text = order, style = MaterialTheme.typography.titleSmall) },
+                                    // 选中状态样式
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun PlayControlButtonOne(
-    navController: NavController,
-    playControlViewModel: PlayControlViewModel
+fun PlayControlButtonTwo(
+    playlist: List<MusicInfo>,
+    musicViewModel: MusicViewModel,
+    playControlViewModel: PlayControlViewModel,
+    navController: NavController
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        IconButton(
-            onClick = {},
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            IconButton(
+                    onClick = {
+                        playControlViewModel.addAllToPlaylistByShuffle(playlist)
+                        navController.navigate("player")
+                    },
             modifier = Modifier
                 .size(32.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.slider_vertical_3),
-                contentDescription = "select Button",
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        IconButton(
-            onClick = {
-                playControlViewModel.addAllToPlaylistInOrder()
-                navController.navigate("player")
-            },
-            modifier = Modifier
-                .size(32.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.order_play),
-                contentDescription = "order play Button",
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        IconButton(
-            onClick = {
-                playControlViewModel.addAllToPlaylistByShuffle()
-                navController.navigate("player")
-            },
-            modifier = Modifier
-                .size(32.dp)
-        ) {
+            ) {
             Icon(
                 painter = painterResource(R.drawable.shuffle),
                 contentDescription = "shuffle play Button",
                 modifier = Modifier.size(24.dp),
             )
+            }
+            Spacer(modifier = Modifier.width(160.dp))
+            IconButton(
+                onClick = {
+                    playControlViewModel.addAllToPlaylistInOrder(playlist)
+                    navController.navigate("player")
+                },
+                modifier = Modifier
+                    .size(32.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.order_play),
+                    contentDescription = "order play Button",
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
-        IconButton(
-            onClick = {
+    }
+}
 
-            },
-            modifier = Modifier
-                .size(32.dp)
+
+
+@Composable
+fun BackButton(
+    navController: NavController
+){
+    IconButton(
+        onClick = { navController.popBackStack() },
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.back_to),
+            contentDescription = "Back Button",
+            modifier = Modifier.size(48.dp),
+        )
+    }
+}
+
+@Composable
+fun SearchButton(
+    navController: NavController
+){
+    Box(
+        modifier = Modifier.size(48.dp)
+            .clip(CircleShape)
+            .border(
+                width = 2.dp,
+                shape = RoundedCornerShape(48),
+                color = MaterialTheme.colorScheme.primary,
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        IconButton(
+            onClick = { navController.navigate("search") },
         ) {
             Icon(
-                painter = painterResource(R.drawable.lightbulb),
-                contentDescription = "self play Button",
+                painter = painterResource(R.drawable.magnifyingglass),
+                contentDescription = "Search Button",
                 modifier = Modifier.size(24.dp),
             )
         }
