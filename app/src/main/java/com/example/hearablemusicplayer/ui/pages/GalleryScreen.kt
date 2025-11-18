@@ -1,7 +1,7 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.pages
 
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
@@ -35,6 +36,7 @@ import com.example.hearablemusicplayer.ui.components.SearchButton
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
+@OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreen(
     musicViewModel: MusicViewModel,

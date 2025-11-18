@@ -56,7 +56,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-
+    implementation(libs.androidx.datastore.core.android)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.room.runtime.android)
@@ -94,7 +94,6 @@ dependencies {
 
 
     implementation (libs.androidx.datastore.preferences)
-    implementation (libs.androidx.runtime.livedata.v164)
     implementation (libs.coil.compose)
     implementation (libs.androidx.palette.ktx)
 
@@ -102,7 +101,7 @@ dependencies {
     implementation (libs.androidx.media3.ui)
     implementation (libs.androidx.media3.common)
 
-    implementation (libs.androidx.security.crypto)
+//    implementation (libs.androidx.security.crypto)
 
 
 }

@@ -15,7 +15,7 @@ fun HearableMusicPlayerTheme(
     dynamicColor: Boolean = false,  // 关闭动态取色
     content: @Composable () -> Unit
 ) {
-    val DarkColorScheme = darkColorScheme(
+    val darkColorScheme = darkColorScheme(
         primary = DarkPrimary,
         onPrimary = DarkOnPrimary,
         primaryContainer = DarkPrimaryContainer,
@@ -27,7 +27,7 @@ fun HearableMusicPlayerTheme(
         surfaceTint = DarkPrimary,
     )
 
-    val LightColorScheme = lightColorScheme(
+    val lightColorScheme = lightColorScheme(
         primary = LightPrimary,
         onPrimary = LightOnPrimary,
         primaryContainer = LightPrimaryContainer,

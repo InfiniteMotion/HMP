@@ -10,13 +10,19 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.session.MediaSessionCompat
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.media3.session.MediaStyleNotificationHelper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.ForwardingPlayer
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.hearablemusicplayer.database.Music
@@ -48,15 +54,17 @@ class MusicPlayService : Service(),PlayControl {
         const val ACTION_PREV = "com.example.hearablemusicplayer.ACTION_PREV"
     }
 
-    @SuppressLint("RestrictedApi")
-    private lateinit var mediaSession: MediaSessionCompat
-
-
     // 提供给绑定组件访问 Service 的 Binder
     private val binder = MusicPlayServiceBinder()
 
     // ExoPlayer 实例
     private lateinit var exoPlayer: ExoPlayer
+
+    // 自定义 Player 包装器，让系统认为始终有上/下一首
+    private lateinit var customPlayer: ForwardingPlayer
+
+    // MediaSession 实例
+    private lateinit var mediaSession: MediaSession
 
     // 播放完成监听器接口
     interface OnMusicCompleteListener {
@@ -70,6 +78,7 @@ class MusicPlayService : Service(),PlayControl {
     // 绑定播放完成回调
     fun setOnMusicCompleteListener(listener: OnMusicCompleteListener) {
         playbackListener = listener
+        Log.d("MusicPlayService", "OnMusicCompleteListener set: ${listener != null}")
     }
 
     // 返回 Binder 实例
@@ -85,9 +94,10 @@ class MusicPlayService : Service(),PlayControl {
         val channel = NotificationChannel(
             "music_channel", // 通知频道 ID
             "音乐播放",         // 通知频道名称
-            NotificationManager.IMPORTANCE_LOW // 重要性：低，避免打扰
+            NotificationManager.IMPORTANCE_LOW // 重要性:低,避免打扰
         ).apply {
             description = "播放控制通知"
+            setSound(null, null) // API 36 建议显式设置声音
         }
 
         val notificationManager =
@@ -96,6 +106,7 @@ class MusicPlayService : Service(),PlayControl {
     }
 
     // 创建通知
+    @SuppressLint("RestrictedApi")
     private fun buildNotification(
         music: Music,
         albumArtBitmap: Bitmap?
@@ -104,20 +115,21 @@ class MusicPlayService : Service(),PlayControl {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val prevPending = PendingIntent.getService(
-            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PREV),
+        // API 36 要求使用 PendingIntent.FLAG_IMMUTABLE
+        val prevPending = PendingIntent.getBroadcast(
+            this, 1, Intent(this, MusicNotificationReceiver::class.java).setAction(ACTION_PREV),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val pausePending = PendingIntent.getService(
-            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PAUSE),
+        val pausePending = PendingIntent.getBroadcast(
+            this, 2, Intent(this, MusicNotificationReceiver::class.java).setAction(ACTION_PAUSE),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val playPending = PendingIntent.getService(
-            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_PLAY),
+        val playPending = PendingIntent.getBroadcast(
+            this, 3, Intent(this, MusicNotificationReceiver::class.java).setAction(ACTION_PLAY),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val nextPending = PendingIntent.getService(
-            this, 0, Intent(this, MusicPlayService::class.java).setAction(ACTION_NEXT),
+        val nextPending = PendingIntent.getBroadcast(
+            this, 4, Intent(this, MusicNotificationReceiver::class.java).setAction(ACTION_NEXT),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val isPlaying = exoPlayer.isPlaying
@@ -145,8 +157,7 @@ class MusicPlayService : Service(),PlayControl {
                 ).build()
             )
             .setStyle(
-                androidx.media.app.NotificationCompat.MediaStyle()
-                    .setMediaSession(mediaSession.sessionToken)
+                androidx.media3.session.MediaStyleNotificationHelper.MediaStyle(mediaSession)
                     .setShowActionsInCompactView(0, 1, 2)
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -165,6 +176,8 @@ class MusicPlayService : Service(),PlayControl {
     override fun onCreate() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this).build().apply {
+            // 设置重复模式，让系统知道有下一首
+            repeatMode = Player.REPEAT_MODE_OFF
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
@@ -182,14 +195,88 @@ class MusicPlayService : Service(),PlayControl {
         }
         createNotificationChannel()
 
-        mediaSession = MediaSessionCompat(this, "MusicService")
-        mediaSession.setCallback(object : MediaSessionCompat.Callback() {})
-        mediaSession.isActive = true
+        // 创建自定义 Player 包装器
+        customPlayer = object : ForwardingPlayer(exoPlayer) {
+            // 重写方法让系统认为始终有上/下一首
+            override fun getAvailableCommands(): Player.Commands {
+                return super.getAvailableCommands().buildUpon()
+                    .add(Player.COMMAND_SEEK_TO_NEXT)
+                    .add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                    .add(Player.COMMAND_SEEK_TO_PREVIOUS)
+                    .add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                    .build()
+            }
 
+            // 重写 seekToNext 方法
+            override fun seekToNext() {
+                Log.d("MusicPlayService", "ForwardingPlayer.seekToNext() called")
+                playbackListener?.onPlaybackEnded()
+            }
+
+            // 重写 seekToPrevious 方法
+            override fun seekToPrevious() {
+                Log.d("MusicPlayService", "ForwardingPlayer.seekToPrevious() called")
+                playbackListener?.onPlaybackPrev()
+            }
+
+            // 告诉系统有下一首
+            override fun hasNextMediaItem(): Boolean = true
+
+            // 告诉系统有上一首
+            override fun hasPreviousMediaItem(): Boolean = true
+        }
+
+        // 创建 Media3 MediaSession，使用自定义 Player
+        mediaSession = MediaSession.Builder(this, customPlayer)
+            .setCallback(object : MediaSession.Callback {
+                override fun onConnect(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo
+                ): MediaSession.ConnectionResult {
+                    return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                        .setAvailableSessionCommands(
+                            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
+                        )
+                        .setAvailablePlayerCommands(
+                            MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS
+                        )
+                        .build()
+                }
+
+                // 添加命令拦截，确保系统命令被正确处理
+                override fun onPlayerCommandRequest(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                    playerCommand: Int
+                ): Int {
+                    Log.d("MusicPlayService", "onPlayerCommandRequest: $playerCommand, listener: ${playbackListener != null}")
+                    when (playerCommand) {
+                        Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> {
+                            Log.d("MusicPlayService", "Seek to next requested")
+                            // 在主线程调用 listener
+                            CoroutineScope(Dispatchers.Main).launch {
+                                playbackListener?.onPlaybackEnded()
+                            }
+                            return SessionResult.RESULT_SUCCESS
+                        }
+                        Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> {
+                            Log.d("MusicPlayService", "Seek to previous requested")
+                            // 在主线程调用 listener
+                            CoroutineScope(Dispatchers.Main).launch {
+                                playbackListener?.onPlaybackPrev()
+                            }
+                            return SessionResult.RESULT_SUCCESS
+                        }
+                    }
+                    return super.onPlayerCommandRequest(session, controller, playerCommand)
+                }
+            })
+            .build()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        mediaSession.release()
         exoPlayer.release()
     }
 
@@ -286,7 +373,16 @@ class MusicPlayService : Service(),PlayControl {
             // 切换到主线程
             CoroutineScope(Dispatchers.Main).launch {
                 val notification = buildNotification(it, null)
-                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                // API 34+ 需要指定前台服务类型
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        1,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                    )
+                } else {
+                    startForeground(1, notification)
+                }
 
                 // 异步加载封面
                 CoroutineScope(Dispatchers.IO).launch {
@@ -320,11 +416,19 @@ class MusicPlayService : Service(),PlayControl {
     }
 
     private var currentAlbumArtBitmap: Bitmap? = null
-    // 刷新通知（重新加载封面）
+    // 刷新通知(重新加载封面)
     private fun updateNotificationWithCover(music: Music) {
         // 先显示默认封面
         val notification = buildNotification(music, null)
-        startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                1,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(1, notification)
+        }
 
         // 异步加载封面
         CoroutineScope(Dispatchers.IO).launch {

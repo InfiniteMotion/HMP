@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
@@ -15,6 +16,12 @@ class MusicNotificationReceiver : BroadcastReceiver() {
             this.action = action
         }
         Log.d("NotificationReceiver", "接收到操作: $action")
-        context.startService(serviceIntent)
+        
+        // API 26+ 需要使用 startForegroundService
+        try {
+            context.startForegroundService(serviceIntent)
+        } catch (e: Exception) {
+            Log.e("NotificationReceiver", "启动服务失败: ${e.message}")
+        }
     }
 }
