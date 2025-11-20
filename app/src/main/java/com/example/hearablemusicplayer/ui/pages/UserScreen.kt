@@ -92,7 +92,7 @@ fun UserScreen(
                             dateFormat.parse(duration.date)?.let { date ->
                                 outputFormat.format(date)
                             } ?: "--"
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             "--"
                         }
                     }

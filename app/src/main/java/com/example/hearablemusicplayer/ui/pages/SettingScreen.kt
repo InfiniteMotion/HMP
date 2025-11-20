@@ -132,7 +132,6 @@ fun UpdateUserName(
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
     ) {
-        val context = LocalContext.current
         val userName by viewModel.userName.collectAsState("")
         var name by rememberSaveable { mutableStateOf("") }
         Column (
@@ -324,7 +323,7 @@ fun ReloadMusic(
         if (isLoading) {
             MusicScanDialog(
                 viewModel = viewModel,
-                onDismiss = { isLoading = false }
+                onDismiss = { }
             )
         }
     }

@@ -218,7 +218,6 @@ fun PlayControlButtonOne(
 @Composable
 fun PlayControlButtonTwo(
     playlist: List<MusicInfo>,
-    musicViewModel: MusicViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {

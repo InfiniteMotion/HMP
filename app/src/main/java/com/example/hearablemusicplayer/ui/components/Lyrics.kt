@@ -40,7 +40,7 @@ fun Lyrics(
         if (lyrics==null) {
             Text("未识别到歌词")
         }else{
-            val timeLyricRegex = """^\[(\d{2}:\d{2}\.\d{2})\](.*)$""".toRegex(RegexOption.MULTILINE)
+            val timeLyricRegex = """^\[(\d{2}:\d{2}\.\d{2})](.*)$""".toRegex(RegexOption.MULTILINE)
             val lyricListWithTimestamp = timeLyricRegex.findAll(lyrics)
                 .map { matchResult ->
                     val (timeStr, lyric) = matchResult.destructured

@@ -75,7 +75,6 @@ fun PlaylistScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 PlayControlButtonTwo(
                     playlist,
-                    musicViewModel,
                     playControlViewModel,
                     navController
                 )

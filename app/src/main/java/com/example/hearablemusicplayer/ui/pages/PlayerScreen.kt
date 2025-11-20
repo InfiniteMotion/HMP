@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.PlayContent
-import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.launch
 
@@ -48,7 +47,6 @@ fun formatTime(millis: Long): String {
 // 播放器主界面
 @Composable
 fun PlayerScreen(
-    musicViewModel: MusicViewModel,
     viewModel: PlayControlViewModel,
     navController: NavController
 ) {
@@ -108,7 +106,6 @@ fun PlayerScreen(
         ) {
             PlayContent(
                 listState,
-                musicViewModel,
                 viewModel,
                 navController
             )

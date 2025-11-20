@@ -29,64 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-//
-//@Composable
-//fun TimerDialog(
-//    onDismiss: () -> Unit,
-//    onConfirm: (Int) -> Unit
-//) {
-//    var selectedMinutes by remember { mutableIntStateOf(0) }
-//    val timeOptions = listOf(0, 15, 30, 45, 60, 90)
-//
-//    AlertDialog(
-//        onDismissRequest = onDismiss,
-//        title = { Text("定时关闭") },
-//        text = {
-//            LazyVerticalGrid(
-//                columns = GridCells.Fixed(3),
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .heightIn(max = 200.dp),
-//                horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                verticalArrangement = Arrangement.spacedBy(8.dp),
-//                userScrollEnabled = false
-//            ) {
-//                items(timeOptions) { minutes ->
-//                    Column (
-//                        verticalArrangement = Arrangement.Center,
-//                        horizontalAlignment = Alignment.CenterHorizontally,
-//                        modifier = Modifier
-//                            .padding(4.dp)
-//                            .fillMaxWidth()
-//                    ) {
-//                        RadioButton(
-//                            selected = selectedMinutes == minutes,
-//                            onClick = { selectedMinutes = minutes }
-//                        )
-//                        Text(
-//                            text = if (minutes == 0) "关闭定时" else "$minutes 分钟",
-//                            modifier = Modifier.padding(start = 4.dp)
-//                        )
-//                    }
-//                }
-//            }
-//        },
-//        confirmButton = {
-//            TextButton(
-//                onClick = {
-//                    onConfirm(selectedMinutes)
-//                }
-//            ) {
-//                Text("确定")
-//            }
-//        },
-//        dismissButton = {
-//            TextButton(onClick = onDismiss) {
-//                Text("取消")
-//            }
-//        }
-//    )
-//}
 @Composable
 fun TimerDialog(
     onDismiss: () -> Unit,

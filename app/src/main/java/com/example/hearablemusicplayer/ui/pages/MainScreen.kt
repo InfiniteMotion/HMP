@@ -86,7 +86,7 @@ fun MainScreen(
                     GalleryScreen(musicViewModel, playControlViewModel, navController)
                 }
                 composable("player") {
-                    PlayerScreen(musicViewModel, playControlViewModel,navController)
+                    PlayerScreen(playControlViewModel,navController)
                 }
                 composable("list") {
                     ListScreen(musicViewModel, navController)

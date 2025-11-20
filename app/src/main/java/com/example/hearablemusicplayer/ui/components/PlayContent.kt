@@ -1,7 +1,6 @@
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.components
 
-import DotPager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +42,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.R
 import com.example.hearablemusicplayer.database.Music
@@ -52,13 +50,11 @@ import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.pages.formatTime
-import com.example.hearablemusicplayer.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
 
 @Composable
 fun PlayContent(
     listState: LazyListState,
-    musicViewModel: MusicViewModel,
     viewModel: PlayControlViewModel,
     navController: NavController
 ){
@@ -232,14 +228,13 @@ fun PlayContent(
 
         if (showTimerDialog) {
             TimerDialog(
-                onDismiss = { showTimerDialog = false },
+                onDismiss = { },
                 onConfirm = { minutes ->
                     if(minutes==0){
                         viewModel.cancelTimer()
                     }else{
                         viewModel.startTimer(minutes)
                     }
-                    showTimerDialog = false
                 }
             )
         }
