@@ -40,4 +40,13 @@ class UserSettingsUseCase @Inject constructor(
     suspend fun saveIsLoadMusic(status: Boolean) {
         settingsRepository.saveIsLoadMusic(status)
     }
+    
+    // DeepSeek API Key
+    suspend fun saveDeepSeekApiKey(apiKey: String) {
+        settingsRepository.saveDeepSeekApiKey(apiKey)
+    }
+    
+    suspend fun getDeepSeekApiKey(): String {
+        return settingsRepository.getDeepSeekApiKey()
+    }
 }

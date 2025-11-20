@@ -1,71 +1,147 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
+import android.util.Log
 import com.example.hearablemusicplayer.data.database.DailyMusicInfo
-import com.example.hearablemusicplayer.data.network.ChatRequest
-import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
-import com.example.hearablemusicplayer.data.network.DeepSeekResult
-import com.example.hearablemusicplayer.data.network.Message
+import com.example.hearablemusicplayer.data.database.ListeningDuration
+import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.repository.MusicRepository
 import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
- * 获取每日AI音乐推荐
- * Use Case: 封装AI推荐逻辑,整合API调用和数据库操作
+ * 每日AI音乐推荐Use Case
+ * 
+ * 负责AI音乐推荐相关的业务逻辑，包括：
+ * - 获取随机推荐音乐及其详细信息
+ * - 自动处理缺失音乐扩展信息
+ * - 从DeepSeek AI获取音乐标签和描述
+ * - API密钥验证
+ * - 播放时长统计
+ * 
+ * @property musicRepository 音乐数据仓库
+ * @property settingsRepository 设置数据仓库
+ * @property musicLabelUseCase 音乐标签管理用例
  */
 class GetDailyMusicRecommendationUseCase @Inject constructor(
     private val musicRepository: MusicRepository,
     private val settingsRepository: SettingsRepository,
-    private val deepSeekAPIWrapper: DeepSeekAPIWrapper
+    private val musicLabelUseCase: MusicLabelUseCase
 ) {
+    
     /**
-     * 获取每日推荐音乐信息
+     * 音乐推荐数据结构
+     * 
+     * @property musicInfo 音乐基本信息
+     * @property dailyMusicInfo AI生成的音乐扩展信息（风格、情绪、场景等）
+     * @property labels 音乐标签列表
      */
-    suspend fun getDailyMusicInfo(): DailyMusicInfo? {
-        // Domain层通过Repository获取,不直接暴露Flow
-        // ViewModel可以直接使用Repository的Flow
-        return null // 这个方法由ViewModel直接调用Repository
+    data class MusicRecommendation(
+        val musicInfo: MusicInfo?,
+        val dailyMusicInfo: DailyMusicInfo?,
+        val labels: List<MusicLabel?>
+    )
+    
+    /**
+     * 获取随机音乐及其额外信息
+     * 
+     * 从数据库中随机获取一首已经有AI生成扩展信息的音乐，
+     * 并加载其标签信息。用于每日推荐功能。
+     * 
+     * @return [MusicRecommendation] 包含音乐基本信息、扩展信息和标签
+     */
+    suspend fun getRandomMusicWithExtra(): MusicRecommendation {
+        val musicInfo = musicRepository.getRandomMusicInfoWithExtra()
+        val dailyMusicInfo = musicInfo?.music?.id?.let { musicRepository.getMusicExtraById(it) }
+        val labels = musicInfo?.music?.id?.let { musicRepository.getMusicLabels(it) } ?: emptyList()
+        return MusicRecommendation(musicInfo, dailyMusicInfo, labels)
     }
     
     /**
-     * 通过AI生成每日推荐
-     * @param authToken API授权token
-     * @return AI推荐结果
+     * 自动处理缺失额外信息的音乐
+     * 
+     * 遍历数据库中所有缺失AI扩展信息的音乐，
+     * 自动调用DeepSeek API获取并保存扩展信息和标签。
+     * 支持进度回调和节流控制。
+     * 
+     * @param onProgress 处理每首音乐时的进度回调
+     * @param delayMillis 每次请求之间的延迟时间（毫秒），默认500ms
      */
-    suspend fun generateDailyRecommendation(authToken: String): DeepSeekResult<String> {
-        // 获取用户名 - 使用suspend方法
-        val userName = "用户" // SettingsRepository没有同步获取方法,简化处理
-        
-        // 构建AI请求
-        val messages = listOf(
-            Message(
-                role = "system",
-                content = "你是一个音乐推荐助手,根据用户的听歌习惯推荐适合的音乐。"
-            ),
-            Message(
-                role = "user",
-                content = "为用户 $userName 推荐今日音乐"
-            )
-        )
-        
-        val request = ChatRequest(
-            model = "deepseek-chat",
-            messages = messages,
-            temperature = 0.7f // Float类型
-        )
-        
-        // 调用API
-        return when (val result = deepSeekAPIWrapper.createChatCompletion(authToken, request)) {
-            is DeepSeekResult.Success -> {
-                val recommendation = result.data.choices.firstOrNull()?.message?.content ?: ""
-                DeepSeekResult.Success(recommendation)
+    suspend fun autoProcessMissingExtraInfo(
+        onProgress: suspend (MusicInfo) -> Unit = {},
+        delayMillis: Long = 500
+    ) {
+        while (true) {
+            val music = musicRepository.getRandomMusicInfoWithMissingExtra() ?: break
+
+            onProgress(music)
+            getMusicExtraInfoFromLLM(music)
+            delay(delayMillis)
+        }
+    }
+    
+    /**
+     * 从DeepSeek获取音乐额外信息
+     */
+    private suspend fun getMusicExtraInfoFromLLM(input: MusicInfo) {
+        val authToken = settingsRepository.getDeepSeekApiKey()
+        val result = musicRepository.fetchMusicExtraInfo(authToken, input.music.title, input.music.artist)
+        when (result) {
+            is com.example.hearablemusicplayer.data.repository.Result.Success -> {
+                val intro = result.data
+                musicRepository.insertMusicExtra(input.music.id, intro)
+                saveMusicLabels(input.music.id, intro)
+                Log.d("GetDailyMusicRecommendationUseCase", "Successfully processed music extra info via Repository")
             }
-            is DeepSeekResult.Error -> result
-            is DeepSeekResult.CachedFallback -> {
-                val recommendation = result.data.choices.firstOrNull()?.message?.content ?: ""
-                DeepSeekResult.Success(recommendation)
+            is com.example.hearablemusicplayer.data.repository.Result.Error -> {
+                Log.e("GetDailyMusicRecommendationUseCase", "Fetch extra info failed: ${result.exception.message}")
+            }
+            is com.example.hearablemusicplayer.data.repository.Result.Loading -> {
+                // Loading 状态，通常不会在此分支出现
             }
         }
+    }
+    
+    /**
+     * 保存音乐标签
+     */
+    private suspend fun saveMusicLabels(musicId: Long, dailyMusicInfo: DailyMusicInfo) {
+        val labels = MusicLabels(
+            genres = dailyMusicInfo.genre,
+            moods = dailyMusicInfo.mood,
+            scenarios = dailyMusicInfo.scenario,
+            language = dailyMusicInfo.language,
+            era = dailyMusicInfo.era
+        )
+        musicLabelUseCase.addMusicLabels(musicId, labels)
+    }
+    
+    /**
+     * 验证DeepSeek API密钥
+     * 
+     * 通过尝试调用DeepSeek API来验证密钥是否有效。
+     * 
+     * @param apiKey 待验证的API密钥
+     * @return true 如果密钥有效，false 否则
+     */
+    suspend fun validateApiKey(apiKey: String): Boolean {
+        return when (musicRepository.validateApiKey(apiKey)) {
+            is com.example.hearablemusicplayer.data.repository.Result.Success -> true
+            is com.example.hearablemusicplayer.data.repository.Result.Error -> false
+            is com.example.hearablemusicplayer.data.repository.Result.Loading -> false
+        }
+    }
+    
+    /**
+     * 获取最近的播放时长统计
+     * 
+     * 返回用户最近的音乐播放时长记录，用于显示听歌统计图表。
+     * 
+     * @return Flow<List<ListeningDuration>> 播放时长记录流
+     */
+    fun getRecentListeningDurations(): Flow<List<ListeningDuration>> {
+        return musicRepository.getRecentListeningDurations()
     }
 }

@@ -10,8 +10,9 @@ import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
-import com.example.hearablemusicplayer.data.repository.MusicRepository
-import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.usecase.playback.*
+import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
+import com.example.hearablemusicplayer.domain.usecase.settings.PlaylistSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -39,8 +40,13 @@ sealed class UiEvent {
 @HiltViewModel
 @UnstableApi
 class PlayControlViewModel @Inject constructor(
-    private val musicRepo: MusicRepository,
-    private val settingsRepo: SettingsRepository
+    // Use Cases - Domain Layer
+    private val currentPlaybackUseCase: CurrentPlaybackUseCase,
+    private val playbackModeUseCase: PlaybackModeUseCase,
+    private val playbackHistoryUseCase: PlaybackHistoryUseCase,
+    private val timerUseCase: TimerUseCase,
+    private val managePlaylistUseCase: ManagePlaylistUseCase,
+    private val playlistSettingsUseCase: PlaylistSettingsUseCase
 ) : ViewModel(), MusicPlayService.OnMusicCompleteListener {
 
     private var playControl: PlayControl? = null
@@ -80,9 +86,9 @@ class PlayControlViewModel @Inject constructor(
     private var _shuffledPlaylist: List<MusicInfo>? = null
 
     // 当前播放列表ID和收藏/最近播放列表ID
-    private val currentPlayListId = settingsRepo.currentPlaylistId
-    private val likedPlayListId = settingsRepo.likedPlaylistId
-    private val recentPlayListId = settingsRepo.recentPlaylistId
+    private val currentPlayListId = playlistSettingsUseCase.currentPlaylistId
+    private val likedPlayListId = playlistSettingsUseCase.likedPlaylistId
+    private val recentPlayListId = playlistSettingsUseCase.recentPlaylistId
 
     // 当前播放索引
     private val _currentIndex = MutableStateFlow(0)
@@ -124,15 +130,14 @@ class PlayControlViewModel @Inject constructor(
 
     // 添加定时器相关状态
     private var timerJob: Job? = null
-    private val _timerRemaining = MutableStateFlow<Long?>(null)
-    val timerRemaining: StateFlow<Long?> = _timerRemaining.asStateFlow()
+    val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
 
     init {
         // 初始化播放列表和当前播放歌曲索引
         viewModelScope.launch {
             val playlistId = currentPlayListId.first() ?: return@launch
-            val currentMusicId = settingsRepo.currentMusicId.first()
-            val list = musicRepo.getMusicInfoInPlaylist(playlistId).first()
+            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
+            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
             _originalPlaylist = list
             _currentPlaylist.value = list
             _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
@@ -140,7 +145,7 @@ class PlayControlViewModel @Inject constructor(
 
         // 监听播放模式变更并更新播放列表
         viewModelScope.launch {
-            settingsRepo.playbackMode
+            playbackModeUseCase.playbackMode
                 .filterNotNull()
                 .collectLatest { mode ->
                     _playbackMode.value = mode
@@ -174,7 +179,7 @@ class PlayControlViewModel @Inject constructor(
             (now - lastDurationRecordTime) >= durationRecordThreshold) {
             val duration = now - playStartTime
             viewModelScope.launch {
-                musicRepo.recordListeningDuration(duration)
+                playbackHistoryUseCase.recordListeningDuration(duration)
             }
             lastDurationRecordTime = now
             playStartTime = now // 重置起始时间以累计下一个周期
@@ -207,7 +212,7 @@ class PlayControlViewModel @Inject constructor(
     private fun saveToPlaylist(musicInfo: MusicInfo) {
         viewModelScope.launch {
             currentPlayListId.firstOrNull()?.let { playlistId ->
-                musicRepo.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
+                managePlaylistUseCase.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
             }
         }
     }
@@ -242,7 +247,7 @@ class PlayControlViewModel @Inject constructor(
             // 立即记录剩余时长，不等待节流器
             if (duration > 0) {
                 viewModelScope.launch {
-                    musicRepo.recordListeningDuration(duration)
+                    playbackHistoryUseCase.recordListeningDuration(duration)
                 }
             }
         }
@@ -277,7 +282,9 @@ class PlayControlViewModel @Inject constructor(
 
     private fun togglePlaybackMode(newMode: PlaybackMode) {
         _playbackMode.value = newMode
-        persistPlaybackMode(newMode)
+        viewModelScope.launch {
+            playbackModeUseCase.savePlaybackMode(newMode)
+        }
         // 切换播放模式时：清空旧的 SHUFFLE 列表（确保每次进入 SHUFFLE 是新打乱）
         _shuffledPlaylist = null
         updateCurrentPlaylist()
@@ -343,7 +350,7 @@ class PlayControlViewModel @Inject constructor(
             val duration = System.currentTimeMillis() - playStartTime
             if (duration > 0) {
                 viewModelScope.launch {
-                    musicRepo.recordListeningDuration(duration)
+                    playbackHistoryUseCase.recordListeningDuration(duration)
                 }
             }
         }
@@ -371,7 +378,7 @@ class PlayControlViewModel @Inject constructor(
     private suspend fun playCurrentTrack(source: String) {
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
         recentPlayListId.first()?.let {
-            musicRepo.addToPlaylist(it, track.music.id, track.music.path)
+            managePlaylistUseCase.addToPlaylist(it, track.music.id, track.music.path)
         }
         persistCurrentMusic(track.music.id)
         playControl?.playSingleMusic(track.music)
@@ -447,17 +454,17 @@ class PlayControlViewModel @Inject constructor(
                 isCompleted = true,
                 source = source
             )
-            musicRepo.insertPlayback(history)
+            playbackHistoryUseCase.insertPlayback(history)
         }
     }
 
     // 更改音乐喜爱状态
     fun updateMusicLikedStatus(musicInfo: MusicInfo,liked: Boolean) {
         viewModelScope.launch {
-            musicRepo.updateLikedStatus(musicInfo.music.id, liked)
+            currentPlaybackUseCase.updateLikedStatus(musicInfo.music.id, liked)
             likedPlayListId.filterNotNull().collectLatest {
-                if (liked) musicRepo.addToPlaylist(it, musicInfo.music.id, musicInfo.music.path)
-                else musicRepo.removeItemFromPlaylist(musicInfo.music.id, it)
+                if (liked) managePlaylistUseCase.addToPlaylist(it, musicInfo.music.id, musicInfo.music.path)
+                else managePlaylistUseCase.removeItemFromPlaylist(musicInfo.music.id, it)
             }
             getLikedStatus(musicInfo.music.id)
         }
@@ -466,14 +473,14 @@ class PlayControlViewModel @Inject constructor(
     // 获取音乐喜爱状态
     fun getLikedStatus(musicId: Long) {
         viewModelScope.launch {
-            likeStatus.value = musicRepo.getLikedStatus(musicId)
+            likeStatus.value = currentPlaybackUseCase.getLikedStatus(musicId)
         }
     }
 
     fun playHeartMode() {
         viewModelScope.launch {
             val currentMusic = currentPlayingMusic.value ?: return@launch
-            val similarSongs = musicRepo.getSimilarSongsByWeightedLabels(currentMusic.music.id, limit = 10)
+            val similarSongs = currentPlaybackUseCase.getSimilarSongsByWeightedLabels(currentMusic.music.id, limit = 10)
             if (similarSongs.isNotEmpty()) {
                 val newList = listOf(currentMusic) + similarSongs
                 _originalPlaylist = newList
@@ -489,18 +496,17 @@ class PlayControlViewModel @Inject constructor(
 
     // 设置定时器
     fun startTimer(minutes: Int) {
+        timerUseCase.setTimerRemaining((minutes * 60 * 1000L))
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
-            val endTime = System.currentTimeMillis() + minutes * 60 * 1000L
             while (isActive) {
-                val remaining = endTime - System.currentTimeMillis()
-                if (remaining <= 0) {
+                delay(1000)
+                timerUseCase.decrementTimer(1000)
+                if (timerUseCase.isTimerExpired()) {
                     pauseMusic()
-                    _timerRemaining.value = null
+                    timerUseCase.cancelTimer()
                     break
                 }
-                _timerRemaining.value = remaining
-                delay(1000) // 每秒更新一次
             }
         }
     }
@@ -508,31 +514,26 @@ class PlayControlViewModel @Inject constructor(
     // 取消定时器
     fun cancelTimer() {
         timerJob?.cancel()
-        _timerRemaining.value = null
+        timerUseCase.cancelTimer()
     }
 
     // 获取音乐标签
     fun getMusicLabels(musicId: Long) {
         viewModelScope.launch {
-            _currentMusicLabels.value=musicRepo.getMusicLabels(musicId)
+            _currentMusicLabels.value=currentPlaybackUseCase.getMusicLabels(musicId)
         }
     }
 
     // 获取音乐歌词
     fun getMusicLyrics(musicId: Long) {
         viewModelScope.launch {
-            _currentMusicLyrics.value=musicRepo.getMusicLyrics(musicId)
+            _currentMusicLyrics.value=currentPlaybackUseCase.getMusicLyrics(musicId)
         }
     }
 
     // 保存当前播放的音乐ID
     private fun persistCurrentMusic(id: Long) {
-        viewModelScope.launch { settingsRepo.saveCurrentMusicId(id) }
-    }
-
-    // 保存播放模式
-    private fun persistPlaybackMode(mode: PlaybackMode) {
-        viewModelScope.launch { settingsRepo.savePlaybackMode(mode) }
+        viewModelScope.launch { currentPlaybackUseCase.saveCurrentMusicId(id) }
     }
 
     // 保存默认播放列表
@@ -540,7 +541,7 @@ class PlayControlViewModel @Inject constructor(
         viewModelScope.launch {
             currentPlayListId.filterNotNull().collectLatest {
                 val playlist = _currentPlaylist.value
-                musicRepo.resetPlaylistItems(it, playlist)
+                managePlaylistUseCase.resetPlaylistItems(it, playlist)
             }
         }
     }

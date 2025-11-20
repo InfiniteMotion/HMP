@@ -72,10 +72,12 @@ fun UserScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Avatar(112, viewModel)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = userName,
-                        style = MaterialTheme.typography.displayLarge
-                    )
+                    userName?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(48.dp))

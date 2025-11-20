@@ -12,6 +12,14 @@ class PlaybackHistoryUseCase @Inject constructor(
     private val musicRepository: MusicRepository
 ) {
     /**
+     * 插入播放历史记录
+     * @param history 播放历史对象
+     */
+    suspend fun insertPlayback(history: PlaybackHistory) {
+        musicRepository.insertPlayback(history)
+    }
+    
+    /**
      * 记录播放历史
      * @param musicId 音乐ID
      */
