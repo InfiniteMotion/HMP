@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.Music
@@ -58,6 +60,8 @@ fun PlayContent(
     viewModel: PlayControlViewModel,
     navController: NavController
 ){
+    val scope = rememberCoroutineScope()
+    
     // 开启播放进度监督
     DisposableEffect(Unit) {
         viewModel.startProgressTracking()
@@ -205,7 +209,11 @@ fun PlayContent(
                 PlaylistItem(
                     musicInfo = item,
                     isPlaying = index == currentIndex,
-                    onClick = { viewModel.playAt(item) },
+                    onClick = { 
+                        scope.launch {
+                            viewModel.playAt(item)
+                        }
+                    },
                     onRemove = { viewModel.removeFromPlaylist(item) }
                 )
             }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.DailyMusicInfo
 import com.example.hearablemusicplayer.data.database.MusicInfo
@@ -49,13 +51,15 @@ import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import kotlinx.coroutines.launch
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
     musicViewModel: MusicViewModel,
     playControlViewModel: PlayControlViewModel,
 ) {
-
+    val scope = rememberCoroutineScope()
     var visible by remember { mutableStateOf(false) }
     val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
     val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
@@ -119,12 +123,14 @@ fun HomeScreen(
                             IconButton(
                                 modifier = Modifier.size(48.dp),
                                 onClick = {
-                                    dailyMusic?.let {
-                                        if (currentPlayingMusic != dailyMusic!!) {
-                                            playControlViewModel.playWith(dailyMusic!!)
-                                        } else {
-                                            if (isPlaying) playControlViewModel.pauseMusic()
-                                            else playControlViewModel.playOrResume()
+                                    scope.launch {
+                                        dailyMusic?.let {
+                                            if (currentPlayingMusic != dailyMusic!!) {
+                                                playControlViewModel.playWith(dailyMusic!!)
+                                            } else {
+                                                if (isPlaying) playControlViewModel.pauseMusic()
+                                                else playControlViewModel.playOrResume()
+                                            }
                                         }
                                     }
                                 }

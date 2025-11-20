@@ -387,17 +387,17 @@ class PlayControlViewModel @Inject constructor(
     }
 
     // 将音乐加入播放队列(不确定是否在播放列表中)
-    fun addToPlaylist(musicInfo: MusicInfo) {
-        viewModelScope.launch {
-            if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
-                _originalPlaylist = _originalPlaylist + musicInfo
-                updateCurrentPlaylist()
+    suspend fun addToPlaylist(musicInfo: MusicInfo) {
+        if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
+            _originalPlaylist = _originalPlaylist + musicInfo
+            updateCurrentPlaylist()
+            viewModelScope.launch {
                 saveToPlaylist(musicInfo)
-                showToast("已添加：${musicInfo.music.title}")
             }
-            else {
-                showToast("已存在：${musicInfo.music.title}")
-            }
+            showToast("已添加：${musicInfo.music.title}")
+        }
+        else {
+            showToast("已存在：${musicInfo.music.title}")
         }
     }
 
@@ -424,19 +424,15 @@ class PlayControlViewModel @Inject constructor(
     }
 
     // 从指定音乐开始播放(已经在播放列表中)
-    fun playAt(musicInfo: MusicInfo) {
-        viewModelScope.launch {
-            switchToMusicInPlaylist(musicInfo)
-            playCurrentTrack("ManualPlay")
-        }
+    suspend fun playAt(musicInfo: MusicInfo) {
+        switchToMusicInPlaylist(musicInfo)
+        playCurrentTrack("ManualPlay")
     }
 
     // 从指定音乐开始播放(不确定是否在播放列表中)
-    fun playWith(musicInfo: MusicInfo) {
-        viewModelScope.launch {
-            addToPlaylist(musicInfo)
-            playAt(musicInfo)
-        }
+    suspend fun playWith(musicInfo: MusicInfo) {
+        addToPlaylist(musicInfo)
+        playAt(musicInfo)
     }
 
     // 获取当前音乐路径

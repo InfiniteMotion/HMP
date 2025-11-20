@@ -1,7 +1,5 @@
-﻿@file:OptIn(androidx.media3.common.util.UnstableApi::class)
-package com.example.hearablemusicplayer.ui.components
+﻿package com.example.hearablemusicplayer.ui.components
 
-import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,9 +28,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun MusicList(
@@ -62,15 +62,19 @@ fun MusicItem(
     navController: NavController,
     modifier: Modifier
 ) {
+    val scope = rememberCoroutineScope()
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp)
             .clickable {
-                // 跳转到音乐播放页，并传递音乐 ID
-                playControlViewModel.playWith(musicInfo)
-                playControlViewModel.recordPlayback(musicInfo.music.id, "Gallery")
-                navController.navigate("player")
+                // 在协程中等待播放准备完成后再导航
+                scope.launch {
+                    playControlViewModel.playWith(musicInfo)
+                    playControlViewModel.recordPlayback(musicInfo.music.id, "Gallery")
+                    navController.navigate("player")
+                }
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
@@ -109,7 +113,9 @@ fun MusicItem(
         Row {
             IconButton(
                 onClick = {
-                    playControlViewModel.addToPlaylist(musicInfo)
+                    scope.launch {
+                        playControlViewModel.addToPlaylist(musicInfo)
+                    }
                 },
                 modifier = Modifier
             ) {
