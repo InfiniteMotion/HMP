@@ -42,7 +42,7 @@ dependencies {
     // Core modules
     implementation(project(":core-data"))
     implementation(project(":core-domain"))
-    implementation(project(":core-player"))
+    api(project(":core-player"))  // 使用api以便app模块可以访问MusicPlayService
     
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
@@ -59,6 +59,12 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.runtime.livedata)
+    
+    // Media3 - for @UnstableApi annotation
+    implementation(libs.androidx.media3.common)
+    
+    // Gson - for JSON parsing (TODO: move to domain layer)
+    implementation(libs.gson)
     
     // UI utilities
     implementation(libs.coil.compose)

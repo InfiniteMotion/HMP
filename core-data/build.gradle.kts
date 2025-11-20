@@ -15,10 +15,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
         
-        // Room schema 导出
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
+        // Room schema 导出 - 暂时禁用以避免序列化版本冲突
+        // ksp {
+        //     arg("room.schemaLocation", "$projectDir/schemas")
+        // }
     }
 
     buildTypes {

@@ -20,21 +20,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.HearableMusicPlayer">
-        <service
-            android:name=".MusicPlayService"
-            android:foregroundServiceType="mediaPlayback"
-            android:enabled="true"
-            android:exported="false">
-            <!-- 支持媒体按钮 -->
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </service>
-
-        <receiver
-            android:name=".MusicNotificationReceiver"
-            android:enabled="true"
-            android:exported="false" />
 
         <activity
             android:name=".MainActivity"

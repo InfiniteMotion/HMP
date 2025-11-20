@@ -1,3 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 前台服务权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    
+    <!-- 音频焦点权限 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application>
+        <!-- 音乐播放服务 -->
+        <service
+            android:name=".service.MusicPlayService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+        </service>
+
+        <!-- 通知广播接收器 -->
+        <receiver
+            android:name=".service.MusicNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+        </receiver>
+    </application>
+
 </manifest>

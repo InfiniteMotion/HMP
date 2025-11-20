@@ -23,11 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
+import com.example.hearablemusicplayer.player.service.MusicPlayService
 import com.example.hearablemusicplayer.ui.pages.IntroScreen
 import com.example.hearablemusicplayer.ui.pages.MainScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
-import com.example.hearablemusicplayer.viewmodel.MusicViewModel
-import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 
@@ -43,6 +44,8 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val service = (binder as? MusicPlayService.MusicPlayServiceBinder)?.getService()
             if (service != null) {
+                // 设置MainActivity类引用
+                service.setMainActivityClass(MainActivity::class.java)
                 playControlViewModel.bindPlayControl(service)
             }
         }

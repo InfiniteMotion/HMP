@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Hearable Music Player</string>
+    <!--    Tab labels-->
+    <string name="tab_home">Home</string>
+    <string name="tab_gallery">Gallery</string>
+    <string name="tab_player">Player</string>
+    <string name="tab_list">List</string>
+    <string name="tab_user">User</string>
+    <!--    Banner Labels-->
+    <string name="banner_daily_A">默认列表</string>
+    <string name="banner_daily_AA">Default</string>
+    <string name="banner_daily_B">风格</string>
+    <string name="banner_daily_BB">Genre</string>
+    <string name="banner_daily_C">情绪</string>
+    <string name="banner_daily_CC">Mood</string>
+    <string name="banner_daily_D">场景</string>
+    <string name="banner_daily_DD">Scenario</string>
+    <string name="banner_daily_E">语言</string>
+    <string name="banner_daily_EE">Language</string>
+    <string name="banner_daily_F">年代</string>
+    <string name="banner_daily_FF">Era</string>
+    <string name="banner_daily_G">个人</string>
+    <string name="banner_daily_GG">Personal</string>
+
+
+</resources>
