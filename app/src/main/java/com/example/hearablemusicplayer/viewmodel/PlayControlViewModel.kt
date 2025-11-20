@@ -1,8 +1,7 @@
 package com.example.hearablemusicplayer.viewmodel
 
-import android.app.Application
 import androidx.annotation.OptIn
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.MusicPlayService
@@ -13,6 +12,7 @@ import com.example.hearablemusicplayer.database.PlaybackHistory
 import com.example.hearablemusicplayer.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.repository.MusicRepository
 import com.example.hearablemusicplayer.repository.SettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -30,17 +30,18 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
 }
 
+@HiltViewModel
 @UnstableApi
-class PlayControlViewModel(
-    application: Application,
+class PlayControlViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
     private val settingsRepo: SettingsRepository
-) : AndroidViewModel(application), MusicPlayService.OnMusicCompleteListener {
+) : ViewModel(), MusicPlayService.OnMusicCompleteListener {
 
     private var playControl: PlayControl? = null
 

@@ -14,14 +14,12 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.media3.session.MediaStyleNotificationHelper
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.common.ForwardingPlayer
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -78,7 +76,7 @@ class MusicPlayService : Service(),PlayControl {
     // 绑定播放完成回调
     fun setOnMusicCompleteListener(listener: OnMusicCompleteListener) {
         playbackListener = listener
-        Log.d("MusicPlayService", "OnMusicCompleteListener set: ${listener != null}")
+        Log.d("MusicPlayService", "OnMusicCompleteListener set: ${true}")
     }
 
     // 返回 Binder 实例
@@ -200,10 +198,10 @@ class MusicPlayService : Service(),PlayControl {
             // 重写方法让系统认为始终有上/下一首
             override fun getAvailableCommands(): Player.Commands {
                 return super.getAvailableCommands().buildUpon()
-                    .add(Player.COMMAND_SEEK_TO_NEXT)
-                    .add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                    .add(Player.COMMAND_SEEK_TO_PREVIOUS)
-                    .add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                    .add(COMMAND_SEEK_TO_NEXT)
+                    .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                    .add(COMMAND_SEEK_TO_PREVIOUS)
+                    .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
                     .build()
             }
 

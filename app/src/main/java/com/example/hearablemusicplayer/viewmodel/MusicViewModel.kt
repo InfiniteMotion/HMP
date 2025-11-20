@@ -3,7 +3,7 @@ package com.example.hearablemusicplayer.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.ChatRequest
-import com.example.hearablemusicplayer.DeepSeekService
+import com.example.hearablemusicplayer.DeepSeekAPI
 import com.example.hearablemusicplayer.Message
 import com.example.hearablemusicplayer.database.DailyMusicInfo
 import com.example.hearablemusicplayer.database.ListeningDuration
@@ -14,6 +14,7 @@ import com.example.hearablemusicplayer.database.myenum.LabelName
 import com.example.hearablemusicplayer.repository.MusicRepository
 import com.example.hearablemusicplayer.repository.SettingsRepository
 import com.google.gson.Gson
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +23,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class MusicViewModel(
+@HiltViewModel
+class MusicViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
-    private val settingsRepo: SettingsRepository
+    private val settingsRepo: SettingsRepository,
+    private val deepSeekAPI: DeepSeekAPI
 ) : ViewModel() {
 
     val isFirstLaunch = settingsRepo.isFirstLaunch
@@ -264,7 +268,7 @@ class MusicViewModel(
             )
             val messages = listOf(message)
             val chatRequest = ChatRequest(messages = messages)
-            val response = DeepSeekService.createChatCompletion(
+            val response = deepSeekAPI.createChatCompletion(
                 authToken = settingsRepo.getDeepSeekApiKey(),
                 request = chatRequest
             )
@@ -296,7 +300,7 @@ class MusicViewModel(
             val message = Message("User", """{"content": "Hello"}""".trimIndent())
             val messages = listOf(message)
             val chatRequest = ChatRequest(messages = messages)
-            val response = DeepSeekService.createChatCompletion(
+            val response = deepSeekAPI.createChatCompletion(
                 authToken = deepSeekApiKey,
                 request = chatRequest
             )

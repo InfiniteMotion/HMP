@@ -27,27 +27,16 @@ import com.example.hearablemusicplayer.ui.pages.IntroScreen
 import com.example.hearablemusicplayer.ui.pages.MainScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
-import com.example.hearablemusicplayer.viewmodel.MusicViewModelFactory
 import com.example.hearablemusicplayer.viewmodel.PlayControlViewModel
-import com.example.hearablemusicplayer.viewmodel.PlayControlViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    val musicViewModel by viewModels<MusicViewModel> {
-        MusicViewModelFactory(
-            (application as MusicApplication).MusicRepo,
-            (application as MusicApplication).SettingsRepo
-        )
-    }
+    private val musicViewModel by viewModels<MusicViewModel>()
 
-    val playControlViewModel by viewModels<PlayControlViewModel> {
-        PlayControlViewModelFactory(
-            application = application,
-            (application as MusicApplication).MusicRepo,
-            (application as MusicApplication).SettingsRepo
-        )
-    }
+    private val playControlViewModel by viewModels<PlayControlViewModel>()
 
     private val connection = object : ServiceConnection {
         @OptIn(UnstableApi::class)

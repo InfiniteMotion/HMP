@@ -80,22 +80,24 @@ fun UserScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                val sortedListeningData = listeningData.sortedBy { it.date }.takeLast(7)
+                val sortedData = listeningData.sortedBy { it.date }.takeLast(7)
+                val chartData = sortedData.map { ((it.duration / (1000 * 60)).toInt()) }
+                val chartDays = sortedData.map { ld ->
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val outputFormat = SimpleDateFormat("MM.dd", Locale.getDefault())
+                    try {
+                        dateFormat.parse(ld.date)?.let { date ->
+                            outputFormat.format(date)
+                        } ?: "--"
+                    } catch (_: Exception) {
+                        "--"
+                    }
+                }
 
                 ListeningChart(
                     text = "近期听歌时长(Minutes)",
-                    data = sortedListeningData.map { (it.duration / (1000 * 60)).toInt() },
-                    days = sortedListeningData.map { duration ->
-                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val outputFormat = SimpleDateFormat("MM.dd", Locale.getDefault())
-                        try {
-                            dateFormat.parse(duration.date)?.let { date ->
-                                outputFormat.format(date)
-                            } ?: "--"
-                        } catch (_: Exception) {
-                            "--"
-                        }
-                    }
+                    data = chartData,
+                    days = chartDays
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))
