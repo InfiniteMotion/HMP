@@ -119,6 +119,8 @@ class PlayControlViewModel @Inject constructor(
     private var progressJob: Job? = null
 
     private var playStartTime: Long = 0L
+    private var lastDurationRecordTime: Long = 0L
+    private val durationRecordThreshold = 30000L // 30秒节流，避免频繁写入
 
     // 添加定时器相关状态
     private var timerJob: Job? = null
@@ -156,9 +158,26 @@ class PlayControlViewModel @Inject constructor(
                 playControl?.let { svc ->
                     _currentPosition.value = svc.getCurrentPosition()
                     _duration.value = svc.getDuration()
+                    
+                    // 周期性记录播放时长（节流策略）
+                    recordListeningDurationPeriodically()
                 }
                 delay(500)
             }
+        }
+    }
+
+    // 周期性记录播放时长（节流策略：每30秒记录一次）
+    private fun recordListeningDurationPeriodically() {
+        val now = System.currentTimeMillis()
+        if (_isPlaying.value && playStartTime > 0 && 
+            (now - lastDurationRecordTime) >= durationRecordThreshold) {
+            val duration = now - playStartTime
+            viewModelScope.launch {
+                musicRepo.recordListeningDuration(duration)
+            }
+            lastDurationRecordTime = now
+            playStartTime = now // 重置起始时间以累计下一个周期
         }
     }
 
@@ -206,6 +225,7 @@ class PlayControlViewModel @Inject constructor(
     // 播放或恢复当前歌曲
     fun playOrResume() {
         playStartTime = System.currentTimeMillis()
+        lastDurationRecordTime = playStartTime // 重置节流计时器
         val path = currentMusicPath()
         if (path != null && isMusicLoaded(path) == true) {
             playControl?.proceedMusic()
@@ -219,12 +239,17 @@ class PlayControlViewModel @Inject constructor(
     fun pauseMusic() {
         if (playStartTime > 0) {
             val duration = System.currentTimeMillis() - playStartTime
-            viewModelScope.launch {
-                musicRepo.recordListeningDuration(duration)
+            // 立即记录剩余时长，不等待节流器
+            if (duration > 0) {
+                viewModelScope.launch {
+                    musicRepo.recordListeningDuration(duration)
+                }
             }
         }
         playControl?.pause()
         _isPlaying.value = false
+        playStartTime = 0L // 重置
+        lastDurationRecordTime = 0L
     }
 
     // 跳转到指定进度
@@ -316,10 +341,14 @@ class PlayControlViewModel @Inject constructor(
     override fun onPlaybackEnded() {
         if (playStartTime > 0) {
             val duration = System.currentTimeMillis() - playStartTime
-            viewModelScope.launch {
-                musicRepo.recordListeningDuration(duration)
+            if (duration > 0) {
+                viewModelScope.launch {
+                    musicRepo.recordListeningDuration(duration)
+                }
             }
         }
+        playStartTime = System.currentTimeMillis() // 为下一首重置
+        lastDurationRecordTime = playStartTime
         playNext()
     }
 

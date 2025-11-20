@@ -6,9 +6,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.BluetoothDevice
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -76,6 +81,28 @@ class MusicPlayService : Service(), PlayControl {
     }
 
     private var playbackListener: OnMusicCompleteListener? = null
+
+    // 耳机拔插和蓝牙断开广播接收器
+    private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
+                    // 耳机拔出，暂停播放
+                    Log.d("MusicPlayService", "Audio becoming noisy, pausing playback")
+                    exoPlayer.pause()
+                    playbackListener?.onPlayStateChanged(false)
+                }
+                BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                    // 蓝牙断开，暂停播放
+                    Log.d("MusicPlayService", "Bluetooth disconnected, pausing playback")
+                    exoPlayer.pause()
+                    playbackListener?.onPlayStateChanged(false)
+                }
+            }
+        }
+    }
+
+    private var isReceiverRegistered = false
 
     // 绑定播放完成回调
     fun setOnMusicCompleteListener(listener: OnMusicCompleteListener) {
@@ -198,6 +225,9 @@ class MusicPlayService : Service(), PlayControl {
         }
         createNotificationChannel()
 
+        // 注册耳机拔插和蓝牙断开广播接收器
+        registerAudioDeviceReceiver()
+
         // 创建自定义 Player 包装器
         customPlayer = object : ForwardingPlayer(exoPlayer) {
             // 重写方法让系统认为始终有上/下一首
@@ -279,8 +309,35 @@ class MusicPlayService : Service(), PlayControl {
 
     override fun onDestroy() {
         super.onDestroy()
+        unregisterAudioDeviceReceiver()
         mediaSession.release()
         exoPlayer.release()
+    }
+
+    // 注册音频设备广播接收器
+    private fun registerAudioDeviceReceiver() {
+        if (!isReceiverRegistered) {
+            val filter = IntentFilter().apply {
+                addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+                addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            }
+            registerReceiver(audioBecomingNoisyReceiver, filter)
+            isReceiverRegistered = true
+            Log.d("MusicPlayService", "Audio device receiver registered")
+        }
+    }
+
+    // 注销音频设备广播接收器
+    private fun unregisterAudioDeviceReceiver() {
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(audioBecomingNoisyReceiver)
+                isReceiverRegistered = false
+                Log.d("MusicPlayService", "Audio device receiver unregistered")
+            } catch (e: IllegalArgumentException) {
+                Log.e("MusicPlayService", "Receiver already unregistered", e)
+            }
+        }
     }
 
     // 播放指定音乐
