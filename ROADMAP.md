@@ -347,3 +347,228 @@
 - [ ] 阶段 8 完成：性能与稳定性
 - [ ] 阶段 9 完成：安全与隐私
 - [ ] 阶段 10 完成：UX、无障碍与国际化
+
+
+阶段 5 详细执行计划：模块化代码迁移
+
+当前状态
+- 已创建模块结构：core-data、core-domain、core-player、feature-ui
+- 已配置模块依赖关系和 build.gradle.kts
+- 已创建 4 个核心 Use Case 骨架
+- 待完成：代码迁移和 Use Case 实现
+
+迁移任务清单
+
+任务组 1：core-data 模块迁移（优先级：高）
+  1.1 数据库实体与 DAO 迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/database/
+    目标路径：core-data/src/main/java/com/example/hearablemusicplayer/data/database/
+    迁移文件：
+    - [ ] AppDatabase.kt
+    - [ ] Music.kt（含 MusicDao）
+    - [ ] PlaybackHistory.kt
+    - [ ] ListeningDuration.kt
+    - [ ] DailyMusicInfo.kt
+    - [ ] MusicLabel.kt
+    - [ ] PlayList.kt
+    - [ ] PlaylistItem.kt
+    - [ ] myenum/Label.kt
+    - [ ] myenum/PlaybackMode.kt
+
+  1.2 Repository 层迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/repository/
+    目标路径：core-data/src/main/java/com/example/hearablemusicplayer/data/repository/
+    迁移文件：
+    - [ ] MusicRepository.kt（21.9KB）
+    - [ ] SettingsRepository.kt（12.3KB）
+    - [ ] Result.kt
+
+  1.3 网络层迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/
+    目标路径：core-data/src/main/java/com/example/hearablemusicplayer/data/network/
+    迁移文件：
+    - [ ] DeepSeekAPI.kt
+
+  1.4 工具类迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/tools/
+    目标路径：core-data/src/main/java/com/example/hearablemusicplayer/data/util/
+    迁移文件：
+    - [ ] SecureStorage.kt
+
+  1.5 DI 模块迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/di/
+    目标路径：core-data/src/main/java/com/example/hearablemusicplayer/data/di/
+    迁移文件：
+    - [ ] DatabaseModule.kt
+    - [ ] NetworkModule.kt
+    - [ ] RepositoryModule.kt
+
+任务组 2：core-player 模块迁移（优先级：高）
+  2.1 播放服务迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/
+    目标路径：core-player/src/main/java/com/example/hearablemusicplayer/player/service/
+    迁移文件：
+    - [ ] MusicPlayService.kt（20.2KB）
+    - [ ] MusicNotificationReceiver.kt
+
+  2.2 DI 模块迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/di/
+    目标路径：core-player/src/main/java/com/example/hearablemusicplayer/player/di/
+    迁移文件：
+    - [ ] PlayerModule.kt
+
+任务组 3：feature-ui 模块迁移（优先级：中）
+  3.1 ViewModel 迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/viewmodel/
+    目标路径：feature-ui/src/main/java/com/example/hearablemusicplayer/ui/viewmodel/
+    迁移文件：
+    - [ ] MusicViewModel.kt（16.6KB）
+    - [ ] PlayControlViewModel.kt（19.7KB）
+
+  3.2 UI 组件迁移（13个文件）
+    源路径：app/src/main/java/com/example/hearablemusicplayer/ui/components/
+    目标路径：feature-ui/src/main/java/com/example/hearablemusicplayer/ui/components/
+    迁移文件：
+    - [ ] AlbumCover.kt, Avatar.kt, Capsule.kt, DotPager.kt
+    - [ ] ListBanner.kt, ListeningChart.kt, Lyrics.kt, MusicList.kt
+    - [ ] MyButton.kt（11.9KB）, NavItem.kt
+    - [ ] PlayContent.kt（20.0KB）, SquareCard.kt, TabWithNai.kt
+
+  3.3 UI 页面迁移（10个文件）
+    源路径：app/src/main/java/com/example/hearablemusicplayer/ui/pages/
+    目标路径：feature-ui/src/main/java/com/example/hearablemusicplayer/ui/pages/
+    迁移文件：
+    - [ ] MainScreen.kt, HomeScreen.kt（11.9KB）, ListScreen.kt（11.6KB）
+    - [ ] PlayerScreen.kt, SearchScreen.kt, SettingScreen.kt（16.1KB）
+    - [ ] UserScreen.kt, GalleryScreen.kt, PlaylistScreen.kt, IntroScreen.kt
+
+  3.4 主题与对话框迁移
+    源路径：app/src/main/java/com/example/hearablemusicplayer/ui/
+    目标路径：feature-ui/src/main/java/com/example/hearablemusicplayer/ui/
+    迁移目录：
+    - [ ] theme/（3个文件）
+    - [ ] dialogs/（2个文件）
+
+任务组 4：core-domain 用例实现（优先级：中）
+  4.1 实现已创建的 Use Case
+    - [ ] GetMusicListUseCase - 注入 MusicRepository
+    - [ ] UpdatePlayQueueUseCase - 实现队列管理
+    - [ ] SavePlaybackHistoryUseCase - 实现历史记录（含节流）
+    - [ ] GetRecommendationsUseCase - 实现AI推荐（含缓存降级）
+
+  4.2 创建额外 Use Case（按需）
+    - [ ] ScanLocalMusicUseCase - 本地音乐扫描
+    - [ ] UpdatePlaylistUseCase - 播放列表管理
+    - [ ] GetListeningStatisticsUseCase - 统计数据
+
+任务组 5：资源文件与配置迁移（优先级：高）
+  5.1 UI 资源迁移到 feature-ui
+    源路径：app/src/main/res/
+    目标路径：feature-ui/src/main/res/
+    迁移内容：
+    - [ ] drawable/ 目录（UI相关图标，约101个文件）
+    - [ ] drawable-nodpi/ 目录（5个文件）
+    - [ ] font/ 目录（6个HarmonyOS Sans字体文件）
+    - [ ] values/colors.xml（主题色定义）
+    - [ ] values/themes.xml（UI主题样式）
+    - [ ] 部分 values/strings.xml（UI相关字符串）
+
+  5.2 数据库 Schema 迁移到 core-data
+    源路径：app/schemas/
+    目标路径：core-data/schemas/
+    迁移内容：
+    - [ ] com.example.hearablemusicplayer.database.AppDatabase/ 目录
+    - [ ] 更新 core-data/build.gradle.kts 中的 schema 路径配置
+
+  5.3 AndroidManifest 更新
+    core-player 模块：
+    - [ ] 声明 MusicPlayService（foregroundServiceType="mediaPlayback"）
+    - [ ] 声明 MusicNotificationReceiver
+    - [ ] 添加媒体播放相关权限（FOREGROUND_SERVICE_MEDIA_PLAYBACK等）
+    
+    app 模块：
+    - [ ] 移除已迁移到 core-player 的 Service 和 Receiver 声明
+    - [ ] 保留应用级别的权限声明和 Activity 声明
+
+  5.4 ProGuard 规则处理
+    - [ ] 检查 app/proguard-rules.pro 内容
+    - [ ] 为 core-data 创建混淆规则（Room、Retrofit、Gson）
+    - [ ] 为 core-player 创建混淆规则（Media3）
+    - [ ] 保留 app 模块的通用混淆规则
+
+  5.5 保留在 app 模块的资源
+    - [ ] mipmap-*/ 目录（应用图标）
+    - [ ] values/strings.xml（应用名称）
+    - [ ] xml/backup_rules.xml
+    - [ ] xml/data_extraction_rules.xml
+    - [ ] ic_launcher_background.xml
+
+任务组 6：app 模块精简（优先级：低）
+  6.1 清理迁移后的文件
+    - [ ] 删除已迁移的 database/ 目录
+    - [ ] 删除已迁移的 repository/ 目录
+    - [ ] 删除已迁移的 ui/ 目录
+    - [ ] 删除已迁移的 viewmodel/ 目录
+    - [ ] 删除已迁移的 di/ 目录
+    - [ ] 删除已迁移的 tools/ 目录
+
+  6.2 更新依赖和导入
+    - [ ] 更新 MainActivity.kt 的导入路径
+    - [ ] 更新 MusicApplication.kt 的导入路径
+    - [ ] 验证 Hilt 注入正常工作
+
+执行策略
+  阶段一：数据层迁移（1-2天）
+    1. 迁移 database 到 core-data
+    2. 迁移 database schemas 到 core-data
+    3. 迁移 repository 到 core-data
+    4. 迁移网络和工具类到 core-data
+    5. 迁移并调整 DI 模块
+    6. 创建 ProGuard 规则
+    7. 更新包名和命名空间
+
+  阶段二：播放器层迁移（1天）
+    1. 迁移 MusicPlayService 到 core-player
+    2. 迁移 MusicNotificationReceiver 到 core-player
+    3. 迁移 PlayerModule 到 core-player
+    4. 创建 core-player 的 AndroidManifest 并声明 Service/Receiver
+    5. 创建 ProGuard 规则
+    6. 更新 app 模块的 AndroidManifest
+
+  阶段三：UI层迁移（2-3天）
+    1. 迁移 ViewModel 到 feature-ui
+    2. 迁移 UI components 到 feature-ui
+    3. 迁移 UI pages 到 feature-ui
+    4. 迁移 theme 和 dialogs 到 feature-ui
+    5. 迁移 UI 资源文件（drawable、font、values）
+    6. 更新资源引用路径
+
+  阶段四：领域层实现（1天）
+    1. 实现 Use Case 具体逻辑
+    2. 重构 ViewModel 使用 Use Case
+    3. 优化依赖注入
+
+  阶段五：整合验证（1-2天）
+    1. 清理 app 模块遗留文件
+    2. 修复所有导入路径
+    3. 验证资源引用正常
+    4. 验证编译通过
+    5. 运行时测试
+    6. 混淆构建测试
+
+注意事项
+  - 包名一致性：确保迁移后的包名符合模块命名空间
+  - 依赖顺序：严格按照 core-data → core-domain → core-player → feature-ui → app 的顺序
+  - Hilt 模块：每个模块的 DI 需要正确配置 @InstallIn
+  - 渐进式迁移：每完成一个任务组就验证编译
+  - AndroidManifest：Service 和 Receiver 需要在正确的 manifest 中声明，注意 merged manifest
+  - 资源引用：跨模块资源引用需要使用完整的包名
+  - ProGuard：确保每个模块的混淆规则完整，避免运行时反射错误
+  - Schema 路径：Room schema 路径需要在 core-data 的 build.gradle.kts 中正确配置
+
+预计工作量：
+  - 代码文件：50+ 个文件
+  - 资源文件：120+ 个文件
+  - 配置文件：5+ 个文件（manifest、proguard、schema）
+  - 总计：约 175+ 个文件需要处理
+  - 预计时间：2-3 周
