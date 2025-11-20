@@ -24,9 +24,11 @@ import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.hearablemusicplayer.database.Music
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 interface PlayControl {
     fun play()
@@ -43,7 +45,8 @@ interface PlayControl {
 }
 
 @UnstableApi
-class MusicPlayService : Service(),PlayControl {
+@AndroidEntryPoint
+class MusicPlayService : Service(), PlayControl {
 
     companion object {
         const val ACTION_PLAY = "com.example.hearablemusicplayer.ACTION_PLAY"
@@ -55,8 +58,9 @@ class MusicPlayService : Service(),PlayControl {
     // 提供给绑定组件访问 Service 的 Binder
     private val binder = MusicPlayServiceBinder()
 
-    // ExoPlayer 实例
-    private lateinit var exoPlayer: ExoPlayer
+    // ExoPlayer 实例（通过 Hilt 注入）
+    @Inject
+    lateinit var exoPlayer: ExoPlayer
 
     // 自定义 Player 包装器，让系统认为始终有上/下一首
     private lateinit var customPlayer: ForwardingPlayer
@@ -173,7 +177,8 @@ class MusicPlayService : Service(),PlayControl {
     @SuppressLint("RestrictedApi")
     override fun onCreate() {
         super.onCreate()
-        exoPlayer = ExoPlayer.Builder(this).build().apply {
+        // ExoPlayer 已通过 Hilt 注入，这里只需配置
+        exoPlayer.apply {
             // 设置重复模式，让系统知道有下一首
             repeatMode = Player.REPEAT_MODE_OFF
             addListener(object : Player.Listener {

@@ -12,6 +12,7 @@ import com.example.hearablemusicplayer.database.MusicLabel
 import com.example.hearablemusicplayer.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.database.myenum.LabelName
 import com.example.hearablemusicplayer.repository.MusicRepository
+import com.example.hearablemusicplayer.repository.Result
 import com.example.hearablemusicplayer.repository.SettingsRepository
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -171,12 +172,27 @@ class MusicViewModel @Inject constructor(
 
     // 从本地读取音乐到数据库的方法
     val isScanning = musicRepo.isScanning
+    
+    // 错误消息状态
+    private val _scanErrorMessage = MutableStateFlow<String?>(null)
+    val scanErrorMessage: StateFlow<String?> = _scanErrorMessage
+    
     fun refreshMusicList() {
         viewModelScope.launch(Dispatchers.IO) {
             musicRepo.clearAllDataBase()
-            musicRepo.loadMusicFromDevice()
-            initializeDefaultPlaylists()
-            settingsRepo.saveIsLoadMusic(true)
+            when (val result = musicRepo.loadMusicFromDevice()) {
+                is Result.Success -> {
+                    _scanErrorMessage.value = null
+                    initializeDefaultPlaylists()
+                    settingsRepo.saveIsLoadMusic(true)
+                }
+                is Result.Error -> {
+                    _scanErrorMessage.value = result.exception.message ?: "扫描失败"
+                }
+                is Result.Loading -> {
+                    // 加载中
+                }
+            }
         }
     }
 

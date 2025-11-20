@@ -38,8 +38,12 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class MusicRepository(
+@Singleton
+class MusicRepository @Inject constructor(
     private val musicDao: MusicDao,
     private val musicExtraDao: MusicExtraDao,
     private val userInfoDao: UserInfoDao,
@@ -49,7 +53,7 @@ class MusicRepository(
     private val playlistItemDao: PlaylistItemDao,
     private val playbackHistoryDao: PlaybackHistoryDao,
     private val listeningDurationDao: ListeningDurationDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     // ------------------- 音乐相关操作 -------------------
@@ -172,7 +176,11 @@ class MusicRepository(
     // 用 StateFlow 通知外部扫描状态
     private val _isScanning = MutableStateFlow(true)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
-    suspend fun loadMusicFromDevice(){
+    
+    /**
+     * 从设备加载音乐，使用 Result 封装错误
+     */
+    suspend fun loadMusicFromDevice(): Result<Unit> = safeCall {
         _isScanning.value = true
         try {
             val result = performMusicScan()
@@ -183,7 +191,7 @@ class MusicRepository(
             musicExtraDao.insertAll(result.second)
             userInfoDao.insertAll(result.third)
         } finally {
-            _isScanning.value = false // 确保无论成功失败都会结束
+            _isScanning.value = false
         }
     }
 
