@@ -1,9 +1,12 @@
 package com.example.hearablemusicplayer.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.ChatRequest
-import com.example.hearablemusicplayer.DeepSeekAPI
+import com.example.hearablemusicplayer.DeepSeekAPIWrapper
+import com.example.hearablemusicplayer.DeepSeekError
+import com.example.hearablemusicplayer.DeepSeekResult
 import com.example.hearablemusicplayer.Message
 import com.example.hearablemusicplayer.database.DailyMusicInfo
 import com.example.hearablemusicplayer.database.ListeningDuration
@@ -30,7 +33,7 @@ import javax.inject.Inject
 class MusicViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
     private val settingsRepo: SettingsRepository,
-    private val deepSeekAPI: DeepSeekAPI
+    private val deepSeekAPIWrapper: DeepSeekAPIWrapper
 ) : ViewModel() {
 
     val isFirstLaunch = settingsRepo.isFirstLaunch
@@ -284,21 +287,47 @@ class MusicViewModel @Inject constructor(
             )
             val messages = listOf(message)
             val chatRequest = ChatRequest(messages = messages)
-            val response = deepSeekAPI.createChatCompletion(
+            
+            // 使用新的 APIWrapper
+            val result = deepSeekAPIWrapper.createChatCompletion(
                 authToken = settingsRepo.getDeepSeekApiKey(),
-                request = chatRequest
+                request = chatRequest,
+                useCache = true
             )
-            if (response.isSuccessful) {
-                val json = response.body()?.choices?.firstOrNull()?.message?.content
-                try {
-                    val intro = Gson().fromJson(json, DailyMusicInfo::class.java)
-                    musicRepo.insertMusicExtra(input.music.id, intro)
-                    saveMusicLabel(input.music.id, intro)
-                } catch (e: Exception) {
-                    println("gson failed")
+            
+            when (result) {
+                is DeepSeekResult.Success -> {
+                    val json = result.data.choices.firstOrNull()?.message?.content
+                    try {
+                        val intro = Gson().fromJson(json, DailyMusicInfo::class.java)
+                        musicRepo.insertMusicExtra(input.music.id, intro)
+                        saveMusicLabel(input.music.id, intro)
+                        Log.d("MusicViewModel", "Successfully processed music extra info")
+                    } catch (e: Exception) {
+                        Log.e("MusicViewModel", "Gson parsing failed", e)
+                    }
                 }
-            } else {
-                println("response failed")
+                is DeepSeekResult.CachedFallback -> {
+                    val json = result.data.choices.firstOrNull()?.message?.content
+                    try {
+                        val intro = Gson().fromJson(json, DailyMusicInfo::class.java)
+                        musicRepo.insertMusicExtra(input.music.id, intro)
+                        saveMusicLabel(input.music.id, intro)
+                        Log.d("MusicViewModel", "Using cached fallback for music extra info")
+                    } catch (e: Exception) {
+                        Log.e("MusicViewModel", "Gson parsing failed on cached data", e)
+                    }
+                }
+                is DeepSeekResult.Error -> {
+                    val errorMsg = when (result.error) {
+                        is DeepSeekError.NetworkError -> "网络错误: ${(result.error as DeepSeekError.NetworkError).message}"
+                        is DeepSeekError.RateLimitError -> "速率限制，请稍后重试"
+                        is DeepSeekError.AuthError -> "认证失败，请检查API密钥"
+                        is DeepSeekError.ServerError -> "服务器错误: ${(result.error as DeepSeekError.ServerError).code}"
+                        is DeepSeekError.UnknownError -> "未知错误: ${(result.error as DeepSeekError.UnknownError).message}"
+                    }
+                    Log.e("MusicViewModel", "API call failed: $errorMsg")
+                }
             }
         }
     }
@@ -310,23 +339,31 @@ class MusicViewModel @Inject constructor(
     }
 
     // 检查 DeepSeek API-Key 是否有效
-    fun checkApiAccess(deepSeekApiKey:String): Boolean {
-        var result = false
-        viewModelScope.launch {
-            val message = Message("User", """{"content": "Hello"}""".trimIndent())
-            val messages = listOf(message)
-            val chatRequest = ChatRequest(messages = messages)
-            val response = deepSeekAPI.createChatCompletion(
-                authToken = deepSeekApiKey,
-                request = chatRequest
-            )
-
-            if (response.isSuccessful) {
-                println(response.body())
-                result = true
+    suspend fun checkApiAccess(deepSeekApiKey: String): Boolean {
+        val message = Message("User", """{"content": "Hello"}""".trimIndent())
+        val messages = listOf(message)
+        val chatRequest = ChatRequest(messages = messages)
+        
+        val result = deepSeekAPIWrapper.createChatCompletion(
+            authToken = deepSeekApiKey,
+            request = chatRequest,
+            useCache = false
+        )
+        
+        return when (result) {
+            is DeepSeekResult.Success -> {
+                Log.d("MusicViewModel", "API key validation successful")
+                true
+            }
+            is DeepSeekResult.CachedFallback -> {
+                Log.d("MusicViewModel", "API key validation using cache")
+                true
+            }
+            is DeepSeekResult.Error -> {
+                Log.e("MusicViewModel", "API key validation failed: ${result.error}")
+                false
             }
         }
-        return result
     }
 
     val recentListeningDurations: StateFlow<List<ListeningDuration>> = musicRepo

@@ -10,6 +10,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,10 +24,19 @@ fun MusicScanDialog(
     onDismiss: () -> Unit
 ) {
     val isLoading by viewModel.isScanning.collectAsState(initial = false)
-    var isFinished = false
     val musicCount by viewModel.musicCount.collectAsState(initial = 0)
+    
+    // 当扫描完成时自动关闭对话框
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            // 延迟一小段时间让用户看到完成消息
+            kotlinx.coroutines.delay(3000)
+            onDismiss()
+        }
+    }
+    
     AlertDialog(
-        onDismissRequest = { if (!isFinished) onDismiss() }, // 加载中时禁止关闭
+        onDismissRequest = { /* 扫描期间禁止关闭 */ },
         title = { Text("扫描音乐") },
         text = {
             if (isLoading) {
@@ -41,14 +51,19 @@ fun MusicScanDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             } else {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("扫描完成！已加载本地音乐${musicCount}首。")
-                Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("扫描完成！已加载本地音乐${musicCount}首。")
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         },
         confirmButton = {
             if (!isLoading) {
-                TextButton(onClick = { isFinished=true; onDismiss() }) {
+                TextButton(onClick = onDismiss) {
                     Text("确定")
                 }
             }

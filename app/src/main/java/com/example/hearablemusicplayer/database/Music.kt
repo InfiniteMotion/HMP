@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.database
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -242,4 +243,28 @@ interface MusicAllDao {
     @Transaction
     @Query("SELECT * FROM music WHERE id IN (:ids)")
     suspend fun getPlaylistByIdList(ids: List<Long>): List<MusicInfo>
+
+    /**
+     * Paging 3 支持：按标题排序分页加载音乐列表
+     */
+    @Transaction
+    @Query("""
+        SELECT * FROM music 
+        LEFT JOIN musicExtra ON music.id = musicExtra.id
+        LEFT JOIN userInfo ON music.id = userInfo.id
+        ORDER BY music.title ASC
+    """)
+    fun getAllMusicInfoPaged(): PagingSource<Int, MusicInfo>
+
+    /**
+     * Paging 3 支持：按 ID 排序分页加载音乐列表
+     */
+    @Transaction
+    @Query("""
+        SELECT * FROM music 
+        LEFT JOIN musicExtra ON music.id = musicExtra.id
+        LEFT JOIN userInfo ON music.id = userInfo.id
+        ORDER BY music.id ASC
+    """)
+    fun getAllMusicInfoPagedById(): PagingSource<Int, MusicInfo>
 }

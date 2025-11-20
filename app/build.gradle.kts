@@ -21,6 +21,11 @@ android {
         versionName = "5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Room schema 导出目录 - 暂时禁用以避免序列化版本冲突
+        // ksp {
+        //     arg("room.schemaLocation", "$projectDir/schemas")
+        // }
     }
 
     buildTypes {

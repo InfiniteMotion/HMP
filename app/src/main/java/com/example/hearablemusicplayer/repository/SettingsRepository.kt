@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -11,6 +12,8 @@ import com.example.hearablemusicplayer.tools.SecureStorageHelper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.File
+import java.io.IOException
 
 // 在 Context 中创建 DataStore 实例
 private val Context.dataStore by preferencesDataStore(name = "player_preferences")
@@ -168,4 +171,142 @@ class SettingsRepository(
         return apiKey?:"Bearer sk-6f67067abbd04e68baedf13c0aeb8c0a"
     }
 
+    /**
+     * 备份设置到文件
+     * @return Result<File> 备份文件路径
+     */
+    suspend fun backupSettings(): kotlin.Result<File> {
+        return try {
+            val backupDir = File(context.filesDir, "backups")
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+            
+            val backupFile = File(backupDir, "settings_backup_${System.currentTimeMillis()}.json")
+            val preferences = context.dataStore.data.first()
+            
+            // 将偏好设置转换为 JSON 格式
+            val jsonContent = buildString {
+                append("{")
+                preferences.asMap().entries.forEachIndexed { index, entry ->
+                    if (index > 0) append(",")
+                    append("\"${entry.key.name}\":")
+                    val value = entry.value
+                    when (value) {
+                        is String -> append("\"$value\"")
+                        is Boolean -> append(value)
+                        is Long -> append(value)
+                        else -> append("null")
+                    }
+                }
+                append("}")
+            }
+            
+            backupFile.writeText(jsonContent)
+            Log.i("SettingsRepository", "Settings backed up to: ${backupFile.absolutePath}")
+            kotlin.Result.success(backupFile)
+        } catch (e: IOException) {
+            Log.e("SettingsRepository", "Failed to backup settings", e)
+            kotlin.Result.failure(e)
+        } catch (e: Exception) {
+            Log.e("SettingsRepository", "Unexpected error during backup", e)
+            kotlin.Result.failure(e)
+        }
+    }
+
+    /**
+     * 从文件恢复设置
+     * @param backupFile 备份文件
+     * @return Result<Unit> 恢复结果
+     */
+    suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit> {
+        return try {
+            if (!backupFile.exists()) {
+                return kotlin.Result.failure(IOException("Backup file does not exist"))
+            }
+            
+            val jsonContent = backupFile.readText()
+            // 简单的 JSON 解析（生产环境建议使用 Gson 或 Kotlin Serialization）
+            val regex = """"([^"]+)":\s*([^,}]+)""".toRegex()
+            val matches = regex.findAll(jsonContent)
+            
+            context.dataStore.edit { prefs ->
+                prefs.clear()
+                matches.forEach { match ->
+                    val key = match.groupValues[1]
+                    val value = match.groupValues[2].trim()
+                    
+                    when (key) {
+                        PreferencesKeys.IS_FIRST_LAUNCH.name -> {
+                            prefs[PreferencesKeys.IS_FIRST_LAUNCH] = value.toBoolean()
+                        }
+                        PreferencesKeys.IS_LOAD_MUSIC.name -> {
+                            prefs[PreferencesKeys.IS_LOAD_MUSIC] = value.toBoolean()
+                        }
+                        PreferencesKeys.CURRENT_MUSIC_ID.name -> {
+                            prefs[PreferencesKeys.CURRENT_MUSIC_ID] = value.toLong()
+                        }
+                        PreferencesKeys.PLAYBACK_MODE.name -> {
+                            prefs[PreferencesKeys.PLAYBACK_MODE] = value.trim('"')
+                        }
+                        PreferencesKeys.CURRENT_PLAYLIST_ID.name -> {
+                            prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] = value.toLong()
+                        }
+                        PreferencesKeys.LIKED_PLAYLIST_ID.name -> {
+                            prefs[PreferencesKeys.LIKED_PLAYLIST_ID] = value.toLong()
+                        }
+                        PreferencesKeys.RECENT_PLAYLIST_ID.name -> {
+                            prefs[PreferencesKeys.RECENT_PLAYLIST_ID] = value.toLong()
+                        }
+                        PreferencesKeys.USER_NAME.name -> {
+                            prefs[PreferencesKeys.USER_NAME] = value.trim('"')
+                        }
+                        PreferencesKeys.AVATAR_URI.name -> {
+                            prefs[PreferencesKeys.AVATAR_URI] = value.trim('"')
+                        }
+                        PreferencesKeys.DEEPSEEK_API_KEY.name -> {
+                            prefs[PreferencesKeys.DEEPSEEK_API_KEY] = value.trim('"')
+                        }
+                    }
+                }
+            }
+            
+            Log.i("SettingsRepository", "Settings restored from: ${backupFile.absolutePath}")
+            kotlin.Result.success(Unit)
+        } catch (e: IOException) {
+            Log.e("SettingsRepository", "Failed to restore settings", e)
+            kotlin.Result.failure(e)
+        } catch (e: Exception) {
+            Log.e("SettingsRepository", "Unexpected error during restore", e)
+            kotlin.Result.failure(e)
+        }
+    }
+
+    /**
+     * 清理旧备份文件（保留最近的 3 个）
+     */
+    suspend fun cleanOldBackups(keepCount: Int = 3): kotlin.Result<Unit> {
+        return try {
+            val backupDir = File(context.filesDir, "backups")
+            if (!backupDir.exists()) {
+                return kotlin.Result.success(Unit)
+            }
+            
+            val backupFiles = backupDir.listFiles { file ->
+                file.name.startsWith("settings_backup_") && file.name.endsWith(".json")
+            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+            
+            if (backupFiles.size > keepCount) {
+                backupFiles.drop(keepCount).forEach { file ->
+                    file.delete()
+                    Log.i("SettingsRepository", "Deleted old backup: ${file.name}")
+                }
+            }
+            
+            kotlin.Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("SettingsRepository", "Failed to clean old backups", e)
+            kotlin.Result.failure(e)
+        }
+    }
 }

@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,7 @@ import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.components.BackButton
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
 import com.example.hearablemusicplayer.viewmodel.MusicViewModel
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -266,6 +268,8 @@ fun ReloadMusic(
 ) {
     var isLoading by remember { mutableStateOf(false) }
     val musicCount by viewModel.musicCount.collectAsState(initial = 0)
+    val isScanning by viewModel.isScanning.collectAsState(initial = false)
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -302,7 +306,8 @@ fun ReloadMusic(
                     onClick = {
                         isLoading = true
                         viewModel.refreshMusicList()
-                    }
+                    },
+                    enabled = !isLoading
                 ) {
                     Text("增量加载")
                 }
@@ -312,7 +317,8 @@ fun ReloadMusic(
                     onClick = {
                         isLoading = true
                         viewModel.refreshMusicList()
-                    }
+                    },
+                    enabled = !isLoading
                 ) {
                     Text("重新加载")
                 }
@@ -323,7 +329,7 @@ fun ReloadMusic(
         if (isLoading) {
             MusicScanDialog(
                 viewModel = viewModel,
-                onDismiss = { }
+                onDismiss = { isLoading = false }
             )
         }
     }
@@ -382,10 +388,13 @@ fun SetDeepSeekApi(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
+                val scope = rememberCoroutineScope()
                 Button(
                     modifier = Modifier.width(120.dp),
                     onClick = {
-                        isAccess=viewModel.checkApiAccess(keyValue)
+                        scope.launch {
+                            isAccess = viewModel.checkApiAccess(keyValue)
+                        }
                     }
                 ) {
                     Text("测试")

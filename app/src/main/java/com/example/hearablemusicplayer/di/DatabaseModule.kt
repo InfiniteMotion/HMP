@@ -2,6 +2,8 @@ package com.example.hearablemusicplayer.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.hearablemusicplayer.database.AppDatabase
 import com.example.hearablemusicplayer.database.ListeningDurationDao
 import com.example.hearablemusicplayer.database.MusicAllDao
@@ -23,6 +25,16 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    /**
+     * 数据库迁移：版本 1 -> 2
+     */
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 当前版本升级不涉及表结构变化
+            // 未来版本升级时在此处添加 ALTER TABLE 等 SQL 语句
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -32,7 +44,10 @@ object DatabaseModule {
             context.applicationContext,
             AppDatabase::class.java,
             "music_database"
-        ).build()
+        )
+            .addMigrations(MIGRATION_1_2)
+            .fallbackToDestructiveMigration() // 迁移失败时重建数据库
+            .build()
     }
 
     @Provides

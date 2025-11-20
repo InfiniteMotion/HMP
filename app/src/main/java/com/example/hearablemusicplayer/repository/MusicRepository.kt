@@ -6,6 +6,9 @@ import android.media.MediaMetadataRetriever
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.net.toUri
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.example.hearablemusicplayer.database.DailyMusicInfo
 import com.example.hearablemusicplayer.database.ListeningDuration
@@ -28,10 +31,12 @@ import com.example.hearablemusicplayer.database.UserInfo
 import com.example.hearablemusicplayer.database.UserInfoDao
 import com.example.hearablemusicplayer.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.database.myenum.LabelName
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
@@ -57,6 +62,21 @@ class MusicRepository @Inject constructor(
 ) {
 
     // ------------------- 音乐相关操作 -------------------
+
+    /**
+     * 获取分页的音乐列表（Paging 3）
+     * @param pageSize 每页大小，默认20条
+     */
+    fun getAllMusicInfoPaged(pageSize: Int = 20): Flow<PagingData<MusicInfo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                enablePlaceholders = false,
+                prefetchDistance = 10
+            ),
+            pagingSourceFactory = { musicAllDao.getAllMusicInfoPaged() }
+        ).flow
+    }
 
     // 排序音乐
     private val musicFields = listOf("id", "title", "artist", "album", "duration")
@@ -177,26 +197,79 @@ class MusicRepository @Inject constructor(
     private val _isScanning = MutableStateFlow(true)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
     
+    // 扫描状态
+    data class ScanProgress(
+        val currentCount: Int = 0,
+        val totalCount: Int = 0,
+        val isScanning: Boolean = false,
+        val error: String? = null
+    )
+    
+    private val _scanProgress = MutableStateFlow(ScanProgress())
+    val scanProgress: StateFlow<ScanProgress> = _scanProgress.asStateFlow()
+    
+    companion object {
+        private const val BATCH_SIZE = 50 // 分批大小
+        private const val MIN_DURATION_MS = 60000L // 1分钟
+    }
+    
     /**
      * 从设备加载音乐，使用 Result 封装错误
      */
-    suspend fun loadMusicFromDevice(): Result<Unit> = safeCall {
-        _isScanning.value = true
-        try {
-            val result = performMusicScan()
-            musicDao.deleteAll()
-            musicExtraDao.deleteAll()
-            userInfoDao.deleteAll()
-            musicDao.insertAll(result.first)
-            musicExtraDao.insertAll(result.second)
-            userInfoDao.insertAll(result.third)
-        } finally {
-            _isScanning.value = false
+    suspend fun loadMusicFromDevice(): Result<Unit> = withContext(Dispatchers.IO) {
+        safeCall {
+            _isScanning.value = true
+            _scanProgress.value = ScanProgress(isScanning = true)
+            
+            try {
+                val (musicList, extraList, userInfoList) = performMusicScan()
+                
+                // 分批插入数据，减少内存压力
+                musicDao.deleteAll()
+                musicExtraDao.deleteAll()
+                userInfoDao.deleteAll()
+                
+                // 分批插入
+                musicList.chunked(BATCH_SIZE).forEach { batch ->
+                    musicDao.insertAll(batch)
+                }
+                
+                extraList.chunked(BATCH_SIZE).forEach { batch ->
+                    musicExtraDao.insertAll(batch)
+                }
+                
+                userInfoList.chunked(BATCH_SIZE).forEach { batch ->
+                    userInfoDao.insertAll(batch)
+                }
+                
+                _scanProgress.value = ScanProgress(
+                    currentCount = musicList.size,
+                    totalCount = musicList.size,
+                    isScanning = false
+                )
+            } catch (e: Exception) {
+                Log.e("MusicRepository", "Music scan failed", e)
+                _scanProgress.value = ScanProgress(
+                    isScanning = false,
+                    error = e.message ?: "Unknown error"
+                )
+                throw e
+            } finally {
+                _isScanning.value = false
+            }
         }
     }
 
+    /**
+     * 读取歌词，带异常处理
+     */
     private fun getLyrics(file: File): String? {
         return try {
+            if (!file.exists() || !file.canRead()) {
+                Log.w("MusicRepository", "File not accessible: ${file.path}")
+                return null
+            }
+            
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tag
             // 尝试多种歌词标签读取
@@ -204,14 +277,20 @@ class MusicRepository @Inject constructor(
                 ?: tag?.getFirst("UNSYNCEDLYRICS")          // 异步歌词标签
                 ?: tag?.getFirst("USLT")                    // ID3v2 Lyrics Frame
                 ?: tag?.getFirst("LYRICS:SYNCED")           // 部分FLAC特殊标签
+        } catch (e: OutOfMemoryError) {
+            Log.e("MusicRepository", "OOM while reading lyrics: ${file.path}", e)
+            null
         } catch (e: Exception) {
-            Log.e("JAudioTagger", "读取歌词失败", e)
+            Log.e("MusicRepository", "Failed to read lyrics: ${file.path}", e)
             null
         }
     }
 
 
-    private fun performMusicScan(): Triple<List<Music>, List<MusicExtra>, List<UserInfo>> {
+    /**
+     * 执行音乐扫描，带进度报告和异常处理
+     */
+    private suspend fun performMusicScan(): Triple<List<Music>, List<MusicExtra>, List<UserInfo>> = withContext(Dispatchers.IO) {
         val musicList = mutableListOf<Music>()
         val musicExtraList = mutableListOf<MusicExtra>()
         val userInfoList = mutableListOf<UserInfo>()
@@ -229,82 +308,107 @@ class MusicRepository @Inject constructor(
         )
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > ?"
-        val selectionArgs = arrayOf("60000") // 大于 1 分钟
+        val selectionArgs = arrayOf(MIN_DURATION_MS.toString())
         val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
 
         val retriever = MediaMetadataRetriever()
 
-        context.contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            sortOrder
-        )?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
-                val title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE))
-                val artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
-                val album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM))
-                val duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION))
-                val path = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA))
-                val albumId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID))
-                val mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE))
-                val fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE))
+        try {
+            context.contentResolver.query(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                sortOrder
+            )?.use { cursor ->
+                val totalCount = cursor.count
+                var currentCount = 0
+                
+                while (cursor.moveToNext()) {
+                    try {
+                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
+                        val title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)) ?: "Unknown"
+                        val artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)) ?: "Unknown Artist"
+                        val album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)) ?: "Unknown Album"
+                        val duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION))
+                        val path = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA))
+                        val albumId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID))
+                        val mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE))
+                        val fileSize = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE))
 
-                val albumArtUri = ContentUris.withAppendedId(
-                    "content://media/external/audio/albumart".toUri(),
-                    albumId
-                ).toString()
+                        val albumArtUri = ContentUris.withAppendedId(
+                            "content://media/external/audio/albumart".toUri(),
+                            albumId
+                        ).toString()
 
-                var bitRate: Int? = null
-                var sampleRate: Int? = null
+                        var bitRate: Int? = null
+                        var sampleRate: Int? = null
 
-                try {
-                    retriever.setDataSource(path)
-                    bitRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull()?.div(1000)
-                    sampleRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                        try {
+                            retriever.setDataSource(path)
+                            bitRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull()?.div(1000)
+                            sampleRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull()
+                        } catch (e: Exception) {
+                            Log.e("MusicRepository", "Failed to extract metadata for: $path", e)
+                        }
+
+                        val lyrics = File(path).let { file ->
+                            if (file.exists() && file.canRead()) getLyrics(file) else null
+                        }
+
+                        musicList.add(
+                            Music(
+                                id = id,
+                                title = title,
+                                artist = artist,
+                                album = album,
+                                duration = duration,
+                                path = path,
+                                albumArtUri = albumArtUri
+                            )
+                        )
+
+                        musicExtraList.add(
+                            MusicExtra(
+                                id = id,
+                                lyrics = lyrics,
+                                bitRate = bitRate,
+                                sampleRate = sampleRate,
+                                fileSize = fileSize,
+                                format = mimeType,
+                                isGetExtraInfo = false
+                            )
+                        )
+
+                        userInfoList.add(
+                            UserInfo(
+                                id = id,
+                            )
+                        )
+                        
+                        currentCount++
+                        if (currentCount % 10 == 0) {
+                            _scanProgress.value = ScanProgress(
+                                currentCount = currentCount,
+                                totalCount = totalCount,
+                                isScanning = true
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MusicRepository", "Error processing music item", e)
+                        // 继续处理下一项
+                    }
                 }
-
-                val lyrics = File(path).let { file ->
-                    if (file.exists()) getLyrics(file) else null
-                }
-
-                musicList.add(
-                    Music(
-                        id = id,
-                        title = title,
-                        artist = artist,
-                        album = album,
-                        duration = duration,
-                        path = path,
-                        albumArtUri = albumArtUri
-                    )
-                )
-
-                musicExtraList.add(
-                    MusicExtra(
-                        id = id,
-                        lyrics = lyrics,
-                        bitRate = bitRate,
-                        sampleRate = sampleRate,
-                        fileSize = fileSize,
-                        format = mimeType,
-                        isGetExtraInfo = false
-                    )
-                )
-
-                userInfoList.add(
-                    UserInfo(
-                        id = id,
-                    )
-                )
+            }
+        } finally {
+            try {
+                retriever.release()
+            } catch (e: Exception) {
+                Log.e("MusicRepository", "Failed to release MediaMetadataRetriever", e)
             }
         }
-        retriever.release()
-        return Triple(musicList,musicExtraList,userInfoList)
+        
+        Triple(musicList, musicExtraList, userInfoList)
     }
 
     // 删除所有信息
