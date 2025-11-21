@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlin.math.abs
 
 @Composable
@@ -27,6 +28,7 @@ fun MainScreen(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+    val haptic = rememberHapticFeedback()
 
     val swipePages = listOf("home", "gallery", "list", "user")
     val currentIndex = swipePages.indexOf(currentRoute)
@@ -42,6 +44,8 @@ fun MainScreen(
                 if (targetIndex in swipePages.indices) {
                     val targetRoute = swipePages[targetIndex]
                     if (targetRoute != currentRoute) {
+                        // 翻页时给予触觉反馈
+                        haptic.performLightClick()
                         navController.navigate(targetRoute) {
                             launchSingleTop = true
                             restoreState = true

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
 fun CustomBottomNavBar(
@@ -30,6 +31,7 @@ fun CustomBottomNavBar(
 ) {
     val items = rememberBottomNavItems()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val haptic = rememberHapticFeedback()
     // 添加顶部阴影线条 + 背景区分
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -53,7 +55,10 @@ fun CustomBottomNavBar(
                     isPlaying = isPlaying,
                     item = item,
                     isSelected = currentRoute == item.route,
-                    onClick = { onNavigate(item.route) }
+                    onClick = {
+                        haptic.performClick()
+                        onNavigate(item.route)
+                    }
                 )
             }
         }

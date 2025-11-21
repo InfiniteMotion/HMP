@@ -31,6 +31,7 @@ import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
 @Composable
@@ -63,12 +64,14 @@ fun MusicItem(
     modifier: Modifier
 ) {
     val scope = rememberCoroutineScope()
+    val haptic = rememberHapticFeedback()
     
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp)
             .clickable {
+                haptic.performClick()
                 // 在协程中等待播放准备完成后再导航
                 scope.launch {
                     playControlViewModel.playWith(musicInfo)
@@ -113,6 +116,7 @@ fun MusicItem(
         Row {
             IconButton(
                 onClick = {
+                    haptic.performConfirm()
                     scope.launch {
                         playControlViewModel.addToPlaylist(musicInfo)
                     }
@@ -127,7 +131,9 @@ fun MusicItem(
             }
 
             IconButton(
-                onClick = {},
+                onClick = {
+                    haptic.performLightClick()
+                },
                 modifier = Modifier
             ) {
                 Icon(

@@ -42,6 +42,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
 fun PlayControlButtonOne(
@@ -53,6 +54,7 @@ fun PlayControlButtonOne(
     val selectedGenre by musicViewModel.orderBy.collectAsState("title")
     val selectedOrder by musicViewModel.orderType.collectAsState("ASC")
     val playlist by musicViewModel.allMusic.collectAsState()
+    val haptic = rememberHapticFeedback()
 
     Column {
         Row(
@@ -61,7 +63,10 @@ fun PlayControlButtonOne(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             IconButton(
-                onClick = { expanded = !expanded },
+                onClick = {
+                    haptic.performClick()
+                    expanded = !expanded
+                },
                 modifier = Modifier
                     .size(32.dp)
             ) {
@@ -87,6 +92,7 @@ fun PlayControlButtonOne(
             }
             IconButton(
                 onClick = {
+                    haptic.performConfirm()
                     playControlViewModel.addAllToPlaylistByShuffle(playlist)
                     navController.navigate("player")
                 },
@@ -101,7 +107,7 @@ fun PlayControlButtonOne(
             }
             IconButton(
                 onClick = {
-
+                    haptic.performLightClick()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -159,6 +165,7 @@ fun PlayControlButtonOne(
                                 FilterChip(
                                     selected = selectedGenre == eGenre,
                                     onClick = {
+                                        haptic.performLightClick()
                                         (if (selectedGenre == eGenre) null else eGenre)?.let {
                                             musicViewModel.updateOrderBy(
                                                 it
@@ -192,6 +199,7 @@ fun PlayControlButtonOne(
                                 FilterChip(
                                     selected = selectedOrder == eOrder,
                                     onClick = {
+                                        haptic.performLightClick()
                                         (if (selectedOrder == eOrder) null else eOrder)?.let {
                                             musicViewModel.updateOrderType(
                                                 it
@@ -221,6 +229,7 @@ fun PlayControlButtonTwo(
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
+    val haptic = rememberHapticFeedback()
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -229,6 +238,7 @@ fun PlayControlButtonTwo(
         ) {
             IconButton(
                     onClick = {
+                        haptic.performConfirm()
                         playControlViewModel.addAllToPlaylistByShuffle(playlist)
                         navController.navigate("player")
                     },
@@ -244,6 +254,7 @@ fun PlayControlButtonTwo(
             Spacer(modifier = Modifier.width(160.dp))
             IconButton(
                 onClick = {
+                    haptic.performConfirm()
                     playControlViewModel.addAllToPlaylistInOrder(playlist)
                     navController.navigate("player")
                 },
@@ -266,8 +277,12 @@ fun PlayControlButtonTwo(
 fun BackButton(
     navController: NavController
 ){
+    val haptic = rememberHapticFeedback()
     IconButton(
-        onClick = { navController.popBackStack() },
+        onClick = {
+            haptic.performClick()
+            navController.popBackStack()
+        },
     ) {
         Icon(
             painter = painterResource(R.drawable.back_to),
@@ -281,6 +296,7 @@ fun BackButton(
 fun SearchButton(
     navController: NavController
 ){
+    val haptic = rememberHapticFeedback()
     Box(
         modifier = Modifier.size(48.dp)
             .clip(CircleShape)
@@ -292,7 +308,10 @@ fun SearchButton(
         contentAlignment = Alignment.Center
     ) {
         IconButton(
-            onClick = { navController.navigate("search") },
+            onClick = {
+                haptic.performClick()
+                navController.navigate("search")
+            },
         ) {
             Icon(
                 painter = painterResource(R.drawable.magnifyingglass),

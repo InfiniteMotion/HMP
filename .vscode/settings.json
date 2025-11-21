@@ -1,3 +1,32 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    // 禁用自动 Gradle 加载
+    "java.configuration.updateBuildConfiguration": "disabled",
+    
+    // 禁用 Gradle 导入
+    "java.import.gradle.enabled": false,
+    
+    // 禁用自动构建
+    "java.autobuild.enabled": false,
+    
+    // 排除构建目录
+    "files.exclude": {
+        "**/.gradle": true,
+        "**/build": true,
+        "**/.kotlin": true
+    },
+    
+    // 文件监视器排除（减少资源占用）
+    "files.watcherExclude": {
+        "**/.gradle/**": true,
+        "**/build/**": true,
+        "**/.kotlin/**": true,
+        "**/gradle/**": true
+    },
+    
+    // 搜索时排除构建目录
+    "search.exclude": {
+        "**/.gradle": true,
+        "**/build": true,
+        "**/.kotlin": true
+    }
 }

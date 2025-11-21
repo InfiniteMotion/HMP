@@ -28,12 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
 fun TimerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     // 原始预设时间选项
     val timeOptions = listOf(0, 15, 30, 45, 60, 90)
 
@@ -67,7 +69,10 @@ fun TimerDialog(
                         ) {
                             RadioButton(
                                 selected = selectedMinutes == minutes,
-                                onClick = { selectedMinutes = minutes }
+                                onClick = {
+                                    haptic.performLightClick()
+                                    selectedMinutes = minutes
+                                }
                             )
                             Text(
                                 text = if (minutes == 0) "关闭定时" else "$minutes 分钟",
@@ -115,12 +120,18 @@ fun TimerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(selectedMinutes) }) {
+            TextButton(onClick = {
+                haptic.performConfirm()
+                onConfirm(selectedMinutes)
+            }) {
                 Text("确定")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = {
+                haptic.performClick()
+                onDismiss()
+            }) {
                 Text("取消")
             }
         }

@@ -53,6 +53,7 @@ import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.pages.formatTime
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
 fun PlayContent(
@@ -61,6 +62,7 @@ fun PlayContent(
     navController: NavController
 ){
     val scope = rememberCoroutineScope()
+    val haptic = rememberHapticFeedback()
     
     // 开启播放进度监督
     DisposableEffect(Unit) {
@@ -136,14 +138,33 @@ fun PlayContent(
                     isLike = isLiked,
                     remainingTime = remainingTime,
                     onPlayPause = {
+                        haptic.performClick()
                         if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume()
                     },
-                    onNext = viewModel::playNext,
-                    onPrevious = viewModel::playPrevious,
-                    onPlaybackModeChange = viewModel::togglePlaybackModeByOrder,
-                    onFavorite = { viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked) },
-                    onTimerClick = { showTimerDialog = true },
-                    onHeartMode = { viewModel.playHeartMode() }
+                    onNext = {
+                        haptic.performClick()
+                        viewModel.playNext()
+                    },
+                    onPrevious = {
+                        haptic.performClick()
+                        viewModel.playPrevious()
+                    },
+                    onPlaybackModeChange = {
+                        haptic.performContextClick()
+                        viewModel.togglePlaybackModeByOrder()
+                    },
+                    onFavorite = {
+                        haptic.performConfirm()
+                        viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked)
+                    },
+                    onTimerClick = {
+                        haptic.performClick()
+                        showTimerDialog = true
+                    },
+                    onHeartMode = {
+                        haptic.performConfirm()
+                        viewModel.playHeartMode()
+                    }
                 )
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -166,7 +187,10 @@ fun PlayContent(
                                 style = MaterialTheme.typography.titleSmall,
                                 modifier = Modifier
                                     .padding(end = 16.dp, bottom = 8.dp)
-                                    .clickable { showFullList = !showFullList }
+                                    .clickable {
+                                        haptic.performLightClick()
+                                        showFullList = !showFullList
+                                    }
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
@@ -175,7 +199,10 @@ fun PlayContent(
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier
                                 .padding(bottom = 8.dp)
-                                .clickable { viewModel.clearPlaylist() }
+                                .clickable {
+                                    haptic.performReject()
+                                    viewModel.clearPlaylist()
+                                }
                         )
                     }
                 }
@@ -209,12 +236,16 @@ fun PlayContent(
                 PlaylistItem(
                     musicInfo = item,
                     isPlaying = index == currentIndex,
-                    onClick = { 
+                    onClick = {
+                        haptic.performClick()
                         scope.launch {
                             viewModel.playAt(item)
                         }
                     },
-                    onRemove = { viewModel.removeFromPlaylist(item) }
+                    onRemove = {
+                        haptic.performReject()
+                        viewModel.removeFromPlaylist(item)
+                    }
                 )
             }
 
@@ -228,7 +259,10 @@ fun PlayContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp, horizontal = 16.dp)
-                            .clickable { showFullList = true }
+                            .clickable {
+                                haptic.performLightClick()
+                                showFullList = true
+                            }
                     )
                 }
             }
@@ -236,13 +270,14 @@ fun PlayContent(
 
         if (showTimerDialog) {
             TimerDialog(
-                onDismiss = { },
+                onDismiss = { showTimerDialog = false },
                 onConfirm = { minutes ->
                     if(minutes==0){
                         viewModel.cancelTimer()
                     }else{
                         viewModel.startTimer(minutes)
                     }
+                    showTimerDialog = false
                 }
             )
         }
@@ -324,6 +359,7 @@ fun SeekBar(
     duration: Long,
     onSeek: (Long) -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     // 关键修改：独立维护滑块位置状态
     var sliderPosition by remember { mutableFloatStateOf(0f) }
     var lastValidPosition by remember { mutableFloatStateOf(0f) }
@@ -366,10 +402,14 @@ fun SeekBar(
                 else -> lastValidPosition
             },
             onValueChange = {
+                if (!isDragging.value) {
+                    haptic.performDragStart()
+                }
                 sliderPosition = it.coerceIn(0f, 1f)
                 isDragging.value = true
             },
             onValueChangeFinished = {
+                haptic.performGestureEnd()
                 onSeek((sliderPosition * duration).toLong())
                 isDragging.value = false
             },
