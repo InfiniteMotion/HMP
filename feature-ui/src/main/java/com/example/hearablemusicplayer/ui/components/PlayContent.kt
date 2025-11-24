@@ -1,6 +1,14 @@
-﻿@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,21 +23,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,29 +50,44 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.ui.R
+import androidx.palette.graphics.Palette
+import coil.ImageLoader
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.example.hearablemusicplayer.data.database.Music
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.pages.formatTime
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayContent(
-    listState: LazyListState,
     viewModel: PlayControlViewModel,
     navController: NavController
 ){
-    val scope = rememberCoroutineScope()
     val haptic = rememberHapticFeedback()
     
     // 开启播放进度监督
@@ -73,8 +99,6 @@ fun PlayContent(
     }
 
     val musicInfo by viewModel.currentPlayingMusic.collectAsState()
-    val playlist by viewModel.currentPlaylist.collectAsState(initial = emptyList())
-    val currentIndex by viewModel.currentIndex.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
@@ -105,181 +129,196 @@ fun PlayContent(
         val labels by viewModel.currentMusicLabels.collectAsState()
         val lyrics by viewModel.currentMusicLyrics.collectAsState()
         var showTimerDialog by remember { mutableStateOf(false) }
-        var showFullList by remember { mutableStateOf(false) }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.Top
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { PlayerHeader(navController) }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
-            item { MusicInfo(musicInfo!!.music) }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
-            item {
-                MusicInfoExtra(musicInfo!!,labels,lyrics,currentPosition) }
-            item { Spacer(modifier = Modifier.height(16.dp)) }
-            item {
-                SeekBar(
-                    isPlaying = isPlaying,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onSeek = viewModel::seekTo
-                ) // 进度条与时间显示
-            }
-            item {
-                // 播放控制按钮
-                PlaybackControls(
-                    isPlaying = isPlaying,
-                    playbackMode = playbackMode,
-                    isLike = isLiked,
-                    remainingTime = remainingTime,
-                    onPlayPause = {
-                        haptic.performClick()
-                        if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume()
-                    },
-                    onNext = {
-                        haptic.performClick()
-                        viewModel.playNext()
-                    },
-                    onPrevious = {
-                        haptic.performClick()
-                        viewModel.playPrevious()
-                    },
-                    onPlaybackModeChange = {
-                        haptic.performContextClick()
-                        viewModel.togglePlaybackModeByOrder()
-                    },
-                    onFavorite = {
-                        haptic.performConfirm()
-                        viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked)
-                    },
-                    onTimerClick = {
-                        haptic.performClick()
-                        showTimerDialog = true
-                    },
-                    onHeartMode = {
-                        haptic.performConfirm()
-                        viewModel.playHeartMode()
-                    }
-                )
-            }
-            item { Spacer(modifier = Modifier.height(32.dp)) }
-            item {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Text(
-                        text = "播放列表 (${playlist.size})",
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Row {
-                        if (playlist.size > 8) {
-                            Text(
-                                text = if (showFullList) "收起" else "展开",
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier
-                                    .padding(end = 16.dp, bottom = 8.dp)
-                                    .clickable {
-                                        haptic.performLightClick()
-                                        showFullList = !showFullList
-                                    }
-                            )
+        
+        // 提取专辑封面颜色
+        val context = LocalContext.current
+        var targetDominantColor by remember { mutableStateOf(Color(0xFF121212)) }
+        var targetVibrantColor by remember { mutableStateOf(Color(0xFF1E1E1E)) }
+        
+        // 使用动画过渡颜色
+        val dominantColor by animateColorAsState(
+            targetValue = targetDominantColor,
+            animationSpec = tween(durationMillis = 1000),
+            label = "dominantColor"
+        )
+        val vibrantColor by animateColorAsState(
+            targetValue = targetVibrantColor,
+            animationSpec = tween(durationMillis = 1000),
+            label = "vibrantColor"
+        )
+        
+        LaunchedEffect(musicInfo!!.music.albumArtUri) {
+            try {
+                withContext(Dispatchers.IO) {
+                    val loader = ImageLoader(context)
+                    val request = ImageRequest.Builder(context)
+                        .data(musicInfo!!.music.albumArtUri)
+                        .size(200, 200)  // 缩小到200x200进行颜色提取
+                        .allowHardware(false)
+                        .build()
+                    
+                    val result = (loader.execute(request) as? SuccessResult)?.drawable
+                    result?.let { drawable ->
+                        val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                        bitmap?.let {
+                            val palette = Palette.from(it)
+                                .maximumColorCount(16)  // 增加颜色采样数量
+                                .generate()
+                            
+                            // 优先使用暗色调和鲜艳色
+                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            val vibrant = palette.vibrantSwatch?.rgb
+                            val darkVibrant = palette.darkVibrantSwatch?.rgb
+                            val dominant = palette.getDominantColor(0xFF121212.toInt())
+                            
+                            // 选择最佳的暗色作为主色调
+                            targetDominantColor = Color(darkMuted ?: darkVibrant ?: dominant)
+                            // 选择鲜艳色作为次要色
+                            targetVibrantColor = Color(vibrant ?: darkVibrant ?: 0xFF1E1E1E.toInt())
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "清空",
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier
-                                .padding(bottom = 8.dp)
-                                .clickable {
-                                    haptic.performReject()
-                                    viewModel.clearPlaylist()
-                                }
-                        )
                     }
                 }
-
-                HorizontalDivider(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .size(2.dp)
-                        .padding(horizontal = 16.dp)
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            // 使用 items 显示播放列表项
-            val displayItems = if (!showFullList) {
-                playlist.filterIndexed { index, _ ->
-                    index >= (currentIndex - 2) && index < currentIndex ||
-                            index == currentIndex ||
-                            index > currentIndex && index <= (currentIndex + 5)
-                }
-            } else {
-                playlist
-            }
-
-            items(
-                items = displayItems,
-                key = { it.music.id }
-            ) { item ->
-                val index = playlist.indexOf(item)
-                PlaylistItem(
-                    musicInfo = item,
-                    isPlaying = index == currentIndex,
-                    onClick = {
-                        haptic.performClick()
-                        scope.launch {
-                            viewModel.playAt(item)
-                        }
-                    },
-                    onRemove = {
-                        haptic.performReject()
-                        viewModel.removeFromPlaylist(item)
-                    }
-                )
-            }
-
-            // 显示更多提示
-            if (!showFullList && playlist.size > 8) {
-                item {
-                    Text(
-                        text = "还有 ${playlist.size - displayItems.size} 首歌曲",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp, horizontal = 16.dp)
-                            .clickable {
-                                haptic.performLightClick()
-                                showFullList = true
-                            }
-                    )
-                }
+            } catch (e: Exception) {
+                // 如果提取失败，使用默认颜色
             }
         }
-
-        if (showTimerDialog) {
-            TimerDialog(
-                onDismiss = { showTimerDialog = false },
-                onConfirm = { minutes ->
-                    if(minutes==0){
-                        viewModel.cancelTimer()
-                    }else{
-                        viewModel.startTimer(minutes)
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            dominantColor.copy(alpha = 0.8f),
+                            vibrantColor.copy(alpha = 0.6f),
+                            dominantColor.copy(alpha = 0.9f)
+                        )
+                    )
+                )
+        ) {
+            val scrollState = rememberScrollState()
+            
+            // 检测是否滚动到顶部
+            val isAtTop by remember {
+                derivedStateOf { scrollState.value == 0 }
+            }
+            
+            // 下拉退出的嵌套滚动处理
+            var dragOffsetY by remember { mutableFloatStateOf(0f) }
+            val nestedScrollConnection = remember(isAtTop) {
+                object : NestedScrollConnection {
+                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                        // 只处理用户手势触发的滚动
+                        if (source == NestedScrollSource.Drag) {
+                            // 向下拖动（available.y > 0）且已在顶部时，累积下拉距离
+                            if (isAtTop && available.y > 0) {
+                                dragOffsetY += available.y
+                                return Offset.Zero // 不消耗滚动，让内容正常显示
+                            } else {
+                                // 不在顶部或向上拖动时，重置计数
+                                dragOffsetY = 0f
+                            }
+                        }
+                        return Offset.Zero
                     }
-                    showTimerDialog = false
+                    
+                    override fun onPostScroll(
+                        consumed: Offset,
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
+                        // 手势结束时检查是否需要返回
+                        if (dragOffsetY > 200f && isAtTop) {
+                            if (navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                        }
+                        return Offset.Zero
+                    }
                 }
+            }
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection)
+                    .verticalScroll(scrollState)
             )
+            {
+                Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PlayerHeader(navController)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    MusicInfo(musicInfo!!.music)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    MusicInfoExtra(musicInfo!!,labels,lyrics,currentPosition)
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SeekBar(
+                        isPlaying = isPlaying,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onSeek = viewModel::seekTo
+                    )
+                    // 播放控制按钮
+                    PlaybackControls(
+                        isPlaying = isPlaying,
+                        playbackMode = playbackMode,
+                        isLike = isLiked,
+                        remainingTime = remainingTime,
+                        onPlayPause = {
+                            haptic.performClick()
+                            if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume()
+                        },
+                        onNext = {
+                            haptic.performClick()
+                            viewModel.playNext()
+                        },
+                        onPrevious = {
+                            haptic.performClick()
+                            viewModel.playPrevious()
+                        },
+                        onPlaybackModeChange = {
+                            haptic.performContextClick()
+                            viewModel.togglePlaybackModeByOrder()
+                        },
+                        onFavorite = {
+                            haptic.performConfirm()
+                            viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked)
+                        },
+                        onTimerClick = {
+                            haptic.performClick()
+                            showTimerDialog = true
+                        },
+                        onHeartMode = {
+                            haptic.performConfirm()
+                            viewModel.playHeartMode()
+                        },
+                        viewModel = viewModel,
+                        scrollState = scrollState
+                    )
+                }
+            }
+            if (showTimerDialog) {
+                TimerDialog(
+                    onDismiss = { showTimerDialog = false },
+                    onConfirm = { minutes ->
+                        if(minutes==0){
+                            viewModel.cancelTimer()
+                        }else{
+                            viewModel.startTimer(minutes)
+                        }
+                        showTimerDialog = false
+                    }
+                )
+            }
         }
     }
 }
@@ -343,7 +382,7 @@ fun MusicInfoExtra(
         horizontalArrangement = Arrangement.Center
     ){
         DotPager(
-            modifier = Modifier.size(340.dp),
+            modifier = Modifier.size(340.dp,420.dp),
             pageContent = contents,
             initialPage = 1
         )
@@ -360,66 +399,89 @@ fun SeekBar(
     onSeek: (Long) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
-    // 关键修改：独立维护滑块位置状态
     var sliderPosition by remember { mutableFloatStateOf(0f) }
-    var lastValidPosition by remember { mutableFloatStateOf(0f) }
-    val isDragging = remember { mutableStateOf(false) }
+    var isDragging by remember { mutableStateOf(false) }
+    var isSeeking by remember { mutableStateOf(false) }
 
-    // 监听位置变化（修复点1）
-    LaunchedEffect(currentPosition, isPlaying) {
-        if (!isDragging.value && duration > 0) {
-            val newPosition = currentPosition.toFloat() / duration
-            sliderPosition = newPosition
-            lastValidPosition = newPosition // 保留最后一次有效位置
+    // 监听位置变化
+    LaunchedEffect(currentPosition, duration) {
+        // 只有在不拖动且不在 seeking 时才更新
+        if (!isDragging && !isSeeking && duration > 0) {
+            sliderPosition = currentPosition.toFloat() / duration
+        }
+    }
+    
+    // 监听 seeking 状态，结束后重置
+    LaunchedEffect(isSeeking) {
+        if (isSeeking) {
+            kotlinx.coroutines.delay(500) // 等待 seek 操作完成
+            isSeeking = false
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 24.dp)
     ) {
         Slider(
-            colors = SliderDefaults.colors(
-                thumbColor = Color.Transparent,       // 拇指颜色
-                activeTrackColor = MaterialTheme.colorScheme.primary, // 已激活轨道颜色（左侧）
-            ),
-            // 形状定制
-            thumb = {
-                // 自定义 Thumb 的形状、颜色、大小等
-                Box(
-                    modifier = Modifier
-                        .size(16.dp, 16.dp)
-                        .background(
-                            color = Color.Transparent,
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                )
-            },
-            value = when {
-                isDragging.value -> sliderPosition
-                duration > 0 -> currentPosition.toFloat() / duration
-                else -> lastValidPosition
-            },
-            onValueChange = {
-                if (!isDragging.value) {
+            value = sliderPosition,
+            onValueChange = { newValue ->
+                if (!isDragging) {
                     haptic.performDragStart()
+                    isDragging = true
                 }
-                sliderPosition = it.coerceIn(0f, 1f)
-                isDragging.value = true
+                sliderPosition = newValue
             },
             onValueChangeFinished = {
                 haptic.performGestureEnd()
-                onSeek((sliderPosition * duration).toLong())
-                isDragging.value = false
+                val seekPosition = (sliderPosition * duration).toLong()
+                isDragging = false
+                isSeeking = true // 标记开始 seeking
+                onSeek(seekPosition)
             },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            enabled = true,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+            ),
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(4.dp),
+                    thumbTrackGapSize = 0.dp,
+                    trackInsideCornerSize = 0.dp,
+                    drawStopIndicator = null
+                )
+            },
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(
+                            color = Color.Transparent,
+                        )
+                )
+            }
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .padding(8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(formatTime(currentPosition))
-            Text(formatTime(duration))
+            Text(
+                text = formatTime(currentPosition),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = formatTime(duration),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -437,8 +499,55 @@ fun PlaybackControls(
     onPlaybackModeChange: () -> Unit,
     onFavorite: () -> Unit,
     onTimerClick: () -> Unit,
-    onHeartMode: () -> Unit
+    onHeartMode: () -> Unit,
+    viewModel: PlayControlViewModel,
+    scrollState: androidx.compose.foundation.ScrollState
 ) {
+    var playlistExpanded by remember { mutableStateOf(false) }
+    val haptic = rememberHapticFeedback()
+    val playlist by viewModel.currentPlaylist.collectAsState()
+    val currentIndex by viewModel.currentIndex.collectAsState()
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    
+    // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿
+    LaunchedEffect(playlist.size, currentIndex) {
+        // 当播放列表数据变化时，在后台更新 listState，但不滚动
+        // 这样首次展开时已经有缓存的状态
+        if (playlist.isNotEmpty() && !playlistExpanded) {
+            // 静默地准备好位置，不执行动画
+            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
+        }
+    }
+    
+    // 当播放列表展开时，滚动页面使播放列表底部与屏幕底部对齐
+    LaunchedEffect(playlistExpanded) {
+        if (playlistExpanded) {
+            // 步骤1：等待播放列表区域完全展开（减少等待时间，让动画更流畅）
+            kotlinx.coroutines.delay(320) // expandVertically动画默认300ms + 20ms缓冲
+            
+            // 步骤2：滚动页面到底部，使播放列表底部与屏幕底部对齐
+            val playlistHeightPx = with(density) { 560.dp.toPx() }
+            val targetScroll = (scrollState.value + playlistHeightPx).toInt()
+            scrollState.animateScrollTo(
+                value = targetScroll.coerceAtMost(scrollState.maxValue),
+                animationSpec = tween(
+                    durationMillis = 400,
+                    easing = FastOutSlowInEasing
+                )
+            )
+            
+            // 步骤3：页面滚动开始后稍等片刻，定位当前播放项（与滚动动画并行，体验更流畅）
+            if (playlist.isNotEmpty()) {
+                kotlinx.coroutines.delay(150) // 短暂延迟后立即开始定位，与页面滚动形成流畅过渡
+                listState.animateScrollToItem(
+                    index = currentIndex.coerceIn(0, playlist.lastIndex),
+                )
+            }
+        }
+    }
+    
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -449,11 +558,10 @@ fun PlaybackControls(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(64.dp)) {
+            IconButton(onClick = onPrevious, modifier = Modifier.size(72.dp)) {
                 Icon(
                     painter = painterResource(R.drawable.backward_end_fill),
                     contentDescription = "Previous",
-                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -461,15 +569,13 @@ fun PlaybackControls(
                 Icon(
                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play_fill),
                     contentDescription = "Play / Pause",
-                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            IconButton(onClick = onNext, modifier = Modifier.size(64.dp)) {
+            IconButton(onClick = onNext, modifier = Modifier.size(72.dp)) {
                 Icon(
                     painter = painterResource(R.drawable.forward_end_fill),
                     contentDescription = "Next",
-                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -478,7 +584,8 @@ fun PlaybackControls(
 
         // 下方额外操作按钮区
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -524,70 +631,224 @@ fun PlaybackControls(
                 IconButton(onClick = onTimerClick) {
                     Icon(painter = painterResource(R.drawable.timer), contentDescription = "Timer.kt")
                 }
-            }else{
+            } else{
                 Text(
                     text = formatTime(remainingTime),  // 使用 formatTime 函数
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable { onTimerClick() }
                 )
             }
+            // 播放列表按钮
+            IconButton(
+                onClick = {
+                    haptic.performClick()
+                    playlistExpanded = !playlistExpanded
+                }
+            ) {
+                Icon(
+                    tint = if (playlistExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    painter = painterResource(
+                        if (playlistExpanded) R.drawable.chevron_up_circle else R.drawable.music_note_list
+                    ),
+                    contentDescription = "Playlist"
+                )
+            }
         }
+        
+        // 可展开的播放列表区域
+        AnimatedVisibility(
+            visible = playlistExpanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                // 顶部显示总数和当前序号，及清空按钮
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 32.dp, top = 12.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 清空列表按钮
+                    TextButton(
+                        onClick = {
+                            haptic.performLightClick()
+                            viewModel.clearPlaylist()
+                        }
+                    ) {
+                        Text(
+                            text = "清空",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Text(
+                        text = "${currentIndex + 1}/${playlist.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+                
+                // 播放列表内容（禁用嵌套滚动，避免触发播放页下拉）
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp)
+                        .padding(horizontal = 16.dp)
+                        .nestedScroll(remember {
+                            // 只消耗向父级传递的滚动事件，不影响 LazyColumn 内部滚动
+                            object : NestedScrollConnection {
+                                override fun onPostScroll(
+                                    consumed: Offset,
+                                    available: Offset,
+                                    source: NestedScrollSource
+                                ): Offset {
+                                    // 消耗所有剩余的滚动事件，防止传递给父级
+                                    // available 是 LazyColumn 没有消耗的部分
+                                    return available
+                                }
+                            }
+                        })
+                ) {
+                    itemsIndexed(
+                        items = playlist,
+                        key = { _, item -> item.music.id } // 使用唯一 key 优化重组性能
+                    ) { index, musicInfo ->
+                        PlaylistItem(
+                            musicInfo = musicInfo,
+                            isCurrentPlaying = index == currentIndex,
+                            index = index + 1,
+                            onItemClick = {
+                                haptic.performClick()
+                                viewModel.viewModelScope.launch {
+                                    viewModel.playAt(musicInfo)
+                                }
+                            },
+                            onPinClick = {
+                                haptic.performConfirm()
+                                viewModel.moveToTop(musicInfo)
+                            },
+                            onRemoveClick = {
+                                haptic.performLightClick()
+                                viewModel.removeFromPlaylist(musicInfo)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
+// 播放列表项
 @Composable
-private fun PlaylistItem(
+fun PlaylistItem(
     musicInfo: MusicInfo,
-    isPlaying: Boolean,
-    onClick: () -> Unit,
-    onRemove: () -> Unit,         // 新增
+    isCurrentPlaying: Boolean,
+    index: Int,
+    onItemClick: () -> Unit,
+    onPinClick: () -> Unit,
+    onRemoveClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .then(
-                if (isPlaying) {
-                    Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-                } else Modifier
-            ),
+            .clip(RoundedCornerShape(12.dp)) // 圆角裁剪
+            .clickable(onClick = onItemClick)
+            .background(
+                if (isCurrentPlaying) 
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else 
+                    Color.Transparent,
+                shape = RoundedCornerShape(12.dp) // 圆角背景
+            )
+            .padding(vertical = 8.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 序号
+        Text(
+            text = "$index",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isCurrentPlaying) 
+                MaterialTheme.colorScheme.primary 
+            else 
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier = Modifier.width(32.dp)
+        )
+        
+        // 专辑封面（使用简化版本，不使用 AlbumCover 以避免布局问题）
+        androidx.compose.foundation.Image(
+            painter = rememberAsyncImagePainter(
+                model = musicInfo.music.albumArtUri,
+                placeholder = painterResource(R.drawable.unknown)
+            ),
+            contentDescription = "Album art",
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+        
         Spacer(modifier = Modifier.width(12.dp))
         
-        Column {
+        // 标题和艺术家
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
                 text = musicInfo.music.title,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isCurrentPlaying) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = musicInfo.music.artist,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 新增的移除和置顶按钮
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End,
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-
-            // 移除按钮
+        
+        // 操作按钮组
+        Row {
+            // 置顶按钮
             IconButton(
-                onClick = onRemove,
-                modifier = Modifier.size(24.dp)
+                onClick = onPinClick,
+                modifier = Modifier.size(40.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.minus_circle),
+                    painter = painterResource(R.drawable.chevron_up_circle),
+                    contentDescription = "Pin to top",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            
+            // 移除按钮
+            IconButton(
+                onClick = onRemoveClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.trash),
                     contentDescription = "Remove",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
     }
 }
+

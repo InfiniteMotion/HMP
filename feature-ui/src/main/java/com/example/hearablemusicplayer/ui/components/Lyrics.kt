@@ -78,7 +78,7 @@ fun Lyrics(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = if (isCurrent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
-                        style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                        style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                     )
                     Spacer(modifier = Modifier.height(4.dp))

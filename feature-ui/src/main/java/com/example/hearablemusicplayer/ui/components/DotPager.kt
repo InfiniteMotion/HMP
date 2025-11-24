@@ -2,8 +2,11 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -26,10 +29,11 @@ fun DotPager(
         initialPage = initialPage,
         pageCount = { pageCount }
     )
-    Box(modifier = modifier) {
+    Column (modifier = modifier) {
         HorizontalPager(state = pagerState) { page ->
             Box(
-                Modifier.fillMaxSize(),
+                Modifier.fillMaxWidth()
+                    .height(410.dp),
                 contentAlignment = Alignment.Center
             ) {
                 pageContent[page]()
@@ -39,24 +43,29 @@ fun DotPager(
         // 极简圆点指示器（仅多页时显示）
         if (pageCount > 1) {
             Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center
             ) {
-                repeat(pageCount) { index ->
-                    val size = 6.dp
-                    val color = if (pagerState.currentPage == index)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                Row(
+                    modifier = Modifier,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    repeat(pageCount) { index ->
+                        val size = 6.dp
+                        val color = if (pagerState.currentPage == index)
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
 
-                    Box(
-                        modifier = Modifier
-                            .size(size)
-                            .background(color, CircleShape)
-                    )
+                        Box(
+                            modifier = Modifier
+                                .size(size)
+                                .background(color, CircleShape)
+                        )
+                    }
                 }
             }
+
         }
     }
 }

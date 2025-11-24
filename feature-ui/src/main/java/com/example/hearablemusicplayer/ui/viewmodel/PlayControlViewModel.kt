@@ -422,6 +422,27 @@ class PlayControlViewModel @Inject constructor(
         }
         persistCurrentPlaylistToDatabase()
     }
+    
+    // 将指定歌曲移动到队列首位
+    fun moveToTop(musicInfo: MusicInfo) {
+        val currentList = _originalPlaylist.toMutableList()
+        val index = currentList.indexOfFirst { it.music.id == musicInfo.music.id }
+        if (index > 0) {
+            // 移除原位置
+            val item = currentList.removeAt(index)
+            // 插入到首位
+            currentList.add(0, item)
+            _originalPlaylist = currentList
+            updateCurrentPlaylist()
+            // 更新当前索引
+            val current = currentPlayingMusic.value
+            if (current != null) {
+                _currentIndex.value = _currentPlaylist.value.indexOfFirst { it.music.id == current.music.id }
+            }
+            persistCurrentPlaylistToDatabase()
+            showToast("已置顶：${musicInfo.music.title}")
+        }
+    }
 
     // 从指定音乐开始播放(已经在播放列表中)
     suspend fun playAt(musicInfo: MusicInfo) {
