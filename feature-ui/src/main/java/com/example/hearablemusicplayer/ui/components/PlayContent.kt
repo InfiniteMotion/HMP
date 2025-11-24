@@ -1,4 +1,4 @@
-@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:androidx.annotation.OptIn(UnstableApi::class)
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -45,7 +46,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -178,8 +178,9 @@ fun PlayContent(
                         }
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // 如果提取失败，使用默认颜色
+
             }
         }
         
@@ -209,7 +210,7 @@ fun PlayContent(
                 object : NestedScrollConnection {
                     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                         // 只处理用户手势触发的滚动
-                        if (source == NestedScrollSource.Drag) {
+                        if (source == NestedScrollSource.UserInput) {
                             // 向下拖动（available.y > 0）且已在顶部时，累积下拉距离
                             if (isAtTop && available.y > 0) {
                                 dragOffsetY += available.y
@@ -262,7 +263,6 @@ fun PlayContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     SeekBar(
-                        isPlaying = isPlaying,
                         currentPosition = currentPosition,
                         duration = duration,
                         onSeek = viewModel::seekTo
@@ -327,7 +327,9 @@ fun PlayContent(
 @Composable
 fun PlayerHeader(navController: NavController) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
             .padding(bottom = 16.dp),
         horizontalArrangement = Arrangement.Center
     ) {
@@ -393,7 +395,6 @@ fun MusicInfoExtra(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeekBar(
-    isPlaying: Boolean,
     currentPosition: Long,
     duration: Long,
     onSeek: (Long) -> Unit
@@ -508,7 +509,6 @@ fun PlaybackControls(
     val playlist by viewModel.currentPlaylist.collectAsState()
     val currentIndex by viewModel.currentIndex.collectAsState()
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     
     // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿

@@ -1,15 +1,19 @@
 ﻿package com.example.hearablemusicplayer.ui.pages
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -20,6 +24,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlin.math.abs
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
     musicViewModel: MusicViewModel,
@@ -57,6 +62,7 @@ fun MainScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (currentRoute != "player") {
                 CustomBottomNavBar(
@@ -73,9 +79,15 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
+        val contentModifier = if (currentRoute == "player") {
+            Modifier.padding(innerPadding)
+        } else {
+            Modifier
                 .padding(innerPadding)
+                .statusBarsPadding()
+        }
+        Box(
+            modifier = contentModifier
                 .then(swipeModifier)
         ) {
             NavHost(
