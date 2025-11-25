@@ -74,7 +74,8 @@ fun GalleryScreen(
                     Text(
                         text = "音乐库",
                         style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.width(144.dp))
                     SearchButton(navController)

@@ -49,7 +49,8 @@ fun ListGroupName(
         ) {
             Text(
                 text = bannerNameF,
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.width(10.dp))
             Box(
@@ -61,7 +62,8 @@ fun ListGroupName(
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = bannerNameS,
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -100,7 +102,8 @@ fun ListBanner(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.widthIn(max = 120.dp),
             overflow = TextOverflow.Ellipsis,
-            maxLines = 1
+            maxLines = 1,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -138,7 +141,8 @@ fun ListBanner(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.widthIn(max = 120.dp),
             overflow = TextOverflow.Ellipsis,
-            maxLines = 1
+            maxLines = 1,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }

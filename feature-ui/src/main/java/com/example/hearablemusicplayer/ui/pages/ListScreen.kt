@@ -73,7 +73,8 @@ fun ListScreen(
                     Text(
                         text = "播放列表",
                         style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Row {
                         SearchButton(navController)

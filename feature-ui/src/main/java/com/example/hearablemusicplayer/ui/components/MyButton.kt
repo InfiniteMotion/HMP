@@ -72,6 +72,7 @@ fun PlayControlButtonOne(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.slider_vertical_3),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "select Button",
                     modifier = Modifier.size(24.dp),
                 )
@@ -86,6 +87,7 @@ fun PlayControlButtonOne(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.order_play),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "order play Button",
                     modifier = Modifier.size(24.dp),
                 )
@@ -101,6 +103,7 @@ fun PlayControlButtonOne(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.shuffle),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "shuffle play Button",
                     modifier = Modifier.size(24.dp),
                 )
@@ -114,6 +117,7 @@ fun PlayControlButtonOne(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.lightbulb),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "self play Button",
                     modifier = Modifier.size(24.dp),
                 )
@@ -247,6 +251,7 @@ fun PlayControlButtonTwo(
             ) {
             Icon(
                 painter = painterResource(R.drawable.shuffle),
+                tint = MaterialTheme.colorScheme.onSurface,
                 contentDescription = "shuffle play Button",
                 modifier = Modifier.size(24.dp),
             )
@@ -263,6 +268,7 @@ fun PlayControlButtonTwo(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.order_play),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "order play Button",
                     modifier = Modifier.size(24.dp),
                 )
@@ -315,6 +321,7 @@ fun SearchButton(
         ) {
             Icon(
                 painter = painterResource(R.drawable.magnifyingglass),
+                tint = MaterialTheme.colorScheme.onSurface,
                 contentDescription = "Search Button",
                 modifier = Modifier.size(24.dp),
             )

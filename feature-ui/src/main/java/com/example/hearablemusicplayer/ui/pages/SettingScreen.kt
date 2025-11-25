@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -93,7 +94,8 @@ fun SettingScreen(
                     Text(
                         "设置",
                         style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Spacer(modifier = Modifier.height(32.dp))
@@ -130,7 +132,7 @@ fun UpdateUserName(
             .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
     ) {
@@ -146,7 +148,8 @@ fun UpdateUserName(
             Text(
                 text = "当前用户名：$userName",
                 style = MaterialTheme.typography.displayMedium,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
             TextField(
                 value = name,
@@ -174,7 +177,7 @@ fun UpdateUserName(
                     viewModel.saveUserName(name)
                 }
             ) {
-                Text(text = "更改用户名")
+                Text(text = "更改用户名", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
@@ -189,7 +192,7 @@ fun UpdateAvatar(
             .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
     ) {
@@ -230,7 +233,7 @@ fun UpdateAvatar(
                         launcher.launch("image/*")  // 打开图片选择器
                     }
                 ) {
-                    Text(text = "更改头像")
+                    Text(text = "更改头像", color = MaterialTheme.colorScheme.onPrimary)
                 }
             } else {
                 AsyncImage(
@@ -247,7 +250,7 @@ fun UpdateAvatar(
                         Toast.makeText(context, "头像已更改!", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text(text = "更改")
+                    Text(text = "更改", color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Button(
                     onClick = {
@@ -255,7 +258,7 @@ fun UpdateAvatar(
                         Toast.makeText(context, "放弃更改头像！", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text(text = "取消")
+                    Text(text = "取消", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -268,13 +271,12 @@ fun ReloadMusic(
 ) {
     var isLoading by remember { mutableStateOf(false) }
     val musicCount by viewModel.musicCount.collectAsState(initial = 0)
-    val isScanning by viewModel.isScanning.collectAsState(initial = false)
     
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     ) {
@@ -285,17 +287,20 @@ fun ReloadMusic(
             Text(
                 text = "当前音乐数量：${musicCount} 首",
                 style = MaterialTheme.typography.displayMedium,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "可选择方式从设备中读取音乐信息",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）" ,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 16.dp, horizontal = 32.dp)
+                modifier = Modifier.padding(vertical = 16.dp, horizontal = 32.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -309,7 +314,7 @@ fun ReloadMusic(
                     },
                     enabled = !isLoading
                 ) {
-                    Text("增量加载")
+                    Text("增量加载", color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Spacer(modifier = Modifier.width(32.dp))
                 Button(
@@ -320,7 +325,7 @@ fun ReloadMusic(
                     },
                     enabled = !isLoading
                 ) {
-                    Text("重新加载")
+                    Text("重新加载", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
 
@@ -344,7 +349,7 @@ fun SetDeepSeekApi(
             .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
     ) {
@@ -355,6 +360,7 @@ fun SetDeepSeekApi(
             Text(
                 text = "使用用户自己 DeepSeek API-Key",
                 style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -367,7 +373,7 @@ fun SetDeepSeekApi(
                 onValueChange = {
                     keyValue = it
                 },
-                label = { Text("请输入您的密钥,形如 Bearer sk-xxx") },
+                label = { Text("请输入您的密钥,形如 Bearer sk-xxx", color = MaterialTheme.colorScheme.onBackground) },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Default
@@ -397,7 +403,7 @@ fun SetDeepSeekApi(
                         }
                     }
                 ) {
-                    Text("测试")
+                    Text("测试", color = MaterialTheme.colorScheme.onPrimary)
                 }
                 if (isAccess){
                     Toast.makeText(context, "可以访问到 DeepSeek", Toast.LENGTH_SHORT).show()
@@ -409,7 +415,7 @@ fun SetDeepSeekApi(
                         viewModel.saveDeepSeekApiKey(keyValue)
                     }
                 ) {
-                    Text("使用")
+                    Text("使用", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -426,7 +432,7 @@ fun LoadMusicExtraInfo(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     ) {
@@ -437,7 +443,8 @@ fun LoadMusicExtraInfo(
             Text(
                 text = "已获取额外信息的音乐数量：${musicWithExtraCount} 首",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
             Button(
                 modifier = Modifier.width(300.dp),
@@ -445,7 +452,7 @@ fun LoadMusicExtraInfo(
 
                 }
             ) {
-                Text(text = "批量加载")
+                Text(text = "批量加载", color = MaterialTheme.colorScheme.onPrimary)
             }
             Spacer(modifier = Modifier.height(16.dp))
         }

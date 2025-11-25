@@ -70,8 +70,8 @@ class DeepSeekAPIWrapper @Inject constructor(
 ) {
     companion object {
         private const val TAG = "DeepSeekAPIWrapper"
-        private const val MIN_REQUEST_INTERVAL_MS = 500L // 最小请求间隔
-        private const val MAX_RETRIES = 3 // 最大重试次数
+        private const val MIN_REQUEST_INTERVAL_MS = 1000L // 最小请求间隔
+        private const val MAX_RETRIES = 5 // 最大重试次数
     }
     
     private var lastRequestTime = 0L

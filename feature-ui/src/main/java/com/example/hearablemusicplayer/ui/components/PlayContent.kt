@@ -2,7 +2,6 @@
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,8 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,12 +49,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,23 +60,24 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import androidx.palette.graphics.Palette
-import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.example.hearablemusicplayer.data.database.Music
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
-import com.example.hearablemusicplayer.ui.pages.formatTime
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+// 格式化时间为 mm:ss
+fun formatTime(millis: Long): String {
+    val totalSeconds = millis / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d".format(minutes, seconds)
+}
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -116,7 +113,7 @@ fun PlayContent(
             ){
                 PlayerHeader(navController)
             }
-            Text("当前音乐: 无")
+            Text("当前音乐: 无", color = MaterialTheme.colorScheme.onSurface)
         }
     } else {
         if(viewModel.isReady()!=true) {
@@ -130,72 +127,8 @@ fun PlayContent(
         val lyrics by viewModel.currentMusicLyrics.collectAsState()
         var showTimerDialog by remember { mutableStateOf(false) }
         
-        // 提取专辑封面颜色
-        val context = LocalContext.current
-        var targetDominantColor by remember { mutableStateOf(Color(0xFF121212)) }
-        var targetVibrantColor by remember { mutableStateOf(Color(0xFF1E1E1E)) }
-        
-        // 使用动画过渡颜色
-        val dominantColor by animateColorAsState(
-            targetValue = targetDominantColor,
-            animationSpec = tween(durationMillis = 1000),
-            label = "dominantColor"
-        )
-        val vibrantColor by animateColorAsState(
-            targetValue = targetVibrantColor,
-            animationSpec = tween(durationMillis = 1000),
-            label = "vibrantColor"
-        )
-        
-        LaunchedEffect(musicInfo!!.music.albumArtUri) {
-            try {
-                withContext(Dispatchers.IO) {
-                    val loader = ImageLoader(context)
-                    val request = ImageRequest.Builder(context)
-                        .data(musicInfo!!.music.albumArtUri)
-                        .size(200, 200)  // 缩小到200x200进行颜色提取
-                        .allowHardware(false)
-                        .build()
-                    
-                    val result = (loader.execute(request) as? SuccessResult)?.drawable
-                    result?.let { drawable ->
-                        val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                        bitmap?.let {
-                            val palette = Palette.from(it)
-                                .maximumColorCount(16)  // 增加颜色采样数量
-                                .generate()
-                            
-                            // 优先使用暗色调和鲜艳色
-                            val darkMuted = palette.darkMutedSwatch?.rgb
-                            val vibrant = palette.vibrantSwatch?.rgb
-                            val darkVibrant = palette.darkVibrantSwatch?.rgb
-                            val dominant = palette.getDominantColor(0xFF121212.toInt())
-                            
-                            // 选择最佳的暗色作为主色调
-                            targetDominantColor = Color(darkMuted ?: darkVibrant ?: dominant)
-                            // 选择鲜艳色作为次要色
-                            targetVibrantColor = Color(vibrant ?: darkVibrant ?: 0xFF1E1E1E.toInt())
-                        }
-                    }
-                }
-            } catch (_: Exception) {
-                // 如果提取失败，使用默认颜色
-
-            }
-        }
-        
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            dominantColor.copy(alpha = 0.8f),
-                            vibrantColor.copy(alpha = 0.6f),
-                            dominantColor.copy(alpha = 0.9f)
-                        )
-                    )
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
             val scrollState = rememberScrollState()
             
@@ -309,7 +242,7 @@ fun PlayContent(
             if (showTimerDialog) {
                 TimerDialog(
                     onDismiss = { showTimerDialog = false },
-                    onConfirm = { minutes ->
+                    onConfirm = { minutes: Int ->
                         if(minutes==0){
                             viewModel.cancelTimer()
                         }else{
@@ -339,6 +272,7 @@ fun PlayerHeader(navController: NavController) {
         ) {
             Icon(
                 painter = painterResource(R.drawable.chevron_down),
+                tint = MaterialTheme.colorScheme.onSurface,
                 contentDescription = "Back",
                 modifier = Modifier.size(24.dp),
             )
@@ -355,14 +289,28 @@ fun MusicInfo(music: Music) {
     ) {
         Text(
             text = music.title,
+            maxLines = 1,
+            overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.displayMedium,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = music.artist, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = music.artist,
+            maxLines = 1,
+            overflow = TextOverflow.MiddleEllipsis,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = music.album, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = music.album,
+            maxLines = 1,
+            overflow = TextOverflow.MiddleEllipsis,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
     }
 }
 
@@ -399,25 +347,11 @@ fun SeekBar(
     duration: Long,
     onSeek: (Long) -> Unit
 ) {
-    val haptic = rememberHapticFeedback()
-    var sliderPosition by remember { mutableFloatStateOf(0f) }
-    var isDragging by remember { mutableStateOf(false) }
-    var isSeeking by remember { mutableStateOf(false) }
-
-    // 监听位置变化
-    LaunchedEffect(currentPosition, duration) {
-        // 只有在不拖动且不在 seeking 时才更新
-        if (!isDragging && !isSeeking && duration > 0) {
-            sliderPosition = currentPosition.toFloat() / duration
-        }
-    }
-    
-    // 监听 seeking 状态，结束后重置
-    LaunchedEffect(isSeeking) {
-        if (isSeeking) {
-            kotlinx.coroutines.delay(500) // 等待 seek 操作完成
-            isSeeking = false
-        }
+    // 计算进度比例，避免除以0
+    val progressRatio = if (duration > 0) {
+        (currentPosition.toFloat() / duration).coerceIn(0f, 1f)
+    } else {
+        0f
     }
 
     Column(
@@ -425,49 +359,21 @@ fun SeekBar(
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
     ) {
-        Slider(
-            value = sliderPosition,
-            onValueChange = { newValue ->
-                if (!isDragging) {
-                    haptic.performDragStart()
-                    isDragging = true
-                }
-                sliderPosition = newValue
-            },
-            onValueChangeFinished = {
-                haptic.performGestureEnd()
-                val seekPosition = (sliderPosition * duration).toLong()
-                isDragging = false
-                isSeeking = true // 标记开始 seeking
-                onSeek(seekPosition)
-            },
+        // 简化的进度条，只显示进度不支持调节
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp),
-            enabled = true,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-            ),
-            track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    modifier = Modifier.height(4.dp),
-                    thumbTrackGapSize = 0.dp,
-                    trackInsideCornerSize = 0.dp,
-                    drawStopIndicator = null
-                )
-            },
-            thumb = {
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .background(
-                            color = Color.Transparent,
-                        )
-                )
-            }
-        )
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progressRatio)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+        
         Row(
             modifier = Modifier.fillMaxWidth()
                 .padding(8.dp),
@@ -521,6 +427,15 @@ fun PlaybackControls(
         }
     }
     
+    // 监听播放模式变化，当模式改变时重新定位当前播放歌曲
+    LaunchedEffect(playbackMode, playlist.size) {
+        if (playlist.isNotEmpty() && playlistExpanded) {
+            // 短暂延迟后重新定位当前播放项，确保列表已更新
+            kotlinx.coroutines.delay(100)
+            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
+        }
+    }
+    
     // 当播放列表展开时，滚动页面使播放列表底部与屏幕底部对齐
     LaunchedEffect(playlistExpanded) {
         if (playlistExpanded) {
@@ -561,6 +476,7 @@ fun PlaybackControls(
             IconButton(onClick = onPrevious, modifier = Modifier.size(72.dp)) {
                 Icon(
                     painter = painterResource(R.drawable.backward_end_fill),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Previous",
                 )
             }
@@ -568,6 +484,7 @@ fun PlaybackControls(
             IconButton(onClick = onPlayPause, modifier = Modifier.size(72.dp)) {
                 Icon(
                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play_fill),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Play / Pause",
                 )
             }
@@ -575,6 +492,7 @@ fun PlaybackControls(
             IconButton(onClick = onNext, modifier = Modifier.size(72.dp)) {
                 Icon(
                     painter = painterResource(R.drawable.forward_end_fill),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Next",
                 )
             }
@@ -598,6 +516,7 @@ fun PlaybackControls(
                             PlaybackMode.SEQUENTIAL -> R.drawable.repeat
                         }
                     ),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Playback Mode"
                 )
             }
@@ -620,22 +539,32 @@ fun PlaybackControls(
                 }else{
                     Icon(
                         painter = painterResource(R.drawable.heart),
+                        tint = MaterialTheme.colorScheme.onSurface,
                         contentDescription = "Favorite",
                     )
                 }
             }
             IconButton(onClick = onHeartMode) {
-                Icon(painter = painterResource(R.drawable.identify_song), contentDescription = "RecommendationMode")
+                Icon(
+                    painter = painterResource(R.drawable.identify_song),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    contentDescription = "RecommendationMode"
+                )
             }
             if(remainingTime == null){
                 IconButton(onClick = onTimerClick) {
-                    Icon(painter = painterResource(R.drawable.timer), contentDescription = "Timer.kt")
+                    Icon(
+                        painter = painterResource(R.drawable.timer),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        contentDescription = "Timer.kt"
+                    )
                 }
             } else{
                 Text(
                     text = formatTime(remainingTime),  // 使用 formatTime 函数
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.clickable { onTimerClick() }
+                    modifier = Modifier.clickable { onTimerClick() },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             // 播放列表按钮

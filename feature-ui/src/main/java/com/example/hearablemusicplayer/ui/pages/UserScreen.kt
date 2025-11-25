@@ -75,7 +75,8 @@ fun UserScreen(
                     userName?.let {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.displayLarge
+                            style = MaterialTheme.typography.displayLarge,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }

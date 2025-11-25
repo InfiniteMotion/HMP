@@ -77,7 +77,7 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
             val music = musicRepository.getRandomMusicInfoWithMissingExtra() ?: break
 
             onProgress(music)
-            getMusicExtraInfoFromLLM(music)
+//            getMusicExtraInfoFromLLM(music)
             delay(delayMillis)
         }
     }

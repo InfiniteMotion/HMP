@@ -79,7 +79,8 @@ fun SearchScreen(
                     Text(
                         "搜索",
                         style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 TextField(
@@ -88,8 +89,12 @@ fun SearchScreen(
                         searchQuery = it
                         musicViewModel.searchMusic(it) // 调用 ViewModel 的搜索方法
                     },
-                    label = { Text("搜索您的音乐") },
-                    leadingIcon = { Icon(painter = painterResource(R.drawable.magnifyingglass), contentDescription = "搜索") },
+                    label = { Text("搜索您的音乐", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.magnifyingglass),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            contentDescription = "搜索") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Search

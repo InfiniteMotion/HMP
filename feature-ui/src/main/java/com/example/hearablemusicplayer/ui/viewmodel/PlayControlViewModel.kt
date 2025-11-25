@@ -1,9 +1,16 @@
 ﻿package com.example.hearablemusicplayer.ui.viewmodel
 
+import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
+import androidx.palette.graphics.Palette
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.example.hearablemusicplayer.player.service.MusicPlayService
 import com.example.hearablemusicplayer.player.service.PlayControl
 import com.example.hearablemusicplayer.data.database.MusicInfo
@@ -14,6 +21,8 @@ import com.example.hearablemusicplayer.domain.usecase.playback.*
 import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.PlaylistSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -31,15 +40,23 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
 }
 
+// 调色板颜色数据类
+data class PaletteColors(
+    val dominantColor: Color = Color(0xFF121212),
+    val vibrantColor: Color = Color(0xFF1E1E1E)
+)
+
 @HiltViewModel
 @UnstableApi
 class PlayControlViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     // Use Cases - Domain Layer
     private val currentPlaybackUseCase: CurrentPlaybackUseCase,
     private val playbackModeUseCase: PlaybackModeUseCase,
@@ -113,6 +130,11 @@ class PlayControlViewModel @Inject constructor(
     private val _currentMusicLyrics = MutableStateFlow<String?>(null)
     val currentMusicLyrics: StateFlow<String?> = _currentMusicLyrics
 
+    // 调色板缓存与状态
+    private val paletteCache = mutableMapOf<String, PaletteColors>()
+    private val _paletteColors = MutableStateFlow(PaletteColors())
+    val paletteColors: StateFlow<PaletteColors> = _paletteColors.asStateFlow()
+
     // 播放模式（顺序、单曲循环、随机）
     private val _playbackMode = MutableStateFlow(PlaybackMode.SEQUENTIAL)
     val playbackMode: StateFlow<PlaybackMode> = _playbackMode.asStateFlow()
@@ -150,6 +172,15 @@ class PlayControlViewModel @Inject constructor(
                 .collectLatest { mode ->
                     _playbackMode.value = mode
                     updateCurrentPlaylist()
+                }
+        }
+
+        // 监听当前曲目变化并提取调色板
+        viewModelScope.launch {
+            currentPlayingMusic
+                .filterNotNull()
+                .collectLatest { musicInfo ->
+                    extractPaletteColors(musicInfo.music.albumArtUri)
                 }
         }
     }
@@ -559,6 +590,62 @@ class PlayControlViewModel @Inject constructor(
             currentPlayListId.filterNotNull().collectLatest {
                 val playlist = _currentPlaylist.value
                 managePlaylistUseCase.resetPlaylistItems(it, playlist)
+            }
+        }
+    }
+
+    // 提取调色板颜色（带缓存与线程分离）
+    private fun extractPaletteColors(albumArtUri: String?) {
+        if (albumArtUri == null) {
+            _paletteColors.value = PaletteColors()
+            return
+        }
+
+        // 检查缓存
+        paletteCache[albumArtUri]?.let {
+            _paletteColors.value = it
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val colors = withContext(Dispatchers.IO) {
+                    val loader = ImageLoader(context)
+                    val request = ImageRequest.Builder(context)
+                        .data(albumArtUri)
+                        .size(200, 200)
+                        .allowHardware(false)
+                        .build()
+
+                    val result = (loader.execute(request) as? SuccessResult)?.drawable
+                    val bitmap = (result as? android.graphics.drawable.BitmapDrawable)?.bitmap
+
+                    bitmap?.let {
+                        // 切换到 Default 线程进行 Palette 计算
+                        withContext(Dispatchers.Default) {
+                            val palette = Palette.from(it)
+                                .maximumColorCount(12)
+                                .generate()
+
+                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            val vibrant = palette.vibrantSwatch?.rgb
+                            val darkVibrant = palette.darkVibrantSwatch?.rgb
+                            val dominant = palette.getDominantColor(0xFF121212.toInt())
+
+                            PaletteColors(
+                                dominantColor = Color(darkMuted ?: darkVibrant ?: dominant),
+                                vibrantColor = Color(vibrant ?: darkVibrant ?: 0xFF1E1E1E.toInt())
+                            )
+                        }
+                    } ?: PaletteColors()
+                }
+
+                // 更新缓存与状态
+                paletteCache[albumArtUri] = colors
+                _paletteColors.value = colors
+            } catch (e: Exception) {
+                // 提取失败使用回退色
+                _paletteColors.value = PaletteColors()
             }
         }
     }

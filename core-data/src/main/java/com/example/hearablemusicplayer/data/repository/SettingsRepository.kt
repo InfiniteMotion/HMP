@@ -171,7 +171,7 @@ class SettingsRepository @Inject constructor(
                 it
             )
         }
-        return apiKey?:"Bearer sk-6f67067abbd04e68baedf13c0aeb8c0a"
+        return apiKey?:""
     }
 
     /**

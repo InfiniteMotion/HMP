@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
@@ -34,6 +36,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MusicList(
     musicInfoList: List<MusicInfo>,
@@ -56,6 +59,7 @@ fun MusicList(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MusicItem(
     musicInfo: MusicInfo,
@@ -101,14 +105,16 @@ fun MusicItem(
                 style = MaterialTheme.typography.titleSmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp)
+                modifier = Modifier.widthIn(max = 260.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
                 style = MaterialTheme.typography.bodySmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp)
+                modifier = Modifier.widthIn(max = 260.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(modifier = Modifier.width(32.dp))
@@ -125,6 +131,7 @@ fun MusicItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.plus_square),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Add Button",
                     modifier = Modifier.size(24.dp)
                 )
@@ -138,6 +145,7 @@ fun MusicItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.dot_grid_1x2),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "Meum Button",
                     modifier = Modifier.size(24.dp)
                 )

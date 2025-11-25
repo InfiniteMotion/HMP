@@ -66,7 +66,8 @@ fun IntroScreen(
             )
         Text(
             text = "欢迎来到",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row {
@@ -78,23 +79,27 @@ fun IntroScreen(
             Text(
                 text = " Music Player",
                 style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "跟着向导快速完成配置",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "1. 授予权限",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "    向您请求授予音频媒体文件访问权限和通知权限，我们需要这些权限来实现音乐扫描和通知栏控制。",
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.widthIn(max = 300.dp)
+            modifier = Modifier.widthIn(max = 300.dp),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
         Spacer(modifier = Modifier.height(8.dp))
         // 修改授权按钮的点击事件
@@ -130,13 +135,15 @@ fun IntroScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "2. 扫描音乐",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "    首次启动需要从设备中扫描音乐，后续您可以在设置中自行手动更新和扫描。",
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.widthIn(max = 300.dp)
+            modifier = Modifier.widthIn(max = 300.dp),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
         Spacer(modifier = Modifier.height(8.dp))
         if(!isLoadMusic.value){
@@ -174,13 +181,15 @@ fun IntroScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "3. 开始体验",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "设置完毕后，点击按钮即可开启您的音乐体验。",
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.widthIn(max = 300.dp)
+            modifier = Modifier.widthIn(max = 300.dp),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = onFinished,modifier = Modifier.width(150.dp)) {

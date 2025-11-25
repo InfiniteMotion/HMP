@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
@@ -33,7 +34,7 @@ fun SquareCard(
             .size(155.dp, 120.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
         onClick = onClick
@@ -50,13 +51,15 @@ fun SquareCard(
             ) {
                 Icon(
                     painter = painterResource(id = icon),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = text,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = text,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

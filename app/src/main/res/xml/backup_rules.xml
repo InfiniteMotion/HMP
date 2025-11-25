@@ -13,7 +13,5 @@
     
     <!-- 备份设置备份文件夹 -->
     <include domain="file" path="backups/"/>
-    
-    <!-- 排除缓存文件 -->
-    <exclude domain="file" path="cache/"/>
+
 </full-backup-content>

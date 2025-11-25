@@ -38,7 +38,7 @@ fun Lyrics(
         verticalArrangement = Arrangement.Center
     ) {
         if (lyrics==null) {
-            Text("未识别到歌词")
+            Text("未识别到歌词", color = MaterialTheme.colorScheme.onBackground)
         }else{
             val timeLyricRegex = """^\[(\d{2}:\d{2}\.\d{2})](.*)$""".toRegex(RegexOption.MULTILINE)
             val lyricListWithTimestamp = timeLyricRegex.findAll(lyrics)
@@ -60,7 +60,7 @@ fun Lyrics(
                 if (lyrics.isNotEmpty()) {
                     scrollState.animateScrollToItem(
                         index = currentIndex,
-                        scrollOffset = -300 // 向上偏移，使高亮行位于中间区域
+                        scrollOffset = -400 // 偏移，使高亮行位于中间区域
                     )
                 }
             }

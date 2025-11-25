@@ -74,7 +74,7 @@ object NetworkModule {
                 level = HttpLoggingInterceptor.Level.BODY
             })
             // 添加重试拦截器
-            .addInterceptor(RetryInterceptor(maxRetries = 3))
+            .addInterceptor(RetryInterceptor(maxRetries = 5))
             .build()
     }
 

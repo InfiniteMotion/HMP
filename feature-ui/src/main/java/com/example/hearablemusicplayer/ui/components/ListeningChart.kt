@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -39,7 +40,7 @@ fun ListeningChart(
             .size(height = 200.dp, width = 340.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = Transparent
         ),
         border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
     ) {
@@ -54,6 +55,7 @@ fun ListeningChart(
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -72,7 +74,7 @@ fun ListeningChart(
                     Text(
                         text = value.toString(),
                         fontSize = 10.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Box(
                         modifier = Modifier
@@ -88,6 +90,7 @@ fun ListeningChart(
                     Text(
                         text = days[index],
                         fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }

@@ -69,7 +69,8 @@ fun PlaylistScreen(
                     Text(
                         playlistName,
                         style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Spacer(modifier = Modifier.height(32.dp))

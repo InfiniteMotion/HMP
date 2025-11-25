@@ -25,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -95,7 +97,8 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(128.dp))
                         Text(
                             text = "暂未加载到 Daily Music",
-                            style = MaterialTheme.typography.displayMedium
+                            style = MaterialTheme.typography.displayMedium,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 } else {
@@ -108,12 +111,14 @@ fun HomeScreen(
                             Text(
                                 text = "每日一曲",
                                 textAlign = TextAlign.Left,
-                                style = MaterialTheme.typography.displayLarge
+                                style = MaterialTheme.typography.displayLarge,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = "Make Music Hearable!",
                                 textAlign = TextAlign.Left,
-                                style = MaterialTheme.typography.displaySmall
+                                style = MaterialTheme.typography.displaySmall,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                         Spacer(modifier = Modifier.width(48.dp))
@@ -121,6 +126,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center,
                         ){
                             IconButton(
+                                colors = IconButtonDefaults.iconButtonColors(),
                                 modifier = Modifier.size(48.dp),
                                 onClick = {
                                     scope.launch {
@@ -185,12 +191,13 @@ fun DailyRecommendSectionOne(
                         text = it.title,
                         style = MaterialTheme.typography.displayMedium,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 2
+                        maxLines = 2,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = it.artist, style = MaterialTheme.typography.titleMedium)
+                    Text(text = it.artist, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = it.album, style = MaterialTheme.typography.titleMedium)
+                    Text(text = it.album, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -212,7 +219,8 @@ fun DailyRecommendSectionTwo(
         ){
             Text(
                 text = "加载中...",
-                style = MaterialTheme.typography.displayMedium
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }else if(dailyMusicInfo.errorInfo!="None"){
@@ -223,7 +231,8 @@ fun DailyRecommendSectionTwo(
         ){
             Text(
                 text = dailyMusicInfo.errorInfo,
-                style = MaterialTheme.typography.displayMedium
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     } else {
@@ -263,7 +272,7 @@ fun DailyRecommendSectionTwo(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.background
+                        containerColor = Transparent
                     ),
                     border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
                     modifier = Modifier
@@ -276,11 +285,13 @@ fun DailyRecommendSectionTwo(
                         Text(
                             text = category,
                             style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = label,
                             style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

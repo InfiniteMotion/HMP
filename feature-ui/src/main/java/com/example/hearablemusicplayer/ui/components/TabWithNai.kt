@@ -94,6 +94,7 @@ fun CustomNavItem(
                         modifier = Modifier.size(32.dp),
                         painter = painterResource(item.icon),
                         contentDescription = item.label,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }else {
@@ -101,6 +102,7 @@ fun CustomNavItem(
                     modifier = Modifier.size(24.dp),
                     painter = painterResource(if (isSelected) item.iconSelected else item.icon),
                     contentDescription = item.label,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }

@@ -29,6 +29,7 @@ cronetEmbedded = "119.6045.31"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+material3Version = "1.4.0"
 
 [libraries]
 androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
@@ -78,6 +79,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converte
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Version" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
