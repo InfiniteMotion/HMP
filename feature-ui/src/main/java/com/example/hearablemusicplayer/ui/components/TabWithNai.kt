@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,11 +18,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
+@OptIn(UnstableApi::class)
 @Composable
 fun CustomBottomNavBar(
     playControlViewModel: PlayControlViewModel,
@@ -32,16 +37,11 @@ fun CustomBottomNavBar(
     val items = rememberBottomNavItems()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val haptic = rememberHapticFeedback()
-    // 添加顶部阴影线条 + 背景区分
-    Column(modifier = modifier.fillMaxWidth()) {
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-        )
-
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(1.dp),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

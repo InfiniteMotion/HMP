@@ -1,7 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -11,15 +10,18 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.example.hearablemusicplayer.player.service.MusicPlayService
-import com.example.hearablemusicplayer.player.service.PlayControl
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
-import com.example.hearablemusicplayer.domain.usecase.playback.*
+import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
+import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
+import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
+import com.example.hearablemusicplayer.domain.usecase.playback.TimerUseCase
 import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.PlaylistSettingsUseCase
+import com.example.hearablemusicplayer.player.service.MusicPlayService
+import com.example.hearablemusicplayer.player.service.PlayControl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +58,7 @@ data class PaletteColors(
 @HiltViewModel
 @UnstableApi
 class PlayControlViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     // Use Cases - Domain Layer
     private val currentPlaybackUseCase: CurrentPlaybackUseCase,
     private val playbackModeUseCase: PlaybackModeUseCase,
@@ -185,6 +187,16 @@ class PlayControlViewModel @Inject constructor(
         }
     }
 
+    // 预加载当前播放音乐的相关信息（duration、标签、歌词、封面等）
+    fun preloadCurrentMusicInfo() {
+        val musicInfo = currentPlayingMusic.value ?: return
+        _duration.value = musicInfo.music.duration
+        getLikedStatus(musicInfo.music.id)
+        getMusicLabels(musicInfo.music.id)
+        getMusicLyrics(musicInfo.music.id)
+        extractPaletteColors(musicInfo.music.albumArtUri)
+    }
+
     // 开始监听播放进度
     fun startProgressTracking() {
         if (progressJob?.isActive == true) return // 避免重复启动
@@ -249,13 +261,8 @@ class PlayControlViewModel @Inject constructor(
     }
 
     // 是否加载音乐
-    private fun isMusicLoaded(path:String): Boolean? {
+    fun isMusicLoaded(path:String): Boolean? {
         return playControl?.isMusicLoaded(path)
-    }
-
-    // 是否就绪
-    fun isReady():Boolean?{
-        return playControl?.isReady()
     }
 
     // 播放或恢复当前歌曲
@@ -400,11 +407,6 @@ class PlayControlViewModel @Inject constructor(
         _isPlaying.value = isPlaying
     }
 
-    // 将音乐添加到准备
-    fun  prepareMusic(musicInfo: MusicInfo){
-        playControl?.prepareMusic(musicInfo.music)
-    }
-
     // 播放当前索引对应的歌曲
     private suspend fun playCurrentTrack(source: String) {
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
@@ -418,7 +420,7 @@ class PlayControlViewModel @Inject constructor(
     }
 
     // 将音乐加入播放队列(不确定是否在播放列表中)
-    suspend fun addToPlaylist(musicInfo: MusicInfo) {
+    fun addToPlaylist(musicInfo: MusicInfo) {
         if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
             _originalPlaylist = _originalPlaylist + musicInfo
             updateCurrentPlaylist()

@@ -46,7 +46,6 @@ interface PlayControl {
     fun stopMusic()
     fun prepareMusic(music: Music)
     fun isMusicLoaded(path: String): Boolean
-    fun isReady():Boolean
     fun proceedMusic()
 }
 
@@ -382,11 +381,6 @@ class MusicPlayService : Service(), PlayControl {
     override fun isMusicLoaded(path: String): Boolean {
         val current = exoPlayer.currentMediaItem?.localConfiguration?.uri?.toString()
         return current == path && exoPlayer.playbackState != Player.STATE_IDLE
-    }
-
-    // 判断是否就绪
-    override fun isReady():Boolean{
-        return exoPlayer.playbackState == Player.STATE_READY
     }
 
     // 跳转到指定位置(毫秒)

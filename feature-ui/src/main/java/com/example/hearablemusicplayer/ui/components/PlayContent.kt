@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +32,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,6 +70,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // 格式化时间为 mm:ss
@@ -116,9 +118,6 @@ fun PlayContent(
             Text("当前音乐: 无", color = MaterialTheme.colorScheme.onSurface)
         }
     } else {
-        if(viewModel.isReady()!=true) {
-            viewModel.prepareMusic(musicInfo!!)
-        }
         viewModel.getLikedStatus(musicInfo!!.music.id)
         viewModel.getMusicLabels(musicInfo!!.music.id)
         viewModel.getMusicLyrics(musicInfo!!.music.id)
@@ -347,33 +346,63 @@ fun SeekBar(
     duration: Long,
     onSeek: (Long) -> Unit
 ) {
-    // 计算进度比例，避免除以0
-    val progressRatio = if (duration > 0) {
-        (currentPosition.toFloat() / duration).coerceIn(0f, 1f)
-    } else {
-        0f
+    val haptic = rememberHapticFeedback()
+    var sliderPosition by remember { mutableFloatStateOf(0f) }
+    var isSeeking by remember { mutableStateOf(false) }
+
+    // 监听位置变化
+    LaunchedEffect(currentPosition, duration) {
+        if (!isSeeking && duration > 0) {
+            sliderPosition = currentPosition.toFloat() / duration
+        }
     }
+
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
     ) {
-        // 简化的进度条，只显示进度不支持调节
-        Box(
+        Slider(
+            value = sliderPosition,
+            onValueChange = { newValue ->
+                isSeeking = false
+                haptic.performDragStart()
+                sliderPosition = newValue
+            },
+            onValueChangeFinished = {
+                haptic.performGestureEnd()
+                val seekPosition = (sliderPosition * duration).toLong()
+                isSeeking = true
+                onSeek(seekPosition)
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(4.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(progressRatio)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-        }
-        
+                .height(8.dp),
+            enabled = true,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+            ),
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(4.dp),
+                    thumbTrackGapSize = 0.dp,
+                    trackInsideCornerSize = 0.dp,
+                    drawStopIndicator = null
+                )
+            },
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(
+                            color = Color.Transparent,
+                        )
+                )
+            }
+        )
         Row(
             modifier = Modifier.fillMaxWidth()
                 .padding(8.dp),
@@ -431,7 +460,7 @@ fun PlaybackControls(
     LaunchedEffect(playbackMode, playlist.size) {
         if (playlist.isNotEmpty() && playlistExpanded) {
             // 短暂延迟后重新定位当前播放项，确保列表已更新
-            kotlinx.coroutines.delay(100)
+            delay(100)
             listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
         }
     }
@@ -440,7 +469,7 @@ fun PlaybackControls(
     LaunchedEffect(playlistExpanded) {
         if (playlistExpanded) {
             // 步骤1：等待播放列表区域完全展开（减少等待时间，让动画更流畅）
-            kotlinx.coroutines.delay(320) // expandVertically动画默认300ms + 20ms缓冲
+            delay(320) // expandVertically动画默认300ms + 20ms缓冲
             
             // 步骤2：滚动页面到底部，使播放列表底部与屏幕底部对齐
             val playlistHeightPx = with(density) { 560.dp.toPx() }
@@ -455,7 +484,7 @@ fun PlaybackControls(
             
             // 步骤3：页面滚动开始后稍等片刻，定位当前播放项（与滚动动画并行，体验更流畅）
             if (playlist.isNotEmpty()) {
-                kotlinx.coroutines.delay(150) // 短暂延迟后立即开始定位，与页面滚动形成流畅过渡
+                delay(150) // 短暂延迟后立即开始定位，与页面滚动形成流畅过渡
                 listState.animateScrollToItem(
                     index = currentIndex.coerceIn(0, playlist.lastIndex),
                 )

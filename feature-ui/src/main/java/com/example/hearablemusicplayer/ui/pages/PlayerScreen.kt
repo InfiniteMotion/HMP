@@ -35,14 +35,6 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 import kotlinx.coroutines.launch
 
-// 格式化时间为 mm:ss
-fun formatTime(millis: Long): String {
-    val totalSeconds = millis / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "%02d:%02d".format(minutes, seconds)
-}
-
 // 播放器主界面
 @Composable
 fun PlayerScreen(
@@ -63,6 +55,11 @@ fun PlayerScreen(
         viewModel.toastEvent.collect { event ->
             Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // 预加载当前播放音乐信息
+    LaunchedEffect(Unit) {
+        viewModel.preloadCurrentMusicInfo()
     }
 
     AnimatedVisibility(
@@ -90,8 +87,6 @@ fun PlayerScreen(
                                 if (currentOffset > dismissThreshold) {
                                     // 执行退出流程
                                     haptic.performGestureEnd()
-                                    isDismissing = true
-                                    visible = false
                                     offsetY.animateTo(
                                         targetValue = with(density) { 1000.dp.toPx() },
                                         animationSpec = tween(durationMillis = 300)
