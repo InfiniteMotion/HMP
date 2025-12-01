@@ -11,8 +11,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,8 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
@@ -163,24 +159,8 @@ fun MainScreen(
             }
         }
 
-        // 底部状态栏模糊层
-        if (currentRoute != "player") {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .navigationBarsPadding()
-                    .background(
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                        shape = RectangleShape
-                    )
-                    .blur(radius = 10.dp)
-            )
-        }
-
         // 悬浮式底部导航栏
-        if (currentRoute != "player") {
+        if (currentRoute in swipePages) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

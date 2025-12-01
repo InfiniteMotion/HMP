@@ -4,7 +4,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -27,8 +26,7 @@ fun AlbumCover(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .fillMaxWidth(),
         horizontalArrangement =place
     ) {
         Crossfade(targetState = uri, label = "AlbumArtCrossroad") { targetUri ->

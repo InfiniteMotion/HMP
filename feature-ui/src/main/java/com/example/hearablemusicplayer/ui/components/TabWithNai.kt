@@ -49,11 +49,6 @@ fun CustomBottomNavBar(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                     shape = RoundedCornerShape(32.dp)
                 )
-//                .shadow(
-//                    elevation = 4.dp,
-//                    shape = RoundedCornerShape(20.dp),
-//                    clip = true
-//                )
                 .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically

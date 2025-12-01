@@ -43,8 +43,9 @@ import kotlin.math.sin
 fun DynamicBackground(
     albumArtUri: String?,
     paletteColors: PaletteColors,
-    isDarkTheme: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = true
+
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // 动态背景动画参数（多层不同速度）
@@ -103,17 +104,6 @@ fun DynamicBackground(
                 repeatMode = RepeatMode.Reverse
             ),
             label = "offset"
-        )
-                
-        // 第五层流动参数（脉冲动画）
-        val pulse by transition.animateFloat(
-            initialValue = 0.8f,
-            targetValue = 1.2f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 12000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulse"
         )
 
         // 极度模糊的专辑封面作为底层（高度抽象化）
@@ -240,28 +230,7 @@ fun DynamicBackground(
                     )
                 )
             }
-            
-            // 第五层：脉冲光晕效果
-            val layer5Alpha1 = if (isDarkTheme) 0.3f else 0.2f
-            val layer5Alpha2 = if (isDarkTheme) 0.2f else 0.15f
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val angle5 = rotation3 * 3 * PI / 180f
-                val offset5X = centerX + sin(angle5).toFloat() * radius * 0.3f
-                val offset5Y = centerY + cos(angle5).toFloat() * radius * 0.3f
-                
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            paletteColors.vibrantColor.copy(alpha = layer5Alpha1 * pulse),
-                            paletteColors.dominantColor.copy(alpha = layer5Alpha2 * pulse),
-                            Color.Transparent
-                        ),
-                        center = Offset(offset5X, offset5Y),
-                        radius = radius * 0.5f
-                    )
-                )
-            }
-            
+
             // 整体氛围渐变
             Box(
                 modifier = Modifier
