@@ -47,6 +47,21 @@ interface PlayControl {
     fun prepareMusic(music: Music)
     fun isMusicLoaded(path: String): Boolean
     fun proceedMusic()
+    
+    // 音效控制方法
+    fun setEqualizerPreset(preset: Int)
+    fun setBassBoost(level: Int)
+    fun setSurroundSound(enabled: Boolean)
+    fun setReverb(preset: Int)
+    fun setCustomEqualizer(bandLevels: FloatArray)
+    fun getEqualizerPresets(): List<String>
+    fun getCurrentEqualizerPreset(): Int
+    fun getBassBoostLevel(): Int
+    fun isSurroundSoundEnabled(): Boolean
+    fun getReverbPreset(): Int
+    fun getEqualizerBandCount(): Int
+    fun getEqualizerBandLevelRange(): Pair<Int, Int>
+    fun getCurrentEqualizerBandLevels(): FloatArray
 }
 
 @UnstableApi
@@ -103,6 +118,24 @@ class MusicPlayService : Service(), PlayControl {
     }
 
     private var isReceiverRegistered = false
+    
+    // 音效相关成员变量
+    private var equalizerPreset = 0
+    private var bassBoostLevel = 0
+    private var surroundSoundEnabled = false
+    private var reverbPreset = 0
+    private var customEqualizerLevels = floatArrayOf()
+    
+    // 模拟音效预设列表
+    private val equalizerPresets = listOf(
+        "正常", "摇滚", "流行", "古典", "爵士", "蓝调", "电子", "嘻哈", "金属", "乡村"
+    )
+    
+    // 模拟均衡器频段数量
+    private val equalizerBandCount = 5
+    
+    // 模拟均衡器频段范围 (-15dB 到 +15dB)
+    private val equalizerBandLevelRange = Pair(-1500, 1500)
 
     // 绑定播放完成回调
     fun setOnMusicCompleteListener(listener: OnMusicCompleteListener) {
@@ -511,5 +544,72 @@ class MusicPlayService : Service(), PlayControl {
                 }
             }
         }
+    }
+    
+    // 音效控制方法实现
+    override fun setEqualizerPreset(preset: Int) {
+        equalizerPreset = preset
+        Log.d("MusicPlayService", "Set equalizer preset: $preset")
+        // 这里将在后续替换为真实的音效实现
+    }
+    
+    override fun setBassBoost(level: Int) {
+        bassBoostLevel = level
+        Log.d("MusicPlayService", "Set bass boost level: $level")
+        // 这里将在后续替换为真实的音效实现
+    }
+    
+    override fun setSurroundSound(enabled: Boolean) {
+        surroundSoundEnabled = enabled
+        Log.d("MusicPlayService", "Set surround sound: $enabled")
+        // 这里将在后续替换为真实的音效实现
+    }
+    
+    override fun setReverb(preset: Int) {
+        reverbPreset = preset
+        Log.d("MusicPlayService", "Set reverb preset: $preset")
+        // 这里将在后续替换为真实的音效实现
+    }
+    
+    override fun setCustomEqualizer(bandLevels: FloatArray) {
+        customEqualizerLevels = bandLevels
+        Log.d("MusicPlayService", "Set custom equalizer levels: ${bandLevels.contentToString()}")
+        // 这里将在后续替换为真实的音效实现
+    }
+    
+    override fun getEqualizerPresets(): List<String> {
+        return equalizerPresets
+    }
+    
+    override fun getCurrentEqualizerPreset(): Int {
+        return equalizerPreset
+    }
+    
+    override fun getBassBoostLevel(): Int {
+        return bassBoostLevel
+    }
+    
+    override fun isSurroundSoundEnabled(): Boolean {
+        return surroundSoundEnabled
+    }
+    
+    override fun getReverbPreset(): Int {
+        return reverbPreset
+    }
+    
+    override fun getEqualizerBandCount(): Int {
+        return equalizerBandCount
+    }
+    
+    override fun getEqualizerBandLevelRange(): Pair<Int, Int> {
+        return equalizerBandLevelRange
+    }
+    
+    override fun getCurrentEqualizerBandLevels(): FloatArray {
+        // 如果自定义均衡器级别为空，返回默认值
+        if (customEqualizerLevels.isEmpty()) {
+            return FloatArray(equalizerBandCount) { 0f }
+        }
+        return customEqualizerLevels
     }
 }

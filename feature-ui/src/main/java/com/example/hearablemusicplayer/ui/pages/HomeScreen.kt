@@ -51,6 +51,7 @@ import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
+import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.launch
@@ -155,6 +156,7 @@ fun HomeScreen(
                     DailyRecommendSectionOne(dailyMusic!!)
                     Spacer(modifier = Modifier.height(16.dp))
                     DailyRecommendSectionTwo(dailyMusicInfo, dailyMusicLabel)
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -269,32 +271,16 @@ fun DailyRecommendSectionTwo(
                 "类似音乐" to dailyMusicInfo.relevantMusic
             )
             labelListTwo.forEach { (category, label) ->
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Transparent
-                    ),
-                    border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .padding(vertical = 16.dp)
-                        .fillMaxWidth()
+                TitleWidget(
+                    title = category
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = category,
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

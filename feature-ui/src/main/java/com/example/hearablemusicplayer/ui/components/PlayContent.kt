@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -437,7 +438,7 @@ fun PlaybackControls(
     onTimerClick: () -> Unit,
     onHeartMode: () -> Unit,
     viewModel: PlayControlViewModel,
-    scrollState: androidx.compose.foundation.ScrollState
+    scrollState: ScrollState
 ) {
     var playlistExpanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()

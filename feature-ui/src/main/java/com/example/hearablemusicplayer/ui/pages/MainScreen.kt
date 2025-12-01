@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -11,6 +11,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,8 +21,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -46,7 +52,6 @@ fun MainScreen(
 
     val swipePages = listOf("home", "gallery", "list", "user")
     val currentIndex = swipePages.indexOf(currentRoute)
-    val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
 
     // 订阅调色板、当前曲目与播放状态
     val currentMusic by playControlViewModel.currentPlayingMusic.collectAsState()
@@ -109,21 +114,7 @@ fun MainScreen(
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            bottomBar = {
-                if (currentRoute != "player") {
-                    CustomBottomNavBar(
-                        playControlViewModel = playControlViewModel,
-                        modifier = Modifier.navigationBarsPadding(),
-                        currentRoute = currentRoute,
-                        onNavigate = { route ->
-                            navController.navigate(route) {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
-                }
-            }
+            bottomBar = {}
         ) { innerPadding ->
             val contentModifier = if (currentRoute == "player") {
                 Modifier.padding(innerPadding)
@@ -138,7 +129,7 @@ fun MainScreen(
             ) {
                 NavHost(
                     navController = navController,
-                    startDestination = if(dailyMusic != null) "home" else "gallery",
+                    startDestination = "gallery",
                     modifier = Modifier.fillMaxSize()
                 ) {
                     composable("home") {
@@ -165,7 +156,47 @@ fun MainScreen(
                     composable("playlist") {
                         PlaylistScreen(musicViewModel,playControlViewModel,navController)
                     }
+                    composable("audioEffects") {
+                        AudioEffectsScreen(playControlViewModel, navController)
+                    }
                 }
+            }
+        }
+
+        // 底部状态栏模糊层
+        if (currentRoute != "player") {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .navigationBarsPadding()
+                    .background(
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                        shape = RectangleShape
+                    )
+                    .blur(radius = 10.dp)
+            )
+        }
+
+        // 悬浮式底部导航栏
+        if (currentRoute != "player") {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            ) {
+                CustomBottomNavBar(
+                    playControlViewModel = playControlViewModel,
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
             }
         }
     }

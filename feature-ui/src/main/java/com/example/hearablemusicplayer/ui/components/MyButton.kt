@@ -292,8 +292,9 @@ fun BackButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.back_to),
+            tint= MaterialTheme.colorScheme.onSurface,
             contentDescription = "Back Button",
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(32.dp),
         )
     }
 }

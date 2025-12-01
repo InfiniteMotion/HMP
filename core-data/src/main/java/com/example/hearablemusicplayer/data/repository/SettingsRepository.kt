@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -37,6 +38,13 @@ class SettingsRepository @Inject constructor(
         val USER_NAME = stringPreferencesKey("user_name")
         val AVATAR_URI = stringPreferencesKey("avatar_uri")
         val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
+        
+        // 音效相关设置键
+        val EQUALIZER_PRESET = intPreferencesKey("equalizer_preset")
+        val BASS_BOOST_LEVEL = intPreferencesKey("bass_boost_level")
+        val IS_SURROUND_SOUND_ENABLED = booleanPreferencesKey("is_surround_sound_enabled")
+        val REVERB_PRESET = intPreferencesKey("reverb_preset")
+        val CUSTOM_EQUALIZER_LEVELS = stringPreferencesKey("custom_equalizer_levels")
     }
 
     // DataStore 访问实例
@@ -80,6 +88,26 @@ class SettingsRepository @Inject constructor(
     // DeepSeek API KEY
     val deepSeekApiKey: Flow<String?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.DEEPSEEK_API_KEY] }
+    
+    // 音效相关设置 Flow
+    val equalizerPreset: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] ?: 0 }
+    
+    val bassBoostLevel: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] ?: 0 }
+    
+    val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] ?: false }
+    
+    val reverbPreset: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.REVERB_PRESET] ?: 0 }
+    
+    val customEqualizerLevels: Flow<FloatArray> = dataStore.data
+        .map { prefs -> 
+            prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS]?.let { levelsString ->
+                levelsString.split(",").mapNotNull { it.toFloatOrNull() }.toFloatArray()
+            } ?: floatArrayOf()
+        }
 
     suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
         dataStore.edit { prefs ->
@@ -173,7 +201,39 @@ class SettingsRepository @Inject constructor(
         }
         return apiKey?:""
     }
-
+    
+    // 音效相关设置保存方法
+    suspend fun saveEqualizerPreset(preset: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.EQUALIZER_PRESET] = preset
+        }
+    }
+    
+    suspend fun saveBassBoostLevel(level: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.BASS_BOOST_LEVEL] = level
+        }
+    }
+    
+    suspend fun saveSurroundSoundEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = enabled
+        }
+    }
+    
+    suspend fun saveReverbPreset(preset: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.REVERB_PRESET] = preset
+        }
+    }
+    
+    suspend fun saveCustomEqualizerLevels(levels: FloatArray) {
+        dataStore.edit { prefs ->
+            val levelsString = levels.joinToString(",")
+            prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS] = levelsString
+        }
+    }
+    
     /**
      * 备份设置到文件
      * @return Result<File> 备份文件路径
@@ -199,6 +259,7 @@ class SettingsRepository @Inject constructor(
                         is String -> append("\"$value\"")
                         is Boolean -> append(value)
                         is Long -> append(value)
+                        is Int -> append(value)
                         else -> append("null")
                     }
                 }
@@ -269,6 +330,22 @@ class SettingsRepository @Inject constructor(
                         }
                         PreferencesKeys.DEEPSEEK_API_KEY.name -> {
                             prefs[PreferencesKeys.DEEPSEEK_API_KEY] = value.trim('"')
+                        }
+                        // 音效相关设置恢复
+                        PreferencesKeys.EQUALIZER_PRESET.name -> {
+                            prefs[PreferencesKeys.EQUALIZER_PRESET] = value.toInt()
+                        }
+                        PreferencesKeys.BASS_BOOST_LEVEL.name -> {
+                            prefs[PreferencesKeys.BASS_BOOST_LEVEL] = value.toInt()
+                        }
+                        PreferencesKeys.IS_SURROUND_SOUND_ENABLED.name -> {
+                            prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = value.toBoolean()
+                        }
+                        PreferencesKeys.REVERB_PRESET.name -> {
+                            prefs[PreferencesKeys.REVERB_PRESET] = value.toInt()
+                        }
+                        PreferencesKeys.CUSTOM_EQUALIZER_LEVELS.name -> {
+                            prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS] = value.trim('"')
                         }
                     }
                 }

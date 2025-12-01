@@ -98,14 +98,15 @@ fun MusicItem(
         Spacer(modifier = Modifier.width(24.dp))
         //音乐信息
         Column(
-            modifier = Modifier.width(180.dp)
+            modifier = Modifier.fillMaxWidth()
+                .weight(1f)
         ) {
             Text(
                 text = musicInfo.music.title,
                 style = MaterialTheme.typography.titleSmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp),
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
@@ -113,7 +114,7 @@ fun MusicItem(
                 style = MaterialTheme.typography.bodySmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp),
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.viewmodel
+package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -14,6 +14,7 @@ import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
@@ -155,6 +156,22 @@ class PlayControlViewModel @Inject constructor(
     // 添加定时器相关状态
     private var timerJob: Job? = null
     val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
+    
+    // 音效相关状态
+    private val _audioEffectSettings = MutableStateFlow(AudioEffectSettings())
+    val audioEffectSettings: StateFlow<AudioEffectSettings> = _audioEffectSettings.asStateFlow()
+    
+    private val _equalizerPresets = MutableStateFlow<List<String>>(emptyList())
+    val equalizerPresets: StateFlow<List<String>> = _equalizerPresets.asStateFlow()
+    
+    private val _equalizerBandCount = MutableStateFlow(0)
+    val equalizerBandCount: StateFlow<Int> = _equalizerBandCount.asStateFlow()
+    
+    private val _equalizerBandLevelRange = MutableStateFlow(Pair(0, 0))
+    val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = _equalizerBandLevelRange.asStateFlow()
+    
+    private val _currentEqualizerBandLevels = MutableStateFlow(floatArrayOf())
+    val currentEqualizerBandLevels: StateFlow<FloatArray> = _currentEqualizerBandLevels.asStateFlow()
 
     init {
         // 初始化播放列表和当前播放歌曲索引
@@ -660,5 +677,106 @@ class PlayControlViewModel @Inject constructor(
             persistCurrentPlaylistToDatabase()
         }
     }
-
+    
+    // 初始化音效状态
+    fun initializeAudioEffects() {
+        playControl?.let { control ->
+            // 获取均衡器预设列表
+            _equalizerPresets.value = control.getEqualizerPresets()
+            
+            // 获取均衡器频段数量
+            _equalizerBandCount.value = control.getEqualizerBandCount()
+            
+            // 获取均衡器频段范围
+            _equalizerBandLevelRange.value = control.getEqualizerBandLevelRange()
+            
+            // 获取当前均衡器频段级别
+            _currentEqualizerBandLevels.value = control.getCurrentEqualizerBandLevels()
+            
+            // 初始化音效设置
+            _audioEffectSettings.value = AudioEffectSettings(
+                equalizerPreset = control.getCurrentEqualizerPreset(),
+                bassBoostLevel = control.getBassBoostLevel(),
+                isSurroundSoundEnabled = control.isSurroundSoundEnabled(),
+                reverbPreset = control.getReverbPreset(),
+                customEqualizerLevels = control.getCurrentEqualizerBandLevels()
+            )
+        }
+    }
+    
+    // 设置均衡器预设
+    fun setEqualizerPreset(preset: Int) {
+        playControl?.let { control ->
+            control.setEqualizerPreset(preset)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                equalizerPreset = preset
+            )
+        }
+    }
+    
+    // 设置低音增强
+    fun setBassBoost(level: Int) {
+        playControl?.let { control ->
+            control.setBassBoost(level)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                bassBoostLevel = level
+            )
+        }
+    }
+    
+    // 设置环绕声
+    fun setSurroundSound(enabled: Boolean) {
+        playControl?.let { control ->
+            control.setSurroundSound(enabled)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                isSurroundSoundEnabled = enabled
+            )
+        }
+    }
+    
+    // 设置混响
+    fun setReverb(preset: Int) {
+        playControl?.let { control ->
+            control.setReverb(preset)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                reverbPreset = preset
+            )
+        }
+    }
+    
+    // 设置自定义均衡器
+    fun setCustomEqualizer(bandLevels: FloatArray) {
+        playControl?.let { control ->
+            control.setCustomEqualizer(bandLevels)
+            _currentEqualizerBandLevels.value = bandLevels
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                customEqualizerLevels = bandLevels
+            )
+        }
+    }
+    
+    // 获取当前均衡器预设
+    fun getCurrentEqualizerPreset(): Int {
+        return playControl?.getCurrentEqualizerPreset() ?: 0
+    }
+    
+    // 获取当前低音增强级别
+    fun getBassBoostLevel(): Int {
+        return playControl?.getBassBoostLevel() ?: 0
+    }
+    
+    // 获取当前环绕声状态
+    fun isSurroundSoundEnabled(): Boolean {
+        return playControl?.isSurroundSoundEnabled() ?: false
+    }
+    
+    // 获取当前混响预设
+    fun getReverbPreset(): Int {
+        return playControl?.getReverbPreset() ?: 0
+    }
+    
+    // 获取当前均衡器频段级别
+    fun getCurrentEqualizerBandLevels(): FloatArray {
+        return playControl?.getCurrentEqualizerBandLevels() ?: floatArrayOf()
+    }
 }

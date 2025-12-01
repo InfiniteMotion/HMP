@@ -70,7 +70,7 @@ fun UserScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Avatar(112, viewModel)
+                    Avatar(128, viewModel)
                     Spacer(modifier = Modifier.height(16.dp))
                     userName?.let {
                         Text(
@@ -125,7 +125,7 @@ fun UserScreen(
                         SquareCard(
                             "音效效果",
                             R.drawable.slider_vertical_3,
-                            onClick = {}
+                            onClick = { navController.navigate("audioEffects") }
                         )
                     }
                     Spacer(modifier = Modifier.height(30.dp))
