@@ -54,7 +54,7 @@ fun HomeScreen(
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
 
     TabScreen(
-        title = "每日推荐"
+        title = "每日推荐",
     ) {
         Column(
             modifier = Modifier

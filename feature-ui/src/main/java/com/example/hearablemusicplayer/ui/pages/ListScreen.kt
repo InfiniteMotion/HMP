@@ -33,6 +33,8 @@ fun ListScreen(
 
     TabScreen(
         title = "播放列表",
+        hasSearchBotton = true,
+        navController = navController
     ) {
         Column(
             modifier = Modifier.fillMaxSize()

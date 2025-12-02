@@ -60,7 +60,7 @@ fun Lyrics(
                 if (lyrics.isNotEmpty()) {
                     scrollState.animateScrollToItem(
                         index = currentIndex,
-                        scrollOffset = -400 // 偏移，使高亮行位于中间区域
+                        scrollOffset = -500 // 偏移，使高亮行位于中间区域
                     )
                 }
             }

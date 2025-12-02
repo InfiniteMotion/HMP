@@ -38,6 +38,8 @@ fun GalleryScreen(
 
     TabScreen(
         title = "音乐库",
+        hasSearchBotton = true,
+        navController = navController
     ) {
         Row(
             modifier = Modifier.padding(bottom = 16.dp)

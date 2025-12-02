@@ -30,6 +30,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
+import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -54,6 +55,9 @@ fun MainScreen(
     val paletteColors by playControlViewModel.paletteColors.collectAsState()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val isDarkTheme = isSystemInDarkTheme()
+    
+    // 生成动态ColorScheme
+    val dynamicColorScheme = generateDynamicColorScheme(paletteColors, isDarkTheme)
 
     // 只在 swipePages 页启用手势
     val enableSwipe = currentIndex != -1
@@ -78,105 +82,111 @@ fun MainScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 全局动态背景层（仅在音乐播放时显示，带过渡动画）
-        AnimatedVisibility(
-            visible = isPlaying && currentMusic != null,
-            enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 600))
-        ) {
-            DynamicBackground(
-                albumArtUri = currentMusic?.music?.albumArtUri,
-                paletteColors = paletteColors,
-                isDarkTheme = isDarkTheme,
-                modifier = Modifier
-            )
-        }
-        
-        // 音乐未播放时显示纯色背景（带过渡动画）
-        AnimatedVisibility(
-            visible = !(isPlaying && currentMusic != null),
-            enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 600))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-            )
-        }
-
-        // 前景页面内容
-        Scaffold(
-            contentWindowInsets = WindowInsets(0),
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            bottomBar = {}
-        ) { innerPadding ->
-            val contentModifier = if (currentRoute == "player") {
-                Modifier.padding(innerPadding)
-            } else {
-                Modifier
-                    .padding(innerPadding)
-                    .statusBarsPadding()
-            }
-            Box(
-                modifier = contentModifier
-                    .then(swipeModifier)
+    // 应用动态主题
+    MaterialTheme(
+        colorScheme = dynamicColorScheme
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 全局动态背景层（仅在音乐播放时显示，带过渡动画）
+            AnimatedVisibility(
+                visible = isPlaying && currentMusic != null,
+                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 600))
             ) {
-                NavHost(
-                    navController = navController,
-                    startDestination = "gallery",
-                    modifier = Modifier.fillMaxSize()
+                DynamicBackground(
+                    albumArtUri = currentMusic?.music?.albumArtUri,
+                    paletteColors = paletteColors,
+                    isDarkTheme = isDarkTheme,
+                    modifier = Modifier
+                )
+            }
+            
+            // 音乐未播放时显示纯色背景（带过渡动画）
+            AnimatedVisibility(
+                visible = !(isPlaying && currentMusic != null),
+                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 600))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                )
+            }
+
+            // 前景页面内容
+            Scaffold(
+                contentWindowInsets = WindowInsets(0),
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                bottomBar = {}
+            ) {
+                val contentModifier = if (currentRoute == "player") {
+                    Modifier.padding(it)
+                } else {
+                    Modifier
+                        .padding(it)
+                        .statusBarsPadding()
+                }
+                Box(
+                    modifier = contentModifier
+                        .then(swipeModifier)
                 ) {
-                    composable("home") {
-                        HomeScreen(musicViewModel, playControlViewModel)
-                    }
-                    composable("gallery") {
-                        GalleryScreen(musicViewModel, playControlViewModel, navController)
-                    }
-                    composable("player") {
-                        PlayerScreen(playControlViewModel,navController)
-                    }
-                    composable( "list") {
-                        ListScreen(musicViewModel, navController)
-                    }
-                    composable("user") {
-                        UserScreen(musicViewModel, navController)
-                    }
-                    composable("setting") {
-                        SettingScreen(musicViewModel, navController)
-                    }
-                    composable ("search") {
-                        SearchScreen(musicViewModel,playControlViewModel,navController)
-                    }
-                    composable("playlist") {
-                        PlaylistScreen(musicViewModel,playControlViewModel,navController)
-                    }
-                    composable("audioEffects") {
-                        AudioEffectsScreen(playControlViewModel, navController)
+                    NavHost(
+                        navController = navController,
+                        startDestination = "gallery",
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        composable("home") {
+                            HomeScreen(musicViewModel, playControlViewModel)
+                        }
+                        composable("gallery") {
+                            GalleryScreen(musicViewModel, playControlViewModel, navController)
+                        }
+                        composable("player") {
+                            PlayerScreen(playControlViewModel,navController)
+                        }
+                        composable( "list") {
+                            ListScreen(musicViewModel, navController)
+                        }
+                        composable("user") {
+                            UserScreen(musicViewModel, navController)
+                        }
+                        composable("setting") {
+                            SettingScreen(musicViewModel, navController)
+                        }
+                        composable ("search") {
+                            SearchScreen(musicViewModel,playControlViewModel,navController)
+                        }
+                        composable("playlist") {
+                            PlaylistScreen(musicViewModel,playControlViewModel,navController)
+                        }
+                        composable("audioEffects") {
+                            AudioEffectsScreen(playControlViewModel, navController)
+                        }
                     }
                 }
             }
-        }
 
-        // 悬浮式底部导航栏
-        if (currentRoute in swipePages) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-            ) {
-                CustomBottomNavBar(
-                    playControlViewModel = playControlViewModel,
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            launchSingleTop = true
-                            restoreState = true
+            // 悬浮式底部导航栏
+            if (currentRoute in swipePages) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp)
+                ) {
+                    CustomBottomNavBar(
+                        color = paletteColors.dominantColor,
+                        playControlViewModel = playControlViewModel,
+                        currentRoute = currentRoute,
+                        onNavigate = { route ->
+                            navController.navigate(route) {
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }

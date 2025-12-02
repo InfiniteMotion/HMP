@@ -52,8 +52,20 @@ sealed class UiEvent {
 
 // 调色板颜色数据类
 data class PaletteColors(
+    // 主色调系列
     val dominantColor: Color = Color(0xFF121212),
-    val vibrantColor: Color = Color(0xFF1E1E1E)
+    val primaryColor: Color = Color(0xFF1E1E1E),
+    
+    // 活力色调系列
+    val vibrantColor: Color = Color(0xFF2A2A2A),
+    val darkVibrantColor: Color = Color(0xFF0F0F0F),
+    
+    // 柔和色调系列
+    val mutedColor: Color = Color(0xFF222222),
+    val darkMutedColor: Color = Color(0xFF111111),
+    
+    // 辅助色调
+    val accentColor: Color = Color(0xFF444444)
 )
 
 @HiltViewModel
@@ -632,7 +644,7 @@ class PlayControlViewModel @Inject constructor(
                     val loader = ImageLoader(context)
                     val request = ImageRequest.Builder(context)
                         .data(albumArtUri)
-                        .size(200, 200)
+                        .size(150, 150) // 降低采样大小，提高性能
                         .allowHardware(false)
                         .build()
 
@@ -643,22 +655,35 @@ class PlayControlViewModel @Inject constructor(
                         // 切换到 Default 线程进行 Palette 计算
                         withContext(Dispatchers.Default) {
                             val palette = Palette.from(it)
-                                .maximumColorCount(12)
+                                .maximumColorCount(16) // 增加颜色数量
                                 .generate()
 
-                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            // 提取更多颜色类型
+                            val dominant = palette.getDominantColor(0xFF121212.toInt())
                             val vibrant = palette.vibrantSwatch?.rgb
                             val darkVibrant = palette.darkVibrantSwatch?.rgb
-                            val dominant = palette.getDominantColor(0xFF121212.toInt())
+                            val lightVibrant = palette.lightVibrantSwatch?.rgb
+                            val muted = palette.mutedSwatch?.rgb
+                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            val lightMuted = palette.lightMutedSwatch?.rgb
 
                             PaletteColors(
                                 dominantColor = Color(darkMuted ?: darkVibrant ?: dominant),
-                                vibrantColor = Color(vibrant ?: darkVibrant ?: 0xFF1E1E1E.toInt())
+                                primaryColor = Color(lightVibrant ?: vibrant ?: dominant),
+                                vibrantColor = Color(vibrant ?: darkVibrant ?: lightVibrant ?: 0xFF2A2A2A.toInt()),
+                                darkVibrantColor = Color(darkVibrant ?: vibrant ?: 0xFF0F0F0F.toInt()),
+                                mutedColor = Color(muted ?: lightMuted ?: darkMuted ?: 0xFF222222.toInt()),
+                                darkMutedColor = Color(darkMuted ?: muted ?: 0xFF111111.toInt()),
+                                accentColor = Color(lightVibrant ?: vibrant ?: lightMuted ?: 0xFF444444.toInt())
                             )
                         }
                     } ?: PaletteColors()
                 }
 
+                // 优化缓存机制：保持缓存大小在50以内
+                if (paletteCache.size >= 50) {
+                    paletteCache.remove(paletteCache.keys.first())
+                }
                 // 更新缓存与状态
                 paletteCache[albumArtUri] = colors
                 _paletteColors.value = colors

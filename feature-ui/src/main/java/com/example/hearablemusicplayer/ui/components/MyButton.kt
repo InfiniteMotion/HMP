@@ -1,10 +1,12 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,8 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.MusicInfo
@@ -44,6 +48,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
+@OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonOne(
     musicViewModel: MusicViewModel,
@@ -132,6 +137,7 @@ fun PlayControlButtonOne(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(Transparent)
                     .padding(horizontal = 16.dp)
             ) {
                 val genres = listOf(
@@ -227,6 +233,7 @@ fun PlayControlButtonOne(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonTwo(
     playlist: List<MusicInfo>,
