@@ -89,10 +89,9 @@ fun PlayContent(
     navController: NavController
 ){
     val haptic = rememberHapticFeedback()
-    
+
     // 开启播放进度监督
     DisposableEffect(Unit) {
-        viewModel.startProgressTracking()
         onDispose {
             viewModel.stopProgressTracking()
         }
@@ -189,7 +188,13 @@ fun PlayContent(
                     Spacer(modifier = Modifier.height(24.dp))
                     MusicInfo(musicInfo!!.music)
                     Spacer(modifier = Modifier.height(16.dp))
-                    MusicInfoExtra(musicInfo!!,labels,lyrics,currentPosition)
+                    MusicInfoExtra(
+                        musicInfo = musicInfo!!,
+                        labels = labels,
+                        lyrics = lyrics,
+                        currentPosition = currentPosition,
+                        onSeek = { viewModel.seekTo(it) }
+                    )
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 Column(
@@ -321,11 +326,12 @@ fun MusicInfoExtra(
     labels: List<MusicLabel?>,
     lyrics: String?,
     currentPosition: Long,
+    onSeek: (Long) -> Unit,
 ) {
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
         { AlbumCover(musicInfo.music.albumArtUri, Arrangement.Center,300) },
-        { Lyrics(lyrics,currentPosition)}
+        { Lyrics(lyrics, currentPosition, onSeek = onSeek) }
     )
     Row (
         modifier = Modifier.fillMaxWidth(),
@@ -352,7 +358,7 @@ fun SeekBar(
     var isSeeking by remember { mutableStateOf(false) }
 
     // 监听位置变化
-    LaunchedEffect(currentPosition, duration) {
+    LaunchedEffect(currentPosition) {
         if (!isSeeking && duration > 0) {
             sliderPosition = currentPosition.toFloat() / duration
         }
@@ -367,15 +373,15 @@ fun SeekBar(
         Slider(
             value = sliderPosition,
             onValueChange = { newValue ->
-                isSeeking = false
+                isSeeking = true // 用户开始拖动，设置为true
                 haptic.performDragStart()
                 sliderPosition = newValue
             },
             onValueChangeFinished = {
                 haptic.performGestureEnd()
                 val seekPosition = (sliderPosition * duration).toLong()
-                isSeeking = true
                 onSeek(seekPosition)
+                isSeeking = false // 拖动结束，设置为false
             },
             modifier = Modifier
                 .fillMaxWidth()

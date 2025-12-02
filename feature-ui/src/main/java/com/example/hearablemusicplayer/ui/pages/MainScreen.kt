@@ -21,8 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -117,7 +117,7 @@ fun MainScreen(
             // 前景页面内容
             Scaffold(
                 contentWindowInsets = WindowInsets(0),
-                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                containerColor = Transparent,
                 bottomBar = {}
             ) {
                 val contentModifier = if (currentRoute == "player") {
@@ -137,7 +137,7 @@ fun MainScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         composable("home") {
-                            HomeScreen(musicViewModel, playControlViewModel)
+                            HomeScreen(musicViewModel, playControlViewModel, navController)
                         }
                         composable("gallery") {
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
@@ -165,27 +165,24 @@ fun MainScreen(
                         }
                     }
                 }
-            }
-
-            // 悬浮式底部导航栏
-            if (currentRoute in swipePages) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 16.dp)
-                ) {
-                    CustomBottomNavBar(
-                        color = paletteColors.dominantColor,
-                        playControlViewModel = playControlViewModel,
-                        currentRoute = currentRoute,
-                        onNavigate = { route ->
-                            navController.navigate(route) {
-                                launchSingleTop = true
-                                restoreState = true
+                if (currentRoute in swipePages) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .background(if(isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant)
+                            .navigationBarsPadding()
+                    ) {
+                        CustomBottomNavBar(
+                            isPlaying = isPlaying,
+                            currentRoute = currentRoute,
+                            onNavigate = { route ->
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

@@ -6,7 +6,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,11 +41,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
-import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -137,8 +136,8 @@ fun PlayControlButtonOne(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Transparent)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                color = Transparent,
             ) {
                 val genres = listOf(
                     "歌曲名" to "title",
@@ -187,7 +186,6 @@ fun PlayControlButtonOne(
                                     // 选中状态样式
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     ),
                                 )
                             }
@@ -221,7 +219,6 @@ fun PlayControlButtonOne(
                                     // 选中状态样式
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     ),
                                 )
                             }

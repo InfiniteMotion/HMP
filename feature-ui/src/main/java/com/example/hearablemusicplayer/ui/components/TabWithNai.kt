@@ -2,6 +2,7 @@
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,34 +10,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun CustomBottomNavBar(
-    color: Color,
-    playControlViewModel: PlayControlViewModel,
+    isPlaying: Boolean,
     currentRoute: String?,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val items = rememberBottomNavItems()
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val haptic = rememberHapticFeedback()
     Column(
         modifier = modifier
@@ -46,16 +40,6 @@ fun CustomBottomNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = if(isPlaying) 8.dp else 1.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    clip = true,
-                    ambientColor = MaterialTheme.colorScheme.onSurface.copy(0.4f)
-                )
-                .background(
-                    color = if(isPlaying) color.copy(0.3f) else MaterialTheme.colorScheme.surface.copy(0.6f),
-                    shape = RoundedCornerShape(28.dp)
-                )
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
@@ -84,7 +68,8 @@ fun CustomNavItem(
 ) {
     Box(
         modifier = Modifier
-            .size(40.dp),
+            .size(40.dp)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         IconButton(

@@ -234,9 +234,6 @@ class PlayControlViewModel @Inject constructor(
             while (isActive) {
                 playControl?.let { svc ->
                     _currentPosition.value = svc.getCurrentPosition()
-                    _duration.value = svc.getDuration()
-                    
-                    // 周期性记录播放时长（节流策略）
                     recordListeningDurationPeriodically()
                 }
                 delay(500)
@@ -326,7 +323,14 @@ class PlayControlViewModel @Inject constructor(
 
     // 跳转到指定进度
     fun seekTo(position: Long) {
-        playControl?.seekTo(position)
+        viewModelScope.launch {
+            // 如果当前没有播放，先播放再跳转
+            if (!_isPlaying.value) {
+                playCurrentTrack("Player")
+            }
+            // 跳转到指定位置
+            playControl?.seekTo(position)
+        }
     }
 
     // 根据播放模式更新当前播放列表
@@ -438,13 +442,18 @@ class PlayControlViewModel @Inject constructor(
 
     // 播放当前索引对应的歌曲
     private suspend fun playCurrentTrack(source: String) {
+        stopProgressTracking()
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
         recentPlayListId.first()?.let {
             managePlaylistUseCase.addToPlaylist(it, track.music.id, track.music.path)
         }
         persistCurrentMusic(track.music.id)
+        // 重置当前播放位置为0
+        _currentPosition.value = 0L
         playControl?.playSingleMusic(track.music)
+        _duration.value = track.music.duration
         _isPlaying.value = true
+        startProgressTracking()
         recordPlayback(track.music.id, source)
     }
 

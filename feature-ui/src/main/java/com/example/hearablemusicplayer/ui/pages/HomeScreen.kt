@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,15 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavController
 import com.example.hearablemusicplayer.data.database.DailyMusicInfo
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
@@ -36,22 +35,23 @@ import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
     musicViewModel: MusicViewModel,
     playControlViewModel: PlayControlViewModel,
+    navController: NavController
 ) {
     val scope = rememberCoroutineScope()
-    var visible by remember { mutableStateOf(false) }
     val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
     val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
     val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
-    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val haptic = rememberHapticFeedback()
 
     TabScreen(
         title = "每日推荐",
@@ -74,35 +74,17 @@ fun HomeScreen(
                     )
                 }
             } else {
-//                Box(
-//                    contentAlignment = Alignment.Center,
-//                ){
-//                    IconButton(
-//                        colors = IconButtonDefaults.iconButtonColors(),
-//                        modifier = Modifier.size(48.dp),
-//                        onClick = {
-//                            scope.launch {
-//                                dailyMusic?.let {
-//                                    if (currentPlayingMusic != dailyMusic!!) {
-//                                        playControlViewModel.playWith(dailyMusic!!)
-//                                    } else {
-//                                        if (isPlaying) playControlViewModel.pauseMusic()
-//                                        else playControlViewModel.playOrResume()
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    ) {
-//                        Icon(
-//                            painter = painterResource(
-//                                if (currentPlayingMusic == dailyMusic!! && isPlaying) R.drawable.pause else R.drawable.play_fill
-//                            ),
-//                            contentDescription = "Play / Pause",
-//                            tint = MaterialTheme.colorScheme.secondary
-//                        )
-//                    }
-//                }
-                DailyRecommendSectionOne(dailyMusic!!)
+                DailyRecommendSectionOne(
+                    dailyMusic!!,
+                    playDailyMusic = {
+                        haptic.performClick()
+                        scope.launch {
+                            playControlViewModel.playWith(dailyMusic!!)
+                            playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
+                            navController.navigate("player")
+                        }
+                    }
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 DailyRecommendSectionTwo(dailyMusicInfo, dailyMusicLabel)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -114,9 +96,12 @@ fun HomeScreen(
 @Composable
 fun DailyRecommendSectionOne(
     dailyMusic: MusicInfo,
+    playDailyMusic: () -> Unit,
 ){
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .clickable(onClick = playDailyMusic)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
