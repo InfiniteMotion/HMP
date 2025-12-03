@@ -20,9 +20,14 @@ class UserSettingsUseCase @Inject constructor(
     
     // 用户名
     val userName: Flow<String?> = settingsRepository.userName
-    
     suspend fun saveUserName(name: String) {
         settingsRepository.saveUserName(name)
+    }
+
+    // 主题明暗模式
+    val customMode: Flow<String> = settingsRepository.themeMode
+    suspend fun saveThemeMode(mode: String) {
+        settingsRepository.saveThemeMode(mode)
     }
     
     // 头像URI

@@ -139,6 +139,20 @@ class MusicRepository @Inject constructor(
     suspend fun getLikedStatus(id: Long): Boolean {
         return userInfoDao.getLikedStatus(id)
     }
+    
+    // 根据歌手名获取音乐列表
+    suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
+        val queryString = """
+            SELECT * FROM music 
+            LEFT JOIN musicExtra ON music.id = musicExtra.id
+            LEFT JOIN userInfo ON music.id = userInfo.id
+            WHERE music.artist = ?
+            ORDER BY music.title ASC
+        """.trimIndent()
+        
+        val query = SimpleSQLiteQuery(queryString, arrayOf(artistName))
+        return musicAllDao.getAllMusicInfoAsList(query)
+    }
 
     // 根据关键词搜索音乐(匹配标题或艺术家名)
     suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%")

@@ -73,8 +73,8 @@ fun ListGroupName(
 fun ListBanner(
     listName: String = "",
     listCoverUri: Any,
-    musicViewModel: MusicViewModel,
-    navController: NavController
+    getSelectedPlaylist: (String) -> Unit,
+    navigate: (String) -> Unit,
 ) {
     val imageModifier = Modifier
         .size(100.dp)
@@ -86,8 +86,8 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                musicViewModel.getSelectedPlaylist(listName)
-                navController.navigate("playlist")
+                getSelectedPlaylist(listName)
+                navigate("playlist")
             }
     ) {
         AsyncImage(

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,11 +27,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
@@ -40,8 +37,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun MusicList(
     musicInfoList: List<MusicInfo>,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    navigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -51,8 +50,10 @@ fun MusicList(
         ) { musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,
-                playControlViewModel = playControlViewModel,
-                navController = navController,
+                navigate = navigate,
+                playWith = playWith,
+                recordPlayback = recordPlayback,
+                addToPlaylist = addToPlaylist,
                 modifier = Modifier
             )
         }
@@ -63,8 +64,10 @@ fun MusicList(
 @Composable
 fun MusicItem(
     musicInfo: MusicInfo,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController,
+    navigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit,
     modifier: Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -78,9 +81,9 @@ fun MusicItem(
                 haptic.performClick()
                 // 在协程中等待播放准备完成后再导航
                 scope.launch {
-                    playControlViewModel.playWith(musicInfo)
-                    playControlViewModel.recordPlayback(musicInfo.music.id, "Gallery")
-                    navController.navigate("player")
+                    playWith(musicInfo)
+                    recordPlayback(musicInfo.music.id, "MusicList")
+                    navigate("player")
                 }
             },
         verticalAlignment = Alignment.CenterVertically,
@@ -98,14 +101,15 @@ fun MusicItem(
         Spacer(modifier = Modifier.width(24.dp))
         //音乐信息
         Column(
-            modifier = Modifier.width(180.dp)
+            modifier = Modifier.fillMaxWidth()
+                .weight(1f)
         ) {
             Text(
                 text = musicInfo.music.title,
                 style = MaterialTheme.typography.titleSmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp),
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
@@ -113,7 +117,7 @@ fun MusicItem(
                 style = MaterialTheme.typography.bodySmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.widthIn(max = 260.dp),
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -124,7 +128,7 @@ fun MusicItem(
                 onClick = {
                     haptic.performConfirm()
                     scope.launch {
-                        playControlViewModel.addToPlaylist(musicInfo)
+                        addToPlaylist(musicInfo)
                     }
                 },
                 modifier = Modifier

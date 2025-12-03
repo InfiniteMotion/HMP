@@ -4,17 +4,10 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,25 +18,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -51,10 +39,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.ui.components.BackButton
-import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
+import com.example.hearablemusicplayer.ui.components.Avatar
+import com.example.hearablemusicplayer.ui.template.components.TitleWidget
+import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -64,80 +52,49 @@ fun SettingScreen(
     viewModel: MusicViewModel,
     navController: NavController
 ) {
-    var visible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        visible = true
-    }
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut()
+    // 使用SubScreen模板
+    SubScreen(
+        navController = navController,
+        title = "设置"
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.Top,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Box(
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    ){
-                        BackButton(navController)
-                    }
-                    Text(
-                        "设置",
-                        style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                Spacer(modifier = Modifier.height(32.dp))
 
-                UpdateUserName(viewModel)
+            val avatarUri by viewModel.avatarUri.collectAsState("")
+            val userName by viewModel.userName.collectAsState("")
+            val musicCount by viewModel.musicCount.collectAsState(initial = 0)
 
-                Spacer(modifier = Modifier.height(16.dp))
 
-                UpdateAvatar(viewModel)
+            UpdateAvatar(
+                avatarUri = avatarUri,
+                updateAvatar = viewModel::saveAvatarUri
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            UpdateUserName(
+                userName = userName,
+                updateUserName = viewModel::saveUserName
+            )
 
-                ReloadMusic(viewModel)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SetDeepSeekApi(viewModel)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LoadMusicExtraInfo(viewModel)
-            }
+            ReloadMusic(
+                musicCount = musicCount,
+                refreshMusicList = viewModel::refreshMusicList
+            )
         }
     }
 }
 
-
 @Composable
-fun UpdateUserName(
-    viewModel: MusicViewModel
+fun UpdateAvatar(
+    avatarUri: String,
+    updateAvatar: (String) -> Unit
 ){
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+    TitleWidget(
+        title = "头像",
     ) {
-        val userName by viewModel.userName.collectAsState("")
-        var name by rememberSaveable { mutableStateOf("") }
         Column (
             modifier = Modifier
                 .fillMaxWidth()
@@ -145,36 +102,139 @@ fun UpdateUserName(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val context = LocalContext.current
+            val uriImg = remember { mutableStateOf("") }
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.GetContent(),
+                onResult = { uri: Uri? ->
+                    uri?.let {
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(uri)
+                            val file = File(context.filesDir, "user_avatar.jpg")
+
+                            val outputStream = FileOutputStream(file)
+                            inputStream?.copyTo(outputStream)
+
+                            // 保存头像路径到 SharedPreferences
+                            uriImg.value = file.absolutePath
+                            inputStream?.close()
+                            outputStream.close()
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Avatar(128, avatarUri)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                if (uriImg.value == "") {
+                    Button(
+                        modifier = Modifier.width(300.dp),
+                        onClick = {
+                            launcher.launch("image/*")  // 打开图片选择器
+                        }
+                    ) {
+                        Text(text = "更改头像", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                } else {
+                    AsyncImage(
+                        model = uriImg.value,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                    )
+                    Spacer(modifier = Modifier.width(32.dp))
+                    Button(
+                        onClick = {
+                            updateAvatar(uriImg.value)
+                            Toast.makeText(context, "头像已更改!", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text(text = "更改", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                    Button(
+                        onClick = {
+                            uriImg.value = ""
+                            Toast.makeText(context, "放弃更改头像！", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text(text = "取消", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpdateUserName(
+    userName: String?,
+    updateUserName: (String) -> Unit,
+){
+    TitleWidget(
+        title = "用户名",
+    ) {
+        Column (
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            var name by rememberSaveable { mutableStateOf("") }
             Text(
-                text = "当前用户名：$userName",
-                style = MaterialTheme.typography.displayMedium,
+                text = userName?:"用户名",
+                style = MaterialTheme.typography.displayLarge,
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
-            TextField(
-                value = name,
-                onValueChange = {
-                    name = it
-                },
-                label = { Text("请输入新的用户名") },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Default
-                ),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent, // 聚焦时下划线颜色
-                    unfocusedIndicatorColor = Color.Transparent, // 未聚焦时下划线颜色
-                    disabledIndicatorColor = Color.Transparent // 禁用时下划线颜色
-                ),
-                shape = RoundedCornerShape(28.dp),
-                modifier = Modifier.width(300.dp)
-                    .padding(vertical = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ){
+                TextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = { Text("请输入新的用户名") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Default
+                    ),
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Transparent, // 聚焦时下划线颜色
+                        unfocusedIndicatorColor = Transparent, // 未聚焦时下划线颜色
+                        disabledIndicatorColor = Transparent // 禁用时下划线颜色
+                    ),
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.width(300.dp)
+                        .padding(vertical = 16.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
-                modifier = Modifier.width(300.dp),
+                modifier = Modifier.width(200.dp),
                 onClick = {
-                    viewModel.saveUserName(name)
+                    updateUserName(name)
                 }
             ) {
                 Text(text = "更改用户名", color = MaterialTheme.colorScheme.onPrimary)
@@ -184,106 +244,18 @@ fun UpdateUserName(
 }
 
 @Composable
-fun UpdateAvatar(
-    viewModel: MusicViewModel
-){
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
-    ) {
-        val context = LocalContext.current
-        val uriImg = remember { mutableStateOf("") }
-        val launcher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent(),
-            onResult = { uri: Uri? ->
-                uri?.let {
-                    try {
-                        val inputStream = context.contentResolver.openInputStream(uri)
-                        val file = File(context.filesDir, "user_avatar.jpg")
-
-                        val outputStream = FileOutputStream(file)
-                        inputStream?.copyTo(outputStream)
-
-                        // 保存头像路径到 SharedPreferences
-                        uriImg.value = file.absolutePath
-                        inputStream?.close()
-                        outputStream.close()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            if (uriImg.value == "") {
-                Button(
-                    modifier = Modifier.width(300.dp),
-                    onClick = {
-                        launcher.launch("image/*")  // 打开图片选择器
-                    }
-                ) {
-                    Text(text = "更改头像", color = MaterialTheme.colorScheme.onPrimary)
-                }
-            } else {
-                AsyncImage(
-                    model = uriImg.value,
-                    contentDescription = "User Avatar",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                )
-                Spacer(modifier = Modifier.width(32.dp))
-                Button(
-                    onClick = {
-                        viewModel.saveAvatarUri(uriImg.value)
-                        Toast.makeText(context, "头像已更改!", Toast.LENGTH_SHORT).show()
-                    }
-                ) {
-                    Text(text = "更改", color = MaterialTheme.colorScheme.onPrimary)
-                }
-                Button(
-                    onClick = {
-                        uriImg.value=""
-                        Toast.makeText(context, "放弃更改头像！", Toast.LENGTH_SHORT).show()
-                    }
-                ) {
-                    Text(text = "取消", color = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun ReloadMusic(
-    viewModel: MusicViewModel
+    musicCount: Int,
+    refreshMusicList: () -> Unit,
 ) {
-    var isLoading by remember { mutableStateOf(false) }
-    val musicCount by viewModel.musicCount.collectAsState(initial = 0)
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+    TitleWidget(
+        title = "音乐扫描",
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            var isLoading by remember { mutableStateOf(false) }
             Text(
                 text = "当前音乐数量：${musicCount} 首",
                 style = MaterialTheme.typography.displayMedium,
@@ -297,7 +269,7 @@ fun ReloadMusic(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）" ,
+                text = "增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 16.dp, horizontal = 32.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -310,7 +282,7 @@ fun ReloadMusic(
                     modifier = Modifier.width(120.dp),
                     onClick = {
                         isLoading = true
-                        viewModel.refreshMusicList()
+                        refreshMusicList()
                     },
                     enabled = !isLoading
                 ) {
@@ -321,140 +293,13 @@ fun ReloadMusic(
                     modifier = Modifier.width(120.dp),
                     onClick = {
                         isLoading = true
-                        viewModel.refreshMusicList()
+                        refreshMusicList()
                     },
                     enabled = !isLoading
                 ) {
                     Text("重新加载", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
-
-        }
-
-        if (isLoading) {
-            MusicScanDialog(
-                viewModel = viewModel,
-                onDismiss = { isLoading = false }
-            )
-        }
-    }
-}
-
-@Composable
-fun SetDeepSeekApi(
-    viewModel: MusicViewModel
-){
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "使用用户自己 DeepSeek API-Key",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            val context = LocalContext.current
-            var keyValue by rememberSaveable { mutableStateOf("") }
-            var isAccess by rememberSaveable { mutableStateOf(false) }
-
-            TextField(
-                value = keyValue,
-                onValueChange = {
-                    keyValue = it
-                },
-                label = { Text("请输入您的密钥,形如 Bearer sk-xxx", color = MaterialTheme.colorScheme.onBackground) },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Default
-                ),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent, // 聚焦时下划线颜色
-                    unfocusedIndicatorColor = Color.Transparent, // 未聚焦时下划线颜色
-                    disabledIndicatorColor = Color.Transparent // 禁用时下划线颜色
-                ),
-                shape = RoundedCornerShape(15.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                val scope = rememberCoroutineScope()
-                Button(
-                    modifier = Modifier.width(120.dp),
-                    onClick = {
-                        scope.launch {
-                            isAccess = viewModel.checkApiAccess(keyValue)
-                        }
-                    }
-                ) {
-                    Text("测试", color = MaterialTheme.colorScheme.onPrimary)
-                }
-                if (isAccess){
-                    Toast.makeText(context, "可以访问到 DeepSeek", Toast.LENGTH_SHORT).show()
-                }
-                Spacer(modifier = Modifier.width(32.dp))
-                Button(
-                    modifier = Modifier.width(120.dp),
-                    onClick = {
-                        viewModel.saveDeepSeekApiKey(keyValue)
-                    }
-                ) {
-                    Text("使用", color = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun LoadMusicExtraInfo(
-    viewModel: MusicViewModel
-) {
-    val musicWithExtraCount by viewModel.musicWithExtraCount.collectAsState(initial = 0)
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "已获取额外信息的音乐数量：${musicWithExtraCount} 首",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Button(
-                modifier = Modifier.width(300.dp),
-                onClick = {
-
-                }
-            ) {
-                Text(text = "批量加载", color = MaterialTheme.colorScheme.onPrimary)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

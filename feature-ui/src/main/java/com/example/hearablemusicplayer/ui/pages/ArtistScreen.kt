@@ -18,25 +18,25 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlaylistScreen(
+fun ArtistScreen(
     musicViewModel: MusicViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController,
 ) {
-    val playlistName by musicViewModel.selectedPlaylistName.collectAsState()
-    val playlist by musicViewModel.selectedPlaylist.collectAsState(initial = emptyList())
+    val artistName by musicViewModel.selectedArtistName.collectAsState()
+    val artistMusicList by musicViewModel.selectedArtistMusicList.collectAsState(initial = emptyList())
     SubScreen(
         navController = navController,
-        title = playlistName
+        title = artistName
     ) {
         PlayControlButtonTwo(
-            playlist,
+            artistMusicList,
             playControlViewModel,
             navController
         )
         Spacer(modifier = Modifier.height(32.dp))
         MusicList(
-            musicInfoList = playlist,
+            musicInfoList = artistMusicList,
             navigate = navController::navigate,
             playWith = playControlViewModel::playWith,
             recordPlayback = playControlViewModel::recordPlayback,

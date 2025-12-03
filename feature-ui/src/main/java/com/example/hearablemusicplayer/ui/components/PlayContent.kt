@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +69,7 @@ import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,13 +86,13 @@ fun formatTime(millis: Long): String {
 @Composable
 fun PlayContent(
     viewModel: PlayControlViewModel,
-    navController: NavController
+    navController: NavController,
+    musicViewModel: MusicViewModel
 ){
     val haptic = rememberHapticFeedback()
-    
+
     // 开启播放进度监督
     DisposableEffect(Unit) {
-        viewModel.startProgressTracking()
         onDispose {
             viewModel.stopProgressTracking()
         }
@@ -131,50 +132,9 @@ fun PlayContent(
         ) {
             val scrollState = rememberScrollState()
             
-            // 检测是否滚动到顶部
-            val isAtTop by remember {
-                derivedStateOf { scrollState.value == 0 }
-            }
-            
-            // 下拉退出的嵌套滚动处理
-            var dragOffsetY by remember { mutableFloatStateOf(0f) }
-            val nestedScrollConnection = remember(isAtTop) {
-                object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                        // 只处理用户手势触发的滚动
-                        if (source == NestedScrollSource.UserInput) {
-                            // 向下拖动（available.y > 0）且已在顶部时，累积下拉距离
-                            if (isAtTop && available.y > 0) {
-                                dragOffsetY += available.y
-                                return Offset.Zero // 不消耗滚动，让内容正常显示
-                            } else {
-                                // 不在顶部或向上拖动时，重置计数
-                                dragOffsetY = 0f
-                            }
-                        }
-                        return Offset.Zero
-                    }
-                    
-                    override fun onPostScroll(
-                        consumed: Offset,
-                        available: Offset,
-                        source: NestedScrollSource
-                    ): Offset {
-                        // 手势结束时检查是否需要返回
-                        if (dragOffsetY > 200f && isAtTop) {
-                            if (navController.previousBackStackEntry != null) {
-                                navController.popBackStack()
-                            }
-                        }
-                        return Offset.Zero
-                    }
-                }
-            }
-            
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection)
                     .verticalScroll(scrollState)
             )
             {
@@ -186,9 +146,15 @@ fun PlayContent(
                     Spacer(modifier = Modifier.height(16.dp))
                     PlayerHeader(navController)
                     Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo!!.music)
+                    MusicInfo(musicInfo!!.music, navController, musicViewModel)
                     Spacer(modifier = Modifier.height(16.dp))
-                    MusicInfoExtra(musicInfo!!,labels,lyrics,currentPosition)
+                    MusicInfoExtra(
+                        musicInfo = musicInfo!!,
+                        labels = labels,
+                        lyrics = lyrics,
+                        currentPosition = currentPosition,
+                        onSeek = { viewModel.seekTo(it) }
+                    )
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 Column(
@@ -281,7 +247,7 @@ fun PlayerHeader(navController: NavController) {
 
 // 歌曲标题、艺术家、专辑信息
 @Composable
-fun MusicInfo(music: Music) {
+fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicViewModel) {
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
@@ -299,7 +265,11 @@ fun MusicInfo(music: Music) {
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clickable {
+                musicViewModel.getSelectedArtistMusicList(music.artist)
+                navController.navigate("artist")
+            }
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -320,11 +290,12 @@ fun MusicInfoExtra(
     labels: List<MusicLabel?>,
     lyrics: String?,
     currentPosition: Long,
+    onSeek: (Long) -> Unit,
 ) {
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
         { AlbumCover(musicInfo.music.albumArtUri, Arrangement.Center,300) },
-        { Lyrics(lyrics,currentPosition)}
+        { Lyrics(lyrics, currentPosition, onSeek = onSeek) }
     )
     Row (
         modifier = Modifier.fillMaxWidth(),
@@ -351,7 +322,7 @@ fun SeekBar(
     var isSeeking by remember { mutableStateOf(false) }
 
     // 监听位置变化
-    LaunchedEffect(currentPosition, duration) {
+    LaunchedEffect(currentPosition) {
         if (!isSeeking && duration > 0) {
             sliderPosition = currentPosition.toFloat() / duration
         }
@@ -366,15 +337,15 @@ fun SeekBar(
         Slider(
             value = sliderPosition,
             onValueChange = { newValue ->
-                isSeeking = false
+                isSeeking = true // 用户开始拖动，设置为true
                 haptic.performDragStart()
                 sliderPosition = newValue
             },
             onValueChangeFinished = {
                 haptic.performGestureEnd()
                 val seekPosition = (sliderPosition * duration).toLong()
-                isSeeking = true
                 onSeek(seekPosition)
+                isSeeking = false // 拖动结束，设置为false
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -437,7 +408,7 @@ fun PlaybackControls(
     onTimerClick: () -> Unit,
     onHeartMode: () -> Unit,
     viewModel: PlayControlViewModel,
-    scrollState: androidx.compose.foundation.ScrollState
+    scrollState: ScrollState
 ) {
     var playlistExpanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()

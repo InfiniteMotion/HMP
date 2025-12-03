@@ -33,7 +33,7 @@ fun Capsule(
         color = MaterialTheme.colorScheme.onPrimary,
         modifier = Modifier
             .background(
-                color = color.copy(alpha = 0.7f),
+                color = color,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)

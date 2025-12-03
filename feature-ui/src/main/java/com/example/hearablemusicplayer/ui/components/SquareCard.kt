@@ -31,7 +31,7 @@ fun SquareCard(
 ) {
     Card(
         modifier = Modifier
-            .size(155.dp, 120.dp),
+            .size(155.dp, 110.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = Transparent

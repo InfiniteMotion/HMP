@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -35,15 +36,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
-import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
+@OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonOne(
     musicViewModel: MusicViewModel,
@@ -132,7 +136,8 @@ fun PlayControlButtonOne(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                color = Transparent,
             ) {
                 val genres = listOf(
                     "歌曲名" to "title",
@@ -181,7 +186,6 @@ fun PlayControlButtonOne(
                                     // 选中状态样式
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     ),
                                 )
                             }
@@ -215,7 +219,6 @@ fun PlayControlButtonOne(
                                     // 选中状态样式
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     ),
                                 )
                             }
@@ -227,6 +230,7 @@ fun PlayControlButtonOne(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonTwo(
     playlist: List<MusicInfo>,
@@ -292,8 +296,9 @@ fun BackButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.back_to),
+            tint= MaterialTheme.colorScheme.onSurface,
             contentDescription = "Back Button",
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(32.dp),
         )
     }
 }

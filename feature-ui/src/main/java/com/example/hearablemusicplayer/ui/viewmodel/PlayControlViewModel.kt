@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.viewmodel
+package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -14,6 +14,7 @@ import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
@@ -51,8 +52,20 @@ sealed class UiEvent {
 
 // 调色板颜色数据类
 data class PaletteColors(
+    // 主色调系列
     val dominantColor: Color = Color(0xFF121212),
-    val vibrantColor: Color = Color(0xFF1E1E1E)
+    val primaryColor: Color = Color(0xFF1E1E1E),
+    
+    // 活力色调系列
+    val vibrantColor: Color = Color(0xFF2A2A2A),
+    val darkVibrantColor: Color = Color(0xFF0F0F0F),
+    
+    // 柔和色调系列
+    val mutedColor: Color = Color(0xFF222222),
+    val darkMutedColor: Color = Color(0xFF111111),
+    
+    // 辅助色调
+    val accentColor: Color = Color(0xFF444444)
 )
 
 @HiltViewModel
@@ -155,6 +168,22 @@ class PlayControlViewModel @Inject constructor(
     // 添加定时器相关状态
     private var timerJob: Job? = null
     val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
+    
+    // 音效相关状态
+    private val _audioEffectSettings = MutableStateFlow(AudioEffectSettings())
+    val audioEffectSettings: StateFlow<AudioEffectSettings> = _audioEffectSettings.asStateFlow()
+    
+    private val _equalizerPresets = MutableStateFlow<List<String>>(emptyList())
+    val equalizerPresets: StateFlow<List<String>> = _equalizerPresets.asStateFlow()
+    
+    private val _equalizerBandCount = MutableStateFlow(0)
+    val equalizerBandCount: StateFlow<Int> = _equalizerBandCount.asStateFlow()
+    
+    private val _equalizerBandLevelRange = MutableStateFlow(Pair(0, 0))
+    val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = _equalizerBandLevelRange.asStateFlow()
+    
+    private val _currentEqualizerBandLevels = MutableStateFlow(floatArrayOf())
+    val currentEqualizerBandLevels: StateFlow<FloatArray> = _currentEqualizerBandLevels.asStateFlow()
 
     init {
         // 初始化播放列表和当前播放歌曲索引
@@ -205,9 +234,6 @@ class PlayControlViewModel @Inject constructor(
             while (isActive) {
                 playControl?.let { svc ->
                     _currentPosition.value = svc.getCurrentPosition()
-                    _duration.value = svc.getDuration()
-                    
-                    // 周期性记录播放时长（节流策略）
                     recordListeningDurationPeriodically()
                 }
                 delay(500)
@@ -297,7 +323,14 @@ class PlayControlViewModel @Inject constructor(
 
     // 跳转到指定进度
     fun seekTo(position: Long) {
-        playControl?.seekTo(position)
+        viewModelScope.launch {
+            // 如果当前没有播放，先播放再跳转
+            if (!_isPlaying.value) {
+                playCurrentTrack("Player")
+            }
+            // 跳转到指定位置
+            playControl?.seekTo(position)
+        }
     }
 
     // 根据播放模式更新当前播放列表
@@ -409,13 +442,18 @@ class PlayControlViewModel @Inject constructor(
 
     // 播放当前索引对应的歌曲
     private suspend fun playCurrentTrack(source: String) {
+        stopProgressTracking()
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
         recentPlayListId.first()?.let {
             managePlaylistUseCase.addToPlaylist(it, track.music.id, track.music.path)
         }
         persistCurrentMusic(track.music.id)
+        // 重置当前播放位置为0
+        _currentPosition.value = 0L
         playControl?.playSingleMusic(track.music)
+        _duration.value = track.music.duration
         _isPlaying.value = true
+        startProgressTracking()
         recordPlayback(track.music.id, source)
     }
 
@@ -615,7 +653,7 @@ class PlayControlViewModel @Inject constructor(
                     val loader = ImageLoader(context)
                     val request = ImageRequest.Builder(context)
                         .data(albumArtUri)
-                        .size(200, 200)
+                        .size(150, 150) // 降低采样大小，提高性能
                         .allowHardware(false)
                         .build()
 
@@ -626,22 +664,35 @@ class PlayControlViewModel @Inject constructor(
                         // 切换到 Default 线程进行 Palette 计算
                         withContext(Dispatchers.Default) {
                             val palette = Palette.from(it)
-                                .maximumColorCount(12)
+                                .maximumColorCount(16) // 增加颜色数量
                                 .generate()
 
-                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            // 提取更多颜色类型
+                            val dominant = palette.getDominantColor(0xFF121212.toInt())
                             val vibrant = palette.vibrantSwatch?.rgb
                             val darkVibrant = palette.darkVibrantSwatch?.rgb
-                            val dominant = palette.getDominantColor(0xFF121212.toInt())
+                            val lightVibrant = palette.lightVibrantSwatch?.rgb
+                            val muted = palette.mutedSwatch?.rgb
+                            val darkMuted = palette.darkMutedSwatch?.rgb
+                            val lightMuted = palette.lightMutedSwatch?.rgb
 
                             PaletteColors(
                                 dominantColor = Color(darkMuted ?: darkVibrant ?: dominant),
-                                vibrantColor = Color(vibrant ?: darkVibrant ?: 0xFF1E1E1E.toInt())
+                                primaryColor = Color(lightVibrant ?: vibrant ?: dominant),
+                                vibrantColor = Color(vibrant ?: darkVibrant ?: lightVibrant ?: 0xFF2A2A2A.toInt()),
+                                darkVibrantColor = Color(darkVibrant ?: vibrant ?: 0xFF0F0F0F.toInt()),
+                                mutedColor = Color(muted ?: lightMuted ?: darkMuted ?: 0xFF222222.toInt()),
+                                darkMutedColor = Color(darkMuted ?: muted ?: 0xFF111111.toInt()),
+                                accentColor = Color(lightVibrant ?: vibrant ?: lightMuted ?: 0xFF444444.toInt())
                             )
                         }
                     } ?: PaletteColors()
                 }
 
+                // 优化缓存机制：保持缓存大小在50以内
+                if (paletteCache.size >= 50) {
+                    paletteCache.remove(paletteCache.keys.first())
+                }
                 // 更新缓存与状态
                 paletteCache[albumArtUri] = colors
                 _paletteColors.value = colors
@@ -660,5 +711,106 @@ class PlayControlViewModel @Inject constructor(
             persistCurrentPlaylistToDatabase()
         }
     }
-
+    
+    // 初始化音效状态
+    fun initializeAudioEffects() {
+        playControl?.let { control ->
+            // 获取均衡器预设列表
+            _equalizerPresets.value = control.getEqualizerPresets()
+            
+            // 获取均衡器频段数量
+            _equalizerBandCount.value = control.getEqualizerBandCount()
+            
+            // 获取均衡器频段范围
+            _equalizerBandLevelRange.value = control.getEqualizerBandLevelRange()
+            
+            // 获取当前均衡器频段级别
+            _currentEqualizerBandLevels.value = control.getCurrentEqualizerBandLevels()
+            
+            // 初始化音效设置
+            _audioEffectSettings.value = AudioEffectSettings(
+                equalizerPreset = control.getCurrentEqualizerPreset(),
+                bassBoostLevel = control.getBassBoostLevel(),
+                isSurroundSoundEnabled = control.isSurroundSoundEnabled(),
+                reverbPreset = control.getReverbPreset(),
+                customEqualizerLevels = control.getCurrentEqualizerBandLevels()
+            )
+        }
+    }
+    
+    // 设置均衡器预设
+    fun setEqualizerPreset(preset: Int) {
+        playControl?.let { control ->
+            control.setEqualizerPreset(preset)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                equalizerPreset = preset
+            )
+        }
+    }
+    
+    // 设置低音增强
+    fun setBassBoost(level: Int) {
+        playControl?.let { control ->
+            control.setBassBoost(level)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                bassBoostLevel = level
+            )
+        }
+    }
+    
+    // 设置环绕声
+    fun setSurroundSound(enabled: Boolean) {
+        playControl?.let { control ->
+            control.setSurroundSound(enabled)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                isSurroundSoundEnabled = enabled
+            )
+        }
+    }
+    
+    // 设置混响
+    fun setReverb(preset: Int) {
+        playControl?.let { control ->
+            control.setReverb(preset)
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                reverbPreset = preset
+            )
+        }
+    }
+    
+    // 设置自定义均衡器
+    fun setCustomEqualizer(bandLevels: FloatArray) {
+        playControl?.let { control ->
+            control.setCustomEqualizer(bandLevels)
+            _currentEqualizerBandLevels.value = bandLevels
+            _audioEffectSettings.value = _audioEffectSettings.value.copy(
+                customEqualizerLevels = bandLevels
+            )
+        }
+    }
+    
+    // 获取当前均衡器预设
+    fun getCurrentEqualizerPreset(): Int {
+        return playControl?.getCurrentEqualizerPreset() ?: 0
+    }
+    
+    // 获取当前低音增强级别
+    fun getBassBoostLevel(): Int {
+        return playControl?.getBassBoostLevel() ?: 0
+    }
+    
+    // 获取当前环绕声状态
+    fun isSurroundSoundEnabled(): Boolean {
+        return playControl?.isSurroundSoundEnabled() ?: false
+    }
+    
+    // 获取当前混响预设
+    fun getReverbPreset(): Int {
+        return playControl?.getReverbPreset() ?: 0
+    }
+    
+    // 获取当前均衡器频段级别
+    fun getCurrentEqualizerBandLevels(): FloatArray {
+        return playControl?.getCurrentEqualizerBandLevels() ?: floatArrayOf()
+    }
 }
