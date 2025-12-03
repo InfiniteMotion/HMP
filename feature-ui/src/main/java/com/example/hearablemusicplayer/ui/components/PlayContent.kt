@@ -41,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -131,50 +130,9 @@ fun PlayContent(
         ) {
             val scrollState = rememberScrollState()
             
-            // 检测是否滚动到顶部
-            val isAtTop by remember {
-                derivedStateOf { scrollState.value == 0 }
-            }
-            
-            // 下拉退出的嵌套滚动处理
-            var dragOffsetY by remember { mutableFloatStateOf(0f) }
-            val nestedScrollConnection = remember(isAtTop) {
-                object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                        // 只处理用户手势触发的滚动
-                        if (source == NestedScrollSource.UserInput) {
-                            // 向下拖动（available.y > 0）且已在顶部时，累积下拉距离
-                            if (isAtTop && available.y > 0) {
-                                dragOffsetY += available.y
-                                return Offset.Zero // 不消耗滚动，让内容正常显示
-                            } else {
-                                // 不在顶部或向上拖动时，重置计数
-                                dragOffsetY = 0f
-                            }
-                        }
-                        return Offset.Zero
-                    }
-                    
-                    override fun onPostScroll(
-                        consumed: Offset,
-                        available: Offset,
-                        source: NestedScrollSource
-                    ): Offset {
-                        // 手势结束时检查是否需要返回
-                        if (dragOffsetY > 200f && isAtTop) {
-                            if (navController.previousBackStackEntry != null) {
-                                navController.popBackStack()
-                            }
-                        }
-                        return Offset.Zero
-                    }
-                }
-            }
-            
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection)
                     .verticalScroll(scrollState)
             )
             {

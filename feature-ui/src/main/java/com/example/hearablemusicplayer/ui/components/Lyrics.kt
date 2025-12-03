@@ -1,15 +1,13 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
-import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,19 +16,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.Velocity
-import kotlin.math.abs
 
 fun parseLrcTime(timeStr: String): Long {
     val (min, sec) = timeStr.split(":").map { it.toDouble() }
@@ -91,25 +82,12 @@ fun Lyrics(
                 }
             }
             
-            // 简化嵌套滚动处理，让歌词区域优先处理滚动事件
-            val nestedScrollConnection = remember { 
-                object : NestedScrollConnection {
-                    // 消耗所有垂直滚动事件，防止触发父级滑动
-                    override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: NestedScrollSource): androidx.compose.ui.geometry.Offset {
-                        return available.copy(x = 0f) // 只消耗垂直滚动，保留水平滚动
-                    }
-                    
-                    override suspend fun onPreFling(available: Velocity): Velocity {
-                        return available.copy(x = 0f) // 只消耗垂直滑动，保留水平滑动
-                    }
-                }
-            }
-            
+            // 恢复LazyColumn默认滚动行为，确保有明确的高度限制
             LazyColumn(
                 state = scrollState,
                 modifier = modifier
                     .fillMaxWidth()
-                    .nestedScroll(nestedScrollConnection), // 添加嵌套滚动处理
+                    .height(320.dp), // 设置固定高度，确保可以滚动
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 items(lyricListWithTimestamp.size) { index ->
@@ -132,7 +110,7 @@ fun Lyrics(
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         },
                         style = if (isCurrent) {
-                            MaterialTheme.typography.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         } else {
                             MaterialTheme.typography.bodyMedium
                         },
