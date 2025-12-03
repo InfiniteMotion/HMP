@@ -36,9 +36,11 @@ fun PlaylistScreen(
         )
         Spacer(modifier = Modifier.height(32.dp))
         MusicList(
-            playlist,
-            playControlViewModel,
-            navController
+            musicInfoList = playlist,
+            navigate = navController::navigate,
+            playWith = playControlViewModel::playWith,
+            recordPlayback = playControlViewModel::recordPlayback,
+            addToPlaylist = playControlViewModel::addToPlaylist
         )
     }
 }

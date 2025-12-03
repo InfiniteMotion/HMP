@@ -54,7 +54,14 @@ fun MainScreen(
     val currentMusic by playControlViewModel.currentPlayingMusic.collectAsState()
     val paletteColors by playControlViewModel.paletteColors.collectAsState()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
-    val isDarkTheme = isSystemInDarkTheme()
+
+    // 根据customMode确定主题模式
+    val customMode by musicViewModel.customMode.collectAsState("default")
+    val isDarkTheme = when (customMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
     
     // 生成动态ColorScheme
     val dynamicColorScheme = generateDynamicColorScheme(paletteColors, isDarkTheme)
@@ -160,15 +167,21 @@ fun MainScreen(
                         composable("playlist") {
                             PlaylistScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("audioEffects") {
-                            AudioEffectsScreen(playControlViewModel, navController)
-                        }
                         composable("artist") {
                             ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
+                        composable("audioEffects") {
+                            AudioEffectsScreen(playControlViewModel, navController)
+                        }
+                        composable("ai") {
+                            AIScreen(musicViewModel, navController)
+                        }
+                        composable("custom") {
+                            CustomScreen(musicViewModel, navController)
+                        }
                     }
                 }
-                if (currentRoute in swipePages) {
+                if (currentRoute != "player") {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)

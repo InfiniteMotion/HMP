@@ -77,7 +77,15 @@ fun SearchScreen(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp)
         )
+
         Spacer(modifier = Modifier.padding(vertical = 16.dp))
-        MusicList(searchResults,playControlViewModel,navController)
+
+        MusicList(
+            musicInfoList = searchResults,
+            navigate = navController::navigate,
+            playWith = playControlViewModel::playWith,
+            recordPlayback = playControlViewModel::recordPlayback,
+            addToPlaylist = playControlViewModel::addToPlaylist,
+        )
     }
 }

@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -81,7 +82,13 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            HearableMusicPlayerTheme {
+            val customMode by musicViewModel.customMode.collectAsState("default")
+            val darkTheme = when (customMode) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+            HearableMusicPlayerTheme(darkTheme = darkTheme) {
                 val isMusicReadPermissionGiven = remember { mutableStateOf(false) }
                 val isNotificationPermissionGiven = remember { mutableStateOf(false) }
                 val isLoadMusic by musicViewModel.isLoadMusic.collectAsState(false)

@@ -33,16 +33,23 @@ fun UserScreen(
 ) {
 
     val userName by viewModel.userName.collectAsState("")
+    val avatarUri by viewModel.avatarUri.collectAsState("")
     val listeningData by viewModel.recentListeningDurations.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.getAvatarUri()
     }
 
-    TabScreen() {
+    TabScreen {
         Spacer(modifier = Modifier.height(48.dp))
-        Avatar(128, viewModel)
+
+        Avatar(
+            aSize = 128,
+            imageUri = avatarUri
+            )
+
         Spacer(modifier = Modifier.height(16.dp))
+
         userName?.let {
             Text(
                 text = it,
@@ -88,13 +95,13 @@ fun UserScreen(
             ) {
                 SquareCard(
                     "主题定制",
-                    R.drawable.identify_song,
-                    onClick = {}
+                    R.drawable.slider_vertical_3,
+                    onClick = {navController.navigate("custom")}
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(
                     "音效效果",
-                    R.drawable.slider_vertical_3,
+                    R.drawable.identify_song,
                     onClick = { navController.navigate("audioEffects") }
                 )
             }
@@ -105,9 +112,9 @@ fun UserScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 SquareCard(
-                    "云服务",
+                    "AI服务",
                     R.drawable.icloud,
-                    onClick = {}
+                    onClick = { navController.navigate("ai") }
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(

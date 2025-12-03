@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -30,7 +32,6 @@ fun ListScreen(
     musicViewModel: MusicViewModel,
     navController: NavController
 ) {
-
     TabScreen(
         title = "播放列表",
         hasSearchBotton = true,
@@ -53,20 +54,20 @@ fun ListScreen(
                 ListBanner(
                     listName = "默认列表",
                     listCoverUri = R.drawable.defaultlist,
-                    musicViewModel = musicViewModel,
-                    navController = navController
+                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
+                    navigate = navController::navigate
                 )
                 ListBanner(
                     listName = "红心列表",
                     listCoverUri = R.drawable.heartlist,
-                    musicViewModel = musicViewModel,
-                    navController = navController
+                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
+                    navigate = navController::navigate
                 )
                 ListBanner(
                     listName = "最近播放",
                     listCoverUri = R.drawable.historylist,
-                    musicViewModel = musicViewModel,
-                    navController = navController
+                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
+                    navigate = navController::navigate
                 )
             }
             ListGroupName(
@@ -184,6 +185,7 @@ fun ListScreen(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

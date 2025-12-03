@@ -48,7 +48,6 @@ fun HearableMusicPlayerTheme(
         else -> lightColorScheme
     }
 
-
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,

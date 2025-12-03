@@ -35,6 +35,7 @@ class MusicViewModel @Inject constructor(
     private val getLabelPlaylistUseCase: GetLabelPlaylistUseCase,
     private val userSettingsUseCase: UserSettingsUseCase,
     private val playlistSettingsUseCase: PlaylistSettingsUseCase
+
 ) : ViewModel() {
 
     // 用户设置相关
@@ -50,7 +51,15 @@ class MusicViewModel @Inject constructor(
 
     val musicWithoutExtraCount = getAllMusicUseCase.getMusicWithExtraCount()
 
-    //用户名
+    // 主题明暗模式
+    val customMode = userSettingsUseCase.customMode
+    fun saveCustomMode(mode: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveThemeMode(mode)
+        }
+    }
+
+    // 用户名
     val userName = userSettingsUseCase.userName
     fun saveUserName(name: String) {
         viewModelScope.launch {

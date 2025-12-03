@@ -27,20 +27,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
 fun MusicList(
     musicInfoList: List<MusicInfo>,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    navigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -50,8 +50,10 @@ fun MusicList(
         ) { musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,
-                playControlViewModel = playControlViewModel,
-                navController = navController,
+                navigate = navigate,
+                playWith = playWith,
+                recordPlayback = recordPlayback,
+                addToPlaylist = addToPlaylist,
                 modifier = Modifier
             )
         }
@@ -62,8 +64,10 @@ fun MusicList(
 @Composable
 fun MusicItem(
     musicInfo: MusicInfo,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController,
+    navigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit,
     modifier: Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -77,9 +81,9 @@ fun MusicItem(
                 haptic.performClick()
                 // 在协程中等待播放准备完成后再导航
                 scope.launch {
-                    playControlViewModel.playWith(musicInfo)
-                    playControlViewModel.recordPlayback(musicInfo.music.id, "Gallery")
-                    navController.navigate("player")
+                    playWith(musicInfo)
+                    recordPlayback(musicInfo.music.id, "MusicList")
+                    navigate("player")
                 }
             },
         verticalAlignment = Alignment.CenterVertically,
@@ -124,7 +128,7 @@ fun MusicItem(
                 onClick = {
                     haptic.performConfirm()
                     scope.launch {
-                        playControlViewModel.addToPlaylist(musicInfo)
+                        addToPlaylist(musicInfo)
                     }
                 },
                 modifier = Modifier

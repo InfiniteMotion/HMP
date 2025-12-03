@@ -1,6 +1,5 @@
 ﻿package com.example.hearablemusicplayer.ui.pages
 
-import android.provider.MediaStore
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,7 +74,7 @@ fun HomeScreen(
                     )
                 }
             } else {
-                DailyRecommendSectionOne(
+                DailyMusicBaseInfo(
                     dailyMusic!!,
                     playDailyMusic = {
                         haptic.performClick()
@@ -91,16 +90,20 @@ fun HomeScreen(
                         navController.navigate("artist")
                     }
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
-                DailyRecommendSectionTwo(dailyMusicInfo, dailyMusicLabel)
+
+                DailyMusicExtraInfo(dailyMusicInfo, dailyMusicLabel)
+
                 Spacer(modifier = Modifier.height(16.dp))
+
             }
         }
     }
 }
 
 @Composable
-fun DailyRecommendSectionOne(
+fun DailyMusicBaseInfo(
     dailyMusic: MusicInfo,
     playDailyMusic: () -> Unit,
     navigateToDailyArtists: () -> Unit
@@ -160,9 +163,9 @@ fun DailyRecommendSectionOne(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DailyRecommendSectionTwo(
+fun DailyMusicExtraInfo(
     dailyMusicInfo: DailyMusicInfo?,
-    dailyMusicLabel: List<MusicLabel?>
+    dailyMusicLabel: List<MusicLabel?>,
 ){
     if(dailyMusicInfo==null) {
         Column (
@@ -236,3 +239,4 @@ fun DailyRecommendSectionTwo(
         }
     }
 }
+

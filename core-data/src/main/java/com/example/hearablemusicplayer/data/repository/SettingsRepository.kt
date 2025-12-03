@@ -38,6 +38,7 @@ class SettingsRepository @Inject constructor(
         val USER_NAME = stringPreferencesKey("user_name")
         val AVATAR_URI = stringPreferencesKey("avatar_uri")
         val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
         
         // 音效相关设置键
         val EQUALIZER_PRESET = intPreferencesKey("equalizer_preset")
@@ -56,6 +57,10 @@ class SettingsRepository @Inject constructor(
     // 用户名
     val userName: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.USER_NAME] ?: "User" }
+
+    // 主题模式
+    val themeMode: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.THEME_MODE] ?: "default" }
 
     // 应用是否已加载音乐,如果未设置则为 0
     val isLoadMusic: Flow<Boolean> = dataStore.data
@@ -118,6 +123,13 @@ class SettingsRepository @Inject constructor(
     suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_LOAD_MUSIC] = isLoadMusic
+        }
+    }
+
+    // 保存主题模式
+    suspend fun saveThemeMode(themeMode: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.THEME_MODE] = themeMode
         }
     }
 

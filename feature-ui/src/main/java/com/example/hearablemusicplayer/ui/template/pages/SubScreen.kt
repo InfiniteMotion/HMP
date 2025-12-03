@@ -52,7 +52,7 @@ fun SubScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 16.dp),
+                .padding(top = 16.dp,bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
