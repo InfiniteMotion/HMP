@@ -69,6 +69,7 @@ import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,7 +86,8 @@ fun formatTime(millis: Long): String {
 @Composable
 fun PlayContent(
     viewModel: PlayControlViewModel,
-    navController: NavController
+    navController: NavController,
+    musicViewModel: MusicViewModel
 ){
     val haptic = rememberHapticFeedback()
 
@@ -144,7 +146,7 @@ fun PlayContent(
                     Spacer(modifier = Modifier.height(16.dp))
                     PlayerHeader(navController)
                     Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo!!.music)
+                    MusicInfo(musicInfo!!.music, navController, musicViewModel)
                     Spacer(modifier = Modifier.height(16.dp))
                     MusicInfoExtra(
                         musicInfo = musicInfo!!,
@@ -245,7 +247,7 @@ fun PlayerHeader(navController: NavController) {
 
 // 歌曲标题、艺术家、专辑信息
 @Composable
-fun MusicInfo(music: Music) {
+fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicViewModel) {
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
@@ -263,7 +265,11 @@ fun MusicInfo(music: Music) {
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clickable {
+                musicViewModel.getSelectedArtistMusicList(music.artist)
+                navController.navigate("artist")
+            }
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(

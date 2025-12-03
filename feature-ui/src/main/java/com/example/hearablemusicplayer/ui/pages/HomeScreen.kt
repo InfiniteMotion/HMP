@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.pages
 
+import android.provider.MediaStore
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,11 @@ fun HomeScreen(
                             playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
                             navController.navigate("player")
                         }
+                    },
+                    navigateToDailyArtists = {
+                        haptic.performClick()
+                        musicViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
+                        navController.navigate("artist")
                     }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -97,24 +103,24 @@ fun HomeScreen(
 fun DailyRecommendSectionOne(
     dailyMusic: MusicInfo,
     playDailyMusic: () -> Unit,
+    navigateToDailyArtists: () -> Unit
 ){
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
-            .clickable(onClick = playDailyMusic)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.weight(0.5f),
+                modifier = Modifier.weight(0.5f)
+                    .clickable(onClick = playDailyMusic),
                 contentAlignment = Alignment.Center
             ) {
                 AlbumCover(
                     dailyMusic.music.albumArtUri,
                     Arrangement.Start,
                     150
-
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -127,12 +133,24 @@ fun DailyRecommendSectionOne(
                         style = MaterialTheme.typography.displayMedium,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 2,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.clickable(onClick = playDailyMusic)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = it.artist, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = it.artist,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.clickable(onClick = navigateToDailyArtists)
+                    )
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = it.album, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Text(
+                        text = it.album,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

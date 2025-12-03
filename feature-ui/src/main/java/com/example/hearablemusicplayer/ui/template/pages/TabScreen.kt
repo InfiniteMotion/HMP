@@ -54,6 +54,7 @@ fun TabScreen(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxSize()
+                    .padding(bottom = 48.dp)
             ) {
                 if (title != null) {
                     Row (

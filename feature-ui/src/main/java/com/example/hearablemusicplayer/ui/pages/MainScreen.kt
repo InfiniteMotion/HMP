@@ -143,7 +143,7 @@ fun MainScreen(
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
                         }
                         composable("player") {
-                            PlayerScreen(playControlViewModel,navController)
+                            PlayerScreen(playControlViewModel, musicViewModel, navController)
                         }
                         composable( "list") {
                             ListScreen(musicViewModel, navController)
@@ -162,6 +162,9 @@ fun MainScreen(
                         }
                         composable("audioEffects") {
                             AudioEffectsScreen(playControlViewModel, navController)
+                        }
+                        composable("artist") {
+                            ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
                     }
                 }

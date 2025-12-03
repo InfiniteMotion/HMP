@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.viewmodel
+package com.example.hearablemusicplayer.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -126,6 +126,12 @@ class MusicViewModel @Inject constructor(
     val selectedPlaylistName: StateFlow<String> = _selectedPlaylistName
     private val _selectedPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
     val selectedPlaylist: StateFlow<List<MusicInfo>> = _selectedPlaylist
+    
+    // 当前歌手
+    private val _selectedArtistName = MutableStateFlow("")
+    val selectedArtistName: StateFlow<String> = _selectedArtistName
+    private val _selectedArtistMusicList = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val selectedArtistMusicList: StateFlow<List<MusicInfo>> = _selectedArtistMusicList
 
     // 初始化默认播放列表
     private fun initializeDefaultPlaylists() {
@@ -162,6 +168,14 @@ class MusicViewModel @Inject constructor(
                 else -> 0
             }
             _selectedPlaylist.value = managePlaylistUseCase.getPlaylistById(id?:0)
+        }
+    }
+    
+    // 依据歌手名获取音乐列表
+    fun getSelectedArtistMusicList(artistName: String) {
+        _selectedArtistName.value = artistName
+        viewModelScope.launch {
+            _selectedArtistMusicList.value = getAllMusicUseCase.getMusicListByArtist(artistName)
         }
     }
 

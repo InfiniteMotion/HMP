@@ -31,4 +31,13 @@ class GetAllMusicUseCase @Inject constructor(
      * 获取已处理额外信息的音乐数量
      */
     fun getMusicWithExtraCount(): Flow<Int> = musicRepository.getMusicWithExtraCount()
+    
+    /**
+     * 根据歌手名获取音乐列表
+     * @param artistName 歌手名称
+     * @return 该歌手的所有音乐列表
+     */
+    suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
+        return musicRepository.getMusicListByArtist(artistName)
+    }
 }

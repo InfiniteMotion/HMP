@@ -1,4 +1,4 @@
-﻿@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.pages
 
 import android.util.Log
@@ -36,6 +36,7 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.PlayContent
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 
 import kotlinx.coroutines.launch
 
@@ -43,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PlayerScreen(
     viewModel: PlayControlViewModel,
+    musicViewModel: MusicViewModel,
     navController: NavController
 ) {
     val density = LocalDensity.current
@@ -150,7 +152,8 @@ fun PlayerScreen(
         ) {
             PlayContent(
                 viewModel,
-                navController
+                navController,
+                musicViewModel
             )
         }
     }
