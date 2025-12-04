@@ -1,123 +1,44 @@
-# Trae
-.trae/
+/node_modules
+/oh_modules
+/local.properties
+/.idea
+**/build
+/.hvigor
+.cxx
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+/.appanalyzer
 
-# OSX
-#
-.DS_Store
+# 鸿蒙项目特有忽略规则
+/.ohos
+**/.log
+**/.tmp
+**/.temp
 
-# Xcode
-#
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-project.xcworkspace
+# 签名相关文件
+*.p12
+*.pem
+*.cer
+*.csr
 
-# Android/IntelliJ
-#
-build/
-.idea
-.gradle
-local.properties
-*.iml
-*.hprof
-.cxx/
-*.keystore
-!debug.keystore
+# IDE相关文件
+.vscode
+*.swp
+*.swo
+*~
 
-# node.js
-#
-node_modules/
-npm-debug.log
-yarn-error.log
+# 其他构建产物
+**/dist
+**/outputs
+**/intermediates
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
-
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
-
-# Bundle artifact
-*.jsbundle
-
-# Ruby / CocoaPods
-/ios/Pods/
-/vendor/bundle/
-
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
-
-# testing
-/coverage
-
-# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
+# 系统文件
 Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-*.lnk
+.DS_Store
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# Jetpack Compose specific
-*.compose-kotlin_module
-
-# AndroidX
-androidx.datastore/
-
-# Room database
-*.db
-*.db-journal
-
-# Misc
+# 环境变量文件
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-clean-feature-ui.bat
+.env.*.local
