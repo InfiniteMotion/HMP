@@ -1,3 +1,5 @@
+/.trae
+/.vscode
 /node_modules
 /oh_modules
 /local.properties
@@ -42,3 +44,5 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.gradle/
+.kotlin/

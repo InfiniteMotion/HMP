@@ -1,6 +1,7 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { DatabaseManager } from '../data/DatabaseManager';
 
 const DOMAIN = 0x0000;
 
@@ -11,7 +12,23 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
+    
+    // 初始化数据库
+    this.initDatabase();
+    
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+  }
+  
+  /**
+   * 初始化数据库
+   */
+  private async initDatabase(): Promise<void> {
+    try {
+      await DatabaseManager.getInstance().init(this);
+      hilog.info(DOMAIN, 'testTag', 'Database initialization successful');
+    } catch (err) {
+      hilog.error(DOMAIN, 'testTag', 'Database initialization failed. Cause: %{public}s', JSON.stringify(err));
+    }
   }
 
   onDestroy(): void {

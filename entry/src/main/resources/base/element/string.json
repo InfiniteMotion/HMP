@@ -11,6 +11,34 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "permission_media_location",
+      "value": "需要访问媒体文件位置信息，用于显示音乐文件的位置和来源"
+    },
+    {
+      "name": "permission_read_media",
+      "value": "需要读取媒体文件，用于播放本地音乐"
+    },
+    {
+      "name": "permission_write_media",
+      "value": "需要写入媒体文件，用于保存音乐下载和缓存"
+    },
+    {
+      "name": "permission_microphone",
+      "value": "需要使用麦克风，用于语音控制和音效"
+    },
+    {
+      "name": "permission_internet",
+      "value": "需要访问网络，用于在线音乐播放和歌词下载"
+    },
+    {
+      "name": "permission_notification",
+      "value": "需要显示通知，用于音乐播放控制和状态提示"
+    },
+    {
+      "name": "permission_bluetooth",
+      "value": "需要使用蓝牙，用于连接蓝牙耳机和音响"
     }
   ]
 }
