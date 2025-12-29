@@ -143,20 +143,17 @@ class MusicViewModel @Inject constructor(
     val selectedArtistMusicList: StateFlow<List<MusicInfo>> = _selectedArtistMusicList
 
     // 初始化默认播放列表
-    private fun initializeDefaultPlaylists() {
-        viewModelScope.launch {
-            managePlaylistUseCase.removePlaylist(name = "默认播放列表")
-            managePlaylistUseCase.removePlaylist(name = "红心")
-            managePlaylistUseCase.removePlaylist(name = "最近播放")
-            val defaultId = managePlaylistUseCase.createPlaylist(name = "默认播放列表")
-            val likedId = managePlaylistUseCase.createPlaylist(name = "红心")
-            val recentId = managePlaylistUseCase.createPlaylist(name = "最近播放")
+    private suspend fun initializeDefaultPlaylists() {
+        managePlaylistUseCase.removePlaylist(name = "默认播放列表")
+        managePlaylistUseCase.removePlaylist(name = "红心")
+        managePlaylistUseCase.removePlaylist(name = "最近播放")
+        val defaultId = managePlaylistUseCase.createPlaylist(name = "默认播放列表")
+        val likedId = managePlaylistUseCase.createPlaylist(name = "红心")
+        val recentId = managePlaylistUseCase.createPlaylist(name = "最近播放")
 
-            playlistSettingsUseCase.saveCurrentPlaylistId(defaultId)
-            playlistSettingsUseCase.saveLikedPlaylistId(likedId)
-            playlistSettingsUseCase.saveRecentPlaylistId(recentId)
-
-        }
+        playlistSettingsUseCase.saveCurrentPlaylistId(defaultId)
+        playlistSettingsUseCase.saveLikedPlaylistId(likedId)
+        playlistSettingsUseCase.saveRecentPlaylistId(recentId)
     }
 
     // 依据标签获取音乐列表
@@ -209,6 +206,7 @@ class MusicViewModel @Inject constructor(
             when (val result = loadMusicFromDeviceUseCase()) {
                 is Result.Success -> {
                     _scanErrorMessage.value = null
+                    // 等待播放列表初始化完成
                     initializeDefaultPlaylists()
                     userSettingsUseCase.saveIsLoadMusic(true)
                 }

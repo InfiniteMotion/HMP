@@ -188,12 +188,27 @@ class PlayControlViewModel @Inject constructor(
     init {
         // 初始化播放列表和当前播放歌曲索引
         viewModelScope.launch {
-            val playlistId = currentPlayListId.first() ?: return@launch
-            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
-            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
-            _originalPlaylist = list
-            _currentPlaylist.value = list
-            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
+            loadPlaylistFromSettings()
+        }
+
+        // 监听播放列表ID变化,当ID从null变为有值时重新加载
+        viewModelScope.launch {
+            currentPlayListId
+                .filterNotNull()
+                .collectLatest { playlistId ->
+                    // 如果当前播放列表为空,说明之前未成功初始化,现在重新加载
+                    if (_currentPlaylist.value.isEmpty()) {
+                        try {
+                            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
+                            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
+                            _originalPlaylist = list
+                            _currentPlaylist.value = list
+                            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
+                        } catch (e: Exception) {
+                            // 如果加载失败,保持空列表
+                        }
+                    }
+                }
         }
 
         // 监听播放模式变更并更新播放列表
@@ -213,6 +228,21 @@ class PlayControlViewModel @Inject constructor(
                 .collectLatest { musicInfo ->
                     extractPaletteColors(musicInfo.music.albumArtUri)
                 }
+        }
+    }
+
+    // 从设置中加载播放列表
+    private suspend fun loadPlaylistFromSettings() {
+        try {
+            val playlistId = currentPlayListId.filterNotNull().first()
+            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
+            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
+            _originalPlaylist = list
+            _currentPlaylist.value = list
+            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
+        } catch (e: Exception) {
+            // 如果初始化失败,保持空列表状态
+            // 后续通过监听 currentPlayListId 或 playWith 方法添加音乐时会自动填充
         }
     }
 
@@ -278,11 +308,13 @@ class PlayControlViewModel @Inject constructor(
 
 
     // 向播放列表添加歌曲
-    private fun saveToPlaylist(musicInfo: MusicInfo) {
-        viewModelScope.launch {
-            currentPlayListId.firstOrNull()?.let { playlistId ->
-                managePlaylistUseCase.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
-            }
+    private suspend fun saveToPlaylist(musicInfo: MusicInfo) {
+        try {
+            // 等待播放列表ID就绪
+            val playlistId = currentPlayListId.filterNotNull().first()
+            managePlaylistUseCase.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
+        } catch (e: Exception) {
+            // 如果获取播放列表ID失败,仅添加到内存列表
         }
     }
 
@@ -444,8 +476,12 @@ class PlayControlViewModel @Inject constructor(
     private suspend fun playCurrentTrack(source: String) {
         stopProgressTracking()
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
-        recentPlayListId.first()?.let {
-            managePlaylistUseCase.addToPlaylist(it, track.music.id, track.music.path)
+        try {
+            // 尝试添加到最近播放列表
+            val recentId = recentPlayListId.filterNotNull().first()
+            managePlaylistUseCase.addToPlaylist(recentId, track.music.id, track.music.path)
+        } catch (e: Exception) {
+            // 如果添加失败,仍然继续播放
         }
         persistCurrentMusic(track.music.id)
         // 重置当前播放位置为0
@@ -465,10 +501,10 @@ class PlayControlViewModel @Inject constructor(
             viewModelScope.launch {
                 saveToPlaylist(musicInfo)
             }
-            showToast("已添加：${musicInfo.music.title}")
+            showToast("已添加:${musicInfo.music.title}")
         }
         else {
-            showToast("已存在：${musicInfo.music.title}")
+            showToast("已存在:${musicInfo.music.title}")
         }
     }
 
@@ -550,9 +586,15 @@ class PlayControlViewModel @Inject constructor(
     fun updateMusicLikedStatus(musicInfo: MusicInfo,liked: Boolean) {
         viewModelScope.launch {
             currentPlaybackUseCase.updateLikedStatus(musicInfo.music.id, liked)
-            likedPlayListId.filterNotNull().collectLatest {
-                if (liked) managePlaylistUseCase.addToPlaylist(it, musicInfo.music.id, musicInfo.music.path)
-                else managePlaylistUseCase.removeItemFromPlaylist(musicInfo.music.id, it)
+            try {
+                val likedId = likedPlayListId.filterNotNull().first()
+                if (liked) {
+                    managePlaylistUseCase.addToPlaylist(likedId, musicInfo.music.id, musicInfo.music.path)
+                } else {
+                    managePlaylistUseCase.removeItemFromPlaylist(musicInfo.music.id, likedId)
+                }
+            } catch (e: Exception) {
+                // 如果操作喜爱列表失败,仅更新喜爱状态
             }
             getLikedStatus(musicInfo.music.id)
         }
@@ -627,9 +669,12 @@ class PlayControlViewModel @Inject constructor(
     // 保存默认播放列表
     private fun persistCurrentPlaylistToDatabase() {
         viewModelScope.launch {
-            currentPlayListId.filterNotNull().collectLatest {
+            try {
+                val playlistId = currentPlayListId.filterNotNull().first()
                 val playlist = _currentPlaylist.value
-                managePlaylistUseCase.resetPlaylistItems(it, playlist)
+                managePlaylistUseCase.resetPlaylistItems(playlistId, playlist)
+            } catch (e: Exception) {
+                // 如果无法保存到数据库,仅保留在内存中
             }
         }
     }
