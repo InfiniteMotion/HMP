@@ -208,6 +208,10 @@ interface MusicAllDao {
     @Transaction
     @Query("SELECT * FROM music WHERE id IN (SELECT id FROM musicExtra WHERE isGetExtraInfo = false)")
     fun getMusicInfoWithMissingExtra(): Flow<List<MusicInfo>>
+    
+    // 获取还未获得额外信息的音乐数量
+    @Query("SELECT COUNT(*) FROM musicExtra WHERE isGetExtraInfo = 0")
+    fun getMusicWithMissingExtraCount(): Flow<Int>
 
     // 搜索音乐标题或艺术家名中包含关键词的记录
     @Transaction

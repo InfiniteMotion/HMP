@@ -9,17 +9,21 @@ import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
 import com.example.hearablemusicplayer.data.database.myenum.LabelName
 import com.example.hearablemusicplayer.data.repository.Result
+import com.example.hearablemusicplayer.data.model.AiProviderType
+import com.example.hearablemusicplayer.data.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.usecase.music.*
 import com.example.hearablemusicplayer.domain.usecase.playlist.GetLabelPlaylistUseCase
 import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.PlaylistSettingsUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -48,8 +52,6 @@ class MusicViewModel @Inject constructor(
 
     // 音乐读取状态
     val isLoadMusic = userSettingsUseCase.isLoadMusic
-
-    val musicWithoutExtraCount = getAllMusicUseCase.getMusicWithExtraCount()
 
     // 主题明暗模式
     val customMode = userSettingsUseCase.customMode
@@ -107,6 +109,10 @@ class MusicViewModel @Inject constructor(
     // 数据库中已获得额外信息的音乐数量
     val musicWithExtraCount:StateFlow<Int> = getAllMusicUseCase
         .getMusicWithExtraCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    // 待处理音乐数量
+    val pendingMusicCount: StateFlow<Int> = getAllMusicUseCase
+        .getMusicWithMissingExtraCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // 基于风格的播放列表名 List<LabelName>
@@ -239,39 +245,257 @@ class MusicViewModel @Inject constructor(
     private val _isProcessingExtraInfo = MutableStateFlow(false)
     val isProcessingExtraInfo: StateFlow<Boolean> = _isProcessingExtraInfo
     
-    // 添加自动获取扩展信息的任务
-    fun startAutoProcessExtraInfo() {
+    // ==================== 批量处理进度相关 ====================
+    
+    /**
+     * 批量处理进度数据类
+     */
+    data class BatchProcessingProgress(
+        val totalCount: Int = 0,
+        val processedCount: Int = 0,
+        val currentMusicTitle: String = "",
+        val isProcessing: Boolean = false,
+        val isPaused: Boolean = false
+    ) {
+        val progressPercent: Float
+            get() = if (totalCount > 0) processedCount.toFloat() / totalCount else 0f
+    }
+    
+    private val _processingProgress = MutableStateFlow(BatchProcessingProgress())
+    val processingProgress: StateFlow<BatchProcessingProgress> = _processingProgress
+    
+    /**
+     * 处理结果统计
+     */
+    private val _processingResult = MutableStateFlow<GetDailyMusicRecommendationUseCase.ProcessingResult?>(null)
+    val processingResult: StateFlow<GetDailyMusicRecommendationUseCase.ProcessingResult?> = _processingResult
+    
+    /**
+     * 暂停处理
+     */
+    fun pauseProcessing() {
+        getDailyRecommendationUseCase.pauseProcessing()
+        _processingProgress.value = _processingProgress.value.copy(isPaused = true)
+    }
+    
+    /**
+     * 继续处理
+     */
+    fun resumeProcessing() {
+        getDailyRecommendationUseCase.resumeProcessing()
+        _processingProgress.value = _processingProgress.value.copy(isPaused = false)
+    }
+    
+    /**
+     * 取消处理
+     */
+    fun cancelProcessing() {
+        getDailyRecommendationUseCase.cancelProcessing()
+        _processingProgress.value = BatchProcessingProgress()
+        _isProcessingExtraInfo.value = false
+    }
+    
+    /**
+     * 清除处理结果
+     */
+    fun clearProcessingResult() {
+        _processingResult.value = null
+    }
+    
+    val recentListeningDurations: StateFlow<List<ListeningDuration>> = getDailyRecommendationUseCase
+        .getRecentListeningDurations()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    
+    // ==================== 多 AI 服务商配置 ====================
+    
+    /**
+     * 当前选中的 AI 服务商
+     */
+    val currentAiProvider: StateFlow<AiProviderType> = userSettingsUseCase.currentAiProvider
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AiProviderType.DEEPSEEK)
+    
+    /**
+     * 当前服务商配置状态
+     */
+    private val _currentProviderConfig = MutableStateFlow<AiProviderConfig?>(null)
+    val currentProviderConfig: StateFlow<AiProviderConfig?> = _currentProviderConfig
+    
+    /**
+     * API 测试结果
+     */
+    sealed class ApiTestResult {
+        data class Success(val message: String) : ApiTestResult()
+        data class Error(val message: String) : ApiTestResult()
+    }
+    
+    private val _apiTestResult = MutableStateFlow<ApiTestResult?>(null)
+    val apiTestResult: StateFlow<ApiTestResult?> = _apiTestResult
+    
+    private val _isTestingApi = MutableStateFlow(false)
+    val isTestingApi: StateFlow<Boolean> = _isTestingApi
+    
+    /**
+     * 加载当前服务商配置
+     */
+    fun loadCurrentProviderConfig() {
         viewModelScope.launch {
-            if (_isProcessingExtraInfo.value) return@launch
-            _isProcessingExtraInfo.value = true
+            _currentProviderConfig.value = userSettingsUseCase.getCurrentProviderConfig()
+        }
+    }
+    
+    /**
+     * 加载指定服务商配置
+     */
+    fun loadProviderConfig(provider: AiProviderType) {
+        viewModelScope.launch {
+            _currentProviderConfig.value = userSettingsUseCase.getProviderConfig(provider)
+        }
+    }
+    
+    /**
+     * 切换 AI 服务商
+     */
+    fun switchAiProvider(provider: AiProviderType) {
+        viewModelScope.launch {
+            userSettingsUseCase.setCurrentProvider(provider)
+            loadProviderConfig(provider)
+        }
+    }
+    
+    /**
+     * 保存服务商配置
+     */
+    fun saveAiProviderConfig(provider: AiProviderType, apiKey: String, model: String) {
+        viewModelScope.launch {
+            val config = AiProviderConfig(
+                type = provider,
+                apiKey = apiKey,
+                model = model.ifBlank { provider.defaultModel },
+                isConfigured = apiKey.isNotBlank()
+            )
+            userSettingsUseCase.saveProviderConfig(config)
+            userSettingsUseCase.setCurrentProvider(provider)
+            _currentProviderConfig.value = config
+        }
+    }
+    
+    /**
+     * 测试服务商 API 连接
+     */
+    fun testAiProviderConnection(provider: AiProviderType, apiKey: String, model: String) {
+        viewModelScope.launch {
+            _isTestingApi.value = true
+            _apiTestResult.value = null
+            
             try {
-                getDailyRecommendationUseCase.autoProcessMissingExtraInfo(
-                    onProgress = { music ->
-                        // 可以更新UI显示当前处理的音乐
-                    },
-                    delayMillis = 500
+                val config = AiProviderConfig(
+                    type = provider,
+                    apiKey = apiKey,
+                    model = model.ifBlank { provider.defaultModel },
+                    isConfigured = true
                 )
+                
+                val isValid = getDailyRecommendationUseCase.validateProviderApiKey(config)
+                _apiTestResult.value = if (isValid) {
+                    ApiTestResult.Success("可以访问 ${provider.displayName}")
+                } else {
+                    ApiTestResult.Error("API Key 无效")
+                }
             } catch (e: Exception) {
-                println("处理扩展信息时发生错误: ${e.message}")
+                _apiTestResult.value = ApiTestResult.Error("测试失败: ${e.message}")
             } finally {
-                _isProcessingExtraInfo.value = false
+                _isTestingApi.value = false
             }
         }
     }
     
-    // 修改 DeepSeek API-Key
-    fun saveDeepSeekApiKey(deepSeekApiKey: String) {
+    /**
+     * 清除测试结果
+     */
+    fun clearApiTestResult() {
+        _apiTestResult.value = null
+    }
+    
+    // ==================== AI 自动批量处理设置 ====================
+    
+    /**
+     * 自动批量处理开关状态
+     */
+    val autoBatchProcess: StateFlow<Boolean> = userSettingsUseCase.autoBatchProcess
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    
+    /**
+     * 保存自动批量处理开关
+     */
+    fun saveAutoBatchProcess(enabled: Boolean) {
         viewModelScope.launch {
-            userSettingsUseCase.saveDeepSeekApiKey(deepSeekApiKey)
+            userSettingsUseCase.saveAutoBatchProcess(enabled)
         }
     }
-
-    // 检查 DeepSeek API-Key 是否有效
-    suspend fun checkApiAccess(deepSeekApiKey: String): Boolean {
-        return getDailyRecommendationUseCase.validateApiKey(deepSeekApiKey)
+    
+    /**
+     * 使用当前服务商开始自动处理音乐信息（带进度和结果统计）
+     */
+    fun startAutoProcessWithCurrentProvider() {
+        Log.d("MusicViewModel", "开始批量处理... isProcessing=${_isProcessingExtraInfo.value}")
+        
+        // 如果已经在处理中，跳过
+        if (_isProcessingExtraInfo.value) {
+            Log.d("MusicViewModel", "已经在处理中，跳过")
+            return
+        }
+        
+        // 立即设置状态，防止重复点击
+        _isProcessingExtraInfo.value = true
+        
+        viewModelScope.launch {
+            _processingResult.value = null
+            
+            try {
+                // 获取待处理总数
+                val totalCount = pendingMusicCount.first()
+                Log.d("MusicViewModel", "待处理数量: $totalCount")
+                
+                _processingProgress.value = BatchProcessingProgress(
+                    totalCount = totalCount,
+                    processedCount = 0,
+                    isProcessing = true,
+                    isPaused = false
+                )
+                
+                getDailyRecommendationUseCase.autoProcessMissingExtraInfoWithCurrentProvider(
+                    onProgress = { music ->
+                        Log.d("MusicViewModel", "处理中: ${music.music.title}")
+                        val current = _processingProgress.value
+                        _processingProgress.value = current.copy(
+                            processedCount = current.processedCount + 1,
+                            currentMusicTitle = music.music.title
+                        )
+                    },
+                    onComplete = { result ->
+                        Log.d("MusicViewModel", "处理完成: $result")
+                        _processingResult.value = result
+                    },
+                    delayMillis = 500
+                )
+            } catch (e: Exception) {
+                Log.e("MusicViewModel", "处理扩展信息时发生错误: ${e.message}", e)
+            } finally {
+                val current = _processingProgress.value
+                _processingProgress.value = current.copy(isProcessing = false, isPaused = false)
+                _isProcessingExtraInfo.value = false
+                Log.d("MusicViewModel", "处理结束, isProcessing=${_isProcessingExtraInfo.value}")
+            }
+        }
     }
-
-    val recentListeningDurations: StateFlow<List<ListeningDuration>> = getDailyRecommendationUseCase
-        .getRecentListeningDurations()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    
+    init {
+        // 应用启动时重置处理状态，确保之前的暂停/取消状态不会影响新的处理
+        getDailyRecommendationUseCase.resetProcessingState()
+        _isProcessingExtraInfo.value = false
+        _processingProgress.value = BatchProcessingProgress()
+        
+        // 加载当前服务商配置
+        loadCurrentProviderConfig()
+    }
 }

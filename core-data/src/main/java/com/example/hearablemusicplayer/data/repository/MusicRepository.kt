@@ -51,6 +51,10 @@ import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
 import com.example.hearablemusicplayer.data.network.ChatRequest
 import com.example.hearablemusicplayer.data.network.Message
 import com.example.hearablemusicplayer.data.network.DeepSeekResult
+import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
+import com.example.hearablemusicplayer.data.network.AiApiResult
+import com.example.hearablemusicplayer.data.model.AiProviderType
+import com.example.hearablemusicplayer.data.model.AiProviderConfig
 import com.google.gson.Gson
 
 @Singleton
@@ -65,6 +69,7 @@ class MusicRepository @Inject constructor(
     private val playbackHistoryDao: PlaybackHistoryDao,
     private val listeningDurationDao: ListeningDurationDao,
     private val deepSeekAPIWrapper: DeepSeekAPIWrapper,
+    private val multiProviderApiAdapter: MultiProviderApiAdapter,
     private val gson: Gson,
     @ApplicationContext private val context: Context
 ) {
@@ -124,6 +129,9 @@ class MusicRepository @Inject constructor(
 
     // 获取当前已获得额外信息的音乐数量
     fun getMusicWithExtraCount(): Flow<Int> = musicExtraDao.getExtraInfoNum()
+    
+    // 获取当前未获得额外信息的音乐数量（待处理数量）
+    fun getMusicWithMissingExtraCount(): Flow<Int> = musicAllDao.getMusicWithMissingExtraCount()
 
     val musicWithoutExtraCount : Flow<Int> = musicExtraDao.getMusicWithoutExtraCount()
 
@@ -214,65 +222,65 @@ class MusicRepository @Inject constructor(
         )
     }
 
+    // ==================== 多服务商 API 调用方法 ====================
+    
     /**
-     * 通过 DeepSeek 获取音乐的扩展信息（数据层封装）
+     * 使用指定服务商获取音乐的扩展信息
      */
-    suspend fun fetchMusicExtraInfo(authToken: String, title: String, artist: String): Result<DailyMusicInfo> = safeCall {
-        val message = Message(
-            "user",
-            """
-                请根据由 $artist 演唱的歌曲《$title》，用中文以下面的JSON格式依据提示回复相关信息（不要添加任何其他内容）：
-                {
-                  "genre": [
-                    "ROCK", "POP", "JAZZ", "CLASSICAL", "HIPHOP", "ELECTRONIC", "FOLK", "RNB", "METAL", "COUNTRY", "BLUES", "REGGAE", "PUNK", "FUNK", "SOUL", "INDIE"
-                  ],
-                  "mood": [
-                    "HAPPY", "SAD", "ENERGETIC", "CALM", "ROMANTIC", "ANGRY", "LONELY", "UPLIFTING", "MYSTERIOUS", "DARK", "MELANCHOLY", "HOPEFUL"
-                  ],
-                  "scenario": [
-                    "WORKOUT", "SLEEP", "PARTY", "DRIVING", "STUDY", "RELAX", "DINNER", "MEDITATION", "FOCUS", "TRAVEL", "MORNING", "NIGHT"
-                  ],
-                  "language":"ENGLISH/CHINESE/JAPANESE/KOREAN/OTHERS(单选)", 
-                  "era":"SIXTIES/SEVENTIES/EIGHTIES/NINETIES/TWO_THOUSANDS/TWENTY_TENS/TWENTY_TWENTIES(单选)",
-                  "rewards": "歌曲成就(若无返回-暂无)",
-                  "lyric": "热门歌词(两句，若无返回-暂无)",
-                  "singerIntroduce": "歌手介绍(100字左右)",
-                  "backgroundIntroduce": "创作背景(出处、创作者采访等信息，100字左右)",
-                  "description": "歌曲主题(主题，100字左右)",
-                  "relevantMusic": "类似音乐(一到两首，若无返回-暂无)",
-                  "errorInfo": "None"
-                }
-            """.trimIndent()
-        )
-        val chatRequest = ChatRequest(messages = listOf(message))
-        val result = deepSeekAPIWrapper.createChatCompletion(authToken, chatRequest, useCache = true)
-        when (result) {
-            is DeepSeekResult.Success -> {
-                val json = result.data.choices.firstOrNull()?.message?.content
-                gson.fromJson(json, DailyMusicInfo::class.java)
+    suspend fun fetchMusicExtraInfoWithProvider(
+        providerConfig: AiProviderConfig,
+        title: String,
+        artist: String
+    ): Result<DailyMusicInfo> = safeCall {
+        val prompt = buildMusicInfoPrompt(title, artist)
+        
+        when (val result = multiProviderApiAdapter.callChatApi(providerConfig, prompt)) {
+            is AiApiResult.Success -> {
+                gson.fromJson(result.data, DailyMusicInfo::class.java)
             }
-            is DeepSeekResult.CachedFallback -> {
-                val json = result.data.choices.firstOrNull()?.message?.content
-                gson.fromJson(json, DailyMusicInfo::class.java)
-            }
-            is DeepSeekResult.Error -> {
-                throw Exception("DeepSeek error: ${result.error}")
+            is AiApiResult.Error -> {
+                throw Exception(result.error.toDisplayMessage())
             }
         }
     }
-
+    
     /**
-     * 校验 API Key（只检查能否成功调用接口）
+     * 使用指定服务商校验 API Key
      */
-    suspend fun validateApiKey(authToken: String): Result<Unit> = safeCall {
-        val message = Message("User", """{"content": "Hello"}""")
-        val chatRequest = ChatRequest(messages = listOf(message))
-        val res = deepSeekAPIWrapper.createChatCompletion(authToken, chatRequest, useCache = false)
-        when (res) {
-            is DeepSeekResult.Success -> Unit
-            is DeepSeekResult.CachedFallback -> Unit
-            is DeepSeekResult.Error -> throw Exception("DeepSeek error: ${res.error}")
+    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean> = safeCall {
+        when (val result = multiProviderApiAdapter.testConnection(providerConfig)) {
+            is AiApiResult.Success -> true
+            is AiApiResult.Error -> throw Exception(result.error.toDisplayMessage())
         }
+    }
+    
+    /**
+     * 构建音乐信息查询的 Prompt
+     */
+    private fun buildMusicInfoPrompt(title: String, artist: String): String {
+        return """
+            请根据由 $artist 演唱的歌曲《$title》，用中文以下面的JSON格式依据提示回复相关信息（不要添加任何其他内容）：
+            {
+              "genre": [
+                "ROCK", "POP", "JAZZ", "CLASSICAL", "HIPHOP", "ELECTRONIC", "FOLK", "RNB", "METAL", "COUNTRY", "BLUES", "REGGAE", "PUNK", "FUNK", "SOUL", "INDIE"
+              ],
+              "mood": [
+                "HAPPY", "SAD", "ENERGETIC", "CALM", "ROMANTIC", "ANGRY", "LONELY", "UPLIFTING", "MYSTERIOUS", "DARK", "MELANCHOLY", "HOPEFUL"
+              ],
+              "scenario": [
+                "WORKOUT", "SLEEP", "PARTY", "DRIVING", "STUDY", "RELAX", "DINNER", "MEDITATION", "FOCUS", "TRAVEL", "MORNING", "NIGHT"
+              ],
+              "language":"ENGLISH/CHINESE/JAPANESE/KOREAN/OTHERS(单选)", 
+              "era":"SIXTIES/SEVENTIES/EIGHTIES/NINETIES/TWO_THOUSANDS/TWENTY_TENS/TWENTY_TWENTIES(单选)",
+              "rewards": "歌曲成就(若无返回-暂无)",
+              "lyric": "热门歌词(两句，若无返回-暂无)",
+              "singerIntroduce": "歌手介绍(100字左右)",
+              "backgroundIntroduce": "创作背景(出处、创作者采访等信息，100字左右)",
+              "description": "歌曲主题(主题，100字左右)",
+              "relevantMusic": "类似音乐(一到两首，若无返回-暂无)",
+              "errorInfo": "None"
+            }
+        """.trimIndent()
     }
 
     // 从设备本地加载音乐文件(过滤掉时长少于 1 分钟的)

@@ -33,6 +33,11 @@ class GetAllMusicUseCase @Inject constructor(
     fun getMusicWithExtraCount(): Flow<Int> = musicRepository.getMusicWithExtraCount()
     
     /**
+     * 获取待处理音乐数量（未获得额外信息的数量）
+     */
+    fun getMusicWithMissingExtraCount(): Flow<Int> = musicRepository.getMusicWithMissingExtraCount()
+    
+    /**
      * 根据歌手名获取音乐列表
      * @param artistName 歌手名称
      * @return 该歌手的所有音乐列表
