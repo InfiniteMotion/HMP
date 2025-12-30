@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,8 @@ import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.data.repository.SettingsRepository
 import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
@@ -78,7 +81,9 @@ class PlayControlViewModel @Inject constructor(
     private val playbackHistoryUseCase: PlaybackHistoryUseCase,
     private val timerUseCase: TimerUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
-    private val playlistSettingsUseCase: PlaylistSettingsUseCase
+    private val playlistSettingsUseCase: PlaylistSettingsUseCase,
+    // 设置存储库 - 用于音效设置持久化
+    private val settingsRepository: SettingsRepository
 ) : ViewModel(), MusicPlayService.OnMusicCompleteListener {
 
     private var playControl: PlayControl? = null
@@ -89,6 +94,8 @@ class PlayControlViewModel @Inject constructor(
         if (service is MusicPlayService) {
             service.setOnMusicCompleteListener(this)
         }
+        // 绑定后恢复音效设置
+        restoreAudioEffectSettings()
     }
 
     // 事件管理
@@ -757,6 +764,46 @@ class PlayControlViewModel @Inject constructor(
         }
     }
     
+    // 防抖Job，避免频繁保存
+    private var saveAudioEffectJob: Job? = null
+    
+    // 恢复音效设置
+    private fun restoreAudioEffectSettings() {
+        viewModelScope.launch {
+            try {
+                val equalizerPreset = settingsRepository.equalizerPreset.first()
+                val bassBoostLevel = settingsRepository.bassBoostLevel.first()
+                val isSurroundSoundEnabled = settingsRepository.isSurroundSoundEnabled.first()
+                val reverbPreset = settingsRepository.reverbPreset.first()
+                val customLevels = settingsRepository.customEqualizerLevels.first()
+                
+                // 恢复到Service
+                playControl?.let { control ->
+                    control.setEqualizerPreset(equalizerPreset)
+                    control.setBassBoost(bassBoostLevel)
+                    control.setSurroundSound(isSurroundSoundEnabled)
+                    control.setReverb(reverbPreset)
+                    if (customLevels.isNotEmpty()) {
+                        control.setCustomEqualizer(customLevels)
+                    }
+                }
+                
+                // 更新ViewModel状态
+                _audioEffectSettings.value = AudioEffectSettings(
+                    equalizerPreset = equalizerPreset,
+                    bassBoostLevel = bassBoostLevel,
+                    isSurroundSoundEnabled = isSurroundSoundEnabled,
+                    reverbPreset = reverbPreset,
+                    customEqualizerLevels = customLevels
+                )
+                
+                Log.d("PlayControlViewModel", "Audio effect settings restored")
+            } catch (e: Exception) {
+                Log.e("PlayControlViewModel", "Failed to restore audio effect settings", e)
+            }
+        }
+    }
+    
     // 初始化音效状态
     fun initializeAudioEffects() {
         playControl?.let { control ->
@@ -790,6 +837,10 @@ class PlayControlViewModel @Inject constructor(
             _audioEffectSettings.value = _audioEffectSettings.value.copy(
                 equalizerPreset = preset
             )
+            // 触发持久化
+            saveAudioEffectSetting {
+                settingsRepository.saveEqualizerPreset(preset)
+            }
         }
     }
     
@@ -800,6 +851,10 @@ class PlayControlViewModel @Inject constructor(
             _audioEffectSettings.value = _audioEffectSettings.value.copy(
                 bassBoostLevel = level
             )
+            // 触发持久化
+            saveAudioEffectSetting {
+                settingsRepository.saveBassBoostLevel(level)
+            }
         }
     }
     
@@ -810,6 +865,10 @@ class PlayControlViewModel @Inject constructor(
             _audioEffectSettings.value = _audioEffectSettings.value.copy(
                 isSurroundSoundEnabled = enabled
             )
+            // 触发持久化
+            saveAudioEffectSetting {
+                settingsRepository.saveSurroundSoundEnabled(enabled)
+            }
         }
     }
     
@@ -820,6 +879,10 @@ class PlayControlViewModel @Inject constructor(
             _audioEffectSettings.value = _audioEffectSettings.value.copy(
                 reverbPreset = preset
             )
+            // 触发持久化
+            saveAudioEffectSetting {
+                settingsRepository.saveReverbPreset(preset)
+            }
         }
     }
     
@@ -831,6 +894,23 @@ class PlayControlViewModel @Inject constructor(
             _audioEffectSettings.value = _audioEffectSettings.value.copy(
                 customEqualizerLevels = bandLevels
             )
+            // 触发持久化
+            saveAudioEffectSetting {
+                settingsRepository.saveCustomEqualizerLevels(bandLevels)
+            }
+        }
+    }
+    
+    // 防抖保存音效设置（延迟500ms）
+    private fun saveAudioEffectSetting(save: suspend () -> Unit) {
+        saveAudioEffectJob?.cancel()
+        saveAudioEffectJob = viewModelScope.launch {
+            delay(500)
+            try {
+                save()
+            } catch (e: Exception) {
+                Log.e("PlayControlViewModel", "Failed to save audio effect setting", e)
+            }
         }
     }
     

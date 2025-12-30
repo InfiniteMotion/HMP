@@ -2,11 +2,14 @@ package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,18 +17,20 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 // 音效预设选择器组件
 @Composable
@@ -234,59 +239,209 @@ fun CustomEqualizer(
     bandCount: Int,
     bandLevelRange: Pair<Int, Int>,
     currentBandLevels: FloatArray,
-    onBandLevelChanged: (Int, Float) -> Unit
+    onBandLevelChanged: (Int, Float) -> Unit,
+    onResetAll: () -> Unit = {}
 ) {
+    val haptic = rememberHapticFeedback()
+    // 频段标签（单位：Hz）
+    val frequencyLabels = when (bandCount) {
+        5 -> listOf("60", "230", "910", "3.6k", "14k")
+        else -> (1..bandCount).map { "${it}" }
+    }
+    
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 重置全部按钮
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .clickable {
+                        haptic.performClick()
+                        onResetAll()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "重置全部",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        
+        // 均衡器滑块区域
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Bottom
         ) {
             for (i in 0 until bandCount) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom
-                ) {
-                    val currentLevel = currentBandLevels.getOrElse(i) { 0f }
-                    var sliderValue by remember { mutableFloatStateOf(currentLevel) }
-                    
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { newValue ->
-                            sliderValue = newValue
-                            onBandLevelChanged(i, newValue)
-                        },
-                        valueRange = bandLevelRange.first.toFloat()..bandLevelRange.second.toFloat(),
-                        modifier = Modifier
-                            .size(24.dp, 150.dp)
-                            .rotate(-90f),
-                        thumb = {
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = RoundedCornerShape(50)
-                                    )
-                            )
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                        )
-                    )
-                    Text(
-                        text = "${i + 1}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+                EqualizerBand(
+                    bandIndex = i,
+                    frequencyLabel = frequencyLabels.getOrElse(i) { "${i + 1}" },
+                    currentLevel = currentBandLevels.getOrElse(i) { 0f },
+                    levelRange = bandLevelRange,
+                    onLevelChanged = { level -> onBandLevelChanged(i, level) }
+                )
             }
         }
+    }
+}
+
+// 单个频段滑块组件
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EqualizerBand(
+    bandIndex: Int,
+    frequencyLabel: String,
+    currentLevel: Float,
+    levelRange: Pair<Int, Int>,
+    onLevelChanged: (Float) -> Unit
+) {
+    val haptic = rememberHapticFeedback()
+    var sliderValue by remember(currentLevel) { mutableFloatStateOf(currentLevel) }
+    val normalizedValue = (sliderValue - levelRange.first) / (levelRange.second - levelRange.first)
+    var isDragging by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 4.dp)
+    ) {
+        // 数值显示
+        Text(
+            text = if (sliderValue >= 0) "+${sliderValue.toInt()}" else "${sliderValue.toInt()}",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (sliderValue > 0) 
+                MaterialTheme.colorScheme.primary
+            else if (sliderValue < 0)
+                MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // 垂直滑块（使用自定义手势处理）
+        Box(
+            modifier = Modifier
+                .size(50.dp, 200.dp)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            isDragging = true
+                            haptic.performDragStart()
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            haptic.performGestureEnd()
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            val trackHeightPx = with(density) { 200.dp.toPx() }
+                            val delta = -dragAmount / trackHeightPx * (levelRange.second - levelRange.first)
+                            val newValue = (sliderValue + delta).coerceIn(
+                                levelRange.first.toFloat(),
+                                levelRange.second.toFloat()
+                            )
+                            sliderValue = newValue
+                            onLevelChanged(newValue)
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        haptic.performClick()
+                        val trackHeightPx = with(density) { 200.dp.toPx() }
+                        val normalizedPosition = 1f - (offset.y / trackHeightPx).coerceIn(0f, 1f)
+                        val newValue = levelRange.first + normalizedPosition * (levelRange.second - levelRange.first)
+                        sliderValue = newValue.coerceIn(
+                            levelRange.first.toFloat(),
+                            levelRange.second.toFloat()
+                        )
+                        onLevelChanged(sliderValue)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // 背景轨道
+            Box(
+                modifier = Modifier
+                    .size(8.dp, 200.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+            )
+            
+            // 活动轨道（从中心到当前位置）
+            Box(
+                modifier = Modifier
+                    .size(8.dp, (200.dp * kotlin.math.abs(normalizedValue - 0.5f) * 2).coerceAtLeast(0.dp))
+                    .align(
+                        if (sliderValue >= 0) Alignment.TopCenter 
+                        else Alignment.BottomCenter
+                    )
+                    .background(
+                        color = if (sliderValue > 0) 
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        else if (sliderValue < 0)
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                        else Transparent,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+            )
+            
+            // 中心线（0dB位置）
+            Box(
+                modifier = Modifier
+                    .size(16.dp, 2.dp)
+                    .align(Alignment.Center)
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+            )
+            
+            // 滑块 thumb
+            // normalizedValue: 0(最小值) -> 底部, 0.5(0dB) -> 中心, 1(最大值) -> 顶部
+            // 轨道高度200dp，从中心Alignment.Center开始计算偏移
+            // 偏移范围: -100dp(顶部) 到 +100dp(底部)
+            val thumbOffsetY = with(density) {
+                (100.dp - 200.dp * normalizedValue).toPx()
+            }
+            Box(
+                modifier = Modifier
+                    .size(24.dp, 28.dp)
+                    .align(Alignment.Center)
+                    .offset(y = with(density) { thumbOffsetY.toDp() })
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+            )
+        }
+        
+        // 频段标签
+        Text(
+            text = frequencyLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }

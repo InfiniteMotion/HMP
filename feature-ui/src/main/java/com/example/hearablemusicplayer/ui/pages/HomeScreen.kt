@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,7 @@ import com.example.hearablemusicplayer.data.database.DailyMusicInfo
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
@@ -64,6 +68,21 @@ fun HomeScreen(
 
     TabScreen(
         title = "每日推荐",
+        trailing = {
+            // 手动刷新按钮
+            IconButton(
+                onClick = {
+                    haptic.performClick()
+                    musicViewModel.refreshDailyMusicInfo()
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.player_d),
+                    contentDescription = "刷新每日推荐",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
     ) {
         Column(
             modifier = Modifier

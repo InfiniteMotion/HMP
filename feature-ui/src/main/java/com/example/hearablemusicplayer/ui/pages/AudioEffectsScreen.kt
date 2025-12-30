@@ -96,7 +96,13 @@ fun AudioEffectsScreen(
                         val newLevels = currentEqualizerBandLevels.copyOf()
                         newLevels[index] = level
                         viewModel.setCustomEqualizer(newLevels)
-                    })
+                    },
+                    onResetAll = {
+                        // 重置所有频段到0
+                        val resetLevels = FloatArray(equalizerBandCount) { 0f }
+                        viewModel.setCustomEqualizer(resetLevels)
+                    }
+                )
             }
         }
     }

@@ -20,6 +20,17 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * 每日推荐刷新配置数据类
+ */
+data class DailyRefreshConfig(
+    val mode: String, // "time", "startup", "smart"
+    val refreshHours: Int, // 按小时刷新的间隔
+    val startupCount: Int, // 按启动次数刷新
+    val lastRefreshTimestamp: Long, // 上次刷新时间戳
+    val launchCountSinceRefresh: Int // 自上次刷新后的启动次数
+)
+
 // 在 Context 中创建 DataStore 实例
 private val Context.dataStore by preferencesDataStore(name = "player_preferences")
 
@@ -63,6 +74,14 @@ class SettingsRepository @Inject constructor(
         
         // AI 自动处理设置
         val AUTO_BATCH_PROCESS = booleanPreferencesKey("auto_batch_process")
+        
+        // 每日推荐刷新策略设置
+        val DAILY_REFRESH_MODE = stringPreferencesKey("daily_refresh_mode") // time, startup, smart
+        val DAILY_REFRESH_HOURS = intPreferencesKey("daily_refresh_hours") // 按小时刷新的间隔
+        val DAILY_REFRESH_STARTUP_COUNT = intPreferencesKey("daily_refresh_startup_count") // 按启动次数刷新
+        val LAST_DAILY_REFRESH_TIMESTAMP = longPreferencesKey("last_daily_refresh_timestamp") // 上次刷新时间戳
+        val APP_LAUNCH_COUNT_SINCE_REFRESH = intPreferencesKey("app_launch_count_since_refresh") // 自上次刷新后的启动次数
+        val CURRENT_DAILY_MUSIC_ID = longPreferencesKey("current_daily_music_id") // 当前每日推荐的音乐ID
     }
 
     // DataStore 访问实例
@@ -141,6 +160,22 @@ class SettingsRepository @Inject constructor(
     // AI 自动批量处理开关
     val autoBatchProcess: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false }
+    
+    // 每日推荐刷新策略相关 Flow
+    val dailyRefreshMode: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time" } // 默认按时间
+    
+    val dailyRefreshHours: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24 } // 默认24小时
+    
+    val dailyRefreshStartupCount: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3 } // 默认3次启动
+    
+    val lastDailyRefreshTimestamp: Flow<Long> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L }
+    
+    val appLaunchCountSinceRefresh: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0 }
 
     suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
         dataStore.edit { prefs ->
@@ -231,6 +266,86 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = enabled
         }
+    }
+    
+    // ==================== 每日推荐刷新策略方法 ====================
+    
+    /**
+     * 保存每日推荐刷新模式
+     * @param mode "time" (按时间), "startup" (按启动次数), "smart" (智能刷新)
+     */
+    suspend fun saveDailyRefreshMode(mode: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = mode
+        }
+    }
+    
+    /**
+     * 保存按小时刷新的间隔
+     */
+    suspend fun saveDailyRefreshHours(hours: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = hours
+        }
+    }
+    
+    /**
+     * 保存按启动次数刷新
+     */
+    suspend fun saveDailyRefreshStartupCount(count: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = count
+        }
+    }
+    
+    /**
+     * 更新上次刷新时间戳
+     */
+    suspend fun updateLastDailyRefreshTimestamp() {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = System.currentTimeMillis()
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = 0 // 重置启动计数
+        }
+    }
+    
+    /**
+     * 保存当前每日推荐的音乐ID
+     */
+    suspend fun saveCurrentDailyMusicId(musicId: Long) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = musicId
+        }
+    }
+    
+    /**
+     * 获取当前每日推荐的音乐ID
+     */
+    suspend fun getCurrentDailyMusicId(): Long? {
+        return context.dataStore.data.first()[PreferencesKeys.CURRENT_DAILY_MUSIC_ID]
+    }
+    
+    /**
+     * 增加应用启动计数
+     */
+    suspend fun incrementAppLaunchCount() {
+        dataStore.edit { prefs ->
+            val currentCount = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = currentCount + 1
+        }
+    }
+    
+    /**
+     * 获取所有刷新策略配置
+     */
+    suspend fun getDailyRefreshConfig(): DailyRefreshConfig {
+        val prefs = context.dataStore.data.first()
+        return DailyRefreshConfig(
+            mode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
+            refreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
+            startupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
+            lastRefreshTimestamp = prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L,
+            launchCountSinceRefresh = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
+        )
     }
 
     // ==================== 多 AI 服务商配置方法 ====================

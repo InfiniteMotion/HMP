@@ -98,6 +98,16 @@ app → core-player → core-domain → core-data
 - OkHttp配置连接、读取和写入超时
 - 实现失败重试和指数退避策略
 
+#### 6. AI服务集成：多服务商支持
+
+**选择理由**：为了提供更灵活的 AI 推荐服务，项目支持多个 AI 服务商（DeepSeek、OpenAI、Claude、通义千问、文心一言）。用户可以根据自己的需求选择不同的服务商。
+
+**实现细节**：
+- 统一的 API 适配器层，封装不同服务商的 API 调用
+- API 密钥加密存储，保障安全性
+- 支持 API 连接测试功能
+- 用户可在配置界面自由切换服务商
+
 ## 📦 项目结构
 
 ```
@@ -201,7 +211,7 @@ cd hearable-music-player
 - ✅ 模块化架构设计与实现
 - ✅ 核心音乐播放功能（Media3集成）
 - ✅ 本地音乐扫描与Room数据库存储
-- ✅ DeepSeek API集成与AI推荐
+- ✅ 多 AI 服务商集成与管理
 - ✅ Jetpack Compose UI界面搭建
 - ✅ Hilt依赖注入配置
 - ✅ 基本的播放控制功能
@@ -215,6 +225,8 @@ cd hearable-music-player
 - ✅ 统一调整UI组件颜色适配主题色彩体系
 - ✅ 修复播放进度调整失败的漏洞
 - ✅ 引入TabScreen模板
+- ✅ 实现每日推荐刷新策略系统
+- ✅ API 密钥加密存储机制
 
 #### 进行中
 
@@ -315,16 +327,32 @@ cd hearable-music-player
 ### AI推荐功能
 
 **流程**：
-1. 用户点击推荐按钮
-2. ViewModel调用Use Case
-3. Repository请求DeepSeek API
-4. 解析推荐结果
-5. 显示推荐歌曲列表
+1. 用户选择 AI 服务商并配置 API 密钥
+2. 系统自动或手动触发推荐（根据刷新策略）
+3. ViewModel调用Use Case
+4. Repository请求当前选中的 AI 服务商 API
+5. 解析推荐结果并生成标签
+6. 展示推荐歌曲和 AI 生成的扩展信息
 
 **关键代码**：
-- `DeepSeekAPI.kt`: API接口定义
-- `RecommendationUseCase.kt`: 推荐用例
-- `RecommendationRepository.kt`: 推荐数据访问
+- `MultiProviderApiAdapter.kt`: 多服务商 API 适配器
+- `GetDailyMusicRecommendationUseCase.kt`: 推荐用例
+- `SettingsRepository.kt`: API 密钥加密存储
+- `AIScreen.kt`: AI 服务商配置界面
+
+### 每日推荐刷新策略
+
+**功能**：
+- 按时间刷新：用户可设置间隔小时数（默认24小时）
+- 按启动次数刷新：用户可设置启动次数（默认3次）
+- 智能刷新：预留接口，后续可根据听歌习惯智能判断
+- 持久化存储：重启后保持同一首每日推荐
+
+**关键代码**：
+- `UserSettingsUseCase.kt`: 刷新策略判断逻辑
+- `SettingsRepository.kt`: 刷新配置存储
+- `MusicViewModel.kt`: 刷新控制逻辑
+- `SettingScreen.kt`: 刷新策略配置界面
 
 ## 📚 学习资源
 

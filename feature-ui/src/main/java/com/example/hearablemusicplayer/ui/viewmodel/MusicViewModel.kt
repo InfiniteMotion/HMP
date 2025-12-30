@@ -232,12 +232,104 @@ class MusicViewModel @Inject constructor(
     val dailyMusicInfo: StateFlow<DailyMusicInfo?> = _dailyMusicInfo
     private val _dailyMusicLabel = MutableStateFlow<List<MusicLabel?>>(emptyList())
     val dailyMusicLabel: StateFlow<List<MusicLabel?>> = _dailyMusicLabel
+    
+    /**
+     * 获取每日推荐音乐，并根据刷新策略决定是否需要重新获取
+     */
     fun getDailyMusicInfo() {
+        viewModelScope.launch {
+            // 先增加启动计数（在判断之前）
+            userSettingsUseCase.incrementAppLaunchCount()
+            
+            // 检查是否需要刷新
+            val shouldRefresh = userSettingsUseCase.shouldRefreshDailyRecommendation()
+            val config = userSettingsUseCase.getDailyRefreshConfig()
+            
+            Log.d("MusicViewModel", """
+                刷新检查:
+                - 刷新模式: ${config.mode}
+                - 上次刷新时间: ${config.lastRefreshTimestamp}
+                - 当前时间: ${System.currentTimeMillis()}
+                - 启动次数: ${config.launchCountSinceRefresh}
+                - 需要刷新: $shouldRefresh
+            """.trimIndent())
+            
+            if (shouldRefresh) {
+                // 需要刷新，获取新的推荐
+                val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
+                dailyMusic.value = recommendation.musicInfo
+                _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                _dailyMusicLabel.value = recommendation.labels
+                
+                // 保存新推荐的音乐ID并更新刷新时间戳
+                recommendation.musicInfo?.music?.id?.let { musicId ->
+                    userSettingsUseCase.saveCurrentDailyMusicId(musicId)
+                }
+                userSettingsUseCase.updateLastDailyRefreshTimestamp()
+                Log.d("MusicViewModel", "每日推荐已刷新，新音乐ID: ${recommendation.musicInfo?.music?.id}")
+            } else {
+                // 不需要刷新，尝试加载上次推荐的音乐
+                if (dailyMusic.value == null) {
+                    // 内存中没有，尝试从持久化ID加载
+                    val savedMusicId = userSettingsUseCase.getCurrentDailyMusicId()
+                    if (savedMusicId != null && savedMusicId > 0) {
+                        // 从数据库加载指定ID的音乐
+                        val musicInfo = getAllMusicUseCase.getMusicById(savedMusicId)
+                        if (musicInfo != null) {
+                            dailyMusic.value = musicInfo
+                            // 加载该音乐的扩展信息和标签
+                            val dailyInfo = getDailyRecommendationUseCase.getRandomMusicWithExtra()
+                            _dailyMusicInfo.value = dailyInfo.dailyMusicInfo
+                            _dailyMusicLabel.value = dailyInfo.labels
+                            Log.d("MusicViewModel", "加载上次推荐的音乐，ID: $savedMusicId")
+                        } else {
+                            // 找不到该音乐，重新随机获取一首
+                            val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
+                            dailyMusic.value = recommendation.musicInfo
+                            _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                            _dailyMusicLabel.value = recommendation.labels
+                            Log.d("MusicViewModel", "上次推荐的音乐不存在，重新获取")
+                        }
+                    } else {
+                        // 没有保存的ID，获取新的推荐
+                        val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
+                        dailyMusic.value = recommendation.musicInfo
+                        _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                        _dailyMusicLabel.value = recommendation.labels
+                        recommendation.musicInfo?.music?.id?.let { musicId ->
+                            userSettingsUseCase.saveCurrentDailyMusicId(musicId)
+                        }
+                        Log.d("MusicViewModel", "首次加载每日推荐")
+                    }
+                } else {
+                    Log.d("MusicViewModel", "使用内存中的每日推荐")
+                }
+            }
+        }
+    }
+    
+    /**
+     * 手动刷新每日推荐
+     */
+    fun refreshDailyMusicInfo() {
         viewModelScope.launch {
             val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
             dailyMusic.value = recommendation.musicInfo
             _dailyMusicInfo.value = recommendation.dailyMusicInfo
             _dailyMusicLabel.value = recommendation.labels
+            
+            // 更新刷新时间戳
+            userSettingsUseCase.updateLastDailyRefreshTimestamp()
+            Log.d("MusicViewModel", "手动刷新每日推荐")
+        }
+    }
+    
+    /**
+     * 增加应用启动计数
+     */
+    fun incrementAppLaunchCount() {
+        viewModelScope.launch {
+            userSettingsUseCase.incrementAppLaunchCount()
         }
     }
 
@@ -497,5 +589,52 @@ class MusicViewModel @Inject constructor(
         
         // 加载当前服务商配置
         loadCurrentProviderConfig()
+    }
+    
+    // ==================== 每日推荐刷新策略设置 ====================
+    
+    /**
+     * 每日推荐刷新模式 Flow
+     */
+    val dailyRefreshMode: StateFlow<String> = userSettingsUseCase.dailyRefreshMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "time")
+    
+    /**
+     * 按小时刷新间隔 Flow
+     */
+    val dailyRefreshHours: StateFlow<Int> = userSettingsUseCase.dailyRefreshHours
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 24)
+    
+    /**
+     * 按启动次数刷新 Flow
+     */
+    val dailyRefreshStartupCount: StateFlow<Int> = userSettingsUseCase.dailyRefreshStartupCount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
+    
+    /**
+     * 保存每日推荐刷新模式
+     */
+    fun saveDailyRefreshMode(mode: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveDailyRefreshMode(mode)
+        }
+    }
+    
+    /**
+     * 保存按小时刷新的间隔
+     */
+    fun saveDailyRefreshHours(hours: Int) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveDailyRefreshHours(hours)
+        }
+    }
+    
+    /**
+     * 保存按启动次数刷新
+     */
+    fun saveDailyRefreshStartupCount(count: Int) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveDailyRefreshStartupCount(count)
+        }
     }
 }

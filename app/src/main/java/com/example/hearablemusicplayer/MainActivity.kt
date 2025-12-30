@@ -113,6 +113,8 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(shouldInitialize.value, autoBatchProcess) {
                     if (shouldInitialize.value) {
                         musicViewModel.getAvatarUri()
+                        
+                        // 获取每日推荐（内部会自动处理启动计数和刷新判断）
                         musicViewModel.getDailyMusicInfo()
                         
                         // 如果开启了自动后台补全，延迟 2 秒后自动开始
