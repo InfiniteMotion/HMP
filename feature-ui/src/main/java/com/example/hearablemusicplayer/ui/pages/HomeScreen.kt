@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
@@ -31,6 +40,7 @@ import com.example.hearablemusicplayer.data.database.DailyMusicInfo
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
@@ -52,9 +62,27 @@ fun HomeScreen(
     val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
     val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
     val haptic = rememberHapticFeedback()
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
 
     TabScreen(
         title = "每日推荐",
+        trailing = {
+            // 手动刷新按钮
+            IconButton(
+                onClick = {
+                    haptic.performClick()
+                    musicViewModel.refreshDailyMusicInfo()
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.player_d),
+                    contentDescription = "刷新每日推荐",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
     ) {
         Column(
             modifier = Modifier
@@ -62,16 +90,46 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (dailyMusic == null) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(screenHeight * 0.7f)
+                        .padding(bottom = 48.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "暂未加载到 Daily Music",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        Text(
+                            text = "暂未加载到 Daily Music",
+                            style = MaterialTheme.typography.displayMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "请配置 AI 服务以启用每日推荐功能",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Button(
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate("ai")
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        ) {
+                            Text(
+                                text = "前往 AI 配置",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
                 }
             } else {
                 DailyMusicBaseInfo(

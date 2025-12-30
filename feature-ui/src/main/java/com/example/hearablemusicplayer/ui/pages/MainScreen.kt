@@ -31,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
+import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -63,8 +64,12 @@ fun MainScreen(
         else -> isSystemInDarkTheme()
     }
     
-    // 生成动态ColorScheme
-    val dynamicColorScheme = generateDynamicColorScheme(paletteColors, isDarkTheme)
+    // 根据播放状态选择主题: 播放时使用动态主题,暂停时使用预置主题
+    val colorScheme = if (isPlaying) {
+        generateDynamicColorScheme(paletteColors, isDarkTheme)
+    } else {
+        getPresetColorScheme(isDarkTheme)
+    }
 
     // 只在 swipePages 页启用手势
     val enableSwipe = currentIndex != -1
@@ -89,9 +94,9 @@ fun MainScreen(
         }
     }
 
-    // 应用动态主题
+    // 应用主题(根据播放状态切换)
     MaterialTheme(
-        colorScheme = dynamicColorScheme
+        colorScheme = colorScheme
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 全局动态背景层（仅在音乐播放时显示，带过渡动画）

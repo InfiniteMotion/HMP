@@ -29,6 +29,7 @@ import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.hearablemusicplayer.data.database.Music
+import com.example.hearablemusicplayer.player.AudioEffectManager
 import com.example.hearablemusicplayer.player.R
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -119,6 +120,9 @@ class MusicPlayService : Service(), PlayControl {
 
     private var isReceiverRegistered = false
     
+    // 音效管理器
+    private val audioEffectManager = AudioEffectManager()
+    
     // 音效相关成员变量
     private var equalizerPreset = 0
     private var bassBoostLevel = 0
@@ -126,16 +130,15 @@ class MusicPlayService : Service(), PlayControl {
     private var reverbPreset = 0
     private var customEqualizerLevels = floatArrayOf()
     
-    // 模拟音效预设列表
+    // 均衡器预设列表
     private val equalizerPresets = listOf(
         "正常", "摇滚", "流行", "古典", "爵士", "蓝调", "电子", "嘻哈", "金属", "乡村"
     )
     
-    // 模拟均衡器频段数量
-    private val equalizerBandCount = 5
-    
-    // 模拟均衡器频段范围 (-15dB 到 +15dB)
-    private val equalizerBandLevelRange = Pair(-1500, 1500)
+    // 音效初始化标志
+    private var isAudioEffectInitialized = false
+    private var audioEffectInitRetryCount = 0
+    private val maxAudioEffectInitRetries = 3
 
     // 绑定播放完成回调
     fun setOnMusicCompleteListener(listener: OnMusicCompleteListener) {
@@ -246,6 +249,8 @@ class MusicPlayService : Service(), PlayControl {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
                         getCurrentPlayingMusic()?.let { updateNotificationWithCover(it) }
+                        // 尝试初始化音效
+                        initializeAudioEffectsIfNeeded()
                     }
                     if (playbackState == Player.STATE_ENDED) {
                         playbackListener?.onPlaybackEnded()
@@ -344,6 +349,7 @@ class MusicPlayService : Service(), PlayControl {
     override fun onDestroy() {
         super.onDestroy()
         unregisterAudioDeviceReceiver()
+        audioEffectManager.release()
         mediaSession.release()
         exoPlayer.release()
     }
@@ -546,35 +552,108 @@ class MusicPlayService : Service(), PlayControl {
         }
     }
     
+    // 初始化音效（延迟初始化，等待播放器准备就绪）
+    private fun initializeAudioEffectsIfNeeded() {
+        if (isAudioEffectInitialized || audioEffectInitRetryCount >= maxAudioEffectInitRetries) {
+            return
+        }
+        
+        audioEffectInitRetryCount++
+        
+        try {
+            val sessionId = exoPlayer.audioSessionId
+            if (sessionId > 0) {
+                val success = audioEffectManager.initialize(sessionId)
+                if (success) {
+                    isAudioEffectInitialized = true
+                    Log.d("MusicPlayService", "Audio effects initialized successfully")
+                    
+                    // 恢复之前的音效设置
+                    restoreAudioEffectSettings()
+                } else {
+                    Log.w("MusicPlayService", "Failed to initialize audio effects (attempt $audioEffectInitRetryCount)")
+                }
+            } else {
+                Log.w("MusicPlayService", "Invalid audio session ID: $sessionId")
+            }
+        } catch (e: Exception) {
+            Log.e("MusicPlayService", "Error initializing audio effects", e)
+        }
+    }
+    
+    // 恢复音效设置
+    private fun restoreAudioEffectSettings() {
+        if (equalizerPreset != 0) {
+            audioEffectManager.setEqualizerPreset(equalizerPreset)
+        }
+        if (bassBoostLevel != 0) {
+            audioEffectManager.setBassBoostStrength((bassBoostLevel * 10).toShort())
+        }
+        if (surroundSoundEnabled) {
+            audioEffectManager.setVirtualizerEnabled(true)
+        }
+        if (reverbPreset != 0) {
+            audioEffectManager.setReverbPreset(reverbPreset.toShort())
+        }
+        if (customEqualizerLevels.isNotEmpty()) {
+            customEqualizerLevels.forEachIndexed { index, level ->
+                audioEffectManager.setEqualizerBandLevel(index, level.toInt().toShort())
+            }
+        }
+    }
+    
     // 音效控制方法实现
     override fun setEqualizerPreset(preset: Int) {
-        equalizerPreset = preset
-        Log.d("MusicPlayService", "Set equalizer preset: $preset")
-        // 这里将在后续替换为真实的音效实现
+        if (audioEffectManager.setEqualizerPreset(preset)) {
+            equalizerPreset = preset
+            Log.d("MusicPlayService", "Set equalizer preset: $preset")
+        } else {
+            Log.w("MusicPlayService", "Failed to set equalizer preset: $preset")
+        }
     }
     
     override fun setBassBoost(level: Int) {
-        bassBoostLevel = level
-        Log.d("MusicPlayService", "Set bass boost level: $level")
-        // 这里将在后续替换为真实的音效实现
+        val strength = (level * 10).toShort()
+        if (audioEffectManager.setBassBoostStrength(strength)) {
+            bassBoostLevel = level
+            Log.d("MusicPlayService", "Set bass boost level: $level (strength: $strength)")
+        } else {
+            Log.w("MusicPlayService", "Failed to set bass boost level: $level")
+        }
     }
     
     override fun setSurroundSound(enabled: Boolean) {
-        surroundSoundEnabled = enabled
-        Log.d("MusicPlayService", "Set surround sound: $enabled")
-        // 这里将在后续替换为真实的音效实现
+        if (audioEffectManager.setVirtualizerEnabled(enabled)) {
+            surroundSoundEnabled = enabled
+            Log.d("MusicPlayService", "Set surround sound: $enabled")
+        } else {
+            Log.w("MusicPlayService", "Failed to set surround sound: $enabled")
+        }
     }
     
     override fun setReverb(preset: Int) {
-        reverbPreset = preset
-        Log.d("MusicPlayService", "Set reverb preset: $preset")
-        // 这里将在后续替换为真实的音效实现
+        if (audioEffectManager.setReverbPreset(preset.toShort())) {
+            reverbPreset = preset
+            Log.d("MusicPlayService", "Set reverb preset: $preset")
+        } else {
+            Log.w("MusicPlayService", "Failed to set reverb preset: $preset")
+        }
     }
     
     override fun setCustomEqualizer(bandLevels: FloatArray) {
-        customEqualizerLevels = bandLevels
-        Log.d("MusicPlayService", "Set custom equalizer levels: ${bandLevels.contentToString()}")
-        // 这里将在后续替换为真实的音效实现
+        var success = true
+        bandLevels.forEachIndexed { index, level ->
+            if (!audioEffectManager.setEqualizerBandLevel(index, level.toInt().toShort())) {
+                success = false
+            }
+        }
+        
+        if (success) {
+            customEqualizerLevels = bandLevels
+            Log.d("MusicPlayService", "Set custom equalizer levels: ${bandLevels.contentToString()}")
+        } else {
+            Log.w("MusicPlayService", "Failed to set some custom equalizer levels")
+        }
     }
     
     override fun getEqualizerPresets(): List<String> {
@@ -598,18 +677,21 @@ class MusicPlayService : Service(), PlayControl {
     }
     
     override fun getEqualizerBandCount(): Int {
-        return equalizerBandCount
+        return audioEffectManager.getEqualizerBandCount()
     }
     
     override fun getEqualizerBandLevelRange(): Pair<Int, Int> {
-        return equalizerBandLevelRange
+        val range = audioEffectManager.getEqualizerBandLevelRange()
+        return Pair(range.first.toInt(), range.second.toInt())
     }
     
     override fun getCurrentEqualizerBandLevels(): FloatArray {
-        // 如果自定义均衡器级别为空，返回默认值
-        if (customEqualizerLevels.isEmpty()) {
-            return FloatArray(equalizerBandCount) { 0f }
+        // 从音效管理器获取当前各频段的增益值
+        val levels = audioEffectManager.getCurrentEqualizerBandLevels()
+        return if (levels.isNotEmpty()) {
+            FloatArray(levels.size) { levels[it].toFloat() }
+        } else {
+            FloatArray(audioEffectManager.getEqualizerBandCount()) { 0f }
         }
-        return customEqualizerLevels
     }
 }

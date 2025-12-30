@@ -163,6 +163,7 @@ fun PlayControlButtonOne(
                         Text(
                             text = "排序",
                             style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         FlowRow(
@@ -198,6 +199,7 @@ fun PlayControlButtonOne(
                         Text(
                             text = "方式",
                             style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Row(

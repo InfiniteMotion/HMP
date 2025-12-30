@@ -33,6 +33,7 @@ fun TabScreen(
     title: String? = null,
     hasSearchBotton: Boolean = false,
     navController: NavController? = null,
+    trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -60,19 +61,24 @@ fun TabScreen(
                     Row (
                         modifier = Modifier.fillMaxWidth()
                             .padding(32.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ){
                         Text(
                             text = title,
                             style = MaterialTheme.typography.displayLarge,
                             color = MaterialTheme.colorScheme.onBackground
                         )
+                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        // 自定义 trailing 内容
+                        if (trailing != null) {
+                            trailing()
+                        }
+                        
+                        // 搜索按钮
                         if (hasSearchBotton && navController != null) {
-                            Box(
-                                modifier = Modifier.weight(1f),
-                                contentAlignment = Alignment.CenterEnd
-                            ){
-                                SearchButton(navController)
-                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            SearchButton(navController)
                         }
                     }
                 }

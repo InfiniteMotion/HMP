@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer.data.di
 import android.content.Context
 import com.example.hearablemusicplayer.data.network.DeepSeekAPI
 import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
+import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -101,6 +102,15 @@ object NetworkModule {
     @Singleton
     fun provideDeepSeekAPIWrapper(api: DeepSeekAPI): DeepSeekAPIWrapper {
         return DeepSeekAPIWrapper(api)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideMultiProviderApiAdapter(
+        okHttpClient: OkHttpClient,
+        gson: Gson
+    ): MultiProviderApiAdapter {
+        return MultiProviderApiAdapter(okHttpClient, gson)
     }
 }
 

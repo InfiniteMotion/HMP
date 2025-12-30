@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer.domain.usecase.music
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.repository.MusicRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -33,11 +34,25 @@ class GetAllMusicUseCase @Inject constructor(
     fun getMusicWithExtraCount(): Flow<Int> = musicRepository.getMusicWithExtraCount()
     
     /**
+     * 获取待处理音乐数量（未获得额外信息的数量）
+     */
+    fun getMusicWithMissingExtraCount(): Flow<Int> = musicRepository.getMusicWithMissingExtraCount()
+    
+    /**
      * 根据歌手名获取音乐列表
      * @param artistName 歌手名称
      * @return 该歌手的所有音乐列表
      */
     suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
         return musicRepository.getMusicListByArtist(artistName)
+    }
+    
+    /**
+     * 根据ID获取音乐
+     * @param musicId 音乐ID
+     * @return 音乐信息，如果不存在则返回null
+     */
+    suspend fun getMusicById(musicId: Long): MusicInfo? {
+        return musicRepository.getMusicInfoById(musicId).first()
     }
 }

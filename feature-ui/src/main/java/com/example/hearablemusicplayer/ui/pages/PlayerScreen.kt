@@ -1,7 +1,6 @@
 @file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.example.hearablemusicplayer.ui.pages
 
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -34,10 +33,9 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.PlayContent
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
-
+import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.launch
 
 // 播放器主界面
@@ -75,9 +73,17 @@ fun PlayerScreen(
         // 实现嵌套滚动连接，处理下滑返回
         val nestedScrollConnection = remember {
             object : NestedScrollConnection {
-                // 不预先消耗滚动事件，让子组件先处理
+                // 预先消耗滚动事件：当已有偏移量时，向上拖动应先消耗偏移量
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    // 不预先消耗任何滚动事件，让子组件优先处理
+                    // 当有向上滚动（available.y < 0）且当前有下拉偏移时，先消耗偏移量
+                    if (available.y < 0 && offsetY.value > 0f && source == NestedScrollSource.UserInput) {
+                        val consumed = available.y.coerceAtLeast(-offsetY.value)
+                        scope.launch {
+                            val newOffset = (offsetY.value + consumed).coerceAtLeast(0f)
+                            offsetY.snapTo(newOffset)
+                        }
+                        return Offset(0f, consumed)
+                    }
                     return Offset.Zero
                 }
 
@@ -85,41 +91,34 @@ fun PlayerScreen(
                     // 只有当子组件没有消耗向下滚动事件，且处于拖动状态时，才处理返回
                     if (available.y > 0 && consumed.y <= 0 && source == NestedScrollSource.UserInput) {
                         // 子组件没有消耗向下滚动事件，处理返回逻辑
+                        val delta = available.y
                         scope.launch {
-                            val newOffset = (offsetY.value + available.y).coerceAtLeast(0f)
+                            val newOffset = (offsetY.value + delta).coerceAtLeast(0f)
                             offsetY.snapTo(newOffset)
                             // 当拖动到一定程度时给予触觉反馈
                             if (newOffset > dismissThreshold * 0.5f && newOffset < dismissThreshold * 0.6f) {
                                 haptic.performLightClick()
                             }
-                            // 检查是否达到退出阈值
-                            if (newOffset > dismissThreshold) {
-                                // 执行退出流程
-                                navController.popBackStack()
-                                haptic.performGestureEnd()
-                                offsetY.animateTo(
-                                    targetValue = with(density) { 1000.dp.toPx() },
-                                    animationSpec = tween(durationMillis = 300)
-                                )
-                            } else if (available.y <= 0 && newOffset > 0f) {
-                                // 拖动结束，未达到阈值，执行回弹
-                                haptic.performLightClick()
-                                offsetY.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                )
-                            }
                         }
-                        // 返回消耗的偏移量
-                        return available.copy(y = 0f)
+                        // 返回已消耗的偏移量
+                        return Offset(0f, available.y)
                     }
+                    return Offset.Zero
+                }
 
-                    // 拖动结束，检查是否需要回弹
-                    if (offsetY.value > 0f && source != NestedScrollSource.UserInput) {
-                        scope.launch {
+                override suspend fun onPreFling(available: Velocity): Velocity {
+                    // 处理快速滑动结束时的逻辑
+                    if (offsetY.value > 0f) {
+                        if (offsetY.value > dismissThreshold) {
+                            // 达到阈值，执行退出
+                            navController.popBackStack()
+                            haptic.performGestureEnd()
+                            offsetY.animateTo(
+                                targetValue = with(density) { 1000.dp.toPx() },
+                                animationSpec = tween(durationMillis = 300)
+                            )
+                        } else {
+                            // 未达到阈值，执行回弹
                             haptic.performLightClick()
                             offsetY.animateTo(
                                 targetValue = 0f,
@@ -129,13 +128,9 @@ fun PlayerScreen(
                                 )
                             )
                         }
+                        // 消耗垂直方向的 fling 速度
+                        return Velocity(0f, available.y)
                     }
-
-                    return Offset.Zero
-                }
-
-                override suspend fun onPreFling(available: Velocity): Velocity {
-                    // 不处理快速滑动，交给子组件处理
                     return Velocity.Zero
                 }
             }

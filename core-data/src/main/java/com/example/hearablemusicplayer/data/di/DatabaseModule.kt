@@ -33,8 +33,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "music_database"
         )
-            .addMigrations(AppDatabase.MIGRATION_1_2)
-            .fallbackToDestructiveMigration() // 迁移失败时重建数据库
+            .fallbackToDestructiveMigration()
             .build()
     }
 

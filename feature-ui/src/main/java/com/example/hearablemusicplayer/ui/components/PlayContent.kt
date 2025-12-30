@@ -93,6 +93,7 @@ fun PlayContent(
 
     // 开启播放进度监督
     DisposableEffect(Unit) {
+        viewModel.startProgressTracking()
         onDispose {
             viewModel.stopProgressTracking()
         }

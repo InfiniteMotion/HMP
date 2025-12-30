@@ -7,8 +7,11 @@ import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.repository.MusicRepository
 import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.data.model.AiProviderType
+import com.example.hearablemusicplayer.data.model.AiProviderConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 /**
@@ -30,6 +33,79 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val musicLabelUseCase: MusicLabelUseCase
 ) {
+    
+    companion object {
+        private const val TAG = "GetDailyMusicRecommendationUseCase"
+    }
+    
+    // ==================== 处理控制标志 ====================
+    
+    private val _isPaused = AtomicBoolean(false)
+    private val _isCancelled = AtomicBoolean(false)
+    
+    /**
+     * 暂停处理
+     */
+    fun pauseProcessing() {
+        _isPaused.set(true)
+        Log.d(TAG, "Processing paused")
+    }
+    
+    /**
+     * 继续处理
+     */
+    fun resumeProcessing() {
+        _isPaused.set(false)
+        Log.d(TAG, "Processing resumed")
+    }
+    
+    /**
+     * 取消处理
+     */
+    fun cancelProcessing() {
+        _isCancelled.set(true)
+        _isPaused.set(false)
+        Log.d(TAG, "Processing cancelled")
+    }
+    
+    /**
+     * 重置处理状态
+     */
+    fun resetProcessingState() {
+        _isPaused.set(false)
+        _isCancelled.set(false)
+    }
+    
+    /**
+     * 是否已暂停
+     */
+    fun isPaused(): Boolean = _isPaused.get()
+    
+    // ==================== 处理结果数据类 ====================
+    
+    /**
+     * 处理结果统计
+     */
+    data class ProcessingResult(
+        val totalProcessed: Int = 0,
+        val successCount: Int = 0,
+        val skippedCount: Int = 0,
+        val failedCount: Int = 0,
+        val errors: List<String> = emptyList(),
+        val wasCancelled: Boolean = false
+    ) {
+        val isAllSuccess: Boolean
+            get() = totalProcessed > 0 && failedCount == 0 && skippedCount == 0
+    }
+    
+    /**
+     * 单个处理结果
+     */
+    sealed class ExtraInfoResult {
+        data class Success(val intro: DailyMusicInfo) : ExtraInfoResult()
+        data object Skipped : ExtraInfoResult()
+        data class Error(val message: String) : ExtraInfoResult()
+    }
     
     /**
      * 音乐推荐数据结构
@@ -59,50 +135,7 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
         return MusicRecommendation(musicInfo, dailyMusicInfo, labels)
     }
     
-    /**
-     * 自动处理缺失额外信息的音乐
-     * 
-     * 遍历数据库中所有缺失AI扩展信息的音乐，
-     * 自动调用DeepSeek API获取并保存扩展信息和标签。
-     * 支持进度回调和节流控制。
-     * 
-     * @param onProgress 处理每首音乐时的进度回调
-     * @param delayMillis 每次请求之间的延迟时间（毫秒），默认500ms
-     */
-    suspend fun autoProcessMissingExtraInfo(
-        onProgress: suspend (MusicInfo) -> Unit = {},
-        delayMillis: Long = 500
-    ) {
-        while (true) {
-            val music = musicRepository.getRandomMusicInfoWithMissingExtra() ?: break
-
-            onProgress(music)
-//            getMusicExtraInfoFromLLM(music)
-            delay(delayMillis)
-        }
-    }
-    
-    /**
-     * 从DeepSeek获取音乐额外信息
-     */
-    private suspend fun getMusicExtraInfoFromLLM(input: MusicInfo) {
-        val authToken = settingsRepository.getDeepSeekApiKey()
-        val result = musicRepository.fetchMusicExtraInfo(authToken, input.music.title, input.music.artist)
-        when (result) {
-            is com.example.hearablemusicplayer.data.repository.Result.Success -> {
-                val intro = result.data
-                musicRepository.insertMusicExtra(input.music.id, intro)
-                saveMusicLabels(input.music.id, intro)
-                Log.d("GetDailyMusicRecommendationUseCase", "Successfully processed music extra info via Repository")
-            }
-            is com.example.hearablemusicplayer.data.repository.Result.Error -> {
-                Log.e("GetDailyMusicRecommendationUseCase", "Fetch extra info failed: ${result.exception.message}")
-            }
-            is com.example.hearablemusicplayer.data.repository.Result.Loading -> {
-                // Loading 状态，通常不会在此分支出现
-            }
-        }
-    }
+    // ==================== 多服务商支持方法 ====================
     
     /**
      * 保存音乐标签
@@ -119,18 +152,123 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
     }
     
     /**
-     * 验证DeepSeek API密钥
+     * 验证指定服务商的 API Key
      * 
-     * 通过尝试调用DeepSeek API来验证密钥是否有效。
-     * 
-     * @param apiKey 待验证的API密钥
-     * @return true 如果密钥有效，false 否则
+     * @param providerConfig 服务商配置
+     * @return true 如果密钥有效
      */
-    suspend fun validateApiKey(apiKey: String): Boolean {
-        return when (musicRepository.validateApiKey(apiKey)) {
+    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Boolean {
+        return when (musicRepository.validateProviderApiKey(providerConfig)) {
             is com.example.hearablemusicplayer.data.repository.Result.Success -> true
             is com.example.hearablemusicplayer.data.repository.Result.Error -> false
             is com.example.hearablemusicplayer.data.repository.Result.Loading -> false
+        }
+    }
+    
+    /**
+     * 自动处理缺失额外信息的音乐（使用当前服务商）
+     * 支持暂停、取消控制和结果统计
+     * 
+     * @param onProgress 处理每首音乐时的进度回调
+     * @param onComplete 处理完成时的回调，返回处理结果统计
+     * @param delayMillis 每次请求之间的延迟时间（毫秒）
+     */
+    suspend fun autoProcessMissingExtraInfoWithCurrentProvider(
+        onProgress: suspend (MusicInfo) -> Unit = {},
+        onComplete: suspend (ProcessingResult) -> Unit = {},
+        delayMillis: Long = 500
+    ) {
+        resetProcessingState()
+        
+        val providerConfig = settingsRepository.getCurrentProviderConfig()
+        
+        if (!providerConfig.isConfigured) {
+            Log.w(TAG, "No AI provider configured, skipping auto process")
+            onComplete(ProcessingResult())
+            return
+        }
+        
+        var successCount = 0
+        var skippedCount = 0
+        var failedCount = 0
+        val errors = mutableListOf<String>()
+        
+        while (true) {
+            // 检查是否取消
+            if (_isCancelled.get()) {
+                Log.d(TAG, "Processing cancelled by user")
+                break
+            }
+            
+            // 检查是否暂停
+            while (_isPaused.get()) {
+                delay(100)
+                if (_isCancelled.get()) break
+            }
+            
+            if (_isCancelled.get()) break
+            
+            val music = musicRepository.getRandomMusicInfoWithMissingExtra() ?: break
+            
+            onProgress(music)
+            
+            // 处理当前音乐并统计结果
+            when (val result = getMusicExtraInfoWithCurrentProviderAndResult(music)) {
+                is ExtraInfoResult.Success -> successCount++
+                is ExtraInfoResult.Skipped -> skippedCount++
+                is ExtraInfoResult.Error -> {
+                    failedCount++
+                    errors.add("${music.music.title}: ${result.message}")
+                }
+            }
+            
+            delay(delayMillis)
+        }
+        
+        val processingResult = ProcessingResult(
+            totalProcessed = successCount + skippedCount + failedCount,
+            successCount = successCount,
+            skippedCount = skippedCount,
+            failedCount = failedCount,
+            errors = errors,
+            wasCancelled = _isCancelled.get()
+        )
+        
+        onComplete(processingResult)
+        Log.d(TAG, "Processing completed: $processingResult")
+    }
+    
+    /**
+     * 使用当前服务商处理音乐信息（返回结果）
+     */
+    private suspend fun getMusicExtraInfoWithCurrentProviderAndResult(input: MusicInfo): ExtraInfoResult {
+        val providerConfig = settingsRepository.getCurrentProviderConfig()
+        
+        if (!providerConfig.isConfigured) {
+            return ExtraInfoResult.Skipped
+        }
+        
+        val result = musicRepository.fetchMusicExtraInfoWithProvider(
+            providerConfig,
+            input.music.title,
+            input.music.artist
+        )
+        
+        return when (result) {
+            is com.example.hearablemusicplayer.data.repository.Result.Success -> {
+                val intro = result.data
+                musicRepository.insertMusicExtra(input.music.id, intro)
+                saveMusicLabels(input.music.id, intro)
+                Log.d(TAG, "Successfully processed music via ${providerConfig.type.displayName}")
+                ExtraInfoResult.Success(intro)
+            }
+            is com.example.hearablemusicplayer.data.repository.Result.Error -> {
+                Log.e(TAG, "Fetch extra info failed: ${result.exception.message}")
+                ExtraInfoResult.Error(result.exception.message ?: "Unknown error")
+            }
+            is com.example.hearablemusicplayer.data.repository.Result.Loading -> {
+                ExtraInfoResult.Skipped
+            }
         }
     }
     

@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.data.util.SecureStorageHelper
+import com.example.hearablemusicplayer.data.model.AiProviderType
+import com.example.hearablemusicplayer.data.model.AiProviderConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -17,6 +19,17 @@ import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * 每日推荐刷新配置数据类
+ */
+data class DailyRefreshConfig(
+    val mode: String, // "time", "startup", "smart"
+    val refreshHours: Int, // 按小时刷新的间隔
+    val startupCount: Int, // 按启动次数刷新
+    val lastRefreshTimestamp: Long, // 上次刷新时间戳
+    val launchCountSinceRefresh: Int // 自上次刷新后的启动次数
+)
 
 // 在 Context 中创建 DataStore 实例
 private val Context.dataStore by preferencesDataStore(name = "player_preferences")
@@ -40,12 +53,35 @@ class SettingsRepository @Inject constructor(
         val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         
+        // 多 AI 服务商配置键
+        val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider")
+        val DEEPSEEK_MODEL = stringPreferencesKey("deepseek_model")
+        val OPENAI_API_KEY = stringPreferencesKey("openai_api_key")
+        val OPENAI_MODEL = stringPreferencesKey("openai_model")
+        val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
+        val CLAUDE_MODEL = stringPreferencesKey("claude_model")
+        val QWEN_API_KEY = stringPreferencesKey("qwen_api_key")
+        val QWEN_MODEL = stringPreferencesKey("qwen_model")
+        val ERNIE_API_KEY = stringPreferencesKey("ernie_api_key")
+        val ERNIE_MODEL = stringPreferencesKey("ernie_model")
+        
         // 音效相关设置键
         val EQUALIZER_PRESET = intPreferencesKey("equalizer_preset")
         val BASS_BOOST_LEVEL = intPreferencesKey("bass_boost_level")
         val IS_SURROUND_SOUND_ENABLED = booleanPreferencesKey("is_surround_sound_enabled")
         val REVERB_PRESET = intPreferencesKey("reverb_preset")
         val CUSTOM_EQUALIZER_LEVELS = stringPreferencesKey("custom_equalizer_levels")
+        
+        // AI 自动处理设置
+        val AUTO_BATCH_PROCESS = booleanPreferencesKey("auto_batch_process")
+        
+        // 每日推荐刷新策略设置
+        val DAILY_REFRESH_MODE = stringPreferencesKey("daily_refresh_mode") // time, startup, smart
+        val DAILY_REFRESH_HOURS = intPreferencesKey("daily_refresh_hours") // 按小时刷新的间隔
+        val DAILY_REFRESH_STARTUP_COUNT = intPreferencesKey("daily_refresh_startup_count") // 按启动次数刷新
+        val LAST_DAILY_REFRESH_TIMESTAMP = longPreferencesKey("last_daily_refresh_timestamp") // 上次刷新时间戳
+        val APP_LAUNCH_COUNT_SINCE_REFRESH = intPreferencesKey("app_launch_count_since_refresh") // 自上次刷新后的启动次数
+        val CURRENT_DAILY_MUSIC_ID = longPreferencesKey("current_daily_music_id") // 当前每日推荐的音乐ID
     }
 
     // DataStore 访问实例
@@ -94,6 +130,13 @@ class SettingsRepository @Inject constructor(
     val deepSeekApiKey: Flow<String?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.DEEPSEEK_API_KEY] }
     
+    // 当前 AI 服务商类型
+    val currentAiProvider: Flow<AiProviderType> = dataStore.data
+        .map { prefs -> 
+            val providerName = prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK"
+            AiProviderType.fromName(providerName)
+        }
+    
     // 音效相关设置 Flow
     val equalizerPreset: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] ?: 0 }
@@ -113,6 +156,26 @@ class SettingsRepository @Inject constructor(
                 levelsString.split(",").mapNotNull { it.toFloatOrNull() }.toFloatArray()
             } ?: floatArrayOf()
         }
+    
+    // AI 自动批量处理开关
+    val autoBatchProcess: Flow<Boolean> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false }
+    
+    // 每日推荐刷新策略相关 Flow
+    val dailyRefreshMode: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time" } // 默认按时间
+    
+    val dailyRefreshHours: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24 } // 默认24小时
+    
+    val dailyRefreshStartupCount: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3 } // 默认3次启动
+    
+    val lastDailyRefreshTimestamp: Flow<Long> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L }
+    
+    val appLaunchCountSinceRefresh: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0 }
 
     suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
         dataStore.edit { prefs ->
@@ -197,21 +260,218 @@ class SettingsRepository @Inject constructor(
             prefs[PreferencesKeys.RECENT_PLAYLIST_ID] = playlistId
         }
     }
-
-    // 保存 DeepSeek API KEY
-    suspend fun saveDeepSeekApiKey(apiKey: String) {
+    
+    // 保存 AI 自动批量处理开关
+    suspend fun saveAutoBatchProcess(enabled: Boolean) {
         dataStore.edit { prefs ->
-            prefs[PreferencesKeys.DEEPSEEK_API_KEY] = SecureStorageHelper.encrypt(apiKey)
+            prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = enabled
         }
     }
-    // 获取 DeepSeek API KEY
-    suspend fun getDeepSeekApiKey(): String {
-        val apiKey = context.dataStore.data.first()[PreferencesKeys.DEEPSEEK_API_KEY]?.let {
-            SecureStorageHelper.decrypt(
-                it
-            )
+    
+    // ==================== 每日推荐刷新策略方法 ====================
+    
+    /**
+     * 保存每日推荐刷新模式
+     * @param mode "time" (按时间), "startup" (按启动次数), "smart" (智能刷新)
+     */
+    suspend fun saveDailyRefreshMode(mode: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = mode
         }
-        return apiKey?:""
+    }
+    
+    /**
+     * 保存按小时刷新的间隔
+     */
+    suspend fun saveDailyRefreshHours(hours: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = hours
+        }
+    }
+    
+    /**
+     * 保存按启动次数刷新
+     */
+    suspend fun saveDailyRefreshStartupCount(count: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = count
+        }
+    }
+    
+    /**
+     * 更新上次刷新时间戳
+     */
+    suspend fun updateLastDailyRefreshTimestamp() {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = System.currentTimeMillis()
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = 0 // 重置启动计数
+        }
+    }
+    
+    /**
+     * 保存当前每日推荐的音乐ID
+     */
+    suspend fun saveCurrentDailyMusicId(musicId: Long) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = musicId
+        }
+    }
+    
+    /**
+     * 获取当前每日推荐的音乐ID
+     */
+    suspend fun getCurrentDailyMusicId(): Long? {
+        return context.dataStore.data.first()[PreferencesKeys.CURRENT_DAILY_MUSIC_ID]
+    }
+    
+    /**
+     * 增加应用启动计数
+     */
+    suspend fun incrementAppLaunchCount() {
+        dataStore.edit { prefs ->
+            val currentCount = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = currentCount + 1
+        }
+    }
+    
+    /**
+     * 获取所有刷新策略配置
+     */
+    suspend fun getDailyRefreshConfig(): DailyRefreshConfig {
+        val prefs = context.dataStore.data.first()
+        return DailyRefreshConfig(
+            mode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
+            refreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
+            startupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
+            lastRefreshTimestamp = prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L,
+            launchCountSinceRefresh = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
+        )
+    }
+
+    // ==================== 多 AI 服务商配置方法 ====================
+    
+    /**
+     * 获取当前选中的 AI 服务商类型
+     */
+    suspend fun getCurrentProvider(): AiProviderType {
+        val providerName = context.dataStore.data.first()[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK"
+        return AiProviderType.fromName(providerName)
+    }
+    
+    /**
+     * 设置当前 AI 服务商类型
+     */
+    suspend fun setCurrentProvider(provider: AiProviderType) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = provider.name
+        }
+    }
+    
+    /**
+     * 获取指定服务商的 API Key
+     */
+    suspend fun getProviderApiKey(provider: AiProviderType): String {
+        val key = when (provider) {
+            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
+            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
+            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
+            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
+            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
+        }
+        val encryptedKey = context.dataStore.data.first()[key]
+        return encryptedKey?.let { SecureStorageHelper.decrypt(it) } ?: ""
+    }
+    
+    /**
+     * 设置指定服务商的 API Key
+     */
+    suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String) {
+        val key = when (provider) {
+            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
+            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
+            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
+            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
+            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
+        }
+        dataStore.edit { prefs ->
+            prefs[key] = SecureStorageHelper.encrypt(apiKey)
+        }
+    }
+    
+    /**
+     * 获取指定服务商的模型名称
+     */
+    suspend fun getProviderModel(provider: AiProviderType): String {
+        val key = when (provider) {
+            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
+            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
+            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
+            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
+            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
+        }
+        return context.dataStore.data.first()[key] ?: provider.defaultModel
+    }
+    
+    /**
+     * 设置指定服务商的模型名称
+     */
+    suspend fun setProviderModel(provider: AiProviderType, model: String) {
+        val key = when (provider) {
+            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
+            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
+            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
+            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
+            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
+        }
+        dataStore.edit { prefs ->
+            prefs[key] = model
+        }
+    }
+    
+    /**
+     * 获取指定服务商的完整配置
+     */
+    suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
+        val apiKey = getProviderApiKey(provider)
+        val model = getProviderModel(provider)
+        return AiProviderConfig(
+            type = provider,
+            apiKey = apiKey,
+            model = model,
+            isConfigured = apiKey.isNotBlank()
+        )
+    }
+    
+    /**
+     * 获取当前服务商的完整配置
+     */
+    suspend fun getCurrentProviderConfig(): AiProviderConfig {
+        val currentProvider = getCurrentProvider()
+        return getProviderConfig(currentProvider)
+    }
+    
+    /**
+     * 保存服务商配置
+     */
+    suspend fun saveProviderConfig(config: AiProviderConfig) {
+        setProviderApiKey(config.type, config.apiKey)
+        if (config.model.isNotBlank()) {
+            setProviderModel(config.type, config.model)
+        }
+    }
+    
+    /**
+     * 检查指定服务商是否已配置
+     */
+    suspend fun isProviderConfigured(provider: AiProviderType): Boolean {
+        return getProviderApiKey(provider).isNotBlank()
+    }
+    
+    /**
+     * 获取所有已配置的服务商列表
+     */
+    suspend fun getConfiguredProviders(): List<AiProviderType> {
+        return AiProviderType.entries.filter { isProviderConfigured(it) }
     }
     
     // 音效相关设置保存方法

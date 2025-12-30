@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
                 val isNotificationPermissionGiven = remember { mutableStateOf(false) }
                 val isLoadMusic by musicViewModel.isLoadMusic.collectAsState(false)
                 val isFirstLaunch by musicViewModel.isFirstLaunch.collectAsState(false)
+                val autoBatchProcess by musicViewModel.autoBatchProcess.collectAsState(false)
                 val context = LocalContext.current
                 
                 LaunchedEffect(Unit) {
@@ -109,12 +110,18 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val shouldInitialize = remember { derivedStateOf { isLoadMusic && isMusicReadPermissionGiven.value } }
-                LaunchedEffect(shouldInitialize.value) {
+                LaunchedEffect(shouldInitialize.value, autoBatchProcess) {
                     if (shouldInitialize.value) {
                         musicViewModel.getAvatarUri()
+                        
+                        // 获取每日推荐（内部会自动处理启动计数和刷新判断）
                         musicViewModel.getDailyMusicInfo()
-                        delay(2000)
-                        musicViewModel.startAutoProcessExtraInfo()
+                        
+                        // 如果开启了自动后台补全，延迟 2 秒后自动开始
+                        if (autoBatchProcess) {
+                            delay(2000)
+                            musicViewModel.startAutoProcessWithCurrentProvider()
+                        }
                     }
                 }
 

@@ -18,7 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -77,6 +83,10 @@ fun SettingScreen(
             UpdateUserName(
                 userName = userName,
                 updateUserName = viewModel::saveUserName
+            )
+            
+            DailyRefreshSettings(
+                viewModel = viewModel
             )
 
             ReloadMusic(
@@ -298,6 +308,152 @@ fun ReloadMusic(
                     enabled = !isLoading
                 ) {
                     Text("重新加载", color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 每日推荐刷新策略设置
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DailyRefreshSettings(
+    viewModel: MusicViewModel
+) {
+    val refreshMode by viewModel.dailyRefreshMode.collectAsState()
+    val refreshHours by viewModel.dailyRefreshHours.collectAsState()
+    val startupCount by viewModel.dailyRefreshStartupCount.collectAsState()
+    val context = LocalContext.current
+    
+    TitleWidget(
+        title = "每日推荐刷新策略",
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "选择每日推荐的刷新方式",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            // 刷新模式选择
+            var expanded by remember { mutableStateOf(false) }
+            val refreshModes = listOf(
+                "time" to "按时间刷新",
+                "startup" to "按启动次数刷新",
+                "smart" to "智能刷新（预留）"
+            )
+            val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: "按时间刷新"
+            
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                TextField(
+                    value = currentModeLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("刷新模式") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Transparent,
+                        unfocusedIndicatorColor = Transparent,
+                        disabledIndicatorColor = Transparent
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    refreshModes.forEach { (mode, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                viewModel.saveDailyRefreshMode(mode)
+                                expanded = false
+                                Toast.makeText(context, "已切换到: $label", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // 根据选择的模式显示不同的配置项
+            when (refreshMode) {
+                "time" -> {
+                    var hoursText by remember(refreshHours) { mutableStateOf(refreshHours.toString()) }
+                    
+                    OutlinedTextField(
+                        value = hoursText,
+                        onValueChange = { 
+                            hoursText = it
+                            it.toIntOrNull()?.let { hours ->
+                                if (hours > 0) {
+                                    viewModel.saveDailyRefreshHours(hours)
+                                }
+                            }
+                        },
+                        label = { Text("刷新间隔（小时）") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    Text(
+                        text = "当前设置：每 $refreshHours 小时刷新一次",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                "startup" -> {
+                    var countText by remember(startupCount) { mutableStateOf(startupCount.toString()) }
+                    
+                    OutlinedTextField(
+                        value = countText,
+                        onValueChange = { 
+                            countText = it
+                            it.toIntOrNull()?.let { count ->
+                                if (count > 0) {
+                                    viewModel.saveDailyRefreshStartupCount(count)
+                                }
+                            }
+                        },
+                        label = { Text("启动次数") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    Text(
+                        text = "当前设置：每启动 $startupCount 次后刷新",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                "smart" -> {
+                    Text(
+                        text = "智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
