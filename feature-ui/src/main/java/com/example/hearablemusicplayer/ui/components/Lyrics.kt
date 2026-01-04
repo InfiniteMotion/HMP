@@ -1,5 +1,6 @@
 ﻿package com.example.hearablemusicplayer.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,11 +18,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import kotlin.math.max
 
 fun parseLrcTime(timeStr: String): Long {
@@ -90,8 +94,7 @@ fun Lyrics(
                     .height(320.dp), // 设置固定高度，确保可以滚动
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                items(lyricListWithTimestamp.size) { index ->
-                    val (time, text) = lyricListWithTimestamp[index]
+                itemsIndexed(lyricListWithTimestamp) { index, (time, text) ->
                     val isCurrent = index == currentIndex
                     val itemModifier = Modifier
                         .padding(vertical = 8.dp)
@@ -99,6 +102,27 @@ fun Lyrics(
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             onSeek(time)
                         }
+                    
+                    // 为歌词行添加动画效果
+                    val animatedScale = remember {
+                        Animatable(if (isCurrent) 1.1f else 1f)
+                    }
+                    
+                    val animatedOpacity = remember {
+                        Animatable(if (isCurrent) 1f else 0.7f)
+                    }
+                    
+                    // 根据是否为当前行更新动画
+                    LaunchedEffect(isCurrent) {
+                        animatedScale.animateTo(
+                            if (isCurrent) 1.1f else 1f,
+                            animationSpec = AnimationConfig.SPRING_GENTLE
+                        )
+                        animatedOpacity.animateTo(
+                            if (isCurrent) 1f else 0.7f,
+                            animationSpec = AnimationConfig.SPRING_GENTLE
+                        )
+                    }
                     
                     Text(
                         text = text,
@@ -115,6 +139,11 @@ fun Lyrics(
                             MaterialTheme.typography.bodyMedium
                         },
                         modifier = itemModifier
+                            .graphicsLayer {
+                                scaleX = animatedScale.value
+                                scaleY = animatedScale.value
+                                alpha = animatedOpacity.value
+                            }
                     )
                 }
             }

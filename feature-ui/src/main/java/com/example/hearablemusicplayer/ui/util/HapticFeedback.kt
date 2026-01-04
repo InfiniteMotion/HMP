@@ -66,28 +66,20 @@ class HapticFeedbackHelper(private val view: View) {
      * 确认反馈 - 用于确认操作（API 30+）
      */
     fun performConfirm() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.CONFIRM,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
-            )
-        } else {
-            performClick()
-        }
+        view.performHapticFeedback(
+            HapticFeedbackConstants.CONFIRM,
+            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+        )
     }
     
     /**
      * 拒绝反馈 - 用于拒绝或取消操作（API 30+）
      */
     fun performReject() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.REJECT,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
-            )
-        } else {
-            performLongPress()
-        }
+        view.performHapticFeedback(
+            HapticFeedbackConstants.REJECT,
+            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+        )
     }
     
     /**
@@ -108,28 +100,20 @@ class HapticFeedbackHelper(private val view: View) {
      * 手势开始反馈 - 用于手势开始（API 30+）
      */
     fun performGestureStart() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.GESTURE_START,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
-            )
-        } else {
-            performLightClick()
-        }
+        view.performHapticFeedback(
+            HapticFeedbackConstants.GESTURE_START,
+            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+        )
     }
     
     /**
      * 手势结束反馈 - 用于手势结束（API 30+）
      */
     fun performGestureEnd() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.GESTURE_END,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
-            )
-        } else {
-            performClick()
-        }
+        view.performHapticFeedback(
+            HapticFeedbackConstants.GESTURE_END,
+            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+        )
     }
 }
 

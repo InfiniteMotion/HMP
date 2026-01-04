@@ -47,6 +47,7 @@ fun MusicList(
     ) {
         items(
             items = musicInfoList,
+            key = { musicInfo -> musicInfo.music.id } // 添加key参数，提高LazyColumn性能
         ) { musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,

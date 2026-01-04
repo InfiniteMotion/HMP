@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -32,6 +34,7 @@ import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -102,8 +105,10 @@ fun MainScreen(
             // 全局动态背景层（仅在音乐播放时显示，带过渡动画）
             AnimatedVisibility(
                 visible = isPlaying && currentMusic != null,
-                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 600))
+                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
+                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
             ) {
                 DynamicBackground(
                     albumArtUri = currentMusic?.music?.albumArtUri,
@@ -116,8 +121,10 @@ fun MainScreen(
             // 音乐未播放时显示纯色背景（带过渡动画）
             AnimatedVisibility(
                 visible = !(isPlaying && currentMusic != null),
-                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 600))
+                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
+                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
             ) {
                 Box(
                     modifier = Modifier
@@ -148,40 +155,91 @@ fun MainScreen(
                         startDestination = "gallery",
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        composable("home") {
+                        // 为所有页面添加统一的过渡动画
+                        val pageEnterTransition = scaleIn(
+                            initialScale = 0.95f,
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        ) + fadeIn(
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        )
+                        
+                        val pageExitTransition = scaleOut(
+                            targetScale = 0.95f,
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        ) + fadeOut(
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        )
+                        
+                        composable("home", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             HomeScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("gallery") {
+                        composable("gallery", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("player") {
+                        composable("player", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             PlayerScreen(playControlViewModel, musicViewModel, navController)
                         }
-                        composable( "list") {
+                        composable( "list", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             ListScreen(musicViewModel, navController)
                         }
-                        composable("user") {
+                        composable("user", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             UserScreen(musicViewModel, navController)
                         }
-                        composable("setting") {
+                        composable("setting", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             SettingScreen(musicViewModel, navController)
                         }
-                        composable ("search") {
+                        composable ("search", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             SearchScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("playlist") {
+                        composable("playlist", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             PlaylistScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("artist") {
+                        composable("artist", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("audioEffects") {
+                        composable("audioEffects", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             AudioEffectsScreen(playControlViewModel, navController)
                         }
-                        composable("ai") {
+                        composable("ai", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             AIScreen(musicViewModel, navController)
                         }
-                        composable("custom") {
+                        composable("custom", 
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             CustomScreen(musicViewModel, navController)
                         }
                     }

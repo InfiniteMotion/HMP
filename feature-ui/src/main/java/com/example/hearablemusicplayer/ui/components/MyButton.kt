@@ -2,6 +2,7 @@
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +44,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -130,8 +132,10 @@ fun PlayControlButtonOne(
         // 可隐藏的内容块
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_OUT)) +
+                    fadeIn(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_OUT)),
+            exit = shrinkVertically(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_IN)) +
+                    fadeOut(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_IN))
         ) {
             Surface(
                 modifier = Modifier
