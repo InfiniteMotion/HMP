@@ -79,7 +79,6 @@ fun SubScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
             ) {
                 Column(
                     verticalArrangement = Arrangement.Top,

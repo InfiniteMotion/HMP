@@ -87,7 +87,7 @@ fun MainScreen(
                     if (targetRoute != currentRoute) {
                         // 翻页时给予触觉反馈
                         haptic.performLightClick()
-                        navController.navigate(targetRoute) {
+                        navController.navigate(route = targetRoute) {
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -170,73 +170,73 @@ fun MainScreen(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
                         
-                        composable("home", 
+                        composable(route = "home", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             HomeScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("gallery", 
+                        composable(route = "gallery", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("player", 
+                        composable(route = "player", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlayerScreen(playControlViewModel, musicViewModel, navController)
                         }
-                        composable( "list", 
+                        composable(route = "list", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ListScreen(musicViewModel, navController)
                         }
-                        composable("user", 
+                        composable(route = "user", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             UserScreen(musicViewModel, navController)
                         }
-                        composable("setting", 
+                        composable(route = "setting", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SettingScreen(musicViewModel, navController)
                         }
-                        composable ("search", 
+                        composable(route = "search", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SearchScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("playlist", 
+                        composable(route = "playlist", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlaylistScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("artist", 
+                        composable(route = "artist", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("audioEffects", 
+                        composable(route = "audioEffects", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AudioEffectsScreen(playControlViewModel, navController)
                         }
-                        composable("ai", 
+                        composable(route = "ai", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AIScreen(musicViewModel, navController)
                         }
-                        composable("custom", 
+                        composable(route = "custom", 
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
@@ -248,14 +248,14 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .background(if(isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant)
                             .navigationBarsPadding()
+                            .background(if(isPlaying) Transparent else MaterialTheme.colorScheme.surface)
                     ) {
                         CustomBottomNavBar(
                             isPlaying = isPlaying,
                             currentRoute = currentRoute,
                             onNavigate = { route ->
-                                navController.navigate(route) {
+                                navController.navigate(route = route) {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
