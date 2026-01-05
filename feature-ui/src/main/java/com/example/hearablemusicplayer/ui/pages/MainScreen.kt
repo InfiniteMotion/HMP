@@ -152,10 +152,10 @@ fun MainScreen(
                         .then(swipeModifier)
                 ) {
                     NavHost(
-                navController = navController,
-                startDestination = Routes.GALLERY,
-                modifier = Modifier.fillMaxSize()
-            ) {
+                        navController = navController,
+                        startDestination = Routes.GALLERY,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         // 为所有页面添加统一的过渡动画
                         val pageEnterTransition = scaleIn(
                             initialScale = 0.95f,
@@ -163,81 +163,81 @@ fun MainScreen(
                         ) + fadeIn(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
-                        
+
                         val pageExitTransition = scaleOut(
                             targetScale = 0.95f,
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         ) + fadeOut(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
-                        
-                        composable(route = Routes.HOME, 
+
+                        composable(route = Routes.HOME,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             HomeScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable(route = Routes.GALLERY, 
+                        composable(route = Routes.GALLERY,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable(route = Routes.PLAYER, 
+                        composable(route = Routes.PLAYER,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlayerScreen(playControlViewModel, musicViewModel, navController)
                         }
-                        composable(route = Routes.LIST, 
+                        composable(route = Routes.LIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ListScreen(musicViewModel, navController)
                         }
-                        composable(route = Routes.USER, 
+                        composable(route = Routes.USER,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             UserScreen(musicViewModel, navController)
                         }
-                        composable(route = Routes.SETTING, 
+                        composable(route = Routes.SETTING,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SettingScreen(musicViewModel, navController)
                         }
-                        composable(route = Routes.SEARCH, 
+                        composable(route = Routes.SEARCH,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SearchScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable(route = Routes.PLAYLIST, 
+                        composable(route = Routes.PLAYLIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlaylistScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable(route = Routes.ARTIST, 
+                        composable(route = Routes.ARTIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable(route = Routes.AUDIO_EFFECTS, 
+                        composable(route = Routes.AUDIO_EFFECTS,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AudioEffectsScreen(playControlViewModel, navController)
                         }
-                        composable(route = Routes.AI, 
+                        composable(route = Routes.AI,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AIScreen(musicViewModel, navController)
                         }
-                        composable(route = Routes.CUSTOM, 
+                        composable(route = Routes.CUSTOM,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
