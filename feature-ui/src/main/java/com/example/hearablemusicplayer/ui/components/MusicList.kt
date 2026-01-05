@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
@@ -30,6 +30,7 @@ import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
@@ -84,7 +85,7 @@ fun MusicItem(
                 scope.launch {
                     playWith(musicInfo)
                     recordPlayback(musicInfo.music.id, "MusicList")
-                    navigate("player")
+                    navigate(Routes.PLAYER)
                 }
             },
         verticalAlignment = Alignment.CenterVertically,

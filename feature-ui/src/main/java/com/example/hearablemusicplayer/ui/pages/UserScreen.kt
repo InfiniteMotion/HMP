@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +22,7 @@ import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.ListeningChart
 import com.example.hearablemusicplayer.ui.components.SquareCard
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -96,13 +97,13 @@ fun UserScreen(
                 SquareCard(
                     "主题定制",
                     R.drawable.slider_vertical_3,
-                    onClick = {navController.navigate("custom")}
+                    onClick = {navController.navigate(Routes.CUSTOM)}
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(
                     "音效效果",
                     R.drawable.identify_song,
-                    onClick = { navController.navigate("audioEffects") }
+                    onClick = { navController.navigate(Routes.AUDIO_EFFECTS) }
                 )
             }
             Spacer(modifier = Modifier.height(30.dp))
@@ -114,13 +115,13 @@ fun UserScreen(
                 SquareCard(
                     "AI服务",
                     R.drawable.icloud,
-                    onClick = { navController.navigate("ai") }
+                    onClick = { navController.navigate(Routes.AI) }
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(
                     "设置",
                     R.drawable.gearshape,
-                    onClick = { navController.navigate("setting") }
+                    onClick = { navController.navigate(Routes.SETTING) }
                 )
             }
         }

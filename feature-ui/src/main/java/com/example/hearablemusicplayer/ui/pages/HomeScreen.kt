@@ -45,6 +45,7 @@ import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -116,7 +117,7 @@ fun HomeScreen(
                         Button(
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate("ai")
+                                navController.navigate(Routes.AI)
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
@@ -135,18 +136,18 @@ fun HomeScreen(
                 DailyMusicBaseInfo(
                     dailyMusic!!,
                     playDailyMusic = {
-                        haptic.performClick()
-                        scope.launch {
-                            playControlViewModel.playWith(dailyMusic!!)
-                            playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
-                            navController.navigate("player")
-                        }
-                    },
-                    navigateToDailyArtists = {
-                        haptic.performClick()
-                        musicViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
-                        navController.navigate("artist")
-                    }
+                                haptic.performClick()
+                                scope.launch {
+                                    playControlViewModel.playWith(dailyMusic!!)
+                                    playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
+                                    navController.navigate(Routes.PLAYER)
+                                }
+                            },
+                            navigateToDailyArtists = {
+                                haptic.performClick()
+                                musicViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
+                                navController.navigate(Routes.ARTIST)
+                            }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
