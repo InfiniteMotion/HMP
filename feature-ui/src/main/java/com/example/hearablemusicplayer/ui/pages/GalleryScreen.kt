@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -46,13 +46,16 @@ fun GalleryScreen(
         ){
             PlayControlButtonOne(musicViewModel,playControlViewModel,navController)
         }
-
-        MusicList(
-            musicInfoList = musicInfoList,
-            navigate = navController::navigate,
-            playWith = playControlViewModel::playWith,
-            recordPlayback = playControlViewModel::recordPlayback,
-            addToPlaylist = playControlViewModel::addToPlaylist,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ){
+            MusicList(
+                musicInfoList = musicInfoList,
+                navigate = navController::navigate,
+                playWith = playControlViewModel::playWith,
+                recordPlayback = playControlViewModel::recordPlayback,
+                addToPlaylist = playControlViewModel::addToPlaylist,
+            )
+        }
     }
 }
