@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -32,6 +34,8 @@ import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -45,10 +49,10 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+    val currentRoute = navBackStackEntry?.destination?.route ?: Routes.HOME
     val haptic = rememberHapticFeedback()
 
-    val swipePages = listOf("home", "gallery", "list", "user")
+    val swipePages = listOf(Routes.HOME, Routes.GALLERY, Routes.LIST, Routes.USER)
     val currentIndex = swipePages.indexOf(currentRoute)
 
     // 订阅调色板、当前曲目与播放状态
@@ -84,7 +88,7 @@ fun MainScreen(
                     if (targetRoute != currentRoute) {
                         // 翻页时给予触觉反馈
                         haptic.performLightClick()
-                        navController.navigate(targetRoute) {
+                        navController.navigate(route = targetRoute) {
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -102,8 +106,10 @@ fun MainScreen(
             // 全局动态背景层（仅在音乐播放时显示，带过渡动画）
             AnimatedVisibility(
                 visible = isPlaying && currentMusic != null,
-                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 600))
+                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
+                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
             ) {
                 DynamicBackground(
                     albumArtUri = currentMusic?.music?.albumArtUri,
@@ -116,8 +122,10 @@ fun MainScreen(
             // 音乐未播放时显示纯色背景（带过渡动画）
             AnimatedVisibility(
                 visible = !(isPlaying && currentMusic != null),
-                enter = fadeIn(animationSpec = tween(durationMillis = 800)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 600))
+                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
+                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
+                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
             ) {
                 Box(
                     modifier = Modifier
@@ -145,59 +153,110 @@ fun MainScreen(
                 ) {
                     NavHost(
                         navController = navController,
-                        startDestination = "gallery",
+                        startDestination = Routes.GALLERY,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        composable("home") {
+                        // 为所有页面添加统一的过渡动画
+                        val pageEnterTransition = scaleIn(
+                            initialScale = 0.95f,
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        ) + fadeIn(
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        )
+
+                        val pageExitTransition = scaleOut(
+                            targetScale = 0.95f,
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        ) + fadeOut(
+                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        )
+
+                        composable(route = Routes.HOME,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             HomeScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("gallery") {
+                        composable(route = Routes.GALLERY,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             GalleryScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("player") {
+                        composable(route = Routes.PLAYER,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             PlayerScreen(playControlViewModel, musicViewModel, navController)
                         }
-                        composable( "list") {
+                        composable(route = Routes.LIST,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             ListScreen(musicViewModel, navController)
                         }
-                        composable("user") {
+                        composable(route = Routes.USER,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             UserScreen(musicViewModel, navController)
                         }
-                        composable("setting") {
+                        composable(route = Routes.SETTING,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             SettingScreen(musicViewModel, navController)
                         }
-                        composable ("search") {
+                        composable(route = Routes.SEARCH,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             SearchScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("playlist") {
+                        composable(route = Routes.PLAYLIST,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             PlaylistScreen(musicViewModel,playControlViewModel,navController)
                         }
-                        composable("artist") {
+                        composable(route = Routes.ARTIST,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             ArtistScreen(musicViewModel, playControlViewModel, navController)
                         }
-                        composable("audioEffects") {
+                        composable(route = Routes.AUDIO_EFFECTS,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             AudioEffectsScreen(playControlViewModel, navController)
                         }
-                        composable("ai") {
+                        composable(route = Routes.AI,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             AIScreen(musicViewModel, navController)
                         }
-                        composable("custom") {
+                        composable(route = Routes.CUSTOM,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
                             CustomScreen(musicViewModel, navController)
                         }
                     }
                 }
-                if (currentRoute != "player") {
+                if (currentRoute != Routes.PLAYER) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .background(if(isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant)
                             .navigationBarsPadding()
+                            .background(if(isPlaying) Transparent else MaterialTheme.colorScheme.surface)
                     ) {
                         CustomBottomNavBar(
                             isPlaying = isPlaying,
                             currentRoute = currentRoute,
                             onNavigate = { route ->
-                                navController.navigate(route) {
+                                navController.navigate(route = route) {
                                     launchSingleTop = true
                                     restoreState = true
                                 }

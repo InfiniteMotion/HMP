@@ -1,7 +1,8 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +44,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -84,7 +87,7 @@ fun PlayControlButtonOne(
             IconButton(
                 onClick = {
                     playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate("player")
+                    navController.navigate(Routes.PLAYER)
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -100,7 +103,7 @@ fun PlayControlButtonOne(
                 onClick = {
                     haptic.performConfirm()
                     playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                    navController.navigate("player")
+                    navController.navigate(Routes.PLAYER)
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -130,8 +133,10 @@ fun PlayControlButtonOne(
         // 可隐藏的内容块
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_OUT)) +
+                    fadeIn(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_OUT)),
+            exit = shrinkVertically(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_IN)) +
+                    fadeOut(animationSpec = tween(durationMillis = 300, easing = AnimationConfig.EASE_IN))
         ) {
             Surface(
                 modifier = Modifier
@@ -250,7 +255,7 @@ fun PlayControlButtonTwo(
                     onClick = {
                         haptic.performConfirm()
                         playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                        navController.navigate("player")
+                        navController.navigate(Routes.PLAYER)
                     },
             modifier = Modifier
                 .size(32.dp)
@@ -267,7 +272,7 @@ fun PlayControlButtonTwo(
                 onClick = {
                     haptic.performConfirm()
                     playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate("player")
+                    navController.navigate(Routes.PLAYER)
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -322,9 +327,9 @@ fun SearchButton(
     ) {
         IconButton(
             onClick = {
-                haptic.performClick()
-                navController.navigate("search")
-            },
+                    haptic.performClick()
+                    navController.navigate(Routes.SEARCH)
+                },
         ) {
             Icon(
                 painter = painterResource(R.drawable.magnifyingglass),

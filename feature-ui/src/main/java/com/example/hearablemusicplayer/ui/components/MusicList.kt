@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
@@ -30,6 +30,7 @@ import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
@@ -47,6 +48,7 @@ fun MusicList(
     ) {
         items(
             items = musicInfoList,
+            key = { musicInfo -> musicInfo.music.id } // 添加key参数，提高LazyColumn性能
         ) { musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,
@@ -72,25 +74,25 @@ fun MusicItem(
 ) {
     val scope = rememberCoroutineScope()
     val haptic = rememberHapticFeedback()
-    
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
+            .padding(vertical = 8.dp)
             .clickable {
                 haptic.performClick()
                 // 在协程中等待播放准备完成后再导航
                 scope.launch {
                     playWith(musicInfo)
                     recordPlayback(musicInfo.music.id, "MusicList")
-                    navigate("player")
                 }
+                navigate(Routes.PLAYER)
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         //专辑封面
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         AsyncImage(
             model = musicInfo.music.albumArtUri,
             contentDescription = "Album art",
@@ -121,8 +123,7 @@ fun MusicItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(modifier = Modifier.width(32.dp))
-        //点赞按钮
+        Spacer(modifier = Modifier.width(24.dp))
         Row {
             IconButton(
                 onClick = {

@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.dialogs
+package com.example.hearablemusicplayer.ui.dialogs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,15 +25,6 @@ fun MusicScanDialog(
 ) {
     val isLoading by viewModel.isScanning.collectAsState(initial = false)
     val musicCount by viewModel.musicCount.collectAsState(initial = 0)
-    
-    // 当扫描完成时自动关闭对话框
-    LaunchedEffect(isLoading) {
-        if (!isLoading) {
-            // 延迟一小段时间让用户看到完成消息
-            kotlinx.coroutines.delay(3000)
-            onDismiss()
-        }
-    }
     
     AlertDialog(
         onDismissRequest = { /* 扫描期间禁止关闭 */ },

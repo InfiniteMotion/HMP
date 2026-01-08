@@ -68,6 +68,7 @@ import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -262,16 +263,16 @@ fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicV
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = music.artist,
-            maxLines = 1,
-            overflow = TextOverflow.MiddleEllipsis,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clickable {
-                musicViewModel.getSelectedArtistMusicList(music.artist)
-                navController.navigate("artist")
-            }
-        )
+                text = music.artist,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable {
+                    musicViewModel.getSelectedArtistMusicList(music.artist)
+                    navController.navigate(Routes.ARTIST)
+                }
+            )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = music.album,

@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.data.database.myenum.LabelName
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 
 @Composable
@@ -87,7 +88,7 @@ fun ListBanner(
             .width(110.dp)
             .clickable {
                 getSelectedPlaylist(listName)
-                navigate("playlist")
+                navigate(Routes.PLAYLIST)
             }
     ) {
         AsyncImage(
@@ -126,7 +127,7 @@ fun ListBanner(
             .width(110.dp)
             .clickable {
                 musicViewModel.getSelectedPlaylist(listName)
-                navController.navigate("playlist")
+                navController.navigate(Routes.PLAYLIST)
             }
     ) {
         AsyncImage(
