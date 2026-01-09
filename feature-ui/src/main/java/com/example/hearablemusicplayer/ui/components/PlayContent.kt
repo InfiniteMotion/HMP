@@ -718,7 +718,8 @@ fun PlaylistItem(
         androidx.compose.foundation.Image(
             painter = rememberAsyncImagePainter(
                 model = musicInfo.music.albumArtUri,
-                placeholder = painterResource(R.drawable.unknown)
+                placeholder = painterResource(R.drawable.none),
+                error = painterResource(R.drawable.none)
             ),
             contentDescription = "Album art",
             modifier = Modifier

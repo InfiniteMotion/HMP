@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
@@ -10,8 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.hearablemusicplayer.ui.R
 
 @Composable
 fun AlbumCover(
@@ -29,11 +31,14 @@ fun AlbumCover(
             .fillMaxWidth(),
         horizontalArrangement =place
     ) {
-        Crossfade(targetState = uri, label = "AlbumArtCrossroad") { targetUri ->
+        Crossfade(targetState = uri, label = "AlbumArtCrossroad") {
             AsyncImage(
-                model = targetUri,
+                model = it,
                 contentDescription = "Album art",
-                modifier = imageModifier
+                modifier = imageModifier,
+                placeholder = painterResource(R.drawable.none),
+                error = painterResource(R.drawable.none),
+                fallback = painterResource(R.drawable.none)
             )
         }
     }

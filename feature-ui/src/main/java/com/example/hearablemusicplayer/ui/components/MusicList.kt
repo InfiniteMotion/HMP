@@ -98,7 +98,10 @@ fun MusicItem(
             contentDescription = "Album art",
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp)),
+            placeholder = painterResource(R.drawable.none),
+            error = painterResource(R.drawable.none),
+            fallback = painterResource(R.drawable.none)
         )
         Spacer(modifier = Modifier.width(24.dp))
         //音乐信息
