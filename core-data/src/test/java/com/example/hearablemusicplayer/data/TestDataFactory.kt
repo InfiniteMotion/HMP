@@ -149,12 +149,14 @@ object TestDataFactory {
     fun createPlaylistItem(
         songUrl: String = "/storage/emulated/0/Music/test.mp3",
         songId: Long = 1L,
-        playlistId: Long = 1L
+        playlistId: Long = 1L,
+        itemOrder: Int = 0
     ): PlaylistItem {
         return PlaylistItem(
             songUrl = songUrl,
             songId = songId,
-            playlistId = playlistId
+            playlistId = playlistId,
+            itemOrder = itemOrder
         )
     }
     

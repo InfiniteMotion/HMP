@@ -54,83 +54,82 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.data.model.AiProviderType
+import com.example.hearablemusicplayer.domain.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun AIScreen(
-    viewModel: MusicViewModel,
+    settingsViewModel: SettingsViewModel,
+    recommendationViewModel: RecommendationViewModel,
+    libraryViewModel: LibraryViewModel,
     navController: NavController
 ) {
     // 加载当前服务商配置
     LaunchedEffect(Unit) {
-        viewModel.loadCurrentProviderConfig()
+        settingsViewModel.loadCurrentProviderConfig()
     }
     
     SubScreen(
         navController = navController,
         title = "AI"
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            val musicWithExtraCount by viewModel.musicWithExtraCount.collectAsState(initial = 0)
-            val pendingCount by viewModel.pendingMusicCount.collectAsState(initial = 0)
-            val currentProvider by viewModel.currentAiProvider.collectAsState()
-            val currentConfig by viewModel.currentProviderConfig.collectAsState()
-            val isTestingApi by viewModel.isTestingApi.collectAsState()
-            val apiTestResult by viewModel.apiTestResult.collectAsState()
-            val progress by viewModel.processingProgress.collectAsState()
-            val processingResult by viewModel.processingResult.collectAsState()
-            val autoBatchProcess by viewModel.autoBatchProcess.collectAsState()
+        val musicWithExtraCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
+        val pendingCount by recommendationViewModel.pendingMusicCount.collectAsState(initial = 0)
+        val currentProvider by settingsViewModel.currentAiProvider.collectAsState()
+        val currentConfig by settingsViewModel.currentProviderConfig.collectAsState()
+        val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
+        val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
+        val progress by recommendationViewModel.processingProgress.collectAsState()
+        val processingResult by recommendationViewModel.processingResult.collectAsState()
+        val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
 
-            // 服务商配置组件
-            AiProviderConfig(
-                currentProvider = currentProvider,
-                currentConfig = currentConfig,
-                isTestingApi = isTestingApi,
-                apiTestResult = apiTestResult,
-                onProviderChange = { provider ->
-                    viewModel.switchAiProvider(provider)
-                },
-                onTestConnection = { provider, apiKey, model ->
-                    viewModel.testAiProviderConnection(provider, apiKey, model)
-                },
-                onSaveConfig = { provider, apiKey, model ->
-                    viewModel.saveAiProviderConfig(provider, apiKey, model)
-                },
-                onClearTestResult = {
-                    viewModel.clearApiTestResult()
-                }
-            )
-
-            LoadMusicExtraInfo(
-                pendingCount = pendingCount,
-                musicWithExtraCount = musicWithExtraCount,
-                progress = progress,
-                isConfigured = currentConfig?.isConfigured == true,
-                autoBatchProcess = autoBatchProcess,
-                onAutoBatchProcessChange = viewModel::saveAutoBatchProcess,
-                startAutoProcessExtraInfo = viewModel::startAutoProcessWithCurrentProvider,
-                pauseProcess = viewModel::pauseProcessing,
-                resumeProcess = viewModel::resumeProcessing,
-                cancelProcess = viewModel::cancelProcessing
-            )
-            
-            // 处理结果卡片
-            processingResult?.let { result ->
-                ProcessingResultCard(
-                    result = result,
-                    onDismiss = viewModel::clearProcessingResult
-                )
+        // 服务商配置组件
+        AiProviderConfig(
+            currentProvider = currentProvider,
+            currentConfig = currentConfig,
+            isTestingApi = isTestingApi,
+            apiTestResult = apiTestResult,
+            onProviderChange = { provider ->
+                settingsViewModel.switchAiProvider(provider)
+            },
+            onTestConnection = { provider, apiKey, model ->
+                settingsViewModel.testAiProviderConnection(provider, apiKey, model)
+            },
+            onSaveConfig = { provider, apiKey, model ->
+                settingsViewModel.saveAiProviderConfig(provider, apiKey, model)
+            },
+            onClearTestResult = {
+                settingsViewModel.clearApiTestResult()
             }
+        )
+
+        LoadMusicExtraInfo(
+            pendingCount = pendingCount,
+            musicWithExtraCount = musicWithExtraCount,
+            progress = progress,
+            isConfigured = currentConfig?.isConfigured == true,
+            autoBatchProcess = autoBatchProcess,
+            onAutoBatchProcessChange = settingsViewModel::saveAutoBatchProcess,
+            startAutoProcessExtraInfo = recommendationViewModel::startAutoProcessWithCurrentProvider,
+            pauseProcess = recommendationViewModel::pauseProcessing,
+            resumeProcess = recommendationViewModel::resumeProcessing,
+            cancelProcess = recommendationViewModel::cancelProcessing
+        )
+
+        // 处理结果卡片
+        processingResult?.let { result ->
+            ProcessingResultCard(
+                result = result,
+                onDismiss = recommendationViewModel::clearProcessingResult
+            )
         }
     }
 }
@@ -141,9 +140,9 @@ fun AIScreen(
 @Composable
 fun AiProviderConfig(
     currentProvider: AiProviderType,
-    currentConfig: com.example.hearablemusicplayer.data.model.AiProviderConfig?,
+    currentConfig: AiProviderConfig?,
     isTestingApi: Boolean,
-    apiTestResult: MusicViewModel.ApiTestResult?,
+    apiTestResult: SettingsViewModel.ApiTestResult?,
     onProviderChange: (AiProviderType) -> Unit,
     onTestConnection: (AiProviderType, String, String) -> Unit,
     onSaveConfig: (AiProviderType, String, String) -> Unit,
@@ -175,8 +174,8 @@ fun AiProviderConfig(
     LaunchedEffect(apiTestResult) {
         apiTestResult?.let { result ->
             val message = when (result) {
-                is MusicViewModel.ApiTestResult.Success -> result.message
-                is MusicViewModel.ApiTestResult.Error -> result.message
+                is SettingsViewModel.ApiTestResult.Success -> result.message
+                is SettingsViewModel.ApiTestResult.Error -> result.message
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             onClearTestResult()
@@ -396,7 +395,7 @@ fun AiProviderConfig(
 fun LoadMusicExtraInfo(
     pendingCount: Int,
     musicWithExtraCount: Int,
-    progress: MusicViewModel.BatchProcessingProgress,
+    progress: RecommendationViewModel.BatchProcessingProgress,
     isConfigured: Boolean = true,
     autoBatchProcess: Boolean = false,
     onAutoBatchProcessChange: (Boolean) -> Unit = {},

@@ -1,9 +1,9 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
 import app.cash.turbine.test
-import com.example.hearablemusicplayer.data.database.Music
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.model.Music
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
 import com.example.hearablemusicplayer.domain.CoroutineTestRule
 import io.mockk.coEvery
 import io.mockk.coVerify

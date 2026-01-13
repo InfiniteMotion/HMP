@@ -62,16 +62,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.hearablemusicplayer.data.database.Music
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.domain.model.Music
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -88,7 +88,7 @@ fun formatTime(millis: Long): String {
 fun PlayContent(
     viewModel: PlayControlViewModel,
     navController: NavController,
-    musicViewModel: MusicViewModel
+    playlistViewModel: PlaylistViewModel
 ){
     val haptic = rememberHapticFeedback()
 
@@ -130,7 +130,8 @@ fun PlayContent(
         var showTimerDialog by remember { mutableStateOf(false) }
         
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             val scrollState = rememberScrollState()
             
@@ -138,17 +139,16 @@ fun PlayContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-            )
-            {
+            ) {
                 Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     PlayerHeader(navController)
                     Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo!!.music, navController, musicViewModel)
+                    MusicInfo(musicInfo!!.music, navController, playlistViewModel)
                     Spacer(modifier = Modifier.height(16.dp))
                     MusicInfoExtra(
                         musicInfo = musicInfo!!,
@@ -249,7 +249,7 @@ fun PlayerHeader(navController: NavController) {
 
 // 歌曲标题、艺术家、专辑信息
 @Composable
-fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicViewModel) {
+fun MusicInfo(music: Music, navController: NavController, playlistViewModel: PlaylistViewModel) {
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
@@ -269,7 +269,7 @@ fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicV
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickable {
-                    musicViewModel.getSelectedArtistMusicList(music.artist)
+                    playlistViewModel.getSelectedArtistMusicList(music.artist)
                     navController.navigate(Routes.ARTIST)
                 }
             )

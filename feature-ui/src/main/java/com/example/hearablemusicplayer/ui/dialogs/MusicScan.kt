@@ -16,15 +16,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 
 @Composable
 fun MusicScanDialog(
-    viewModel: MusicViewModel,
+    libraryViewModel: LibraryViewModel,
     onDismiss: () -> Unit
 ) {
-    val isLoading by viewModel.isScanning.collectAsState(initial = false)
-    val musicCount by viewModel.musicCount.collectAsState(initial = 0)
+    val isLoading by libraryViewModel.isScanning.collectAsState(initial = false)
+    val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
     
     AlertDialog(
         onDismissRequest = { /* 扫描期间禁止关闭 */ },

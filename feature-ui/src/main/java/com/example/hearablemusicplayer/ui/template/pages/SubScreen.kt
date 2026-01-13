@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +56,8 @@ fun SubScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 16.dp,bottom = 48.dp),
+                .navigationBarsPadding()
+                .padding(top = 16.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -82,13 +87,19 @@ fun SubScreen(
             ) {
                 Column(
                     verticalArrangement = Arrangement.Top,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
+                    modifier = Modifier.verticalScroll(rememberScrollState())
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    currentContent()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        currentContent()
+                    }
                 }
             }
         }
     }
 }
+

@@ -23,22 +23,24 @@ import com.example.hearablemusicplayer.ui.components.ListeningChart
 import com.example.hearablemusicplayer.ui.components.SquareCard
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
 fun UserScreen(
-    viewModel: MusicViewModel,
+    settingsViewModel: SettingsViewModel,
+    recommendationViewModel: RecommendationViewModel,
     navController: NavController
 ) {
 
-    val userName by viewModel.userName.collectAsState("")
-    val avatarUri by viewModel.avatarUri.collectAsState("")
-    val listeningData by viewModel.recentListeningDurations.collectAsState()
+    val userName by settingsViewModel.userName.collectAsState("")
+    val avatarUri by settingsViewModel.avatarUri.collectAsState("")
+    val listeningData by recommendationViewModel.recentListeningDurations.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.getAvatarUri()
+        settingsViewModel.getAvatarUri()
     }
 
     TabScreen {

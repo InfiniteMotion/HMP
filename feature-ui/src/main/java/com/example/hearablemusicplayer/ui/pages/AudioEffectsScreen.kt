@@ -46,64 +46,56 @@ fun AudioEffectsScreen(
         navController = navController,
         title = "音效设置"
     ) {
-        // 音效控制面板
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+        TitleWidget(
+            title = "预设场景音效"
         ) {
-            TitleWidget(
-                title = "预设场景音效"
+            EqualizerPresetSelector(
+                presets = equalizerPresets,
+                currentPreset = audioEffectSettings.equalizerPreset,
+                onPresetSelected = viewModel::setEqualizerPreset
+            )
+        }
+
+        TitleWidget(
+            title = "音效设置"
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                EqualizerPresetSelector(
-                    presets = equalizerPresets,
-                    currentPreset = audioEffectSettings.equalizerPreset,
-                    onPresetSelected = viewModel::setEqualizerPreset
+                BassBoostSlider(
+                    currentLevel = audioEffectSettings.bassBoostLevel,
+                    onLevelChanged = viewModel::setBassBoost
+                )
+                SurroundSoundToggle(
+                    isEnabled = audioEffectSettings.isSurroundSoundEnabled,
+                    onToggle = viewModel::setSurroundSound
+                )
+                ReverbSettings(
+                    currentPreset = audioEffectSettings.reverbPreset,
+                    onPresetChanged = viewModel::setReverb
                 )
             }
+        }
 
-            TitleWidget(
-                title = "音效设置"
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    BassBoostSlider(
-                        currentLevel = audioEffectSettings.bassBoostLevel,
-                        onLevelChanged = viewModel::setBassBoost
-                    )
-                    SurroundSoundToggle(
-                        isEnabled = audioEffectSettings.isSurroundSoundEnabled,
-                        onToggle = viewModel::setSurroundSound
-                    )
-                    ReverbSettings(
-                        currentPreset = audioEffectSettings.reverbPreset,
-                        onPresetChanged = viewModel::setReverb
-                    )
+        TitleWidget(
+            title = "自定义均衡器"
+        ) {
+            CustomEqualizer(
+                bandCount = equalizerBandCount,
+                bandLevelRange = equalizerBandLevelRange,
+                currentBandLevels = currentEqualizerBandLevels,
+                onBandLevelChanged = { index, level ->
+                    val newLevels = currentEqualizerBandLevels.copyOf()
+                    newLevels[index] = level
+                    viewModel.setCustomEqualizer(newLevels)
+                },
+                onResetAll = {
+                    // 重置所有频段到0
+                    val resetLevels = FloatArray(equalizerBandCount) { 0f }
+                    viewModel.setCustomEqualizer(resetLevels)
                 }
-            }
-
-            TitleWidget(
-                title = "自定义均衡器"
-            ) {
-                CustomEqualizer(
-                    bandCount = equalizerBandCount,
-                    bandLevelRange = equalizerBandLevelRange,
-                    currentBandLevels = currentEqualizerBandLevels,
-                    onBandLevelChanged = { index, level ->
-                        val newLevels = currentEqualizerBandLevels.copyOf()
-                        newLevels[index] = level
-                        viewModel.setCustomEqualizer(newLevels)
-                    },
-                    onResetAll = {
-                        // 重置所有频段到0
-                        val resetLevels = FloatArray(equalizerBandCount) { 0f }
-                        viewModel.setCustomEqualizer(resetLevels)
-                    }
-                )
-            }
+            )
         }
     }
 }

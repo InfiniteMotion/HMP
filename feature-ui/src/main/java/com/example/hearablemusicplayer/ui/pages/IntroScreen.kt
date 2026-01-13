@@ -38,11 +38,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun IntroScreen(
-    viewModel: MusicViewModel,
+    settingsViewModel: SettingsViewModel,
+    libraryViewModel: LibraryViewModel,
     onFinished: ()-> Unit
 ) {
     val currentStep = remember { mutableIntStateOf(0) }
@@ -175,7 +177,7 @@ fun IntroScreen(
                     1 -> ScanMusicStep(
                         isScanCompleted = isScanCompleted.value,
                         onStartScan = {
-                            viewModel.refreshMusicList()
+                            libraryViewModel?.refreshMusicList()
                             showScanDialog.value = true
                         },
                         onScanComplete = {
@@ -184,7 +186,7 @@ fun IntroScreen(
                             currentStep.intValue = 2
                         },
                         showScanDialog = showScanDialog.value,
-                        viewModel = viewModel
+                        libraryViewModel = libraryViewModel
                     )
                     2 -> StartExperienceStep(
                         onFinished = onFinished
@@ -248,7 +250,7 @@ fun ScanMusicStep(
     showScanDialog: Boolean,
     onStartScan: () -> Unit,
     onScanComplete: () -> Unit,
-    viewModel: MusicViewModel
+    libraryViewModel: LibraryViewModel?
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -290,9 +292,9 @@ fun ScanMusicStep(
             }
         }
         
-        if (showScanDialog) {
+        if (showScanDialog && libraryViewModel != null) {
             MusicScanDialog(
-                viewModel = viewModel,
+                libraryViewModel = libraryViewModel,
                 onDismiss = onScanComplete
             )
         }

@@ -1,7 +1,7 @@
 package com.example.hearablemusicplayer.domain.usecase.playback
 
-import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
-import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

@@ -24,30 +24,22 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun CustomScreen(
-    viewModel: MusicViewModel,
+    settingsViewModel: SettingsViewModel,
     navController: NavController
 ) {
     SubScreen(
         navController = navController,
         title = "主题定制"
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            val customMode by viewModel.customMode.collectAsState("default")
-
-            SetThemeMode(
-                customMode = customMode,
-                setCustomMode = viewModel::saveCustomMode
-            )
-        }
+        val customMode by settingsViewModel.customMode.collectAsState("default")
+        SetThemeMode(
+            customMode = customMode,
+            setCustomMode = settingsViewModel::saveCustomMode
+        )
     }
 }
 

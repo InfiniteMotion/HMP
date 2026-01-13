@@ -11,19 +11,18 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.PlaybackHistory
-import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
-import com.example.hearablemusicplayer.data.repository.MusicRepository
-import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.PlaybackHistory
+import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.TimerUseCase
 import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
-import com.example.hearablemusicplayer.domain.usecase.settings.PlaylistSettingsUseCase
 import com.example.hearablemusicplayer.player.service.MusicPlayService
 import com.example.hearablemusicplayer.player.service.PlayControl
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 sealed class UiEvent {
@@ -81,7 +81,6 @@ class PlayControlViewModel @Inject constructor(
     private val playbackHistoryUseCase: PlaybackHistoryUseCase,
     private val timerUseCase: TimerUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
-    private val playlistSettingsUseCase: PlaylistSettingsUseCase,
     // 设置存储库 - 用于音效设置持久化
     private val settingsRepository: SettingsRepository
 ) : ViewModel(), MusicPlayService.OnMusicCompleteListener {
@@ -125,9 +124,9 @@ class PlayControlViewModel @Inject constructor(
     private var _shuffledPlaylist: List<MusicInfo>? = null
 
     // 当前播放列表ID和收藏/最近播放列表ID
-    private val currentPlayListId = playlistSettingsUseCase.currentPlaylistId
-    private val likedPlayListId = playlistSettingsUseCase.likedPlaylistId
-    private val recentPlayListId = playlistSettingsUseCase.recentPlaylistId
+    private val currentPlayListId = settingsRepository.currentPlaylistId
+    private val likedPlayListId = settingsRepository.likedPlaylistId
+    private val recentPlayListId = settingsRepository.recentPlaylistId
 
     // 当前播放索引
     private val _currentIndex = MutableStateFlow(0)
@@ -332,6 +331,10 @@ class PlayControlViewModel @Inject constructor(
 
     // 播放或恢复当前歌曲
     fun playOrResume() {
+        if (playControl == null) {
+            Log.e("PlayControlViewModel", "playOrResume: playControl is null")
+            return
+        }
         playStartTime = System.currentTimeMillis()
         lastDurationRecordTime = playStartTime // 重置节流计时器
         val path = currentMusicPath()
@@ -340,11 +343,14 @@ class PlayControlViewModel @Inject constructor(
         } else {
             viewModelScope.launch { playCurrentTrack("AutoPlay") }
         }
-        _isPlaying.value = true
     }
 
     // 暂停播放
     fun pauseMusic() {
+        if (playControl == null) {
+            Log.e("PlayControlViewModel", "pauseMusic: playControl is null")
+            return
+        }
         if (playStartTime > 0) {
             val duration = System.currentTimeMillis() - playStartTime
             // 立即记录剩余时长，不等待节流器
@@ -355,7 +361,6 @@ class PlayControlViewModel @Inject constructor(
             }
         }
         playControl?.pause()
-        _isPlaying.value = false
         playStartTime = 0L // 重置
         lastDurationRecordTime = 0L
     }
@@ -436,9 +441,10 @@ class PlayControlViewModel @Inject constructor(
     }
 
     // 播放下一首
-    fun playNext() = viewModelScope.launch {
+    fun playNext(forceChange: Boolean = true) = viewModelScope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
-        if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
+        // 如果是用户强制切换（forceChange=true）或者当前不是单曲循环模式，则切换索引
+        if (forceChange || _playbackMode.value != PlaybackMode.REPEAT_ONE) {
             _currentIndex.value = (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
         }
         playCurrentTrack("Next")
@@ -447,15 +453,15 @@ class PlayControlViewModel @Inject constructor(
     // 播放上一首
     fun playPrevious() = viewModelScope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
-        if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
-            val size = _currentPlaylist.value.size
-            _currentIndex.value = (_currentIndex.value - 1 + size).mod(size)
-        }
+        // 用户手动上一首总是切换索引
+        val size = _currentPlaylist.value.size
+        _currentIndex.value = (_currentIndex.value - 1 + size).mod(size)
         playCurrentTrack("Previous")
     }
 
-    // 播放完成回调播放下一首
+    // 回调播放下一首
     override fun onPlaybackEnded() {
+        // ... (保持之前的统计代码)
         if (playStartTime > 0) {
             val duration = System.currentTimeMillis() - playStartTime
             if (duration > 0) {
@@ -466,7 +472,14 @@ class PlayControlViewModel @Inject constructor(
         }
         playStartTime = System.currentTimeMillis() // 为下一首重置
         lastDurationRecordTime = playStartTime
-        playNext()
+        
+        // 自动播放结束，forceChange = false，遵循 REPEAT_ONE 逻辑
+        playNext(forceChange = false)
+    }
+
+    // 回调用户手动下一首
+    override fun onPlaybackNext() {
+        playNext(forceChange = true)
     }
 
     // 回调播放上一首
@@ -481,21 +494,33 @@ class PlayControlViewModel @Inject constructor(
 
     // 播放当前索引对应的歌曲
     private suspend fun playCurrentTrack(source: String) {
+        if (playControl == null) {
+            Log.e("PlayControlViewModel", "playCurrentTrack: playControl is null")
+            return
+        }
         stopProgressTracking()
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
-        try {
-            // 尝试添加到最近播放列表
-            val recentId = recentPlayListId.filterNotNull().first()
-            managePlaylistUseCase.addToPlaylist(recentId, track.music.id, track.music.path)
-        } catch (e: Exception) {
-            // 如果添加失败,仍然继续播放
+        
+        // 异步更新最近播放，不阻塞播放流程
+        viewModelScope.launch {
+            try {
+                // 使用 withTimeoutOrNull 避免长时间等待
+                val recentId = withTimeoutOrNull(1000) { 
+                    recentPlayListId.firstOrNull() 
+                }
+                if (recentId != null) {
+                    managePlaylistUseCase.addToPlaylist(recentId, track.music.id, track.music.path)
+                }
+            } catch (e: Exception) {
+                // 忽略错误
+            }
         }
+
         persistCurrentMusic(track.music.id)
         // 重置当前播放位置为0
         _currentPosition.value = 0L
         playControl?.playSingleMusic(track.music)
         _duration.value = track.music.duration
-        _isPlaying.value = true
         startProgressTracking()
         recordPlayback(track.music.id, source)
     }
@@ -678,7 +703,8 @@ class PlayControlViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val playlistId = currentPlayListId.filterNotNull().first()
-                val playlist = _currentPlaylist.value
+                // 应该保存原始顺序(_originalPlaylist)，而不是当前可能乱序的列表(_currentPlaylist)
+                val playlist = _originalPlaylist
                 managePlaylistUseCase.resetPlaylistItems(playlistId, playlist)
             } catch (e: Exception) {
                 // 如果无法保存到数据库,仅保留在内存中

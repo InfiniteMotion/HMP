@@ -13,18 +13,18 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonTwo
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun PlaylistScreen(
-    musicViewModel: MusicViewModel,
+    playlistViewModel: PlaylistViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController,
 ) {
-    val playlistName by musicViewModel.selectedPlaylistName.collectAsState()
-    val playlist by musicViewModel.selectedPlaylist.collectAsState(initial = emptyList())
+    val playlistName by playlistViewModel.selectedPlaylistName.collectAsState()
+    val playlist by playlistViewModel.selectedPlaylist.collectAsState(initial = emptyList())
     SubScreen(
         navController = navController,
         title = playlistName
@@ -34,7 +34,6 @@ fun PlaylistScreen(
             playControlViewModel,
             navController
         )
-        Spacer(modifier = Modifier.height(32.dp))
         MusicList(
             musicInfoList = playlist,
             navigate = navController::navigate,

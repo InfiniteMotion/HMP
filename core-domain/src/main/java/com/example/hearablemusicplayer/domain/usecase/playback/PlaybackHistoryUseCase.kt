@@ -1,7 +1,7 @@
 package com.example.hearablemusicplayer.domain.usecase.playback
 
-import com.example.hearablemusicplayer.data.database.PlaybackHistory
-import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.model.PlaybackHistory
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
 import javax.inject.Inject
 
 /**

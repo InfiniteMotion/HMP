@@ -29,21 +29,21 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreen(
-    musicViewModel: MusicViewModel,
+    searchViewModel: SearchViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ){
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val searchResults by musicViewModel.searchResults.collectAsState(initial = emptyList())
+    val searchResults by searchViewModel.searchResults.collectAsState(initial = emptyList())
 
     LaunchedEffect(Unit) {
-        musicViewModel.searchMusic(searchQuery)
+        searchViewModel.searchMusic(searchQuery)
     }
 
     // 使用SubScreen模板
@@ -55,7 +55,7 @@ fun SearchScreen(
             value = searchQuery,
             onValueChange = {
                 searchQuery = it
-                musicViewModel.searchMusic(it) // 调用 ViewModel 的搜索方法
+                searchViewModel.searchMusic(it) // 调用 ViewModel 的搜索方法
             },
             label = { Text("搜索您的音乐", color = MaterialTheme.colorScheme.onSurfaceVariant) },
             leadingIcon = {
@@ -77,9 +77,6 @@ fun SearchScreen(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp)
         )
-
-        Spacer(modifier = Modifier.padding(vertical = 16.dp))
-
         MusicList(
             musicInfoList = searchResults,
             navigate = navController::navigate,

@@ -1,7 +1,7 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

@@ -37,15 +37,15 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.PlayContent
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.launch
 
 // 播放器主界面
 @Composable
 fun PlayerScreen(
     viewModel: PlayControlViewModel,
-    musicViewModel: MusicViewModel,
+    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     val density = LocalDensity.current
@@ -153,7 +153,7 @@ fun PlayerScreen(
             PlayContent(
                 viewModel,
                 navController,
-                musicViewModel
+                playlistViewModel
             )
         }
     }

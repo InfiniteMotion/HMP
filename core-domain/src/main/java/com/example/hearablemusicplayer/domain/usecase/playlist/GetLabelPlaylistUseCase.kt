@@ -1,9 +1,10 @@
 package com.example.hearablemusicplayer.domain.usecase.playlist
 
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
-import com.example.hearablemusicplayer.data.database.myenum.LabelName
-import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -12,7 +13,8 @@ import javax.inject.Inject
  * Use Case: 封装根据标签获取音乐列表的逻辑
  */
 class GetLabelPlaylistUseCase @Inject constructor(
-    private val musicRepository: MusicRepository
+    private val musicRepository: MusicRepository,
+    private val playlistRepository: PlaylistRepository
 ) {
     /**
      * 根据标签类型获取标签名称列表
@@ -32,6 +34,6 @@ class GetLabelPlaylistUseCase @Inject constructor(
      * 根据音乐ID列表获取音乐详情列表
      */
     suspend fun getPlaylistByIdList(idList: List<Long>): List<MusicInfo> {
-        return musicRepository.getPlaylistByIdList(idList)
+        return playlistRepository.getPlaylistByIdList(idList)
     }
 }

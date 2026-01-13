@@ -25,11 +25,11 @@ import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.iconResId
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListScreen(
-    musicViewModel: MusicViewModel,
+    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     TabScreen(
@@ -54,20 +54,20 @@ fun ListScreen(
                 ListBanner(
                     listName = "默认列表",
                     listCoverUri = R.drawable.defaultlist,
-                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
-                    navigate = navController::navigate
+                    playlistViewModel = playlistViewModel,
+                    navController = navController
                 )
                 ListBanner(
                     listName = "红心列表",
                     listCoverUri = R.drawable.heartlist,
-                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
-                    navigate = navController::navigate
+                    playlistViewModel = playlistViewModel,
+                    navController = navController
                 )
                 ListBanner(
                     listName = "最近播放",
                     listCoverUri = R.drawable.historylist,
-                    getSelectedPlaylist = musicViewModel::getSelectedPlaylist,
-                    navigate = navController::navigate
+                    playlistViewModel = playlistViewModel,
+                    navController = navController
                 )
             }
             ListGroupName(
@@ -77,7 +77,7 @@ fun ListScreen(
             )
             val genreListState = rememberLazyListState()
             val genreFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
-            val genreList by musicViewModel.genrePlaylistName.collectAsState()
+            val genreList by playlistViewModel.genrePlaylistName.collectAsState()
             LazyRow(
                 state = genreListState,
                 flingBehavior = genreFlingBehavior,
@@ -88,7 +88,7 @@ fun ListScreen(
                     ListBanner(
                         listName = genreList[index],
                         listCoverUri = genreList[index].iconResId,
-                        musicViewModel = musicViewModel,
+                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
@@ -100,7 +100,7 @@ fun ListScreen(
             )
             val moodListState = rememberLazyListState()
             val moodFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
-            val moodList by musicViewModel.moodPlaylistName.collectAsState()
+            val moodList by playlistViewModel.moodPlaylistName.collectAsState()
             LazyRow(
                 state = moodListState,
                 flingBehavior = moodFlingBehavior,
@@ -111,7 +111,7 @@ fun ListScreen(
                     ListBanner(
                         listName = moodList[index],
                         listCoverUri = moodList[index].iconResId,
-                        musicViewModel = musicViewModel,
+                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
@@ -123,7 +123,7 @@ fun ListScreen(
             )
             val scenarioListState = rememberLazyListState()
             val scenarioFlingBehavior = rememberSnapFlingBehavior(lazyListState = scenarioListState)
-            val scenarioList by musicViewModel.scenarioPlaylistName.collectAsState()
+            val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
             LazyRow(
                 state = scenarioListState,
                 flingBehavior = scenarioFlingBehavior,
@@ -134,7 +134,7 @@ fun ListScreen(
                     ListBanner(
                         listName = scenarioList[index],
                         listCoverUri = scenarioList[index].iconResId,
-                        musicViewModel = musicViewModel,
+                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
@@ -146,7 +146,7 @@ fun ListScreen(
             )
             val languageListState = rememberLazyListState()
             val languageFlingBehavior = rememberSnapFlingBehavior(lazyListState = languageListState)
-            val languageList by musicViewModel.languagePlaylistName.collectAsState()
+            val languageList by playlistViewModel.languagePlaylistName.collectAsState()
             LazyRow(
                 state = languageListState,
                 flingBehavior = languageFlingBehavior,
@@ -157,7 +157,7 @@ fun ListScreen(
                     ListBanner(
                         listName = languageList[index],
                         listCoverUri = languageList[index].iconResId,
-                        musicViewModel = musicViewModel,
+                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
@@ -169,7 +169,7 @@ fun ListScreen(
             )
             val eraListState = rememberLazyListState()
             val eraFlingBehavior = rememberSnapFlingBehavior(lazyListState = eraListState)
-            val eraList by musicViewModel.eraPlaylistName.collectAsState()
+            val eraList by playlistViewModel.eraPlaylistName.collectAsState()
             LazyRow(
                 state = eraListState,
                 flingBehavior = eraFlingBehavior,
@@ -180,7 +180,7 @@ fun ListScreen(
                     ListBanner(
                         listName = eraList[index],
                         listCoverUri = eraList[index].iconResId,
-                        musicViewModel = musicViewModel,
+                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }

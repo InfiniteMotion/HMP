@@ -36,10 +36,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.data.database.DailyMusicInfo
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
+import com.example.hearablemusicplayer.domain.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
@@ -47,21 +47,23 @@ import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
-    musicViewModel: MusicViewModel,
+    recommendationViewModel: RecommendationViewModel,
+    playlistViewModel: PlaylistViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
     val scope = rememberCoroutineScope()
-    val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
-    val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
-    val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
+    val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
+    val dailyMusicInfo by recommendationViewModel.dailyMusicInfo.collectAsState()
+    val dailyMusicLabel by recommendationViewModel.dailyMusicLabel.collectAsState()
     val haptic = rememberHapticFeedback()
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
@@ -74,7 +76,7 @@ fun HomeScreen(
             IconButton(
                 onClick = {
                     haptic.performClick()
-                    musicViewModel.refreshDailyMusicInfo()
+                    recommendationViewModel.refreshDailyMusicInfo()
                 }
             ) {
                 Icon(
@@ -145,7 +147,7 @@ fun HomeScreen(
                             },
                             navigateToDailyArtists = {
                                 haptic.performClick()
-                                musicViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
+                                playlistViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
                                 navController.navigate(Routes.ARTIST)
                             }
                 )

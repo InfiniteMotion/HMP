@@ -16,21 +16,21 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreen(
-    musicViewModel: MusicViewModel,
+    libraryViewModel: LibraryViewModel,
     playControlViewModel: PlayControlViewModel,
     navController: NavController
 ) {
     val context = LocalContext.current
-    val musicInfoList by musicViewModel.allMusic.collectAsState()
+    val musicInfoList by libraryViewModel.allMusic.collectAsState()
 
     LaunchedEffect(Unit) {
-        musicViewModel.getAllMusic()
+        libraryViewModel.getAllMusic()
         playControlViewModel.toastEvent.collect { event ->
             Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
         }
@@ -44,7 +44,7 @@ fun GalleryScreen(
         Row(
             modifier = Modifier.padding(bottom = 16.dp)
         ){
-            PlayControlButtonOne(musicViewModel,playControlViewModel,navController)
+            PlayControlButtonOne(libraryViewModel,playControlViewModel,navController)
         }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)

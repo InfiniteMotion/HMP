@@ -35,9 +35,6 @@ android {
 }
 
 dependencies {
-    // Core Data module
-    implementation(project(":core-data"))
-    
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
     

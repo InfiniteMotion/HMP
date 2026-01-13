@@ -8,10 +8,13 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
 import com.example.hearablemusicplayer.data.util.SecureStorageHelper
-import com.example.hearablemusicplayer.data.model.AiProviderType
-import com.example.hearablemusicplayer.data.model.AiProviderConfig
+
+import com.example.hearablemusicplayer.domain.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
+import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -20,25 +23,16 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 每日推荐刷新配置数据类
- */
-data class DailyRefreshConfig(
-    val mode: String, // "time", "startup", "smart"
-    val refreshHours: Int, // 按小时刷新的间隔
-    val startupCount: Int, // 按启动次数刷新
-    val lastRefreshTimestamp: Long, // 上次刷新时间戳
-    val launchCountSinceRefresh: Int // 自上次刷新后的启动次数
-)
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 // 在 Context 中创建 DataStore 实例
 private val Context.dataStore by preferencesDataStore(name = "player_preferences")
 
 // 在 ViewModel 中通过 applicationContext 构造
 @Singleton
-class SettingsRepository @Inject constructor(
-    private val context: Context
-) {
+class SettingsRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : SettingsRepository {
     // 定义 DataStore 中的键
     private object PreferencesKeys {
         val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
@@ -87,27 +81,27 @@ class SettingsRepository @Inject constructor(
     // DataStore 访问实例
     private val dataStore = context.dataStore
 
-    val isFirstLaunch: Flow<Boolean> = dataStore.data
+    override val isFirstLaunch: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.IS_FIRST_LAUNCH] ?: true }
 
     // 用户名
-    val userName: Flow<String> = dataStore.data
+    override val userName: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.USER_NAME] ?: "User" }
 
     // 主题模式
-    val themeMode: Flow<String> = dataStore.data
+    override val themeMode: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.THEME_MODE] ?: "default" }
 
     // 应用是否已加载音乐,如果未设置则为 0
-    val isLoadMusic: Flow<Boolean> = dataStore.data
+    override val isLoadMusic: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.IS_LOAD_MUSIC] ?: false }
 
     // 当前正在播放的音乐 ID,如果未设置则为 null
-    val currentMusicId: Flow<Long?> = dataStore.data
+    override val currentMusicId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.CURRENT_MUSIC_ID] }
 
     // 播放模式(SEQUENTIAL、REPEAT_ONE、SHUFFLE),存储为字符串
-    val playbackMode: Flow<PlaybackMode> = dataStore.data
+    override val playbackMode: Flow<PlaybackMode> = dataStore.data
         .map { prefs ->
             prefs[PreferencesKeys.PLAYBACK_MODE]?.let {
                 try { PlaybackMode.valueOf(it) } catch (e: IllegalArgumentException) { null }
@@ -115,42 +109,38 @@ class SettingsRepository @Inject constructor(
         }
 
     // 当前播放列表 ID,用于恢复列表上下文
-    val currentPlaylistId: Flow<Long?> = dataStore.data
+    override val currentPlaylistId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] }
 
     // 喜爱播放列表 ID
-    val likedPlaylistId: Flow<Long?> = dataStore.data
+    override val likedPlaylistId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.LIKED_PLAYLIST_ID] }
 
     // 最近播放列表 ID
-    val recentPlaylistId: Flow<Long?> = dataStore.data
+    override val recentPlaylistId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.RECENT_PLAYLIST_ID] }
 
-    // DeepSeek API KEY
-    val deepSeekApiKey: Flow<String?> = dataStore.data
-        .map { prefs -> prefs[PreferencesKeys.DEEPSEEK_API_KEY] }
-    
     // 当前 AI 服务商类型
-    val currentAiProvider: Flow<AiProviderType> = dataStore.data
+    override val currentAiProvider: Flow<AiProviderType> = dataStore.data
         .map { prefs -> 
             val providerName = prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK"
             AiProviderType.fromName(providerName)
         }
     
     // 音效相关设置 Flow
-    val equalizerPreset: Flow<Int> = dataStore.data
+    override val equalizerPreset: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] ?: 0 }
     
-    val bassBoostLevel: Flow<Int> = dataStore.data
+    override val bassBoostLevel: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] ?: 0 }
     
-    val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data
+    override val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] ?: false }
     
-    val reverbPreset: Flow<Int> = dataStore.data
+    override val reverbPreset: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.REVERB_PRESET] ?: 0 }
     
-    val customEqualizerLevels: Flow<FloatArray> = dataStore.data
+    override val customEqualizerLevels: Flow<FloatArray> = dataStore.data
         .map { prefs -> 
             prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS]?.let { levelsString ->
                 levelsString.split(",").mapNotNull { it.toFloatOrNull() }.toFloatArray()
@@ -158,111 +148,111 @@ class SettingsRepository @Inject constructor(
         }
     
     // AI 自动批量处理开关
-    val autoBatchProcess: Flow<Boolean> = dataStore.data
+    override val autoBatchProcess: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false }
     
     // 每日推荐刷新策略相关 Flow
-    val dailyRefreshMode: Flow<String> = dataStore.data
+    override val dailyRefreshMode: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time" } // 默认按时间
     
-    val dailyRefreshHours: Flow<Int> = dataStore.data
+    override val dailyRefreshHours: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24 } // 默认24小时
     
-    val dailyRefreshStartupCount: Flow<Int> = dataStore.data
+    override val dailyRefreshStartupCount: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3 } // 默认3次启动
     
-    val lastDailyRefreshTimestamp: Flow<Long> = dataStore.data
+    override val lastDailyRefreshTimestamp: Flow<Long> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L }
     
-    val appLaunchCountSinceRefresh: Flow<Int> = dataStore.data
+    override val appLaunchCountSinceRefresh: Flow<Int> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0 }
 
-    suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
+    override suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_FIRST_LAUNCH] = isFirstLaunch
         }
     }
 
-    suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
+    override suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_LOAD_MUSIC] = isLoadMusic
         }
     }
 
     // 保存主题模式
-    suspend fun saveThemeMode(themeMode: String) {
+    override suspend fun saveThemeMode(themeMode: String) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.THEME_MODE] = themeMode
         }
     }
 
     // 保存用户名
-    suspend fun saveUserName(uri: String) {
+    override suspend fun saveUserName(name: String) {
         dataStore.edit { prefs ->
-            prefs[PreferencesKeys.USER_NAME] = uri
+            prefs[PreferencesKeys.USER_NAME] = name
         }
     }
 
     // 保存用户头像 URI
-    suspend fun saveAvatarUri(uri: String) {
+    override suspend fun saveAvatarUri(uri: String) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.AVATAR_URI] = uri
         }
     }
     // 获取用户头像 URI
-    suspend fun getAvatarUri(): String? {
+    override suspend fun getAvatarUri(): String? {
         return context.dataStore.data.first()[PreferencesKeys.AVATAR_URI]
     }
 
     // 保存当前音乐 ID
-    suspend fun saveCurrentMusicId(id: Long) {
+    override suspend fun saveCurrentMusicId(id: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_MUSIC_ID] = id
         }
     }
 
     // 保存播放模式
-    suspend fun savePlaybackMode(mode: PlaybackMode) {
+    override suspend fun savePlaybackMode(mode: PlaybackMode) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.PLAYBACK_MODE] = mode.name
         }
     }
 
     // 获取当前播放列表 ID
-    suspend fun getCurrentPlaylistId(): Long? {
+    override suspend fun getCurrentPlaylistId(): Long? {
         return context.dataStore.data.first()[PreferencesKeys.CURRENT_PLAYLIST_ID]
     }
     // 保存当前播放列表 ID
-    suspend fun saveCurrentPlaylistId(playlistId: Long) {
+    override suspend fun saveCurrentPlaylistId(playlistId: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] = playlistId
         }
     }
 
     // 获取喜爱播放列表 ID
-    suspend fun getLikedPlaylistId(): Long? {
+    override suspend fun getLikedPlaylistId(): Long? {
         return context.dataStore.data.first()[PreferencesKeys.LIKED_PLAYLIST_ID]
     }
     // 保存喜爱播放列表 ID
-    suspend fun saveLikedPlaylistId(playlistId: Long) {
+    override suspend fun saveLikedPlaylistId(playlistId: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.LIKED_PLAYLIST_ID] = playlistId
         }
     }
 
     // 获取最近播放列表 ID
-    suspend fun getRecentPlaylistId(): Long? {
+    override suspend fun getRecentPlaylistId(): Long? {
         return context.dataStore.data.first()[PreferencesKeys.RECENT_PLAYLIST_ID]
     }
     // 保存最近播放列表 ID
-    suspend fun saveRecentPlaylistId(playlistId: Long) {
+    override suspend fun saveRecentPlaylistId(playlistId: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.RECENT_PLAYLIST_ID] = playlistId
         }
     }
     
     // 保存 AI 自动批量处理开关
-    suspend fun saveAutoBatchProcess(enabled: Boolean) {
+    override suspend fun saveAutoBatchProcess(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = enabled
         }
@@ -274,7 +264,7 @@ class SettingsRepository @Inject constructor(
      * 保存每日推荐刷新模式
      * @param mode "time" (按时间), "startup" (按启动次数), "smart" (智能刷新)
      */
-    suspend fun saveDailyRefreshMode(mode: String) {
+    override suspend fun saveDailyRefreshMode(mode: String) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.DAILY_REFRESH_MODE] = mode
         }
@@ -283,7 +273,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 保存按小时刷新的间隔
      */
-    suspend fun saveDailyRefreshHours(hours: Int) {
+    override suspend fun saveDailyRefreshHours(hours: Int) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = hours
         }
@@ -292,7 +282,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 保存按启动次数刷新
      */
-    suspend fun saveDailyRefreshStartupCount(count: Int) {
+    override suspend fun saveDailyRefreshStartupCount(count: Int) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = count
         }
@@ -301,7 +291,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 更新上次刷新时间戳
      */
-    suspend fun updateLastDailyRefreshTimestamp() {
+    override suspend fun updateLastDailyRefreshTimestamp() {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = System.currentTimeMillis()
             prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = 0 // 重置启动计数
@@ -311,7 +301,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 保存当前每日推荐的音乐ID
      */
-    suspend fun saveCurrentDailyMusicId(musicId: Long) {
+    override suspend fun saveCurrentDailyMusicId(musicId: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = musicId
         }
@@ -320,14 +310,14 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取当前每日推荐的音乐ID
      */
-    suspend fun getCurrentDailyMusicId(): Long? {
+    override suspend fun getCurrentDailyMusicId(): Long? {
         return context.dataStore.data.first()[PreferencesKeys.CURRENT_DAILY_MUSIC_ID]
     }
     
     /**
      * 增加应用启动计数
      */
-    suspend fun incrementAppLaunchCount() {
+    override suspend fun incrementAppLaunchCount() {
         dataStore.edit { prefs ->
             val currentCount = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
             prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = currentCount + 1
@@ -337,7 +327,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取所有刷新策略配置
      */
-    suspend fun getDailyRefreshConfig(): DailyRefreshConfig {
+    override suspend fun getDailyRefreshConfig(): DailyRefreshConfig {
         val prefs = context.dataStore.data.first()
         return DailyRefreshConfig(
             mode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
@@ -353,7 +343,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取当前选中的 AI 服务商类型
      */
-    suspend fun getCurrentProvider(): AiProviderType {
+    override suspend fun getCurrentProvider(): AiProviderType {
         val providerName = context.dataStore.data.first()[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK"
         return AiProviderType.fromName(providerName)
     }
@@ -361,7 +351,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 设置当前 AI 服务商类型
      */
-    suspend fun setCurrentProvider(provider: AiProviderType) {
+    override suspend fun setCurrentProvider(provider: AiProviderType) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = provider.name
         }
@@ -370,7 +360,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取指定服务商的 API Key
      */
-    suspend fun getProviderApiKey(provider: AiProviderType): String {
+    override suspend fun getProviderApiKey(provider: AiProviderType): String {
         val key = when (provider) {
             AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
             AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
@@ -385,7 +375,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 设置指定服务商的 API Key
      */
-    suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String) {
+    override suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String) {
         val key = when (provider) {
             AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
             AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
@@ -401,7 +391,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取指定服务商的模型名称
      */
-    suspend fun getProviderModel(provider: AiProviderType): String {
+    override suspend fun getProviderModel(provider: AiProviderType): String {
         val key = when (provider) {
             AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
             AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
@@ -415,7 +405,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 设置指定服务商的模型名称
      */
-    suspend fun setProviderModel(provider: AiProviderType, model: String) {
+    override suspend fun setProviderModel(provider: AiProviderType, model: String) {
         val key = when (provider) {
             AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
             AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
@@ -431,7 +421,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取指定服务商的完整配置
      */
-    suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
+    override suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
         val apiKey = getProviderApiKey(provider)
         val model = getProviderModel(provider)
         return AiProviderConfig(
@@ -445,7 +435,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 获取当前服务商的完整配置
      */
-    suspend fun getCurrentProviderConfig(): AiProviderConfig {
+    override suspend fun getCurrentProviderConfig(): AiProviderConfig {
         val currentProvider = getCurrentProvider()
         return getProviderConfig(currentProvider)
     }
@@ -453,7 +443,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 保存服务商配置
      */
-    suspend fun saveProviderConfig(config: AiProviderConfig) {
+    override suspend fun saveProviderConfig(config: AiProviderConfig) {
         setProviderApiKey(config.type, config.apiKey)
         if (config.model.isNotBlank()) {
             setProviderModel(config.type, config.model)
@@ -463,43 +453,43 @@ class SettingsRepository @Inject constructor(
     /**
      * 检查指定服务商是否已配置
      */
-    suspend fun isProviderConfigured(provider: AiProviderType): Boolean {
+    override suspend fun isProviderConfigured(provider: AiProviderType): Boolean {
         return getProviderApiKey(provider).isNotBlank()
     }
     
     /**
      * 获取所有已配置的服务商列表
      */
-    suspend fun getConfiguredProviders(): List<AiProviderType> {
+    override suspend fun getConfiguredProviders(): List<AiProviderType> {
         return AiProviderType.entries.filter { isProviderConfigured(it) }
     }
     
     // 音效相关设置保存方法
-    suspend fun saveEqualizerPreset(preset: Int) {
+    override suspend fun saveEqualizerPreset(preset: Int) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.EQUALIZER_PRESET] = preset
         }
     }
     
-    suspend fun saveBassBoostLevel(level: Int) {
+    override suspend fun saveBassBoostLevel(level: Int) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.BASS_BOOST_LEVEL] = level
         }
     }
     
-    suspend fun saveSurroundSoundEnabled(enabled: Boolean) {
+    override suspend fun saveSurroundSoundEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = enabled
         }
     }
     
-    suspend fun saveReverbPreset(preset: Int) {
+    override suspend fun saveReverbPreset(preset: Int) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.REVERB_PRESET] = preset
         }
     }
     
-    suspend fun saveCustomEqualizerLevels(levels: FloatArray) {
+    override suspend fun saveCustomEqualizerLevels(levels: FloatArray) {
         dataStore.edit { prefs ->
             val levelsString = levels.joinToString(",")
             prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS] = levelsString
@@ -510,7 +500,7 @@ class SettingsRepository @Inject constructor(
      * 备份设置到文件
      * @return Result<File> 备份文件路径
      */
-    suspend fun backupSettings(): kotlin.Result<File> {
+    override suspend fun backupSettings(): kotlin.Result<File> {
         return try {
             val backupDir = File(context.filesDir, "backups")
             if (!backupDir.exists()) {
@@ -555,7 +545,7 @@ class SettingsRepository @Inject constructor(
      * @param backupFile 备份文件
      * @return Result<Unit> 恢复结果
      */
-    suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit> {
+    override suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit> {
         return try {
             if (!backupFile.exists()) {
                 return kotlin.Result.failure(IOException("Backup file does not exist"))
@@ -637,7 +627,7 @@ class SettingsRepository @Inject constructor(
     /**
      * 清理旧备份文件(保留最近的 3 个)
      */
-    suspend fun cleanOldBackups(keepCount: Int = 3): kotlin.Result<Unit> {
+    override suspend fun cleanOldBackups(keepCount: Int): kotlin.Result<Unit> {
         return try {
             val backupDir = File(context.filesDir, "backups")
             if (!backupDir.exists()) {
