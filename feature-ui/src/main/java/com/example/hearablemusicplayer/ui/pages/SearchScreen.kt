@@ -33,11 +33,13 @@ import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel,
-    playControlViewModel: PlayControlViewModel,
+    searchViewModel: SearchViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ){
     var searchQuery by rememberSaveable { mutableStateOf("") }

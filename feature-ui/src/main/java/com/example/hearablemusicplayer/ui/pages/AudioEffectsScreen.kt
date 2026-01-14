@@ -26,9 +26,11 @@ import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
 fun AudioEffectsScreen(
-    viewModel: PlayControlViewModel,
+    viewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val audioEffectSettings by viewModel.audioEffectSettings.collectAsState()

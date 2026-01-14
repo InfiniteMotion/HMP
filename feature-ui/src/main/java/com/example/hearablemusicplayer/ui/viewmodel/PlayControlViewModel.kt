@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -11,42 +10,24 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.PlaybackHistory
 import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.repository.MusicRepository
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
-import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
-import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.TimerUseCase
-import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
-import com.example.hearablemusicplayer.player.service.MusicPlayService
-import com.example.hearablemusicplayer.player.service.PlayControl
+import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 sealed class UiEvent {
@@ -74,30 +55,31 @@ data class PaletteColors(
 @HiltViewModel
 @UnstableApi
 class PlayControlViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    // Use Cases - Domain Layer
-    private val currentPlaybackUseCase: CurrentPlaybackUseCase,
-    private val playbackModeUseCase: PlaybackModeUseCase,
-    private val playbackHistoryUseCase: PlaybackHistoryUseCase,
-    private val timerUseCase: TimerUseCase,
-    private val managePlaylistUseCase: ManagePlaylistUseCase,
-    // 设置存储库 - 用于音效设置持久化
-    private val settingsRepository: SettingsRepository
-) : ViewModel(), MusicPlayService.OnMusicCompleteListener {
+    @ApplicationContext private val context: Context,
+    private val musicController: MusicController
+) : ViewModel() {
 
-    private var playControl: PlayControl? = null
+    // Delegate flows to MusicController
+    val isPlaying: StateFlow<Boolean> = musicController.isPlaying
+    val currentPlaylist: StateFlow<List<MusicInfo>> = musicController.currentPlaylist
+    val currentIndex: StateFlow<Int> = musicController.currentIndex
+    val currentPlayingMusic: StateFlow<MusicInfo?> = musicController.currentPlayingMusic
+    val likeStatus: StateFlow<Boolean> = musicController.likeStatus
+    val currentMusicLabels: StateFlow<List<MusicLabel?>> = musicController.currentMusicLabels
+    val currentMusicLyrics: StateFlow<String?> = musicController.currentMusicLyrics
+    val playbackMode: StateFlow<PlaybackMode> = musicController.playbackMode
+    val currentPosition: StateFlow<Long> = musicController.currentPosition
+    val duration: StateFlow<Long> = musicController.duration
+    val timerRemaining: StateFlow<Long?> = musicController.timerRemaining
+    
+    // Audio Effect States
+    val audioEffectSettings: StateFlow<AudioEffectSettings> = musicController.audioEffectSettings
+    val equalizerPresets: StateFlow<List<String>> = musicController.equalizerPresets
+    val equalizerBandCount: StateFlow<Int> = musicController.equalizerBandCount
+    val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = musicController.equalizerBandLevelRange
+    val currentEqualizerBandLevels: StateFlow<FloatArray> = musicController.currentEqualizerBandLevels
 
-    @OptIn(UnstableApi::class)
-    fun bindPlayControl(service: PlayControl?) {
-        this.playControl = service
-        if (service is MusicPlayService) {
-            service.setOnMusicCompleteListener(this)
-        }
-        // 绑定后恢复音效设置
-        restoreAudioEffectSettings()
-    }
-
-    // 事件管理
+    // Events
     private val _toastEvent = MutableSharedFlow<UiEvent.ShowToast>(
         replay = 0,
         extraBufferCapacity = 1,
@@ -105,129 +87,20 @@ class PlayControlViewModel @Inject constructor(
     )
     val toastEvent = _toastEvent.asSharedFlow()
 
-    private fun showToast(message: String) {
-        viewModelScope.launch {
-            _toastEvent.emit(UiEvent.ShowToast(message))
-        }
-    }
-
-    // 播放状态（播放/暂停）
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
-
-    // 原始播放列表（用于顺序或打乱）
-    private var _originalPlaylist: List<MusicInfo> = emptyList()
-    private val _currentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
-    val currentPlaylist: StateFlow<List<MusicInfo>> = _currentPlaylist.asStateFlow()
-
-    // SHUFFLE 模式缓存打乱后的列表
-    private var _shuffledPlaylist: List<MusicInfo>? = null
-
-    // 当前播放列表ID和收藏/最近播放列表ID
-    private val currentPlayListId = settingsRepository.currentPlaylistId
-    private val likedPlayListId = settingsRepository.likedPlaylistId
-    private val recentPlayListId = settingsRepository.recentPlaylistId
-
-    // 当前播放索引
-    private val _currentIndex = MutableStateFlow(0)
-    val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
-
-    // 当前播放的音乐（自动更新）
-    val currentPlayingMusic: StateFlow<MusicInfo?> = combine(
-        currentPlaylist,
-        currentIndex
-    ) { playlist, index ->
-        playlist.getOrNull(index)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-
-    // 喜爱状态
-    var likeStatus = MutableStateFlow(false)
-
-    // 歌曲标签
-    private val _currentMusicLabels = MutableStateFlow<List<MusicLabel?>>(emptyList())
-    val currentMusicLabels: StateFlow<List<MusicLabel?>> = _currentMusicLabels
-
-    // 歌曲歌词
-    private val _currentMusicLyrics = MutableStateFlow<String?>(null)
-    val currentMusicLyrics: StateFlow<String?> = _currentMusicLyrics
-
-    // 调色板缓存与状态
+    // Palette Colors (UI specific logic)
     private val paletteCache = mutableMapOf<String, PaletteColors>()
     private val _paletteColors = MutableStateFlow(PaletteColors())
     val paletteColors: StateFlow<PaletteColors> = _paletteColors.asStateFlow()
 
-    // 播放模式（顺序、单曲循环、随机）
-    private val _playbackMode = MutableStateFlow(PlaybackMode.SEQUENTIAL)
-    val playbackMode: StateFlow<PlaybackMode> = _playbackMode.asStateFlow()
-
-    // 当前播放进度与总时长
-    private val _currentPosition = MutableStateFlow(0L)
-    val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
-    private val _duration = MutableStateFlow(0L)
-    val duration: StateFlow<Long> = _duration.asStateFlow()
-    private var progressJob: Job? = null
-
-    private var playStartTime: Long = 0L
-    private var lastDurationRecordTime: Long = 0L
-    private val durationRecordThreshold = 30000L // 30秒节流，避免频繁写入
-
-    // 添加定时器相关状态
-    private var timerJob: Job? = null
-    val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
-    
-    // 音效相关状态
-    private val _audioEffectSettings = MutableStateFlow(AudioEffectSettings())
-    val audioEffectSettings: StateFlow<AudioEffectSettings> = _audioEffectSettings.asStateFlow()
-    
-    private val _equalizerPresets = MutableStateFlow<List<String>>(emptyList())
-    val equalizerPresets: StateFlow<List<String>> = _equalizerPresets.asStateFlow()
-    
-    private val _equalizerBandCount = MutableStateFlow(0)
-    val equalizerBandCount: StateFlow<Int> = _equalizerBandCount.asStateFlow()
-    
-    private val _equalizerBandLevelRange = MutableStateFlow(Pair(0, 0))
-    val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = _equalizerBandLevelRange.asStateFlow()
-    
-    private val _currentEqualizerBandLevels = MutableStateFlow(floatArrayOf())
-    val currentEqualizerBandLevels: StateFlow<FloatArray> = _currentEqualizerBandLevels.asStateFlow()
-
     init {
-        // 初始化播放列表和当前播放歌曲索引
+        // Forward controller toasts
         viewModelScope.launch {
-            loadPlaylistFromSettings()
+            musicController.toastEvent.collectLatest { event ->
+                _toastEvent.emit(UiEvent.ShowToast(event.message))
+            }
         }
 
-        // 监听播放列表ID变化,当ID从null变为有值时重新加载
-        viewModelScope.launch {
-            currentPlayListId
-                .filterNotNull()
-                .collectLatest { playlistId ->
-                    // 如果当前播放列表为空,说明之前未成功初始化,现在重新加载
-                    if (_currentPlaylist.value.isEmpty()) {
-                        try {
-                            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
-                            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
-                            _originalPlaylist = list
-                            _currentPlaylist.value = list
-                            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
-                        } catch (e: Exception) {
-                            // 如果加载失败,保持空列表
-                        }
-                    }
-                }
-        }
-
-        // 监听播放模式变更并更新播放列表
-        viewModelScope.launch {
-            playbackModeUseCase.playbackMode
-                .filterNotNull()
-                .collectLatest { mode ->
-                    _playbackMode.value = mode
-                    updateCurrentPlaylist()
-                }
-        }
-
-        // 监听当前曲目变化并提取调色板
+        // Palette extraction
         viewModelScope.launch {
             currentPlayingMusic
                 .filterNotNull()
@@ -237,480 +110,58 @@ class PlayControlViewModel @Inject constructor(
         }
     }
 
-    // 从设置中加载播放列表
-    private suspend fun loadPlaylistFromSettings() {
-        try {
-            val playlistId = currentPlayListId.filterNotNull().first()
-            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
-            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
-            _originalPlaylist = list
-            _currentPlaylist.value = list
-            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
-        } catch (e: Exception) {
-            // 如果初始化失败,保持空列表状态
-            // 后续通过监听 currentPlayListId 或 playWith 方法添加音乐时会自动填充
-        }
-    }
+    // Delegated Methods
+    fun playOrResume() = musicController.playOrResume()
+    fun pauseMusic() = musicController.pauseMusic()
+    fun playNext(forceChange: Boolean = true) = musicController.playNext(forceChange)
+    fun playPrevious() = musicController.playPrevious()
+    fun seekTo(position: Long) = musicController.seekTo(position)
+    fun togglePlaybackModeByOrder() = musicController.togglePlaybackModeByOrder()
+    
+    fun playWith(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playWith(musicInfo) }
+    fun playAt(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playAt(musicInfo) }
+    
+    fun addToPlaylist(musicInfo: MusicInfo) = musicController.addToPlaylist(musicInfo)
+    fun removeFromPlaylist(musicInfo: MusicInfo) = musicController.removeFromPlaylist(musicInfo)
+    fun moveToTop(musicInfo: MusicInfo) = musicController.moveToTop(musicInfo)
+    fun clearPlaylist() = musicController.clearPlaylist()
+    fun addAllToPlaylistInOrder(playlist: List<MusicInfo>) = musicController.addAllToPlaylistInOrder(playlist)
+    fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) = musicController.addAllToPlaylistByShuffle(playlist)
+    fun recordPlayback(musicId: Long, source: String?) = musicController.recordPlayback(musicId, source)
+    
+    fun playHeartMode() = musicController.playHeartMode()
+    fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) = musicController.updateMusicLikedStatus(musicInfo, liked)
+    fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
+    fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
+    fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
+    
+    fun startTimer(minutes: Int) = musicController.startTimer(minutes)
+    fun cancelTimer() = musicController.cancelTimer()
 
-    // 预加载当前播放音乐的相关信息（duration、标签、歌词、封面等）
+    fun startProgressTracking() = musicController.startProgressTracking()
+    fun stopProgressTracking() = musicController.stopProgressTracking()
+    
     fun preloadCurrentMusicInfo() {
-        val musicInfo = currentPlayingMusic.value ?: return
-        _duration.value = musicInfo.music.duration
-        getLikedStatus(musicInfo.music.id)
-        getMusicLabels(musicInfo.music.id)
-        getMusicLyrics(musicInfo.music.id)
-        extractPaletteColors(musicInfo.music.albumArtUri)
-    }
-
-    // 开始监听播放进度
-    fun startProgressTracking() {
-        if (progressJob?.isActive == true) return // 避免重复启动
-
-        progressJob = viewModelScope.launch {
-            while (isActive) {
-                playControl?.let { svc ->
-                    _currentPosition.value = svc.getCurrentPosition()
-                    recordListeningDurationPeriodically()
-                }
-                delay(500)
-            }
-        }
-    }
-
-    // 周期性记录播放时长（节流策略：每30秒记录一次）
-    private fun recordListeningDurationPeriodically() {
-        val now = System.currentTimeMillis()
-        if (_isPlaying.value && playStartTime > 0 && 
-            (now - lastDurationRecordTime) >= durationRecordThreshold) {
-            val duration = now - playStartTime
-            viewModelScope.launch {
-                playbackHistoryUseCase.recordListeningDuration(duration)
-            }
-            lastDurationRecordTime = now
-            playStartTime = now // 重置起始时间以累计下一个周期
-        }
-    }
-
-    // 停止监听播放进度
-    fun stopProgressTracking() {
-        progressJob?.cancel()
-        progressJob = null
-    }
-
-    // 清空播放列表
-    fun clearPlaylist() {
-        val currentMusic = currentPlayingMusic.value
-        if (currentMusic != null) {
-            _originalPlaylist = listOf(currentMusic)
-            _currentPlaylist.value = listOf(currentMusic)
-            _currentIndex.value = 0
-        } else {
-            _originalPlaylist = emptyList()
-            _currentPlaylist.value = emptyList()
-            _currentIndex.value = 0
-        }
-        persistCurrentPlaylistToDatabase()
-    }
-
-
-    // 向播放列表添加歌曲
-    private suspend fun saveToPlaylist(musicInfo: MusicInfo) {
-        try {
-            // 等待播放列表ID就绪
-            val playlistId = currentPlayListId.filterNotNull().first()
-            managePlaylistUseCase.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
-        } catch (e: Exception) {
-            // 如果获取播放列表ID失败,仅添加到内存列表
-        }
-    }
-
-    // 是否加载音乐
-    fun isMusicLoaded(path:String): Boolean? {
-        return playControl?.isMusicLoaded(path)
-    }
-
-    // 播放或恢复当前歌曲
-    fun playOrResume() {
-        if (playControl == null) {
-            Log.e("PlayControlViewModel", "playOrResume: playControl is null")
-            return
-        }
-        playStartTime = System.currentTimeMillis()
-        lastDurationRecordTime = playStartTime // 重置节流计时器
-        val path = currentMusicPath()
-        if (path != null && isMusicLoaded(path) == true) {
-            playControl?.proceedMusic()
-        } else {
-            viewModelScope.launch { playCurrentTrack("AutoPlay") }
-        }
-    }
-
-    // 暂停播放
-    fun pauseMusic() {
-        if (playControl == null) {
-            Log.e("PlayControlViewModel", "pauseMusic: playControl is null")
-            return
-        }
-        if (playStartTime > 0) {
-            val duration = System.currentTimeMillis() - playStartTime
-            // 立即记录剩余时长，不等待节流器
-            if (duration > 0) {
-                viewModelScope.launch {
-                    playbackHistoryUseCase.recordListeningDuration(duration)
-                }
-            }
-        }
-        playControl?.pause()
-        playStartTime = 0L // 重置
-        lastDurationRecordTime = 0L
-    }
-
-    // 跳转到指定进度
-    fun seekTo(position: Long) {
-        viewModelScope.launch {
-            // 如果当前没有播放，先播放再跳转
-            if (!_isPlaying.value) {
-                playCurrentTrack("Player")
-            }
-            // 跳转到指定位置
-            playControl?.seekTo(position)
-        }
-    }
-
-    // 根据播放模式更新当前播放列表
-    private fun updateCurrentPlaylist() {
-        val currentTrack = currentPlayingMusic.value
-        _currentPlaylist.value = when (_playbackMode.value) {
-            PlaybackMode.SHUFFLE -> {
-                if (_shuffledPlaylist == null) {
-                    _shuffledPlaylist = _originalPlaylist.shuffled()
-                }
-                _shuffledPlaylist!!
-            }
-            else -> _originalPlaylist
-        }
-        // 更新当前播放索引
-        _currentIndex.value = currentTrack?.let { track ->
-            _currentPlaylist.value.indexOfFirst { it.music.id == track.music.id }
-        }?.takeIf { it >= 0 } ?: 0
-    }
-
-    private fun togglePlaybackMode(newMode: PlaybackMode) {
-        _playbackMode.value = newMode
-        viewModelScope.launch {
-            playbackModeUseCase.savePlaybackMode(newMode)
-        }
-        // 切换播放模式时：清空旧的 SHUFFLE 列表（确保每次进入 SHUFFLE 是新打乱）
-        _shuffledPlaylist = null
-        updateCurrentPlaylist()
-    }
-
-    // 切换播放模式
-    fun togglePlaybackModeByOrder() {
-        val next = when (_playbackMode.value) {
-            PlaybackMode.SEQUENTIAL -> PlaybackMode.REPEAT_ONE
-            PlaybackMode.REPEAT_ONE -> PlaybackMode.SHUFFLE
-            PlaybackMode.SHUFFLE -> PlaybackMode.SEQUENTIAL
-        }
-        togglePlaybackMode(next)
-    }
-
-
-    // 播放全部歌曲（顺序）
-    fun addAllToPlaylistInOrder(playlist:List<MusicInfo>) {
-        viewModelScope.launch {
-            _originalPlaylist = playlist
-            togglePlaybackMode(PlaybackMode.SEQUENTIAL)
-            _currentPlaylist.value = _originalPlaylist
-            _currentIndex.value = 0
-            playCurrentTrack("In Order")
-        }
-        persistCurrentPlaylistToDatabase()
-    }
-
-    // 播放全部歌曲（随机）
-    fun addAllToPlaylistByShuffle(playlist:List<MusicInfo>) {
-        viewModelScope.launch {
-            _originalPlaylist = playlist
-            togglePlaybackMode(PlaybackMode.SHUFFLE)
-            _currentPlaylist.value = _shuffledPlaylist!!
-            _currentIndex.value = 0
-            playCurrentTrack("By Shuffle")
-        }
-        persistCurrentPlaylistToDatabase()
-    }
-
-    // 播放下一首
-    fun playNext(forceChange: Boolean = true) = viewModelScope.launch {
-        if (_currentPlaylist.value.isEmpty()) return@launch
-        // 如果是用户强制切换（forceChange=true）或者当前不是单曲循环模式，则切换索引
-        if (forceChange || _playbackMode.value != PlaybackMode.REPEAT_ONE) {
-            _currentIndex.value = (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
-        }
-        playCurrentTrack("Next")
-    }
-
-    // 播放上一首
-    fun playPrevious() = viewModelScope.launch {
-        if (_currentPlaylist.value.isEmpty()) return@launch
-        // 用户手动上一首总是切换索引
-        val size = _currentPlaylist.value.size
-        _currentIndex.value = (_currentIndex.value - 1 + size).mod(size)
-        playCurrentTrack("Previous")
-    }
-
-    // 回调播放下一首
-    override fun onPlaybackEnded() {
-        // ... (保持之前的统计代码)
-        if (playStartTime > 0) {
-            val duration = System.currentTimeMillis() - playStartTime
-            if (duration > 0) {
-                viewModelScope.launch {
-                    playbackHistoryUseCase.recordListeningDuration(duration)
-                }
-            }
-        }
-        playStartTime = System.currentTimeMillis() // 为下一首重置
-        lastDurationRecordTime = playStartTime
-        
-        // 自动播放结束，forceChange = false，遵循 REPEAT_ONE 逻辑
-        playNext(forceChange = false)
-    }
-
-    // 回调用户手动下一首
-    override fun onPlaybackNext() {
-        playNext(forceChange = true)
-    }
-
-    // 回调播放上一首
-    override fun onPlaybackPrev() {
-        playPrevious()
-    }
-
-    // 回调播放状态变化
-    override fun onPlayStateChanged(isPlaying: Boolean) {
-        _isPlaying.value = isPlaying
-    }
-
-    // 播放当前索引对应的歌曲
-    private suspend fun playCurrentTrack(source: String) {
-        if (playControl == null) {
-            Log.e("PlayControlViewModel", "playCurrentTrack: playControl is null")
-            return
-        }
-        stopProgressTracking()
-        val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
-        
-        // 异步更新最近播放，不阻塞播放流程
-        viewModelScope.launch {
-            try {
-                // 使用 withTimeoutOrNull 避免长时间等待
-                val recentId = withTimeoutOrNull(1000) { 
-                    recentPlayListId.firstOrNull() 
-                }
-                if (recentId != null) {
-                    managePlaylistUseCase.addToPlaylist(recentId, track.music.id, track.music.path)
-                }
-            } catch (e: Exception) {
-                // 忽略错误
-            }
-        }
-
-        persistCurrentMusic(track.music.id)
-        // 重置当前播放位置为0
-        _currentPosition.value = 0L
-        playControl?.playSingleMusic(track.music)
-        _duration.value = track.music.duration
-        startProgressTracking()
-        recordPlayback(track.music.id, source)
-    }
-
-    // 将音乐加入播放队列(不确定是否在播放列表中)
-    fun addToPlaylist(musicInfo: MusicInfo) {
-        if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
-            _originalPlaylist = _originalPlaylist + musicInfo
-            updateCurrentPlaylist()
-            viewModelScope.launch {
-                saveToPlaylist(musicInfo)
-            }
-            showToast("已添加:${musicInfo.music.title}")
-        }
-        else {
-            showToast("已存在:${musicInfo.music.title}")
-        }
-    }
-
-    // 切换到播放列表中的音乐
-    private fun switchToMusicInPlaylist(musicInfo: MusicInfo) {
-        val index = _currentPlaylist.value.indexOfFirst { it.music.id == musicInfo.music.id }
-        _currentIndex.value = if (index != -1) index else 0
-    }
-
-    // 从播放列表移除指定歌曲
-    fun removeFromPlaylist(musicInfo: MusicInfo) {
-        // 移除后更新原始和当前播放列表
-        _originalPlaylist = _originalPlaylist.filter { it.music.id != musicInfo.music.id }
-        updateCurrentPlaylist()
-        // 如果当前播放的被移除，重置索引
-        if (_currentPlaylist.value.isNotEmpty()) {
-            val current = currentPlayingMusic.value
-            val idx = _currentPlaylist.value.indexOfFirst { it.music.id == current?.music?.id }
-            _currentIndex.value = if (idx >= 0) idx else 0
-        } else {
-            _currentIndex.value = 0
-        }
-        persistCurrentPlaylistToDatabase()
-    }
-    
-    // 将指定歌曲移动到队列首位
-    fun moveToTop(musicInfo: MusicInfo) {
-        val currentList = _originalPlaylist.toMutableList()
-        val index = currentList.indexOfFirst { it.music.id == musicInfo.music.id }
-        if (index > 0) {
-            // 移除原位置
-            val item = currentList.removeAt(index)
-            // 插入到首位
-            currentList.add(0, item)
-            _originalPlaylist = currentList
-            updateCurrentPlaylist()
-            // 更新当前索引
-            val current = currentPlayingMusic.value
-            if (current != null) {
-                _currentIndex.value = _currentPlaylist.value.indexOfFirst { it.music.id == current.music.id }
-            }
-            persistCurrentPlaylistToDatabase()
-            showToast("已置顶：${musicInfo.music.title}")
-        }
-    }
-
-    // 从指定音乐开始播放(已经在播放列表中)
-    suspend fun playAt(musicInfo: MusicInfo) {
-        switchToMusicInPlaylist(musicInfo)
-        playCurrentTrack("ManualPlay")
-    }
-
-    // 从指定音乐开始播放(不确定是否在播放列表中)
-    suspend fun playWith(musicInfo: MusicInfo) {
-        addToPlaylist(musicInfo)
-        playAt(musicInfo)
-    }
-
-    // 获取当前音乐路径
-    private fun currentMusicPath(): String? {
-        return _currentPlaylist.value.getOrNull(_currentIndex.value)?.music?.path
-    }
-
-    // 记录播放历史
-    fun recordPlayback(musicId: Long, source: String?) {
-        viewModelScope.launch {
-            val history = PlaybackHistory(
-                musicId = musicId,
-                playedAt = System.currentTimeMillis(),
-                playDuration = 0,
-                isCompleted = true,
-                source = source
-            )
-            playbackHistoryUseCase.insertPlayback(history)
-        }
-    }
-
-    // 更改音乐喜爱状态
-    fun updateMusicLikedStatus(musicInfo: MusicInfo,liked: Boolean) {
-        viewModelScope.launch {
-            currentPlaybackUseCase.updateLikedStatus(musicInfo.music.id, liked)
-            try {
-                val likedId = likedPlayListId.filterNotNull().first()
-                if (liked) {
-                    managePlaylistUseCase.addToPlaylist(likedId, musicInfo.music.id, musicInfo.music.path)
-                } else {
-                    managePlaylistUseCase.removeItemFromPlaylist(musicInfo.music.id, likedId)
-                }
-            } catch (e: Exception) {
-                // 如果操作喜爱列表失败,仅更新喜爱状态
-            }
-            getLikedStatus(musicInfo.music.id)
-        }
-    }
-
-    // 获取音乐喜爱状态
-    fun getLikedStatus(musicId: Long) {
-        viewModelScope.launch {
-            likeStatus.value = currentPlaybackUseCase.getLikedStatus(musicId)
-        }
-    }
-
-    fun playHeartMode() {
-        viewModelScope.launch {
-            val currentMusic = currentPlayingMusic.value ?: return@launch
-            val similarSongs = currentPlaybackUseCase.getSimilarSongsByWeightedLabels(currentMusic.music.id, limit = 10)
-            if (similarSongs.isNotEmpty()) {
-                val newList = listOf(currentMusic) + similarSongs
-                _originalPlaylist = newList
-                _currentPlaylist.value = newList
-                _currentIndex.value = 0
-                playCurrentTrack("HeartMode")
-                showToast("为你推荐${similarSongs.size}首心动歌曲")
-            } else {
-                showToast("未找到相似歌曲")
-            }
-        }
-    }
-
-    // 设置定时器
-    fun startTimer(minutes: Int) {
-        timerUseCase.setTimerRemaining((minutes * 60 * 1000L))
-        timerJob?.cancel()
-        timerJob = viewModelScope.launch {
-            while (isActive) {
-                delay(1000)
-                timerUseCase.decrementTimer(1000)
-                if (timerUseCase.isTimerExpired()) {
-                    pauseMusic()
-                    timerUseCase.cancelTimer()
-                    break
-                }
-            }
+        val music = currentPlayingMusic.value
+        if (music != null) {
+            musicController.preloadCurrentMusicInfo(music)
         }
     }
     
-    // 取消定时器
-    fun cancelTimer() {
-        timerJob?.cancel()
-        timerUseCase.cancelTimer()
-    }
-
-    // 获取音乐标签
-    fun getMusicLabels(musicId: Long) {
-        viewModelScope.launch {
-            _currentMusicLabels.value=currentPlaybackUseCase.getMusicLabels(musicId)
-        }
-    }
-
-    // 获取音乐歌词
-    fun getMusicLyrics(musicId: Long) {
-        viewModelScope.launch {
-            _currentMusicLyrics.value=currentPlaybackUseCase.getMusicLyrics(musicId)
-        }
-    }
-
-    // 保存当前播放的音乐ID
-    private fun persistCurrentMusic(id: Long) {
-        viewModelScope.launch { currentPlaybackUseCase.saveCurrentMusicId(id) }
-    }
-
-    // 保存默认播放列表
-    private fun persistCurrentPlaylistToDatabase() {
-        viewModelScope.launch {
-            try {
-                val playlistId = currentPlayListId.filterNotNull().first()
-                // 应该保存原始顺序(_originalPlaylist)，而不是当前可能乱序的列表(_currentPlaylist)
-                val playlist = _originalPlaylist
-                managePlaylistUseCase.resetPlaylistItems(playlistId, playlist)
-            } catch (e: Exception) {
-                // 如果无法保存到数据库,仅保留在内存中
-            }
-        }
-    }
+    // Audio Effects Delegates
+    fun initializeAudioEffects() = musicController.initializeAudioEffects()
+    fun setEqualizerPreset(preset: Int) = musicController.setEqualizerPreset(preset)
+    fun setBassBoost(level: Int) = musicController.setBassBoost(level)
+    fun setSurroundSound(enabled: Boolean) = musicController.setSurroundSound(enabled)
+    fun setReverb(preset: Int) = musicController.setReverb(preset)
+    fun setCustomEqualizer(bandLevels: FloatArray) = musicController.setCustomEqualizer(bandLevels)
+    
+    // Getters for Audio Effect UI
+    fun getCurrentEqualizerPreset() = musicController.getCurrentEqualizerPreset()
+    fun getBassBoostLevel() = musicController.getBassBoostLevel()
+    fun isSurroundSoundEnabled() = musicController.isSurroundSoundEnabled()
+    fun getReverbPreset() = musicController.getReverbPreset()
+    fun getCurrentEqualizerBandLevels() = musicController.getCurrentEqualizerBandLevels()
 
     // 提取调色板颜色（带缓存与线程分离）
     private fun extractPaletteColors(albumArtUri: String?) {
@@ -779,189 +230,5 @@ class PlayControlViewModel @Inject constructor(
                 _paletteColors.value = PaletteColors()
             }
         }
-    }
-
-    // ViewModel销毁时解绑服务
-    override fun onCleared() {
-        super.onCleared()
-        stopProgressTracking()
-        viewModelScope.launch {
-            persistCurrentPlaylistToDatabase()
-        }
-    }
-    
-    // 防抖Job，避免频繁保存
-    private var saveAudioEffectJob: Job? = null
-    
-    // 恢复音效设置
-    private fun restoreAudioEffectSettings() {
-        viewModelScope.launch {
-            try {
-                val equalizerPreset = settingsRepository.equalizerPreset.first()
-                val bassBoostLevel = settingsRepository.bassBoostLevel.first()
-                val isSurroundSoundEnabled = settingsRepository.isSurroundSoundEnabled.first()
-                val reverbPreset = settingsRepository.reverbPreset.first()
-                val customLevels = settingsRepository.customEqualizerLevels.first()
-                
-                // 恢复到Service
-                playControl?.let { control ->
-                    control.setEqualizerPreset(equalizerPreset)
-                    control.setBassBoost(bassBoostLevel)
-                    control.setSurroundSound(isSurroundSoundEnabled)
-                    control.setReverb(reverbPreset)
-                    if (customLevels.isNotEmpty()) {
-                        control.setCustomEqualizer(customLevels)
-                    }
-                }
-                
-                // 更新ViewModel状态
-                _audioEffectSettings.value = AudioEffectSettings(
-                    equalizerPreset = equalizerPreset,
-                    bassBoostLevel = bassBoostLevel,
-                    isSurroundSoundEnabled = isSurroundSoundEnabled,
-                    reverbPreset = reverbPreset,
-                    customEqualizerLevels = customLevels
-                )
-                
-                Log.d("PlayControlViewModel", "Audio effect settings restored")
-            } catch (e: Exception) {
-                Log.e("PlayControlViewModel", "Failed to restore audio effect settings", e)
-            }
-        }
-    }
-    
-    // 初始化音效状态
-    fun initializeAudioEffects() {
-        playControl?.let { control ->
-            // 获取均衡器预设列表
-            _equalizerPresets.value = control.getEqualizerPresets()
-            
-            // 获取均衡器频段数量
-            _equalizerBandCount.value = control.getEqualizerBandCount()
-            
-            // 获取均衡器频段范围
-            _equalizerBandLevelRange.value = control.getEqualizerBandLevelRange()
-            
-            // 获取当前均衡器频段级别
-            _currentEqualizerBandLevels.value = control.getCurrentEqualizerBandLevels()
-            
-            // 初始化音效设置
-            _audioEffectSettings.value = AudioEffectSettings(
-                equalizerPreset = control.getCurrentEqualizerPreset(),
-                bassBoostLevel = control.getBassBoostLevel(),
-                isSurroundSoundEnabled = control.isSurroundSoundEnabled(),
-                reverbPreset = control.getReverbPreset(),
-                customEqualizerLevels = control.getCurrentEqualizerBandLevels()
-            )
-        }
-    }
-    
-    // 设置均衡器预设
-    fun setEqualizerPreset(preset: Int) {
-        playControl?.let { control ->
-            control.setEqualizerPreset(preset)
-            _audioEffectSettings.value = _audioEffectSettings.value.copy(
-                equalizerPreset = preset
-            )
-            // 触发持久化
-            saveAudioEffectSetting {
-                settingsRepository.saveEqualizerPreset(preset)
-            }
-        }
-    }
-    
-    // 设置低音增强
-    fun setBassBoost(level: Int) {
-        playControl?.let { control ->
-            control.setBassBoost(level)
-            _audioEffectSettings.value = _audioEffectSettings.value.copy(
-                bassBoostLevel = level
-            )
-            // 触发持久化
-            saveAudioEffectSetting {
-                settingsRepository.saveBassBoostLevel(level)
-            }
-        }
-    }
-    
-    // 设置环绕声
-    fun setSurroundSound(enabled: Boolean) {
-        playControl?.let { control ->
-            control.setSurroundSound(enabled)
-            _audioEffectSettings.value = _audioEffectSettings.value.copy(
-                isSurroundSoundEnabled = enabled
-            )
-            // 触发持久化
-            saveAudioEffectSetting {
-                settingsRepository.saveSurroundSoundEnabled(enabled)
-            }
-        }
-    }
-    
-    // 设置混响
-    fun setReverb(preset: Int) {
-        playControl?.let { control ->
-            control.setReverb(preset)
-            _audioEffectSettings.value = _audioEffectSettings.value.copy(
-                reverbPreset = preset
-            )
-            // 触发持久化
-            saveAudioEffectSetting {
-                settingsRepository.saveReverbPreset(preset)
-            }
-        }
-    }
-    
-    // 设置自定义均衡器
-    fun setCustomEqualizer(bandLevels: FloatArray) {
-        playControl?.let { control ->
-            control.setCustomEqualizer(bandLevels)
-            _currentEqualizerBandLevels.value = bandLevels
-            _audioEffectSettings.value = _audioEffectSettings.value.copy(
-                customEqualizerLevels = bandLevels
-            )
-            // 触发持久化
-            saveAudioEffectSetting {
-                settingsRepository.saveCustomEqualizerLevels(bandLevels)
-            }
-        }
-    }
-    
-    // 防抖保存音效设置（延迟500ms）
-    private fun saveAudioEffectSetting(save: suspend () -> Unit) {
-        saveAudioEffectJob?.cancel()
-        saveAudioEffectJob = viewModelScope.launch {
-            delay(500)
-            try {
-                save()
-            } catch (e: Exception) {
-                Log.e("PlayControlViewModel", "Failed to save audio effect setting", e)
-            }
-        }
-    }
-    
-    // 获取当前均衡器预设
-    fun getCurrentEqualizerPreset(): Int {
-        return playControl?.getCurrentEqualizerPreset() ?: 0
-    }
-    
-    // 获取当前低音增强级别
-    fun getBassBoostLevel(): Int {
-        return playControl?.getBassBoostLevel() ?: 0
-    }
-    
-    // 获取当前环绕声状态
-    fun isSurroundSoundEnabled(): Boolean {
-        return playControl?.isSurroundSoundEnabled() ?: false
-    }
-    
-    // 获取当前混响预设
-    fun getReverbPreset(): Int {
-        return playControl?.getReverbPreset() ?: 0
-    }
-    
-    // 获取当前均衡器频段级别
-    fun getCurrentEqualizerBandLevels(): FloatArray {
-        return playControl?.getCurrentEqualizerBandLevels() ?: floatArrayOf()
     }
 }

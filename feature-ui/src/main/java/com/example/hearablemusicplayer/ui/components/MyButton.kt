@@ -53,14 +53,14 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonOne(
-    libraryViewModel: LibraryViewModel,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    selectedGenre: String,
+    selectedOrder: String,
+    onFilterGenreChange: (String) -> Unit,
+    onFilterOrderChange: (String) -> Unit,
+    onOrderPlay: () -> Unit,
+    onShufflePlay: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
-    val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
-    val playlist by libraryViewModel.allMusic.collectAsState()
     val haptic = rememberHapticFeedback()
 
     Column {
@@ -86,8 +86,7 @@ fun PlayControlButtonOne(
             }
             IconButton(
                 onClick = {
-                    playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onOrderPlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -102,8 +101,7 @@ fun PlayControlButtonOne(
             IconButton(
                 onClick = {
                     haptic.performConfirm()
-                    playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onShufflePlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -182,10 +180,7 @@ fun PlayControlButtonOne(
                                     onClick = {
                                         haptic.performLightClick()
                                         (if (selectedGenre == eGenre) null else eGenre)?.let {
-                                            libraryViewModel.updateOrderBy(
-                                                it
-                                            )
-                                            libraryViewModel.getAllMusic()
+                                            onFilterGenreChange(it)
                                         }
                                     },
                                     label = { Text(text = genre, style = MaterialTheme.typography.titleSmall) },
@@ -216,10 +211,7 @@ fun PlayControlButtonOne(
                                     onClick = {
                                         haptic.performLightClick()
                                         (if (selectedOrder == eOrder) null else eOrder)?.let {
-                                            libraryViewModel.updateOrderType(
-                                                it
-                                            )
-                                            libraryViewModel.getAllMusic()
+                                            onFilterOrderChange(it)
                                         }
                                     },
                                     label = { Text(text = order, style = MaterialTheme.typography.titleSmall) },

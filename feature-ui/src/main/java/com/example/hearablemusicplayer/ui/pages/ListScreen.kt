@@ -28,9 +28,14 @@ import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
+
 @Composable
 fun ListScreen(
-    playlistViewModel: PlaylistViewModel,
+    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     navController: NavController
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()

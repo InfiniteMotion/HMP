@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.model.MusicInfo
@@ -24,12 +25,14 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreen(
-    libraryViewModel: LibraryViewModel,
-    playControlViewModel: PlayControlViewModel,
+    libraryViewModel: LibraryViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val context = LocalContext.current
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
+    val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
+    val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
 
     LaunchedEffect(Unit) {
         libraryViewModel.getAllMusic()
@@ -40,6 +43,8 @@ fun GalleryScreen(
 
     GalleryScreenContent(
         musicInfoList = musicInfoList,
+        selectedGenre = selectedGenre,
+        selectedOrder = selectedOrder,
         onNavigate = navController::navigate,
         playWith = playControlViewModel::playWith,
         recordPlayback = playControlViewModel::recordPlayback,
@@ -52,8 +57,14 @@ fun GalleryScreen(
             playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
             navController.navigate(Routes.PLAYER)
         },
-        libraryViewModel = libraryViewModel,
-        playControlViewModel = playControlViewModel,
+        onFilterGenreChange = {
+            libraryViewModel.updateOrderBy(it)
+            libraryViewModel.getAllMusic()
+        },
+        onFilterOrderChange = {
+            libraryViewModel.updateOrderType(it)
+            libraryViewModel.getAllMusic()
+        },
         navController = navController
     )
 }
@@ -62,14 +73,16 @@ fun GalleryScreen(
 @Composable
 fun GalleryScreenContent(
     musicInfoList: List<MusicInfo>,
+    selectedGenre: String,
+    selectedOrder: String,
     onNavigate: (String) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    libraryViewModel: LibraryViewModel,
-    playControlViewModel: PlayControlViewModel,
+    onFilterGenreChange: (String) -> Unit,
+    onFilterOrderChange: (String) -> Unit,
     navController: NavController
 ) {
     TabScreen(
@@ -80,7 +93,14 @@ fun GalleryScreenContent(
         Row(
             modifier = Modifier.padding(bottom = 16.dp)
         ){
-            PlayControlButtonOne(libraryViewModel,playControlViewModel,navController)
+            PlayControlButtonOne(
+                selectedGenre = selectedGenre,
+                selectedOrder = selectedOrder,
+                onFilterGenreChange = onFilterGenreChange,
+                onFilterOrderChange = onFilterOrderChange,
+                onOrderPlay = onOrderPlay,
+                onShufflePlay = onShufflePlay
+            )
         }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)
