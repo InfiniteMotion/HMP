@@ -4,6 +4,7 @@ package com.example.hearablemusicplayer.ui.pages
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.components.BassBoostSlider
 import com.example.hearablemusicplayer.ui.components.CustomEqualizer
 import com.example.hearablemusicplayer.ui.components.EqualizerPresetSelector
@@ -25,9 +27,11 @@ import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
 fun AudioEffectsScreen(
-    viewModel: PlayControlViewModel,
+    viewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val audioEffectSettings by viewModel.audioEffectSettings.collectAsState()
@@ -41,16 +45,44 @@ fun AudioEffectsScreen(
         viewModel.initializeAudioEffects()
     }
     
+    AudioEffectsScreenContent(
+        audioEffectSettings = audioEffectSettings,
+        equalizerPresets = equalizerPresets,
+        equalizerBandCount = equalizerBandCount,
+        equalizerBandLevelRange = equalizerBandLevelRange,
+        currentEqualizerBandLevels = currentEqualizerBandLevels,
+        onBackClick = { navController.popBackStack() },
+        onSetEqualizerPreset = viewModel::setEqualizerPreset,
+        onSetBassBoost = viewModel::setBassBoost,
+        onSetSurroundSound = viewModel::setSurroundSound,
+        onSetReverb = viewModel::setReverb,
+        onSetCustomEqualizer = viewModel::setCustomEqualizer
+    )
+}
+
+@Composable
+fun AudioEffectsScreenContent(
+    audioEffectSettings: AudioEffectSettings,
+    equalizerPresets: List<String>,
+    equalizerBandCount: Int,
+    equalizerBandLevelRange: Pair<Int, Int>,
+    currentEqualizerBandLevels: FloatArray,
+    onBackClick: () -> Unit,
+    onSetEqualizerPreset: (Int) -> Unit,
+    onSetBassBoost: (Int) -> Unit,
+    onSetSurroundSound: (Boolean) -> Unit,
+    onSetReverb: (Int) -> Unit,
+    onSetCustomEqualizer: (FloatArray) -> Unit
+) {
     // 使用SubScreen模板
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "音效设置"
     ) {
-        // 音效控制面板
         Column(
-            modifier = Modifier
+            modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             TitleWidget(
@@ -59,7 +91,7 @@ fun AudioEffectsScreen(
                 EqualizerPresetSelector(
                     presets = equalizerPresets,
                     currentPreset = audioEffectSettings.equalizerPreset,
-                    onPresetSelected = viewModel::setEqualizerPreset
+                    onPresetSelected = onSetEqualizerPreset
                 )
             }
 
@@ -72,15 +104,15 @@ fun AudioEffectsScreen(
                 ) {
                     BassBoostSlider(
                         currentLevel = audioEffectSettings.bassBoostLevel,
-                        onLevelChanged = viewModel::setBassBoost
+                        onLevelChanged = onSetBassBoost
                     )
                     SurroundSoundToggle(
                         isEnabled = audioEffectSettings.isSurroundSoundEnabled,
-                        onToggle = viewModel::setSurroundSound
+                        onToggle = onSetSurroundSound
                     )
                     ReverbSettings(
                         currentPreset = audioEffectSettings.reverbPreset,
-                        onPresetChanged = viewModel::setReverb
+                        onPresetChanged = onSetReverb
                     )
                 }
             }
@@ -95,12 +127,12 @@ fun AudioEffectsScreen(
                     onBandLevelChanged = { index, level ->
                         val newLevels = currentEqualizerBandLevels.copyOf()
                         newLevels[index] = level
-                        viewModel.setCustomEqualizer(newLevels)
+                        onSetCustomEqualizer(newLevels)
                     },
                     onResetAll = {
                         // 重置所有频段到0
                         val resetLevels = FloatArray(equalizerBandCount) { 0f }
-                        viewModel.setCustomEqualizer(resetLevels)
+                        onSetCustomEqualizer(resetLevels)
                     }
                 )
             }

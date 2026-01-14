@@ -28,7 +28,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -98,7 +99,10 @@ fun MusicItem(
             contentDescription = "Album art",
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp)),
+            placeholder = painterResource(R.drawable.none),
+            error = painterResource(R.drawable.none),
+            fallback = painterResource(R.drawable.none)
         )
         Spacer(modifier = Modifier.width(24.dp))
         //音乐信息

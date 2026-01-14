@@ -26,37 +26,64 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
+
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreen(
-    musicViewModel: MusicViewModel,
-    playControlViewModel: PlayControlViewModel,
+    searchViewModel: SearchViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ){
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val searchResults by musicViewModel.searchResults.collectAsState(initial = emptyList())
+    val searchResults by searchViewModel.searchResults.collectAsState(initial = emptyList())
 
     LaunchedEffect(Unit) {
-        musicViewModel.searchMusic(searchQuery)
+        searchViewModel.searchMusic(searchQuery)
     }
 
+    SearchScreenContent(
+        searchQuery = searchQuery,
+        searchResults = searchResults,
+        onSearchQueryChange = {
+            searchQuery = it
+            searchViewModel.searchMusic(it)
+        },
+        onBackClick = { navController.popBackStack() },
+        onNavigate = navController::navigate,
+        playWith = playControlViewModel::playWith,
+        recordPlayback = playControlViewModel::recordPlayback,
+        addToPlaylist = playControlViewModel::addToPlaylist
+    )
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+fun SearchScreenContent(
+    searchQuery: String,
+    searchResults: List<MusicInfo>,
+    onSearchQueryChange: (String) -> Unit,
+    onBackClick: () -> Unit,
+    onNavigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String?) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit
+) {
     // 使用SubScreen模板
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "搜索"
     ) {
         TextField(
             value = searchQuery,
-            onValueChange = {
-                searchQuery = it
-                musicViewModel.searchMusic(it) // 调用 ViewModel 的搜索方法
-            },
+            onValueChange = onSearchQueryChange,
             label = { Text("搜索您的音乐", color = MaterialTheme.colorScheme.onSurfaceVariant) },
             leadingIcon = {
                 Icon(
@@ -77,15 +104,12 @@ fun SearchScreen(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp)
         )
-
-        Spacer(modifier = Modifier.padding(vertical = 16.dp))
-
         MusicList(
             musicInfoList = searchResults,
-            navigate = navController::navigate,
-            playWith = playControlViewModel::playWith,
-            recordPlayback = playControlViewModel::recordPlayback,
-            addToPlaylist = playControlViewModel::addToPlaylist,
+            navigate = onNavigate,
+            playWith = playWith,
+            recordPlayback = recordPlayback,
+            addToPlaylist = addToPlaylist,
         )
     }
 }

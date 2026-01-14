@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
-import com.example.hearablemusicplayer.data.repository.MusicRepository
-import com.example.hearablemusicplayer.data.repository.Result
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
 import javax.inject.Inject
 
 /**
@@ -15,7 +14,7 @@ class LoadMusicFromDeviceUseCase @Inject constructor(
      * 执行音乐扫描
      * @return Result<Unit> 扫描结果
      */
-    suspend operator fun invoke(): Result<Unit> {
+    suspend operator fun invoke(): kotlin.Result<Unit> {
         return musicRepository.loadMusicFromDevice()
     }
     

@@ -28,7 +28,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
-import com.example.hearablemusicplayer.data.database.Music
+import com.example.hearablemusicplayer.domain.model.Music
 import com.example.hearablemusicplayer.player.AudioEffectManager
 import com.example.hearablemusicplayer.player.R
 import dagger.hilt.android.AndroidEntryPoint
@@ -93,6 +93,7 @@ class MusicPlayService : Service(), PlayControl {
     interface OnMusicCompleteListener {
         fun onPlaybackEnded()
         fun onPlaybackPrev()
+        fun onPlaybackNext() // 新增：用户手动切换下一首
         fun onPlayStateChanged(isPlaying: Boolean) // 新增
     }
 
@@ -257,8 +258,14 @@ class MusicPlayService : Service(), PlayControl {
                     }
                 }
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    Log.d("MusicPlayService", "onIsPlayingChanged: $isPlaying")
                     getCurrentPlayingMusic()?.let { updateNotificationPlaybackState(it) }
                     playbackListener?.onPlayStateChanged(isPlaying)
+                }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    Log.e("MusicPlayService", "Player error: ${error.message}", error)
+                    playbackListener?.onPlayStateChanged(false)
                 }
             })
         }
@@ -282,7 +289,7 @@ class MusicPlayService : Service(), PlayControl {
             // 重写 seekToNext 方法
             override fun seekToNext() {
                 Log.d("MusicPlayService", "ForwardingPlayer.seekToNext() called")
-                playbackListener?.onPlaybackEnded()
+                playbackListener?.onPlaybackNext()
             }
 
             // 重写 seekToPrevious 方法
@@ -327,7 +334,7 @@ class MusicPlayService : Service(), PlayControl {
                             Log.d("MusicPlayService", "Seek to next requested")
                             // 在主线程调用 listener
                             CoroutineScope(Dispatchers.Main).launch {
-                                playbackListener?.onPlaybackEnded()
+                                playbackListener?.onPlaybackNext()
                             }
                             return SessionResult.RESULT_SUCCESS
                         }
@@ -466,7 +473,7 @@ class MusicPlayService : Service(), PlayControl {
                 getCurrentPlayingMusic()?.let { updateNotificationPlaybackState(it) }
                 playbackListener?.onPlayStateChanged(false) // 新增
             }
-            ACTION_NEXT -> playbackListener?.onPlaybackEnded()
+            ACTION_NEXT -> playbackListener?.onPlaybackNext()
             ACTION_PREV -> playbackListener?.onPlaybackPrev()
         }
 

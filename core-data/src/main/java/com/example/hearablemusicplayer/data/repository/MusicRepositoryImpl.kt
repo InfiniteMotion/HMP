@@ -6,11 +6,7 @@ import android.media.MediaMetadataRetriever
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.net.toUri
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
-import com.example.hearablemusicplayer.data.database.DailyMusicInfo
 import com.example.hearablemusicplayer.data.database.ListeningDuration
 import com.example.hearablemusicplayer.data.database.ListeningDurationDao
 import com.example.hearablemusicplayer.data.database.Music
@@ -18,24 +14,31 @@ import com.example.hearablemusicplayer.data.database.MusicAllDao
 import com.example.hearablemusicplayer.data.database.MusicDao
 import com.example.hearablemusicplayer.data.database.MusicExtra
 import com.example.hearablemusicplayer.data.database.MusicExtraDao
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
 import com.example.hearablemusicplayer.data.database.MusicLabelDao
-import com.example.hearablemusicplayer.data.database.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.PlaybackHistoryDao
-import com.example.hearablemusicplayer.data.database.Playlist
-import com.example.hearablemusicplayer.data.database.PlaylistDao
-import com.example.hearablemusicplayer.data.database.PlaylistItem
-import com.example.hearablemusicplayer.data.database.PlaylistItemDao
 import com.example.hearablemusicplayer.data.database.UserInfo
 import com.example.hearablemusicplayer.data.database.UserInfoDao
-import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
-import com.example.hearablemusicplayer.data.database.myenum.LabelName
+import com.example.hearablemusicplayer.data.database.myenum.LabelCategory as DataLabelCategory
+import com.example.hearablemusicplayer.data.database.myenum.LabelName as DataLabelName
+import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.data.mapper.toDomain
+import com.example.hearablemusicplayer.data.mapper.toEntity
+import com.example.hearablemusicplayer.data.network.AiApiResult
+import com.example.hearablemusicplayer.domain.model.PlaybackHistory as PlaybackHistoryDomain
+import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
+import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
+import com.example.hearablemusicplayer.domain.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
@@ -43,59 +46,33 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-// 网络与解析依赖
-import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
-import com.example.hearablemusicplayer.data.network.ChatRequest
-import com.example.hearablemusicplayer.data.network.Message
-import com.example.hearablemusicplayer.data.network.DeepSeekResult
-import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
-import com.example.hearablemusicplayer.data.network.AiApiResult
-import com.example.hearablemusicplayer.data.model.AiProviderType
-import com.example.hearablemusicplayer.data.model.AiProviderConfig
-import com.google.gson.Gson
+import com.example.hearablemusicplayer.domain.model.ListeningDuration as ListeningDurationDomain
+import com.example.hearablemusicplayer.domain.model.MusicLabel as MusicLabelDomain
 
 @Singleton
-class MusicRepository @Inject constructor(
+class MusicRepositoryImpl @Inject constructor(
     private val musicDao: MusicDao,
     private val musicExtraDao: MusicExtraDao,
     private val userInfoDao: UserInfoDao,
     private val musicAllDao: MusicAllDao,
     private val musicLabelDao: MusicLabelDao,
-    private val playlistDao: PlaylistDao,
-    private val playlistItemDao: PlaylistItemDao,
     private val playbackHistoryDao: PlaybackHistoryDao,
     private val listeningDurationDao: ListeningDurationDao,
     private val deepSeekAPIWrapper: DeepSeekAPIWrapper,
     private val multiProviderApiAdapter: MultiProviderApiAdapter,
     private val gson: Gson,
     @ApplicationContext private val context: Context
-) {
+) : MusicRepository {
 
     // ------------------- 音乐相关操作 -------------------
 
-    /**
-     * 获取分页的音乐列表(Paging 3)
-     * @param pageSize 每页大小,默认20条
-     */
-    fun getAllMusicInfoPaged(pageSize: Int = 20): Flow<PagingData<MusicInfo>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = pageSize,
-                enablePlaceholders = false,
-                prefetchDistance = 10
-            ),
-            pagingSourceFactory = { musicAllDao.getAllMusicInfoPaged() }
-        ).flow
-    }
-
-    // 排序音乐
     private val musicFields = listOf("id", "title", "artist", "album", "duration")
     private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "year")
     private val userInfoFields = listOf("liked", "disLiked", "lastPlayed", "playCount", "skippedCount", "userRating")
-    suspend fun getAllMusicInfoAsList(orderBy: String = "id", orderType: String = "ASC"): List<MusicInfo> {
+
+    override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
         val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
         val tablePrefix = when {
             musicFields.contains(orderBy) -> "music"
@@ -112,44 +89,34 @@ class MusicRepository @Inject constructor(
         """.trimIndent()
 
         val query = SimpleSQLiteQuery(queryString)
-        return musicAllDao.getAllMusicInfoAsList(query)
+        return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
     }
 
-    // 随机获取一首歌曲
-    suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo? {
-        return musicAllDao.getRandomMusicInfoWithMissingExtra()
+    override suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo? {
+        return musicAllDao.getRandomMusicInfoWithMissingExtra()?.toDomain()
     }
 
-    suspend fun getRandomMusicInfoWithExtra(): MusicInfo? {
-        return musicAllDao.getRandomMusicInfoWithExtra()
+    override suspend fun getRandomMusicInfoWithExtra(): MusicInfo? {
+        return musicAllDao.getRandomMusicInfoWithExtra()?.toDomain()
     }
 
-    // 获取当前数据库音乐数量
-    fun getMusicCount(): Flow<Int> = musicDao.getMusicCount()
+    override fun getMusicCount(): Flow<Int> = musicDao.getMusicCount()
 
-    // 获取当前已获得额外信息的音乐数量
-    fun getMusicWithExtraCount(): Flow<Int> = musicExtraDao.getExtraInfoNum()
+    override fun getMusicWithExtraCount(): Flow<Int> = musicExtraDao.getExtraInfoNum()
     
-    // 获取当前未获得额外信息的音乐数量（待处理数量）
-    fun getMusicWithMissingExtraCount(): Flow<Int> = musicAllDao.getMusicWithMissingExtraCount()
+    override fun getMusicWithMissingExtraCount(): Flow<Int> = musicAllDao.getMusicWithMissingExtraCount()
 
-    val musicWithoutExtraCount : Flow<Int> = musicExtraDao.getMusicWithoutExtraCount()
+    override fun getMusicInfoById(musicId: Long): Flow<MusicInfo?> = musicAllDao.getMusicInfoById(musicId).map { it?.toDomain() }
 
-    // 根据 ID 获取音乐信息(用于状态监听)
-    fun getMusicInfoById(musicId: Long): Flow<MusicInfo?> = musicAllDao.getMusicInfoById(musicId)
-
-    // 更新音乐的红心状态(用户喜欢与否)
-    suspend fun updateLikedStatus(id: Long, liked: Boolean) {
+    override suspend fun updateLikedStatus(id: Long, liked: Boolean) {
         userInfoDao.updateLikedStatus(id, liked)
     }
 
-    // 获取音乐的红心状态
-    suspend fun getLikedStatus(id: Long): Boolean {
+    override suspend fun getLikedStatus(id: Long): Boolean {
         return userInfoDao.getLikedStatus(id)
     }
     
-    // 根据歌手名获取音乐列表
-    suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
+    override suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
         val queryString = """
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
@@ -159,40 +126,51 @@ class MusicRepository @Inject constructor(
         """.trimIndent()
         
         val query = SimpleSQLiteQuery(queryString, arrayOf(artistName))
-        return musicAllDao.getAllMusicInfoAsList(query)
+        return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
     }
 
-    // 根据关键词搜索音乐(匹配标题或艺术家名)
-    suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%")
+    override suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%").map { it.toDomain() }
 
-    // 添加音乐标签
-    suspend fun addMusicLabel(label: MusicLabel) {
-        if(label.label!=LabelName.UNKNOWN) musicLabelDao.insert(label)
+    override suspend fun addMusicLabel(label: MusicLabelDomain) {
+        if(label.label != LabelName.UNKNOWN) musicLabelDao.insert(label.toEntity())
         else println("UNKNOWN Label!")
     }
 
-    // 依据 LabelType获取 LabelName
-    fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>> {
-        return musicLabelDao.getLabelsByType(type)
+    override fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>> {
+        val dataType = try {
+            DataLabelCategory.valueOf(type.name)
+        } catch (e: Exception) {
+            return kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+        return musicLabelDao.getLabelsByType(dataType).map { list ->
+            list.mapNotNull { dataLabel ->
+                try {
+                    LabelName.valueOf(dataLabel.name)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
     }
 
-    // 依据 LabelName 获取 Music
-    suspend fun getMusicIdListByType(label: LabelName): List<Long>{
-        return musicLabelDao.getMusicIdListByType(label)
+    override suspend fun getMusicIdListByType(label: LabelName): List<Long>{
+        val dataLabel = try {
+            DataLabelName.valueOf(label.name)
+        } catch (e: Exception) {
+            return emptyList()
+        }
+        return musicLabelDao.getMusicIdListByType(dataLabel)
     }
 
-    // 获取音乐标签
-    suspend fun getMusicLabels(musicId: Long): List<MusicLabel> {
-        return musicLabelDao.getLabelsById(musicId)
+    override suspend fun getMusicLabels(musicId: Long): List<MusicLabelDomain> {
+        return musicLabelDao.getLabelsById(musicId).map { it.toDomain() }
     }
 
-    // 获取音乐歌词
-    suspend fun getMusicLyrics(musicId: Long): String? {
+    override suspend fun getMusicLyrics(musicId: Long): String? {
         return musicExtraDao.getLyricsById(musicId)
     }
 
-    // 插入音乐额外信息
-    suspend fun insertMusicExtra(musicId:Long, musicExtraInfo: DailyMusicInfo) {
+    override suspend fun insertMusicExtra(musicId: Long, musicExtraInfo: DailyMusicInfo) {
         musicExtraDao.updateExtraFieldsById(
             id = musicId,
             rewards = musicExtraInfo.rewards,
@@ -203,8 +181,8 @@ class MusicRepository @Inject constructor(
             relevantMusic = musicExtraInfo.relevantMusic
         )
     }
-    // 获取音乐额外信息
-    suspend fun getMusicExtraById(musicId:Long):DailyMusicInfo {
+
+    override suspend fun getMusicExtraById(musicId: Long): DailyMusicInfo {
         val info = musicExtraDao.getExtraFieldsById(musicId)
         return DailyMusicInfo(
             genre = emptyList(),
@@ -222,41 +200,35 @@ class MusicRepository @Inject constructor(
         )
     }
 
-    // ==================== 多服务商 API 调用方法 ====================
-    
-    /**
-     * 使用指定服务商获取音乐的扩展信息
-     */
-    suspend fun fetchMusicExtraInfoWithProvider(
+    override suspend fun fetchMusicExtraInfoWithProvider(
         providerConfig: AiProviderConfig,
         title: String,
         artist: String
-    ): Result<DailyMusicInfo> = safeCall {
+    ): kotlin.Result<DailyMusicInfo> {
         val prompt = buildMusicInfoPrompt(title, artist)
         
-        when (val result = multiProviderApiAdapter.callChatApi(providerConfig, prompt)) {
+        return when (val result = multiProviderApiAdapter.callChatApi(providerConfig, prompt)) {
             is AiApiResult.Success -> {
-                gson.fromJson(result.data, DailyMusicInfo::class.java)
+                try {
+                    val info = gson.fromJson(result.data, DailyMusicInfo::class.java)
+                    kotlin.Result.success(info)
+                } catch (e: Exception) {
+                    kotlin.Result.failure(e)
+                }
             }
             is AiApiResult.Error -> {
-                throw Exception(result.error.toDisplayMessage())
+                kotlin.Result.failure(Exception(result.error.toDisplayMessage()))
             }
         }
     }
     
-    /**
-     * 使用指定服务商校验 API Key
-     */
-    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean> = safeCall {
-        when (val result = multiProviderApiAdapter.testConnection(providerConfig)) {
-            is AiApiResult.Success -> true
-            is AiApiResult.Error -> throw Exception(result.error.toDisplayMessage())
+    override suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): kotlin.Result<Boolean> {
+        return when (val result = multiProviderApiAdapter.testConnection(providerConfig)) {
+            is AiApiResult.Success -> kotlin.Result.success(true)
+            is AiApiResult.Error -> kotlin.Result.failure(Exception(result.error.toDisplayMessage()))
         }
     }
     
-    /**
-     * 构建音乐信息查询的 Prompt
-     */
     private fun buildMusicInfoPrompt(title: String, artist: String): String {
         return """
             请根据由 $artist 演唱的歌曲《$title》，用中文以下面的JSON格式依据提示回复相关信息（不要添加任何其他内容）：
@@ -283,104 +255,61 @@ class MusicRepository @Inject constructor(
         """.trimIndent()
     }
 
-    // 从设备本地加载音乐文件(过滤掉时长少于 1 分钟的)
-    // 用 StateFlow 通知外部扫描状态
-    private val _isScanning = MutableStateFlow(true)
-    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
-    
-    // 扫描状态
-    data class ScanProgress(
-        val currentCount: Int = 0,
-        val totalCount: Int = 0,
-        val isScanning: Boolean = false,
-        val error: String? = null
-    )
-    
-    private val _scanProgress = MutableStateFlow(ScanProgress())
-    val scanProgress: StateFlow<ScanProgress> = _scanProgress.asStateFlow()
+    private val _isScanning = MutableStateFlow(false)
+    override val isScanning: Flow<Boolean> = _isScanning.asStateFlow()
     
     companion object {
-        private const val BATCH_SIZE = 50 // 分批大小
-        private const val MIN_DURATION_MS = 60000L // 1分钟
+        private const val BATCH_SIZE = 50 
+        private const val MIN_DURATION_MS = 60000L 
     }
     
-    /**
-     * 从设备加载音乐,使用 Result 封装错误
-     */
-    suspend fun loadMusicFromDevice(): Result<Unit> = withContext(Dispatchers.IO) {
-        safeCall {
-            _isScanning.value = true
-            _scanProgress.value = ScanProgress(isScanning = true)
+    override suspend fun loadMusicFromDevice(): kotlin.Result<Unit> = withContext(Dispatchers.IO) {
+        _isScanning.value = true
+        try {
+            val (musicList, extraList, userInfoList) = performMusicScan()
             
-            try {
-                val (musicList, extraList, userInfoList) = performMusicScan()
-                
-                // 分批插入数据,减少内存压力
-                musicDao.deleteAll()
-                musicExtraDao.deleteAll()
-                userInfoDao.deleteAll()
-                
-                // 分批插入
-                musicList.chunked(BATCH_SIZE).forEach { batch ->
-                    musicDao.insertAll(batch)
-                }
-                
-                extraList.chunked(BATCH_SIZE).forEach { batch ->
-                    musicExtraDao.insertAll(batch)
-                }
-                
-                userInfoList.chunked(BATCH_SIZE).forEach { batch ->
-                    userInfoDao.insertAll(batch)
-                }
-                
-                _scanProgress.value = ScanProgress(
-                    currentCount = musicList.size,
-                    totalCount = musicList.size,
-                    isScanning = false
-                )
-            } catch (e: Exception) {
-                Log.e("MusicRepository", "Music scan failed", e)
-                _scanProgress.value = ScanProgress(
-                    isScanning = false,
-                    error = e.message ?: "Unknown error"
-                )
-                throw e
-            } finally {
-                _isScanning.value = false
+            musicDao.deleteAll()
+            musicExtraDao.deleteAll()
+            userInfoDao.deleteAll()
+            
+            musicList.chunked(BATCH_SIZE).forEach { batch ->
+                musicDao.insertAll(batch)
             }
+            
+            extraList.chunked(BATCH_SIZE).forEach { batch ->
+                musicExtraDao.insertAll(batch)
+            }
+            
+            userInfoList.chunked(BATCH_SIZE).forEach { batch ->
+                userInfoDao.insertAll(batch)
+            }
+            
+            kotlin.Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Music scan failed", e)
+            kotlin.Result.failure(e)
+        } finally {
+            _isScanning.value = false
         }
     }
 
-    /**
-     * 读取歌词,带异常处理
-     */
     private fun getLyrics(file: File): String? {
         return try {
             if (!file.exists() || !file.canRead()) {
-                Log.w("MusicRepository", "File not accessible: ${file.path}")
                 return null
             }
             
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tag
-            // 尝试多种歌词标签读取
-            tag?.getFirst(FieldKey.LYRICS)                  // 标准标签
-                ?: tag?.getFirst("UNSYNCEDLYRICS")          // 异步歌词标签
-                ?: tag?.getFirst("USLT")                    // ID3v2 Lyrics Frame
-                ?: tag?.getFirst("LYRICS:SYNCED")           // 部分FLAC特殊标签
-        } catch (e: OutOfMemoryError) {
-            Log.e("MusicRepository", "OOM while reading lyrics: ${file.path}", e)
-            null
+            tag?.getFirst(FieldKey.LYRICS)
+                ?: tag?.getFirst("UNSYNCEDLYRICS")
+                ?: tag?.getFirst("USLT")
+                ?: tag?.getFirst("LYRICS:SYNCED")
         } catch (e: Exception) {
-            Log.e("MusicRepository", "Failed to read lyrics: ${file.path}", e)
             null
         }
     }
 
-
-    /**
-     * 执行音乐扫描,带进度报告和异常处理
-     */
     private suspend fun performMusicScan(): Triple<List<Music>, List<MusicExtra>, List<UserInfo>> = withContext(Dispatchers.IO) {
         val musicList = mutableListOf<Music>()
         val musicExtraList = mutableListOf<MusicExtra>()
@@ -412,9 +341,6 @@ class MusicRepository @Inject constructor(
                 selectionArgs,
                 sortOrder
             )?.use { cursor ->
-                val totalCount = cursor.count
-                var currentCount = 0
-                
                 while (cursor.moveToNext()) {
                     try {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
@@ -440,7 +366,7 @@ class MusicRepository @Inject constructor(
                             bitRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull()?.div(1000)
                             sampleRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull()
                         } catch (e: Exception) {
-                            Log.e("MusicRepository", "Failed to extract metadata for: $path", e)
+                            // ignore
                         }
 
                         val lyrics = File(path).let { file ->
@@ -476,18 +402,8 @@ class MusicRepository @Inject constructor(
                                 id = id,
                             )
                         )
-                        
-                        currentCount++
-                        if (currentCount % 10 == 0) {
-                            _scanProgress.value = ScanProgress(
-                                currentCount = currentCount,
-                                totalCount = totalCount,
-                                isScanning = true
-                            )
-                        }
                     } catch (e: Exception) {
                         Log.e("MusicRepository", "Error processing music item", e)
-                        // 继续处理下一项
                     }
                 }
             }
@@ -495,64 +411,11 @@ class MusicRepository @Inject constructor(
             try {
                 retriever.release()
             } catch (e: Exception) {
-                Log.e("MusicRepository", "Failed to release MediaMetadataRetriever", e)
+                // ignore
             }
         }
         
         Triple(musicList, musicExtraList, userInfoList)
-    }
-
-    // 删除所有信息
-    suspend fun clearAllDataBase() {
-        musicDao.deleteAll()
-        musicExtraDao.deleteAll()
-        userInfoDao.deleteAll()
-        playlistDao.deleteAll()
-        playbackHistoryDao.deleteAll()
-    }
-
-
-    // ------------------- 播放列表相关操作 -------------------
-
-    // 创建一个新的播放列表并返回其 ID
-    suspend fun createPlaylist(name: String): Long {
-        return playlistDao.insert(Playlist(name = name))
-    }
-
-    // 删除一个播放列表
-    suspend fun removePlaylist(name: String){
-        playlistDao.deletePlaylist(name = name)
-    }
-
-    // 向指定播放列表中添加一首音乐
-    suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {
-        val item = PlaylistItem(
-            songUrl = musicPath,
-            songId = musicId,
-            playlistId = playlistId,
-        )
-        playlistItemDao.insert(item)
-    }
-
-    // 从播放列表中移除一项(通过歌曲与播放列表的 ID)
-    suspend fun removeItemFromPlaylist(musicId: Long, playlistId: Long) {
-        playlistItemDao.deleteItemByIds(musicId,playlistId)
-    }
-
-    // 更新播放列表
-    suspend fun resetPlaylistItems(playlistId: Long, musicList: List<MusicInfo>) {
-        playlistItemDao.resetPlaylistItems(playlistId, musicList)
-    }
-
-    // 获取播放列表
-    fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>> {
-        return playlistItemDao.getMusicInfoInPlaylist(playlistId)
-    }
-    suspend fun getPlaylistById(playlistId: Long): List<MusicInfo> {
-        return playlistItemDao.getPlaylistById(playlistId)
-    }
-    suspend fun getPlaylistByIdList(playlistIdList: List<Long>): List<MusicInfo> {
-        return musicAllDao.getPlaylistByIdList(playlistIdList)
     }
 
     val labelCategoryWeight = mapOf(
@@ -564,8 +427,8 @@ class MusicRepository @Inject constructor(
     )
 
     private fun calcSimilarity(
-        baseLabels: List<MusicLabel>,
-        targetLabels: List<MusicLabel>
+        baseLabels: List<MusicLabelDomain>,
+        targetLabels: List<MusicLabelDomain>
     ): Int {
         var score = 0
         for (base in baseLabels) {
@@ -580,14 +443,14 @@ class MusicRepository @Inject constructor(
         return score
     }
 
-    suspend fun getSimilarSongsByWeightedLabels(
+    override suspend fun getSimilarSongsByWeightedLabels(
         musicId: Long,
-        limit: Int = 10
+        limit: Int
     ): List<MusicInfo> {
         val baseLabels = getMusicLabels(musicId)
         if (baseLabels.isEmpty()) return emptyList()
 
-        val allMusic = getAllMusicInfoAsList()
+        val allMusic = getAllMusicInfoAsList("id", "ASC")
         return allMusic
             .filter { it.music.id != musicId }
             .map { musicInfo ->
@@ -601,32 +464,15 @@ class MusicRepository @Inject constructor(
             .map { it.first }
     }
 
-
-
     // ------------------- 用户播放记录相关操作 -------------------
 
-    //插入一条播放记录
-    suspend fun insertPlayback(history: PlaybackHistory) {
-        playbackHistoryDao.insert(history)
+    // 插入一条播放记录
+    override suspend fun insertPlayback(history: PlaybackHistoryDomain) {
+        playbackHistoryDao.insert(history.toEntity())
     }
-//
-//    //获取最近播放记录
-//    fun getRecentHistory(limit: Int): Flow<List<PlaybackHistory>> {
-//        return playbackHistoryDao.getRecentHistory(limit)
-//    }
-//
-//    //获取某首歌曲的所有播放记录
-//    fun getHistoryForMusic(musicId: Long): Flow<List<PlaybackHistory>> {
-//        return playbackHistoryDao.getHistoryForMusic(musicId)
-//    }
-//
-//    //获取播放次数最多的歌曲排行
-//    fun getTopPlayed(): Flow<List<PlayCountEntry>> {
-//        return playbackHistoryDao.getTopPlayed()
-//    }
-
+    
     // 记录收听时长
-    suspend fun recordListeningDuration(duration: Long) {
+    override suspend fun recordListeningDuration(duration: Long) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val existing = listeningDurationDao.getDurationByDate(today)
         
@@ -646,8 +492,7 @@ class MusicRepository @Inject constructor(
         }
     }
     
-    // 获取最近7天的收听记录
-    fun getRecentListeningDurations(): Flow<List<ListeningDuration>> {
-        return listeningDurationDao.getRecentDurations(7)
+    override fun getRecentListeningDurations(limit: Int): Flow<List<ListeningDurationDomain>> {
+        return listeningDurationDao.getRecentDurations(limit).map { list -> list.map { it.toDomain() } }
     }
 }

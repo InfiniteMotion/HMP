@@ -1,6 +1,18 @@
 package com.example.hearablemusicplayer.domain.model
 
 /**
+ * 音效预设数据类
+ * @param id 预设ID
+ * @param name 预设名称
+ * @param description 预设描述
+ */
+data class AudioEffectPreset(
+    val id: Int,
+    val name: String,
+    val description: String
+)
+
+/**
  * 音效设置数据类
  * @param equalizerPreset 当前均衡器预设ID
  * @param bassBoostLevel 低音增强级别（0-100）
@@ -40,3 +52,19 @@ data class AudioEffectSettings(
         return result
     }
 }
+
+/**
+ * 均衡器频段数据类
+ * @param bandIndex 频段索引
+ * @param frequency 频段中心频率（Hz）
+ * @param level 当前增益值（dB）
+ * @param minLevel 最小增益值（dB）
+ * @param maxLevel 最大增益值（dB）
+ */
+data class EqualizerBand(
+    val bandIndex: Int,
+    val frequency: Int,
+    val level: Float,
+    val minLevel: Int,
+    val maxLevel: Int
+)

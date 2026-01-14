@@ -27,9 +27,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.data.database.myenum.LabelName
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
 import com.example.hearablemusicplayer.ui.util.Routes
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListGroupName(
@@ -73,9 +73,9 @@ fun ListGroupName(
 @Composable
 fun ListBanner(
     listName: String = "",
-    listCoverUri: Any,
-    getSelectedPlaylist: (String) -> Unit,
-    navigate: (String) -> Unit,
+    listCoverUri: Int,
+    playlistViewModel: PlaylistViewModel,
+    navController: NavController
 ) {
     val imageModifier = Modifier
         .size(100.dp)
@@ -87,8 +87,8 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                getSelectedPlaylist(listName)
-                navigate(Routes.PLAYLIST)
+                playlistViewModel.getSelectedPlaylist(listName)
+                navController.navigate(Routes.PLAYLIST)
             }
     ) {
         AsyncImage(
@@ -112,8 +112,8 @@ fun ListBanner(
 @Composable
 fun ListBanner(
     listName: LabelName,
-    listCoverUri: Any,
-    musicViewModel: MusicViewModel,
+    listCoverUri: Int,
+    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     val imageModifier = Modifier
@@ -126,7 +126,7 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                musicViewModel.getSelectedPlaylist(listName)
+                playlistViewModel.getSelectedPlaylist(listName)
                 navController.navigate(Routes.PLAYLIST)
             }
     ) {

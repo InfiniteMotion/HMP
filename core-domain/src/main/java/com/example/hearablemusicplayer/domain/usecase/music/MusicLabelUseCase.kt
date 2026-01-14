@@ -1,30 +1,22 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
-import com.example.hearablemusicplayer.data.database.myenum.LabelName
-import com.example.hearablemusicplayer.data.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
  * 音乐标签Use Case
- * 
- * 负责音乐标签的完整管理，包括：
- * - 添加单个或批量添加标签（风格、情绪、场景、语言、年代）
- * - 查询音乐的所有标签
- * - 根据标签类型获取所有标签名
- * - 根据标签查询音乐列表
- * 
- * @property musicRepository 音乐数据仓库
  */
 class MusicLabelUseCase @Inject constructor(
-    private val musicRepository: MusicRepository
+    private val musicRepository: MusicRepository,
+    private val playlistRepository: PlaylistRepository
 ) {
     /**
      * 添加单个音乐标签
-     * 
-     * @param musicLabel 要添加的标签
      */
     suspend fun addMusicLabel(musicLabel: MusicLabel) {
         musicRepository.addMusicLabel(musicLabel)
@@ -32,12 +24,6 @@ class MusicLabelUseCase @Inject constructor(
 
     /**
      * 批量添加音乐标签
-     * 
-     * 从AI生成的标签数据中批量添加音乐标签，
-     * 包括风格、情绪、场景、语言和年代标签。
-     * 
-     * @param musicId 音乐ID
-     * @param labels 所有类型的标签数据
      */
     suspend fun addMusicLabels(musicId: Long, labels: MusicLabels) {
         // 添加风格标签
@@ -105,22 +91,13 @@ class MusicLabelUseCase @Inject constructor(
     /**
      * 获取指定标签的音乐列表
      */
-    suspend fun getMusicListByLabel(labelName: LabelName) = musicRepository.getPlaylistByIdList(
+    suspend fun getMusicListByLabel(labelName: LabelName) = playlistRepository.getPlaylistByIdList(
         musicRepository.getMusicIdListByType(labelName)
     )
 }
 
 /**
  * 音乐标签数据类
- * 
- * 用于批量添加标签时传递所有类型的标签。
- * 通常由AI生成后使用。
- * 
- * @property genres 风格标签列表（如ROCK, POP, JAZZ）
- * @property moods 情绪标签列表（如HAPPY, SAD, CALM）
- * @property scenarios 场景标签列表（如WORKOUT, SLEEP, PARTY）
- * @property language 语言标签（如CHINESE, ENGLISH）
- * @property era 年代标签（如1970S, 1980S）
  */
 data class MusicLabels(
     val genres: List<String> = emptyList(),

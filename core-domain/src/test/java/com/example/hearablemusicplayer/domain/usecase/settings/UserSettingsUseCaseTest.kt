@@ -1,7 +1,7 @@
 package com.example.hearablemusicplayer.domain.usecase.settings
 
 import app.cash.turbine.test
-import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import com.example.hearablemusicplayer.domain.CoroutineTestRule
 import io.mockk.coEvery
 import io.mockk.coVerify

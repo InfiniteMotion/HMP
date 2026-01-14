@@ -1,8 +1,9 @@
 package com.example.hearablemusicplayer.domain.usecase.playback
 
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.repository.MusicRepository
-import com.example.hearablemusicplayer.data.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.repository.PlaylistRepository
+import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -17,10 +18,12 @@ import javax.inject.Inject
  * - 相似歌曲推荐
  * 
  * @property musicRepository 音乐数据仓库
+ * @property playlistRepository 播放列表数据仓库
  * @property settingsRepository 设置数据仓库
  */
 class CurrentPlaybackUseCase @Inject constructor(
     private val musicRepository: MusicRepository,
+    private val playlistRepository: PlaylistRepository,
     private val settingsRepository: SettingsRepository
 ) {
     /**
@@ -29,7 +32,7 @@ class CurrentPlaybackUseCase @Inject constructor(
      * @return 音乐列表Flow
      */
     fun getMusicInPlaylist(playlistId: Long): Flow<List<MusicInfo>> {
-        return musicRepository.getMusicInfoInPlaylist(playlistId)
+        return playlistRepository.getMusicInfoInPlaylist(playlistId)
     }
     
     /**

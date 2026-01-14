@@ -1,6 +1,6 @@
 package com.example.hearablemusicplayer.ui.util
 
-import com.example.hearablemusicplayer.data.database.myenum.LabelName
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
 import com.example.hearablemusicplayer.ui.R
 
 /**

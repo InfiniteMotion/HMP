@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.data.database.MusicExtra
-import com.example.hearablemusicplayer.data.database.MusicLabel
+import com.example.hearablemusicplayer.domain.model.MusicExtra
+import com.example.hearablemusicplayer.domain.model.MusicLabel
 
 @Composable
 fun Capsule(

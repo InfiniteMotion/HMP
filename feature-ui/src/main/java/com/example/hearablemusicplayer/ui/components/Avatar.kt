@@ -26,7 +26,7 @@ fun Avatar(
         )
     } else {
         Image(
-            painter = painterResource(R.drawable.avatar),
+            painter = painterResource(R.drawable.none),
             contentDescription = "User Avatar",
             modifier = Modifier
                 .size(aSize.dp)

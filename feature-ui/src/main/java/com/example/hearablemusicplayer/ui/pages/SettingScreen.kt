@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import android.net.Uri
 import android.widget.Toast
@@ -48,50 +48,90 @@ import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
 @Composable
 fun SettingScreen(
-    viewModel: MusicViewModel,
+    settingsViewModel: SettingsViewModel,
+    libraryViewModel: LibraryViewModel,
     navController: NavController
+) {
+    val avatarUri by settingsViewModel.avatarUri.collectAsState("")
+    val userName by settingsViewModel.userName.collectAsState("")
+    val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
+    
+    // Daily Refresh Settings State
+    val refreshMode by settingsViewModel.dailyRefreshMode.collectAsState()
+    val refreshHours by settingsViewModel.dailyRefreshHours.collectAsState()
+    val startupCount by settingsViewModel.dailyRefreshStartupCount.collectAsState()
+
+    SettingScreenContent(
+        avatarUri = avatarUri,
+        userName = userName,
+        musicCount = musicCount,
+        refreshMode = refreshMode,
+        refreshHours = refreshHours,
+        startupCount = startupCount,
+        onBackClick = { navController.popBackStack() },
+        onSaveAvatarUri = settingsViewModel::saveAvatarUri,
+        onSaveUserName = settingsViewModel::saveUserName,
+        onRefreshMusicList = libraryViewModel::refreshMusicList,
+        onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
+        onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
+        onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount
+    )
+}
+
+@Composable
+fun SettingScreenContent(
+    avatarUri: String,
+    userName: String,
+    musicCount: Int,
+    refreshMode: String,
+    refreshHours: Int,
+    startupCount: Int,
+    onBackClick: () -> Unit,
+    onSaveAvatarUri: (String) -> Unit,
+    onSaveUserName: (String) -> Unit,
+    onRefreshMusicList: () -> Unit,
+    onSaveDailyRefreshMode: (String) -> Unit,
+    onSaveDailyRefreshHours: (Int) -> Unit,
+    onSaveDailyRefreshStartupCount: (Int) -> Unit
 ) {
     // 使用SubScreen模板
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "设置"
     ) {
         Column(
-            modifier = Modifier
+            modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
-            val avatarUri by viewModel.avatarUri.collectAsState("")
-            val userName by viewModel.userName.collectAsState("")
-            val musicCount by viewModel.musicCount.collectAsState(initial = 0)
-
-
             UpdateAvatar(
                 avatarUri = avatarUri,
-                updateAvatar = viewModel::saveAvatarUri
+                updateAvatar = onSaveAvatarUri
             )
-
             UpdateUserName(
                 userName = userName,
-                updateUserName = viewModel::saveUserName
+                updateUserName = onSaveUserName
             )
-            
             DailyRefreshSettings(
-                viewModel = viewModel
+                refreshMode = refreshMode,
+                refreshHours = refreshHours,
+                startupCount = startupCount,
+                onSaveRefreshMode = onSaveDailyRefreshMode,
+                onSaveRefreshHours = onSaveDailyRefreshHours,
+                onSaveStartupCount = onSaveDailyRefreshStartupCount
             )
-
             ReloadMusic(
                 musicCount = musicCount,
-                refreshMusicList = viewModel::refreshMusicList
+                refreshMusicList = onRefreshMusicList
             )
         }
     }
@@ -320,11 +360,13 @@ fun ReloadMusic(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyRefreshSettings(
-    viewModel: MusicViewModel
+    refreshMode: String,
+    refreshHours: Int,
+    startupCount: Int,
+    onSaveRefreshMode: (String) -> Unit,
+    onSaveRefreshHours: (Int) -> Unit,
+    onSaveStartupCount: (Int) -> Unit
 ) {
-    val refreshMode by viewModel.dailyRefreshMode.collectAsState()
-    val refreshHours by viewModel.dailyRefreshHours.collectAsState()
-    val startupCount by viewModel.dailyRefreshStartupCount.collectAsState()
     val context = LocalContext.current
     
     TitleWidget(
@@ -362,8 +404,8 @@ fun DailyRefreshSettings(
                     label = { Text("刷新模式") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
+                    .fillMaxWidth()
+                    .menuAnchor(),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Transparent,
                         unfocusedIndicatorColor = Transparent,
@@ -379,7 +421,7 @@ fun DailyRefreshSettings(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                viewModel.saveDailyRefreshMode(mode)
+                                onSaveRefreshMode(mode)
                                 expanded = false
                                 Toast.makeText(context, "已切换到: $label", Toast.LENGTH_SHORT).show()
                             }
@@ -399,7 +441,7 @@ fun DailyRefreshSettings(
                             hoursText = it
                             it.toIntOrNull()?.let { hours ->
                                 if (hours > 0) {
-                                    viewModel.saveDailyRefreshHours(hours)
+                                    onSaveRefreshHours(hours)
                                 }
                             }
                         },
@@ -428,7 +470,7 @@ fun DailyRefreshSettings(
                             countText = it
                             it.toIntOrNull()?.let { count ->
                                 if (count > 0) {
-                                    viewModel.saveDailyRefreshStartupCount(count)
+                                    onSaveStartupCount(count)
                                 }
                             }
                         },

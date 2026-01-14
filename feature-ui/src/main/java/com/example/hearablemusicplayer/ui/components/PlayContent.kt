@@ -38,13 +38,12 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,20 +57,15 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.hearablemusicplayer.data.database.Music
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.myenum.PlaybackMode
+import com.example.hearablemusicplayer.domain.model.Music
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
-import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -86,26 +80,34 @@ fun formatTime(millis: Long): String {
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayContent(
-    viewModel: PlayControlViewModel,
-    navController: NavController,
-    musicViewModel: MusicViewModel
+    musicInfo: MusicInfo?,
+    isPlaying: Boolean,
+    currentPosition: Long,
+    duration: Long,
+    playbackMode: PlaybackMode,
+    remainingTime: Long?,
+    isLiked: Boolean,
+    labels: List<MusicLabel?>,
+    lyrics: String?,
+    playlist: List<MusicInfo>,
+    currentIndex: Int,
+    onBackClick: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    onPlaybackModeChange: () -> Unit,
+    onFavorite: () -> Unit,
+    onTimerClick: (Int) -> Unit,
+    onCancelTimer: () -> Unit,
+    onHeartMode: () -> Unit,
+    onArtistClick: (String) -> Unit,
+    onClearPlaylist: () -> Unit,
+    onPlayItem: suspend (MusicInfo) -> Unit,
+    onMoveToTop: (MusicInfo) -> Unit,
+    onRemoveFromPlaylist: (MusicInfo) -> Unit
 ){
     val haptic = rememberHapticFeedback()
-
-    // 开启播放进度监督
-    DisposableEffect(Unit) {
-        viewModel.startProgressTracking()
-        onDispose {
-            viewModel.stopProgressTracking()
-        }
-    }
-
-    val musicInfo by viewModel.currentPlayingMusic.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val currentPosition by viewModel.currentPosition.collectAsState()
-    val duration by viewModel.duration.collectAsState()
-    val playbackMode by viewModel.playbackMode.collectAsState()
-    val remainingTime by viewModel.timerRemaining.collectAsState()
 
     if (musicInfo == null) {
         // 当前没有播放的音乐时显示文字
@@ -116,21 +118,16 @@ fun PlayContent(
             Box(
                 modifier = Modifier.align(Alignment.TopCenter)
             ){
-                PlayerHeader(navController)
+                PlayerHeader(onBackClick)
             }
             Text("当前音乐: 无", color = MaterialTheme.colorScheme.onSurface)
         }
     } else {
-        viewModel.getLikedStatus(musicInfo!!.music.id)
-        viewModel.getMusicLabels(musicInfo!!.music.id)
-        viewModel.getMusicLyrics(musicInfo!!.music.id)
-        val isLiked by viewModel.likeStatus.collectAsState()
-        val labels by viewModel.currentMusicLabels.collectAsState()
-        val lyrics by viewModel.currentMusicLyrics.collectAsState()
         var showTimerDialog by remember { mutableStateOf(false) }
         
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             val scrollState = rememberScrollState()
             
@@ -138,24 +135,23 @@ fun PlayContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-            )
-            {
+            ) {
                 Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    PlayerHeader(navController)
+                    PlayerHeader(onBackClick)
                     Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo!!.music, navController, musicViewModel)
+                    MusicInfo(musicInfo.music, onArtistClick)
                     Spacer(modifier = Modifier.height(16.dp))
                     MusicInfoExtra(
-                        musicInfo = musicInfo!!,
+                        musicInfo = musicInfo,
                         labels = labels,
                         lyrics = lyrics,
                         currentPosition = currentPosition,
-                        onSeek = { viewModel.seekTo(it) }
+                        onSeek = onSeek
                     )
                 }
                 Spacer(modifier = Modifier.height(32.dp))
@@ -165,7 +161,7 @@ fun PlayContent(
                     SeekBar(
                         currentPosition = currentPosition,
                         duration = duration,
-                        onSeek = viewModel::seekTo
+                        onSeek = onSeek
                     )
                     // 播放控制按钮
                     PlaybackControls(
@@ -175,23 +171,23 @@ fun PlayContent(
                         remainingTime = remainingTime,
                         onPlayPause = {
                             haptic.performClick()
-                            if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume()
+                            onPlayPause()
                         },
                         onNext = {
                             haptic.performClick()
-                            viewModel.playNext()
+                            onNext()
                         },
                         onPrevious = {
                             haptic.performClick()
-                            viewModel.playPrevious()
+                            onPrevious()
                         },
                         onPlaybackModeChange = {
                             haptic.performContextClick()
-                            viewModel.togglePlaybackModeByOrder()
+                            onPlaybackModeChange()
                         },
                         onFavorite = {
                             haptic.performConfirm()
-                            viewModel.updateMusicLikedStatus(musicInfo!!,!isLiked)
+                            onFavorite()
                         },
                         onTimerClick = {
                             haptic.performClick()
@@ -199,10 +195,15 @@ fun PlayContent(
                         },
                         onHeartMode = {
                             haptic.performConfirm()
-                            viewModel.playHeartMode()
+                            onHeartMode()
                         },
-                        viewModel = viewModel,
-                        scrollState = scrollState
+                        scrollState = scrollState,
+                        playlist = playlist,
+                        currentIndex = currentIndex,
+                        onClearPlaylist = onClearPlaylist,
+                        onPlayItem = onPlayItem,
+                        onMoveToTop = onMoveToTop,
+                        onRemoveFromPlaylist = onRemoveFromPlaylist
                     )
                 }
             }
@@ -211,9 +212,9 @@ fun PlayContent(
                     onDismiss = { showTimerDialog = false },
                     onConfirm = { minutes: Int ->
                         if(minutes==0){
-                            viewModel.cancelTimer()
+                            onCancelTimer()
                         }else{
-                            viewModel.startTimer(minutes)
+                            onTimerClick(minutes)
                         }
                         showTimerDialog = false
                     }
@@ -225,7 +226,7 @@ fun PlayContent(
 
 // 顶部返回按钮
 @Composable
-fun PlayerHeader(navController: NavController) {
+fun PlayerHeader(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -234,7 +235,7 @@ fun PlayerHeader(navController: NavController) {
         horizontalArrangement = Arrangement.Center
     ) {
         IconButton(
-            onClick = { navController.popBackStack() },
+            onClick = onBackClick,
             modifier = Modifier.size(32.dp),
         ) {
             Icon(
@@ -249,7 +250,7 @@ fun PlayerHeader(navController: NavController) {
 
 // 歌曲标题、艺术家、专辑信息
 @Composable
-fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicViewModel) {
+fun MusicInfo(music: Music, onArtistClick: (String) -> Unit) {
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
@@ -269,8 +270,7 @@ fun MusicInfo(music: Music, navController: NavController, musicViewModel: MusicV
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickable {
-                    musicViewModel.getSelectedArtistMusicList(music.artist)
-                    navController.navigate(Routes.ARTIST)
+                    onArtistClick(music.artist)
                 }
             )
         Spacer(modifier = Modifier.height(4.dp))
@@ -401,7 +401,7 @@ fun PlaybackControls(
     isPlaying: Boolean,
     playbackMode: PlaybackMode,
     isLike: Boolean,
-    remainingTime:Long?,
+    remainingTime: Long?,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -409,15 +409,19 @@ fun PlaybackControls(
     onFavorite: () -> Unit,
     onTimerClick: () -> Unit,
     onHeartMode: () -> Unit,
-    viewModel: PlayControlViewModel,
-    scrollState: ScrollState
+    scrollState: ScrollState,
+    playlist: List<MusicInfo>,
+    currentIndex: Int,
+    onClearPlaylist: () -> Unit,
+    onPlayItem: suspend (MusicInfo) -> Unit,
+    onMoveToTop: (MusicInfo) -> Unit,
+    onRemoveFromPlaylist: (MusicInfo) -> Unit
 ) {
     var playlistExpanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
-    val playlist by viewModel.currentPlaylist.collectAsState()
-    val currentIndex by viewModel.currentIndex.collectAsState()
     val listState = rememberLazyListState()
     val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
     
     // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿
     LaunchedEffect(playlist.size, currentIndex) {
@@ -608,7 +612,7 @@ fun PlaybackControls(
                     TextButton(
                         onClick = {
                             haptic.performLightClick()
-                            viewModel.clearPlaylist()
+                            onClearPlaylist()
                         }
                     ) {
                         Text(
@@ -657,17 +661,17 @@ fun PlaybackControls(
                             index = index + 1,
                             onItemClick = {
                                 haptic.performClick()
-                                viewModel.viewModelScope.launch {
-                                    viewModel.playAt(musicInfo)
+                                coroutineScope.launch {
+                                    onPlayItem(musicInfo)
                                 }
                             },
                             onPinClick = {
                                 haptic.performConfirm()
-                                viewModel.moveToTop(musicInfo)
+                                onMoveToTop(musicInfo)
                             },
                             onRemoveClick = {
                                 haptic.performLightClick()
-                                viewModel.removeFromPlaylist(musicInfo)
+                                onRemoveFromPlaylist(musicInfo)
                             }
                         )
                     }
@@ -718,7 +722,8 @@ fun PlaylistItem(
         androidx.compose.foundation.Image(
             painter = rememberAsyncImagePainter(
                 model = musicInfo.music.albumArtUri,
-                placeholder = painterResource(R.drawable.unknown)
+                placeholder = painterResource(R.drawable.none),
+                error = painterResource(R.drawable.none)
             ),
             contentDescription = "Album art",
             modifier = Modifier
@@ -782,4 +787,3 @@ fun PlaylistItem(
         }
     }
 }
-

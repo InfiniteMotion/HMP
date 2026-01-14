@@ -42,25 +42,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.data.database.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonOne(
-    musicViewModel: MusicViewModel,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    selectedGenre: String,
+    selectedOrder: String,
+    onFilterGenreChange: (String) -> Unit,
+    onFilterOrderChange: (String) -> Unit,
+    onOrderPlay: () -> Unit,
+    onShufflePlay: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedGenre by musicViewModel.orderBy.collectAsState("title")
-    val selectedOrder by musicViewModel.orderType.collectAsState("ASC")
-    val playlist by musicViewModel.allMusic.collectAsState()
     val haptic = rememberHapticFeedback()
 
     Column {
@@ -86,8 +86,7 @@ fun PlayControlButtonOne(
             }
             IconButton(
                 onClick = {
-                    playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onOrderPlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -102,8 +101,7 @@ fun PlayControlButtonOne(
             IconButton(
                 onClick = {
                     haptic.performConfirm()
-                    playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onShufflePlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -182,10 +180,7 @@ fun PlayControlButtonOne(
                                     onClick = {
                                         haptic.performLightClick()
                                         (if (selectedGenre == eGenre) null else eGenre)?.let {
-                                            musicViewModel.updateOrderBy(
-                                                it
-                                            )
-                                            musicViewModel.getAllMusic()
+                                            onFilterGenreChange(it)
                                         }
                                     },
                                     label = { Text(text = genre, style = MaterialTheme.typography.titleSmall) },
@@ -216,10 +211,7 @@ fun PlayControlButtonOne(
                                     onClick = {
                                         haptic.performLightClick()
                                         (if (selectedOrder == eOrder) null else eOrder)?.let {
-                                            musicViewModel.updateOrderType(
-                                                it
-                                            )
-                                            musicViewModel.getAllMusic()
+                                            onFilterOrderChange(it)
                                         }
                                     },
                                     label = { Text(text = order, style = MaterialTheme.typography.titleSmall) },
@@ -240,12 +232,14 @@ fun PlayControlButtonOne(
 @OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonTwo(
-    playlist: List<MusicInfo>,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    onShufflePlay: () -> Unit,
+    onOrderPlay: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = 24.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -254,8 +248,7 @@ fun PlayControlButtonTwo(
             IconButton(
                     onClick = {
                         haptic.performConfirm()
-                        playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                        navController.navigate(Routes.PLAYER)
+                        onShufflePlay()
                     },
             modifier = Modifier
                 .size(32.dp)
@@ -271,8 +264,7 @@ fun PlayControlButtonTwo(
             IconButton(
                 onClick = {
                     haptic.performConfirm()
-                    playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onOrderPlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -292,13 +284,13 @@ fun PlayControlButtonTwo(
 
 @Composable
 fun BackButton(
-    navController: NavController
+    onClick: () -> Unit
 ){
     val haptic = rememberHapticFeedback()
     IconButton(
         onClick = {
             haptic.performClick()
-            navController.popBackStack()
+            onClick()
         },
     ) {
         Icon(

@@ -36,10 +36,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.data.database.DailyMusicInfo
-import com.example.hearablemusicplayer.data.database.MusicInfo
-import com.example.hearablemusicplayer.data.database.MusicLabel
-import com.example.hearablemusicplayer.data.database.myenum.LabelCategory
+import com.example.hearablemusicplayer.domain.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.model.MusicLabel
+import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
@@ -47,22 +47,65 @@ import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.MusicViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import kotlinx.coroutines.launch
+
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
-    musicViewModel: MusicViewModel,
-    playControlViewModel: PlayControlViewModel,
+    recommendationViewModel: RecommendationViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val scope = rememberCoroutineScope()
-    val dailyMusic by musicViewModel.dailyMusic.collectAsState(null)
-    val dailyMusicInfo by musicViewModel.dailyMusicInfo.collectAsState()
-    val dailyMusicLabel by musicViewModel.dailyMusicLabel.collectAsState()
+    val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
+    val dailyMusicInfo by recommendationViewModel.dailyMusicInfo.collectAsState()
+    val dailyMusicLabel by recommendationViewModel.dailyMusicLabel.collectAsState()
     val haptic = rememberHapticFeedback()
+
+    HomeScreenContent(
+        dailyMusic = dailyMusic,
+        dailyMusicInfo = dailyMusicInfo,
+        dailyMusicLabel = dailyMusicLabel,
+        onRefreshDailyMusic = {
+            haptic.performClick()
+            recommendationViewModel.refreshDailyMusicInfo()
+        },
+        onNavigateToAI = {
+            haptic.performClick()
+            navController.navigate(Routes.AI)
+        },
+        onPlayDailyMusic = { musicInfo ->
+            haptic.performClick()
+            scope.launch {
+                playControlViewModel.playWith(musicInfo)
+                playControlViewModel.recordPlayback(musicInfo.music.id, "Home")
+                navController.navigate(Routes.PLAYER)
+            }
+        },
+        onNavigateToDailyArtists = { artistName ->
+            haptic.performClick()
+            playlistViewModel.getSelectedArtistMusicList(artistName)
+            navController.navigate(Routes.ARTIST)
+        }
+    )
+}
+
+@Composable
+fun HomeScreenContent(
+    dailyMusic: MusicInfo?,
+    dailyMusicInfo: DailyMusicInfo?,
+    dailyMusicLabel: List<MusicLabel?>,
+    onRefreshDailyMusic: () -> Unit,
+    onNavigateToAI: () -> Unit,
+    onPlayDailyMusic: (MusicInfo) -> Unit,
+    onNavigateToDailyArtists: (String) -> Unit
+) {
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
     val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
@@ -72,10 +115,7 @@ fun HomeScreen(
         trailing = {
             // 手动刷新按钮
             IconButton(
-                onClick = {
-                    haptic.performClick()
-                    musicViewModel.refreshDailyMusicInfo()
-                }
+                onClick = onRefreshDailyMusic
             ) {
                 Icon(
                     painter = painterResource(R.drawable.player_d),
@@ -115,10 +155,7 @@ fun HomeScreen(
                             textAlign = TextAlign.Center
                         )
                         Button(
-                            onClick = {
-                                haptic.performClick()
-                                navController.navigate(Routes.AI)
-                            },
+                            onClick = onNavigateToAI,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
@@ -134,20 +171,9 @@ fun HomeScreen(
                 }
             } else {
                 DailyMusicBaseInfo(
-                    dailyMusic!!,
-                    playDailyMusic = {
-                                haptic.performClick()
-                                scope.launch {
-                                    playControlViewModel.playWith(dailyMusic!!)
-                                    playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
-                                    navController.navigate(Routes.PLAYER)
-                                }
-                            },
-                            navigateToDailyArtists = {
-                                haptic.performClick()
-                                musicViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
-                                navController.navigate(Routes.ARTIST)
-                            }
+                    dailyMusic,
+                    playDailyMusic = { onPlayDailyMusic(dailyMusic) },
+                    navigateToDailyArtists = { onNavigateToDailyArtists(dailyMusic.music.artist) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

@@ -28,14 +28,15 @@ data class PlaylistItem(
     val songUrl: String,
     val songId: Long,
     val playlistId: Long,
+    val itemOrder: Int = 0 // 添加排序字段，默认值为0
 )
 
 @Dao
 interface PlaylistItemDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: PlaylistItem): Long
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylist(items: List<PlaylistItem>)
 
     @Transaction
@@ -43,6 +44,7 @@ interface PlaylistItemDao {
         SELECT music.* FROM music 
         INNER JOIN playlist_item ON music.id = playlist_item.songId 
         WHERE playlist_item.playlistId = :playlistId
+        ORDER BY playlist_item.itemOrder ASC
     """)
     fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>>
 
@@ -51,8 +53,12 @@ interface PlaylistItemDao {
     SELECT music.* FROM music 
     INNER JOIN playlist_item ON music.id = playlist_item.songId 
     WHERE playlist_item.playlistId = :playlistId
+    ORDER BY playlist_item.itemOrder ASC
 """)
     suspend fun getPlaylistById(playlistId: Long): List<MusicInfo>
+
+    @Query("SELECT MAX(itemOrder) FROM playlist_item WHERE playlistId = :playlistId")
+    suspend fun getMaxOrder(playlistId: Long): Int?
 
 //    @Query("DELETE FROM playlist_item WHERE id = :id")
 //    suspend fun deleteItem(id: Long)
@@ -66,11 +72,12 @@ interface PlaylistItemDao {
     @Transaction
     suspend fun resetPlaylistItems(playlistId: Long, musicList: List<MusicInfo>) {
         deletePlaylistItem(playlistId)
-        val items = musicList.map {
+        val items = musicList.mapIndexed { index, musicInfo ->
             PlaylistItem(
                 playlistId = playlistId,
-                songId = it.music.id,
-                songUrl = it.music.path,
+                songId = musicInfo.music.id,
+                songUrl = musicInfo.music.path,
+                itemOrder = index
             )
         }
         insertPlaylist(items)
