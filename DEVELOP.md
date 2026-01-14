@@ -30,16 +30,18 @@
 #### 核心模块
 
 - **app**: 应用入口模块，包含MainActivity和Application类
-- **core-data**: 数据层模块，包含Room数据库、DAO和Repository实现
-- **core-domain**: 领域层模块，包含Use Cases和业务逻辑
+- **core-data**: 数据层模块，包含 Room 数据库、DataStore、网络请求 (Retrofit) 和 AI 服务集成
+- **core-domain**: 领域层模块，包含 Use Cases、领域模型和 Repository 接口定义
 - **core-player**: 播放核心模块，包含Media3服务和播放控制逻辑
 - **feature-ui**: UI功能模块，包含Compose页面和组件
 
 ### 模块间依赖关系
 
 ```
-app → feature-ui → core-domain → core-data
-app → core-player → core-domain → core-data
+:feature-ui ──▶ :core-player
+:feature-ui ──▶ :core-domain
+:core-player ──▶ :core-domain
+:core-data ──▶ :core-domain (implements)
 ```
 
 ### 模块化进展
@@ -392,4 +394,4 @@ cd hearable-music-player
 
 ---
 
-© 2025 Hearable Music Player | Developed by WLYB
+© 2026 Hearable Music Player | Developed by WLYB

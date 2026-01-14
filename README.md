@@ -121,6 +121,12 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ## 📝 开发日志
 
+### v5.3.1 (2026-01-14)
+- 实现应用启动自动触发 AI 批量补全功能
+- 优化 DeepSeek API，增加本地缓存与速率限制
+- 实现智能刷新策略的基础逻辑
+- 完善音乐标签系统底层架构
+
 ### v5.3 (2025-12-30)
 - 实现多 AI 服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）
 - 添加 API 密钥加密存储机制
@@ -193,4 +199,4 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ---
 
-© 2025 Hearable Music Player | Developed by WLYB
+© 2026 Hearable Music Player | Developed by WLYB
