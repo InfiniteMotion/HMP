@@ -1,11 +1,7 @@
 package com.example.hearablemusicplayer
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -22,34 +18,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.player.service.MusicPlayService
+import com.example.hearablemusicplayer.player.controller.MusicController
 import com.example.hearablemusicplayer.ui.pages.IntroScreen
 import com.example.hearablemusicplayer.ui.pages.MainScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
-
-import com.example.hearablemusicplayer.player.controller.MusicController
 import javax.inject.Inject
 
+@UnstableApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var musicController: MusicController
 
-    private val playControlViewModel by viewModels<PlayControlViewModel>()
     private val settingsViewModel by viewModels<SettingsViewModel>()
     private val libraryViewModel by viewModels<LibraryViewModel>()
-    private val playlistViewModel by viewModels<PlaylistViewModel>()
     private val recommendationViewModel by viewModels<RecommendationViewModel>()
-    private val searchViewModel by viewModels<SearchViewModel>()
 
 
     @OptIn(UnstableApi::class)
@@ -59,6 +48,7 @@ class MainActivity : ComponentActivity() {
         musicController.bindService()
     }
 
+    @OptIn(UnstableApi::class)
     override fun onDestroy() {
         super.onDestroy()
         musicController.unbindService()

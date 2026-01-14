@@ -6,6 +6,8 @@ import com.example.hearablemusicplayer.domain.repository.MusicRepository
 import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -81,6 +83,25 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
         val dailyMusicInfo = musicInfo?.music?.id?.let { musicRepository.getMusicExtraById(it) }
         val labels = musicInfo?.music?.id?.let { musicRepository.getMusicLabels(it) } ?: emptyList()
         return MusicRecommendation(musicInfo, dailyMusicInfo, labels)
+    }
+
+    suspend fun getMusicWithExtraById(musicId: Long): MusicRecommendation? {
+        try {
+            // 使用超时保护，防止数据库查询无结果时 Flow 挂起
+            val musicInfo = withTimeoutOrNull(2000) {
+                musicRepository.getMusicInfoById(musicId).firstOrNull()
+            } ?: run {
+                Log.w(TAG, "getMusicWithExtraById: Timeout or null for id $musicId")
+                return null
+            }
+            
+            val dailyMusicInfo = musicRepository.getMusicExtraById(musicId)
+            val labels = musicRepository.getMusicLabels(musicId)
+            return MusicRecommendation(musicInfo, dailyMusicInfo, labels)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching music by id: $musicId", e)
+            return null
+        }
     }
     
     // ==================== 多服务商支持方法 ====================

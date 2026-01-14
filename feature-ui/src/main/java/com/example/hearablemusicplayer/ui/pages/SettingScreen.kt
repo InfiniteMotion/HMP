@@ -109,6 +109,9 @@ fun SettingScreenContent(
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             UpdateAvatar(
                 avatarUri = avatarUri,

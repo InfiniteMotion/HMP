@@ -22,6 +22,9 @@ import com.example.hearablemusicplayer.ui.util.Routes
 import androidx.hilt.navigation.compose.hiltViewModel
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
 
 @OptIn(UnstableApi::class)
@@ -70,16 +73,22 @@ fun ArtistScreenContent(
         onBackClick = onBackClick,
         title = artistName
     ) {
-        PlayControlButtonTwo(
-            onShufflePlay = onShufflePlay,
-            onOrderPlay = onOrderPlay
-        )
-        MusicList(
-            musicInfoList = artistMusicList,
-            navigate = onNavigate,
-            playWith = playWith,
-            recordPlayback = recordPlayback,
-            addToPlaylist = addToPlaylist
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            PlayControlButtonTwo(
+                onShufflePlay = onShufflePlay,
+                onOrderPlay = onOrderPlay
+            )
+            MusicList(
+                musicInfoList = artistMusicList,
+                navigate = onNavigate,
+                playWith = playWith,
+                recordPlayback = recordPlayback,
+                addToPlaylist = addToPlaylist
+            )
+        }
     }
 }

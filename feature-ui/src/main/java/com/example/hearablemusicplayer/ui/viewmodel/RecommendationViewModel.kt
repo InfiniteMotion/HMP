@@ -88,15 +88,14 @@ class RecommendationViewModel @Inject constructor(
             if (shouldRefresh) {
                 refreshDailyMusicInfo()
             } else {
-                // 不需要刷新，尝试加载上次推荐的音乐
                 if (dailyMusic.value == null) {
                     val savedMusicId = userSettingsUseCase.getCurrentDailyMusicId()
                     if (savedMusicId != null && savedMusicId > 0) {
-                        val musicInfo = getAllMusicUseCase.getMusicById(savedMusicId)
-                        if (musicInfo != null) {
-                            dailyMusic.value = musicInfo
-                            // 简化逻辑：直接刷新以获取Extra
-                            refreshDailyMusicInfo()
+                        val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(savedMusicId)
+                        if (recommendation?.musicInfo != null) {
+                            dailyMusic.value = recommendation.musicInfo
+                            _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                            _dailyMusicLabel.value = recommendation.labels
                         } else {
                             refreshDailyMusicInfo()
                         }

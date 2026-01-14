@@ -92,8 +92,7 @@ fun HomeScreen(
             haptic.performClick()
             playlistViewModel.getSelectedArtistMusicList(artistName)
             navController.navigate(Routes.ARTIST)
-        },
-        navController = navController
+        }
     )
 }
 
@@ -105,8 +104,7 @@ fun HomeScreenContent(
     onRefreshDailyMusic: () -> Unit,
     onNavigateToAI: () -> Unit,
     onPlayDailyMusic: (MusicInfo) -> Unit,
-    onNavigateToDailyArtists: (String) -> Unit,
-    navController: NavController
+    onNavigateToDailyArtists: (String) -> Unit
 ) {
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current

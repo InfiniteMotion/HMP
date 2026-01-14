@@ -236,7 +236,10 @@ fun PlayControlButtonTwo(
     onOrderPlay: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = 24.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

@@ -4,6 +4,7 @@ package com.example.hearablemusicplayer.ui.pages
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -80,6 +81,9 @@ fun AudioEffectsScreenContent(
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             TitleWidget(
                 title = "预设场景音效"

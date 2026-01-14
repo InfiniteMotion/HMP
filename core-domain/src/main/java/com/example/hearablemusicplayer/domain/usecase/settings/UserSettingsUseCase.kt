@@ -155,7 +155,7 @@ class UserSettingsUseCase @Inject constructor(
                 hoursSinceRefresh >= config.refreshHours
             }
             "startup" -> {
-                config.launchCountSinceRefresh >= config.startupCount
+                config.launchCountSinceRefresh > config.startupCount
             }
             "smart" -> {
                 val hoursSinceRefresh = (currentTime - config.lastRefreshTimestamp) / (1000 * 60 * 60)

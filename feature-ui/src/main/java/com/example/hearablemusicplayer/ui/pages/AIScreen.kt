@@ -139,6 +139,9 @@ fun AIScreenContent(
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 服务商配置组件
             AiProviderConfig(

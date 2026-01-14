@@ -38,11 +38,8 @@ import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import kotlin.math.abs
 
@@ -52,19 +49,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun MainScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    searchViewModel: SearchViewModel = hiltViewModel(),
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel()
 ) {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Routes.HOME
     val haptic = rememberHapticFeedback()
-
-    val swipePages = listOf(Routes.HOME, Routes.GALLERY, Routes.LIST, Routes.USER)
-    val currentIndex = swipePages.indexOf(currentRoute)
 
     // 订阅调色板、当前曲目与播放状态
     val currentMusic by playControlViewModel.currentPlayingMusic.collectAsState()
@@ -85,6 +74,13 @@ fun MainScreen(
     } else {
         getPresetColorScheme(isDarkTheme)
     }
+
+    val defaultScreen = Routes.HOME
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: defaultScreen
+    val swipePages = listOf(Routes.HOME, Routes.GALLERY, Routes.LIST, Routes.USER)
+    val currentIndex = swipePages.indexOf(currentRoute)
 
     // 只在 swipePages 页启用手势
     val enableSwipe = currentIndex != -1
@@ -164,7 +160,7 @@ fun MainScreen(
                 ) {
                     NavHost(
                         navController = navController,
-                        startDestination = Routes.GALLERY,
+                        startDestination = defaultScreen,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         // 为所有页面添加统一的过渡动画
@@ -186,7 +182,10 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            HomeScreen(navController = navController)
+                            HomeScreen(
+                                navController = navController,
+                                recommendationViewModel = recommendationViewModel
+                            )
                         }
                         composable(route = Routes.GALLERY,
                             enterTransition = { pageEnterTransition },
