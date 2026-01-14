@@ -126,7 +126,7 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                playlistViewModel.getSelectedPlaylist(listName.name)
+                playlistViewModel.getSelectedPlaylist(listName)
                 navController.navigate(Routes.PLAYLIST)
             }
     ) {
