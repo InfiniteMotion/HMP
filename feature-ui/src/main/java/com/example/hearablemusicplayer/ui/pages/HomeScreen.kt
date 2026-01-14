@@ -52,12 +52,14 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import kotlinx.coroutines.launch
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
-    recommendationViewModel: RecommendationViewModel,
-    playlistViewModel: PlaylistViewModel,
-    playControlViewModel: PlayControlViewModel,
+    recommendationViewModel: RecommendationViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val scope = rememberCoroutineScope()

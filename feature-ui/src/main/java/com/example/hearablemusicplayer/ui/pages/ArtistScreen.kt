@@ -19,11 +19,16 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.util.Routes
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
+
 @OptIn(UnstableApi::class)
 @Composable
 fun ArtistScreen(
-    playlistViewModel: PlaylistViewModel,
-    playControlViewModel: PlayControlViewModel,
+    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController,
 ) {
     val artistName by playlistViewModel.selectedArtistName.collectAsState()

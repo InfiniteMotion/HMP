@@ -46,15 +46,17 @@ import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import kotlin.math.abs
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
-    libraryViewModel: LibraryViewModel,
-    playlistViewModel: PlaylistViewModel,
-    searchViewModel: SearchViewModel,
-    recommendationViewModel: RecommendationViewModel,
-    settingsViewModel: SettingsViewModel,
-    playControlViewModel: PlayControlViewModel
+    libraryViewModel: LibraryViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    searchViewModel: SearchViewModel = hiltViewModel(),
+    recommendationViewModel: RecommendationViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    playControlViewModel: PlayControlViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -184,25 +186,25 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            HomeScreen(recommendationViewModel, playlistViewModel, playControlViewModel, navController)
+                            HomeScreen(navController = navController)
                         }
                         composable(route = Routes.GALLERY,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            GalleryScreen(libraryViewModel, playControlViewModel, navController)
+                            GalleryScreen(navController = navController)
                         }
                         composable(route = Routes.PLAYER,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            PlayerScreen(playControlViewModel, playlistViewModel, navController)
+                            PlayerScreen(navController = navController)
                         }
                         composable(route = Routes.LIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            ListScreen(playlistViewModel, navController)
+                            ListScreen(navController = navController)
                         }
                         composable(route = Routes.USER,
                             enterTransition = { pageEnterTransition },
@@ -220,25 +222,25 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            SearchScreen(searchViewModel, playControlViewModel, navController)
+                            SearchScreen(navController = navController)
                         }
                         composable(route = Routes.PLAYLIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            PlaylistScreen(playlistViewModel, playControlViewModel, navController)
+                            PlaylistScreen(navController = navController)
                         }
                         composable(route = Routes.ARTIST,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            ArtistScreen(playlistViewModel, playControlViewModel, navController)
+                            ArtistScreen(navController = navController)
                         }
                         composable(route = Routes.AUDIO_EFFECTS,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            AudioEffectsScreen(playControlViewModel, navController)
+                            AudioEffectsScreen(navController = navController)
                         }
                         composable(route = Routes.AI,
                             enterTransition = { pageEnterTransition },

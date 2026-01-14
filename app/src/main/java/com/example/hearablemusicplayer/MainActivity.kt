@@ -35,8 +35,14 @@ import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 
+import com.example.hearablemusicplayer.player.controller.MusicController
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var musicController: MusicController
 
     private val playControlViewModel by viewModels<PlayControlViewModel>()
     private val settingsViewModel by viewModels<SettingsViewModel>()
@@ -46,34 +52,16 @@ class MainActivity : ComponentActivity() {
     private val searchViewModel by viewModels<SearchViewModel>()
 
 
-    private val connection = object : ServiceConnection {
-        @OptIn(UnstableApi::class)
-        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            val service = (binder as? MusicPlayService.MusicPlayServiceBinder)?.getService()
-            if (service != null) {
-                // 设置MainActivity类引用
-                service.setMainActivityClass(MainActivity::class.java)
-                playControlViewModel.bindPlayControl(service)
-            }
-        }
-
-        @OptIn(UnstableApi::class)
-        override fun onServiceDisconnected(name: ComponentName?) {
-            playControlViewModel.bindPlayControl(null)
-        }
-    }
-
     @OptIn(UnstableApi::class)
     override fun onStart() {
         super.onStart()
-        val intent = Intent(this, MusicPlayService::class.java)
-        // 绑定服务
-        bindService(intent, connection, BIND_AUTO_CREATE)
+        musicController.setTargetActivityClass(MainActivity::class.java)
+        musicController.bindService()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindService(connection)
+        musicController.unbindService()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,14 +129,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }else{
-                    MainScreen(
-                        libraryViewModel = libraryViewModel,
-                        playlistViewModel = playlistViewModel,
-                        searchViewModel = searchViewModel,
-                        recommendationViewModel = recommendationViewModel,
-                        settingsViewModel = settingsViewModel,
-                        playControlViewModel = playControlViewModel
-                    )
+                    MainScreen()
                 }
             }
         }

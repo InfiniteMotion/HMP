@@ -44,11 +44,15 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.launch
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
+import androidx.activity.ComponentActivity
+
 // 播放器主界面
 @Composable
 fun PlayerScreen(
-    viewModel: PlayControlViewModel,
-    playlistViewModel: PlaylistViewModel,
+    viewModel: PlayControlViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     navController: NavController
 ) {
     val density = LocalDensity.current
