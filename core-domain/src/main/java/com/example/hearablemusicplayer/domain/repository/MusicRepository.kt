@@ -29,10 +29,13 @@ interface MusicRepository {
     suspend fun getMusicIdListByType(label: LabelName): List<Long>
     suspend fun getMusicLabels(musicId: Long): List<MusicLabel>
     
-    // Similarity
+    // 相似度推荐 (Similarity)
     suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int = 10): List<MusicInfo>
     
-    // Extra Info / AI
+    // 收听时长统计
+    fun getRecentListeningDurations(limit: Int = 7): Flow<List<ListeningDuration>>
+    
+    // 额外信息 / AI (Extra Info / AI)
     suspend fun getMusicLyrics(musicId: Long): String?
     suspend fun insertMusicExtra(musicId: Long, musicExtraInfo: DailyMusicInfo)
     suspend fun getMusicExtraById(musicId: Long): DailyMusicInfo
@@ -53,5 +56,4 @@ interface MusicRepository {
     // Listening Duration
     suspend fun insertPlayback(history: PlaybackHistory)
     suspend fun recordListeningDuration(duration: Long)
-    fun getRecentListeningDurations(): Flow<List<ListeningDuration>>
 }

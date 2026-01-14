@@ -211,6 +211,7 @@ class GetDailyMusicRecommendationUseCase @Inject constructor(
     }
     
     fun getRecentListeningDurations(): Flow<List<ListeningDuration>> {
-        return musicRepository.getRecentListeningDurations()
+        // 请求最近35天的数据（5周 x 7天），以支持月视图热力图
+        return musicRepository.getRecentListeningDurations(35)
     }
 }

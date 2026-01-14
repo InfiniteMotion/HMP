@@ -492,7 +492,7 @@ class MusicRepositoryImpl @Inject constructor(
         }
     }
     
-    override fun getRecentListeningDurations(): Flow<List<ListeningDurationDomain>> {
-        return listeningDurationDao.getRecentDurations(7).map { list -> list.map { it.toDomain() } }
+    override fun getRecentListeningDurations(limit: Int): Flow<List<ListeningDurationDomain>> {
+        return listeningDurationDao.getRecentDurations(limit).map { list -> list.map { it.toDomain() } }
     }
 }
