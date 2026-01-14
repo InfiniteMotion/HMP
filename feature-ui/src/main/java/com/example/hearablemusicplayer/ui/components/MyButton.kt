@@ -240,9 +240,8 @@ fun PlayControlButtonOne(
 @OptIn(UnstableApi::class)
 @Composable
 fun PlayControlButtonTwo(
-    playlist: List<MusicInfo>,
-    playControlViewModel: PlayControlViewModel,
-    navController: NavController
+    onShufflePlay: () -> Unit,
+    onOrderPlay: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
     Column {
@@ -254,8 +253,7 @@ fun PlayControlButtonTwo(
             IconButton(
                     onClick = {
                         haptic.performConfirm()
-                        playControlViewModel.addAllToPlaylistByShuffle(playlist)
-                        navController.navigate(Routes.PLAYER)
+                        onShufflePlay()
                     },
             modifier = Modifier
                 .size(32.dp)
@@ -271,8 +269,7 @@ fun PlayControlButtonTwo(
             IconButton(
                 onClick = {
                     haptic.performConfirm()
-                    playControlViewModel.addAllToPlaylistInOrder(playlist)
-                    navController.navigate(Routes.PLAYER)
+                    onOrderPlay()
                 },
                 modifier = Modifier
                     .size(32.dp)
@@ -292,13 +289,13 @@ fun PlayControlButtonTwo(
 
 @Composable
 fun BackButton(
-    navController: NavController
+    onClick: () -> Unit
 ){
     val haptic = rememberHapticFeedback()
     IconButton(
         onClick = {
             haptic.performClick()
-            navController.popBackStack()
+            onClick()
         },
     ) {
         Icon(

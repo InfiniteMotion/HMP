@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.components.PlayContent
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
@@ -66,6 +69,35 @@ fun PlayerScreen(
     // 预加载当前播放音乐信息
     LaunchedEffect(Unit) {
         viewModel.preloadCurrentMusicInfo()
+    }
+
+    // 开启播放进度监督
+    DisposableEffect(Unit) {
+        viewModel.startProgressTracking()
+        onDispose {
+            viewModel.stopProgressTracking()
+        }
+    }
+
+    val musicInfo by viewModel.currentPlayingMusic.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
+    val currentPosition by viewModel.currentPosition.collectAsState()
+    val duration by viewModel.duration.collectAsState()
+    val playbackMode by viewModel.playbackMode.collectAsState()
+    val remainingTime by viewModel.timerRemaining.collectAsState()
+    val isLiked by viewModel.likeStatus.collectAsState()
+    val labels by viewModel.currentMusicLabels.collectAsState()
+    val lyrics by viewModel.currentMusicLyrics.collectAsState()
+    val playlist by viewModel.currentPlaylist.collectAsState()
+    val currentIndex by viewModel.currentIndex.collectAsState()
+
+    // 监听音乐变化并加载相关信息
+    LaunchedEffect(musicInfo?.music?.id) {
+        musicInfo?.music?.id?.let { id ->
+            viewModel.getLikedStatus(id)
+            viewModel.getMusicLabels(id)
+            viewModel.getMusicLyrics(id)
+        }
     }
 
     AnimatedVisibility(
@@ -151,9 +183,37 @@ fun PlayerScreen(
                 .nestedScroll(nestedScrollConnection) // 添加嵌套滚动支持
         ) {
             PlayContent(
-                viewModel,
-                navController,
-                playlistViewModel
+                musicInfo = musicInfo,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                playbackMode = playbackMode,
+                remainingTime = remainingTime,
+                isLiked = isLiked,
+                labels = labels,
+                lyrics = lyrics,
+                playlist = playlist,
+                currentIndex = currentIndex,
+                onBackClick = { navController.popBackStack() },
+                onSeek = viewModel::seekTo,
+                onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
+                onNext = viewModel::playNext,
+                onPrevious = viewModel::playPrevious,
+                onPlaybackModeChange = viewModel::togglePlaybackModeByOrder,
+                onFavorite = {
+                    musicInfo?.let { viewModel.updateMusicLikedStatus(it, !isLiked) }
+                },
+                onTimerClick = viewModel::startTimer,
+                onCancelTimer = viewModel::cancelTimer,
+                onHeartMode = viewModel::playHeartMode,
+                onArtistClick = { artistName ->
+                    playlistViewModel.getSelectedArtistMusicList(artistName)
+                    navController.navigate(Routes.ARTIST)
+                },
+                onClearPlaylist = viewModel::clearPlaylist,
+                onPlayItem = viewModel::playAt,
+                onMoveToTop = viewModel::moveToTop,
+                onRemoveFromPlaylist = viewModel::removeFromPlaylist
             )
         }
     }

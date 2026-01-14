@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.model.ListeningDuration
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.ListeningChart
@@ -42,7 +43,22 @@ fun UserScreen(
     LaunchedEffect(Unit) {
         settingsViewModel.getAvatarUri()
     }
+    
+    UserScreenContent(
+        userName = userName,
+        avatarUri = avatarUri,
+        listeningData = listeningData,
+        onNavigate = navController::navigate
+    )
+}
 
+@Composable
+fun UserScreenContent(
+    userName: String?,
+    avatarUri: String,
+    listeningData: List<ListeningDuration>,
+    onNavigate: (String) -> Unit
+) {
     TabScreen {
         Spacer(modifier = Modifier.height(48.dp))
 
@@ -99,13 +115,13 @@ fun UserScreen(
                 SquareCard(
                     "主题定制",
                     R.drawable.slider_vertical_3,
-                    onClick = {navController.navigate(Routes.CUSTOM)}
+                    onClick = { onNavigate(Routes.CUSTOM) }
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(
                     "音效效果",
                     R.drawable.identify_song,
-                    onClick = { navController.navigate(Routes.AUDIO_EFFECTS) }
+                    onClick = { onNavigate(Routes.AUDIO_EFFECTS) }
                 )
             }
             Spacer(modifier = Modifier.height(30.dp))
@@ -117,13 +133,13 @@ fun UserScreen(
                 SquareCard(
                     "AI服务",
                     R.drawable.icloud,
-                    onClick = { navController.navigate(Routes.AI) }
+                    onClick = { onNavigate(Routes.AI) }
                 )
                 Spacer(modifier = Modifier.width(30.dp))
                 SquareCard(
                     "设置",
                     R.drawable.gearshape,
-                    onClick = { navController.navigate(Routes.SETTING) }
+                    onClick = { onNavigate(Routes.SETTING) }
                 )
             }
         }

@@ -65,6 +65,47 @@ fun HomeScreen(
     val dailyMusicInfo by recommendationViewModel.dailyMusicInfo.collectAsState()
     val dailyMusicLabel by recommendationViewModel.dailyMusicLabel.collectAsState()
     val haptic = rememberHapticFeedback()
+
+    HomeScreenContent(
+        dailyMusic = dailyMusic,
+        dailyMusicInfo = dailyMusicInfo,
+        dailyMusicLabel = dailyMusicLabel,
+        onRefreshDailyMusic = {
+            haptic.performClick()
+            recommendationViewModel.refreshDailyMusicInfo()
+        },
+        onNavigateToAI = {
+            haptic.performClick()
+            navController.navigate(Routes.AI)
+        },
+        onPlayDailyMusic = { musicInfo ->
+            haptic.performClick()
+            scope.launch {
+                playControlViewModel.playWith(musicInfo)
+                playControlViewModel.recordPlayback(musicInfo.music.id, "Home")
+                navController.navigate(Routes.PLAYER)
+            }
+        },
+        onNavigateToDailyArtists = { artistName ->
+            haptic.performClick()
+            playlistViewModel.getSelectedArtistMusicList(artistName)
+            navController.navigate(Routes.ARTIST)
+        },
+        navController = navController
+    )
+}
+
+@Composable
+fun HomeScreenContent(
+    dailyMusic: MusicInfo?,
+    dailyMusicInfo: DailyMusicInfo?,
+    dailyMusicLabel: List<MusicLabel?>,
+    onRefreshDailyMusic: () -> Unit,
+    onNavigateToAI: () -> Unit,
+    onPlayDailyMusic: (MusicInfo) -> Unit,
+    onNavigateToDailyArtists: (String) -> Unit,
+    navController: NavController
+) {
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
     val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
@@ -74,10 +115,7 @@ fun HomeScreen(
         trailing = {
             // 手动刷新按钮
             IconButton(
-                onClick = {
-                    haptic.performClick()
-                    recommendationViewModel.refreshDailyMusicInfo()
-                }
+                onClick = onRefreshDailyMusic
             ) {
                 Icon(
                     painter = painterResource(R.drawable.player_d),
@@ -117,10 +155,7 @@ fun HomeScreen(
                             textAlign = TextAlign.Center
                         )
                         Button(
-                            onClick = {
-                                haptic.performClick()
-                                navController.navigate(Routes.AI)
-                            },
+                            onClick = onNavigateToAI,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
@@ -136,20 +171,9 @@ fun HomeScreen(
                 }
             } else {
                 DailyMusicBaseInfo(
-                    dailyMusic!!,
-                    playDailyMusic = {
-                                haptic.performClick()
-                                scope.launch {
-                                    playControlViewModel.playWith(dailyMusic!!)
-                                    playControlViewModel.recordPlayback(dailyMusic!!.music.id, "Home")
-                                    navController.navigate(Routes.PLAYER)
-                                }
-                            },
-                            navigateToDailyArtists = {
-                                haptic.performClick()
-                                playlistViewModel.getSelectedArtistMusicList(dailyMusic!!.music.artist)
-                                navController.navigate(Routes.ARTIST)
-                            }
+                    dailyMusic,
+                    playDailyMusic = { onPlayDailyMusic(dailyMusic) },
+                    navigateToDailyArtists = { onNavigateToDailyArtists(dailyMusic.music.artist) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

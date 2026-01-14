@@ -34,7 +34,7 @@ import com.example.hearablemusicplayer.ui.components.BackButton
 
 @Composable
 fun SubScreen(
-    navController: NavController,
+    onBackClick: () -> Unit,
     title: String? = null,
     content: @Composable () -> Unit
 ){
@@ -66,7 +66,7 @@ fun SubScreen(
                     .fillMaxWidth(),
             ) {
                 // 返回按钮
-                BackButton(navController)
+                BackButton(onClick = onBackClick)
                 
                 // 标题（如果提供）
                 currentTitle?.let {
@@ -85,9 +85,10 @@ fun SubScreen(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
+                // 移除 verticalScroll，让子内容自己决定是否滚动
                 Column(
                     verticalArrangement = Arrangement.Top,
-                    modifier = Modifier.verticalScroll(rememberScrollState())
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Column(
                         modifier = Modifier

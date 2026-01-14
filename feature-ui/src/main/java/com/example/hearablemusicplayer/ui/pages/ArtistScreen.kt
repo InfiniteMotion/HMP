@@ -16,6 +16,9 @@ import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
+import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.ui.util.Routes
+
 @OptIn(UnstableApi::class)
 @Composable
 fun ArtistScreen(
@@ -25,21 +28,53 @@ fun ArtistScreen(
 ) {
     val artistName by playlistViewModel.selectedArtistName.collectAsState()
     val artistMusicList by playlistViewModel.selectedArtistMusicList.collectAsState(initial = emptyList())
+    
+    ArtistScreenContent(
+        artistName = artistName,
+        artistMusicList = artistMusicList,
+        onBackClick = { navController.popBackStack() },
+        onShufflePlay = {
+            playControlViewModel.addAllToPlaylistByShuffle(artistMusicList)
+            navController.navigate(Routes.PLAYER)
+        },
+        onOrderPlay = {
+            playControlViewModel.addAllToPlaylistInOrder(artistMusicList)
+            navController.navigate(Routes.PLAYER)
+        },
+        onNavigate = navController::navigate,
+        playWith = playControlViewModel::playWith,
+        recordPlayback = playControlViewModel::recordPlayback,
+        addToPlaylist = playControlViewModel::addToPlaylist
+    )
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+fun ArtistScreenContent(
+    artistName: String,
+    artistMusicList: List<MusicInfo>,
+    onBackClick: () -> Unit,
+    onShufflePlay: () -> Unit,
+    onOrderPlay: () -> Unit,
+    onNavigate: (String) -> Unit,
+    playWith: suspend (MusicInfo) -> Unit,
+    recordPlayback: (Long, String) -> Unit,
+    addToPlaylist: (MusicInfo) -> Unit
+) {
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = artistName
     ) {
         PlayControlButtonTwo(
-            artistMusicList,
-            playControlViewModel,
-            navController
+            onShufflePlay = onShufflePlay,
+            onOrderPlay = onOrderPlay
         )
         MusicList(
             musicInfoList = artistMusicList,
-            navigate = navController::navigate,
-            playWith = playControlViewModel::playWith,
-            recordPlayback = playControlViewModel::recordPlayback,
-            addToPlaylist = playControlViewModel::addToPlaylist
+            navigate = onNavigate,
+            playWith = playWith,
+            recordPlayback = recordPlayback,
+            addToPlaylist = addToPlaylist
         )
     }
 }

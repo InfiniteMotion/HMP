@@ -22,7 +22,7 @@ class LibraryViewModel @Inject constructor(
 
     // 排序
     private val _orderBy = MutableStateFlow("title")
-    val orderBy: StateFlow<String> = _orderBy
+    val orderBy: MutableStateFlow<String> = _orderBy
     fun updateOrderBy(orderBy: String) {
         _orderBy.value = orderBy
     }

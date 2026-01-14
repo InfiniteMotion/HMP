@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.components.BassBoostSlider
 import com.example.hearablemusicplayer.ui.components.CustomEqualizer
 import com.example.hearablemusicplayer.ui.components.EqualizerPresetSelector
@@ -41,61 +42,94 @@ fun AudioEffectsScreen(
         viewModel.initializeAudioEffects()
     }
     
+    AudioEffectsScreenContent(
+        audioEffectSettings = audioEffectSettings,
+        equalizerPresets = equalizerPresets,
+        equalizerBandCount = equalizerBandCount,
+        equalizerBandLevelRange = equalizerBandLevelRange,
+        currentEqualizerBandLevels = currentEqualizerBandLevels,
+        onBackClick = { navController.popBackStack() },
+        onSetEqualizerPreset = viewModel::setEqualizerPreset,
+        onSetBassBoost = viewModel::setBassBoost,
+        onSetSurroundSound = viewModel::setSurroundSound,
+        onSetReverb = viewModel::setReverb,
+        onSetCustomEqualizer = viewModel::setCustomEqualizer
+    )
+}
+
+@Composable
+fun AudioEffectsScreenContent(
+    audioEffectSettings: AudioEffectSettings,
+    equalizerPresets: List<String>,
+    equalizerBandCount: Int,
+    equalizerBandLevelRange: Pair<Int, Int>,
+    currentEqualizerBandLevels: FloatArray,
+    onBackClick: () -> Unit,
+    onSetEqualizerPreset: (Int) -> Unit,
+    onSetBassBoost: (Int) -> Unit,
+    onSetSurroundSound: (Boolean) -> Unit,
+    onSetReverb: (Int) -> Unit,
+    onSetCustomEqualizer: (FloatArray) -> Unit
+) {
     // 使用SubScreen模板
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "音效设置"
     ) {
-        TitleWidget(
-            title = "预设场景音效"
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
         ) {
-            EqualizerPresetSelector(
-                presets = equalizerPresets,
-                currentPreset = audioEffectSettings.equalizerPreset,
-                onPresetSelected = viewModel::setEqualizerPreset
-            )
-        }
-
-        TitleWidget(
-            title = "音效设置"
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            TitleWidget(
+                title = "预设场景音效"
             ) {
-                BassBoostSlider(
-                    currentLevel = audioEffectSettings.bassBoostLevel,
-                    onLevelChanged = viewModel::setBassBoost
-                )
-                SurroundSoundToggle(
-                    isEnabled = audioEffectSettings.isSurroundSoundEnabled,
-                    onToggle = viewModel::setSurroundSound
-                )
-                ReverbSettings(
-                    currentPreset = audioEffectSettings.reverbPreset,
-                    onPresetChanged = viewModel::setReverb
+                EqualizerPresetSelector(
+                    presets = equalizerPresets,
+                    currentPreset = audioEffectSettings.equalizerPreset,
+                    onPresetSelected = onSetEqualizerPreset
                 )
             }
-        }
 
-        TitleWidget(
-            title = "自定义均衡器"
-        ) {
-            CustomEqualizer(
-                bandCount = equalizerBandCount,
-                bandLevelRange = equalizerBandLevelRange,
-                currentBandLevels = currentEqualizerBandLevels,
-                onBandLevelChanged = { index, level ->
-                    val newLevels = currentEqualizerBandLevels.copyOf()
-                    newLevels[index] = level
-                    viewModel.setCustomEqualizer(newLevels)
-                },
-                onResetAll = {
-                    // 重置所有频段到0
-                    val resetLevels = FloatArray(equalizerBandCount) { 0f }
-                    viewModel.setCustomEqualizer(resetLevels)
+            TitleWidget(
+                title = "音效设置"
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    BassBoostSlider(
+                        currentLevel = audioEffectSettings.bassBoostLevel,
+                        onLevelChanged = onSetBassBoost
+                    )
+                    SurroundSoundToggle(
+                        isEnabled = audioEffectSettings.isSurroundSoundEnabled,
+                        onToggle = onSetSurroundSound
+                    )
+                    ReverbSettings(
+                        currentPreset = audioEffectSettings.reverbPreset,
+                        onPresetChanged = onSetReverb
+                    )
                 }
-            )
+            }
+
+            TitleWidget(
+                title = "自定义均衡器"
+            ) {
+                CustomEqualizer(
+                    bandCount = equalizerBandCount,
+                    bandLevelRange = equalizerBandLevelRange,
+                    currentBandLevels = currentEqualizerBandLevels,
+                    onBandLevelChanged = { index, level ->
+                        val newLevels = currentEqualizerBandLevels.copyOf()
+                        newLevels[index] = level
+                        onSetCustomEqualizer(newLevels)
+                    },
+                    onResetAll = {
+                        // 重置所有频段到0
+                        val resetLevels = FloatArray(equalizerBandCount) { 0f }
+                        onSetCustomEqualizer(resetLevels)
+                    }
+                )
+            }
         }
     }
 }

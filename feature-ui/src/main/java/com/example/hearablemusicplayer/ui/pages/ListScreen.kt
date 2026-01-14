@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages
 
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.model.enum.LabelName
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
@@ -31,6 +32,33 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 fun ListScreen(
     playlistViewModel: PlaylistViewModel,
     navController: NavController
+) {
+    val genreList by playlistViewModel.genrePlaylistName.collectAsState()
+    val moodList by playlistViewModel.moodPlaylistName.collectAsState()
+    val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
+    val languageList by playlistViewModel.languagePlaylistName.collectAsState()
+    val eraList by playlistViewModel.eraPlaylistName.collectAsState()
+
+    ListScreenContent(
+        genreList = genreList,
+        moodList = moodList,
+        scenarioList = scenarioList,
+        languageList = languageList,
+        eraList = eraList,
+        navController = navController,
+        playlistViewModel = playlistViewModel
+    )
+}
+
+@Composable
+fun ListScreenContent(
+    genreList: List<LabelName>,
+    moodList: List<LabelName>,
+    scenarioList: List<LabelName>,
+    languageList: List<LabelName>,
+    eraList: List<LabelName>,
+    navController: NavController,
+    playlistViewModel: PlaylistViewModel
 ) {
     TabScreen(
         title = "播放列表",
@@ -77,7 +105,6 @@ fun ListScreen(
             )
             val genreListState = rememberLazyListState()
             val genreFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
-            val genreList by playlistViewModel.genrePlaylistName.collectAsState()
             LazyRow(
                 state = genreListState,
                 flingBehavior = genreFlingBehavior,
@@ -100,7 +127,6 @@ fun ListScreen(
             )
             val moodListState = rememberLazyListState()
             val moodFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
-            val moodList by playlistViewModel.moodPlaylistName.collectAsState()
             LazyRow(
                 state = moodListState,
                 flingBehavior = moodFlingBehavior,
@@ -123,7 +149,6 @@ fun ListScreen(
             )
             val scenarioListState = rememberLazyListState()
             val scenarioFlingBehavior = rememberSnapFlingBehavior(lazyListState = scenarioListState)
-            val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
             LazyRow(
                 state = scenarioListState,
                 flingBehavior = scenarioFlingBehavior,
@@ -146,7 +171,6 @@ fun ListScreen(
             )
             val languageListState = rememberLazyListState()
             val languageFlingBehavior = rememberSnapFlingBehavior(lazyListState = languageListState)
-            val languageList by playlistViewModel.languagePlaylistName.collectAsState()
             LazyRow(
                 state = languageListState,
                 flingBehavior = languageFlingBehavior,
@@ -169,7 +193,6 @@ fun ListScreen(
             )
             val eraListState = rememberLazyListState()
             val eraFlingBehavior = rememberSnapFlingBehavior(lazyListState = eraListState)
-            val eraList by playlistViewModel.eraPlaylistName.collectAsState()
             LazyRow(
                 state = eraListState,
                 flingBehavior = eraFlingBehavior,

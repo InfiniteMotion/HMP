@@ -31,15 +31,33 @@ fun CustomScreen(
     settingsViewModel: SettingsViewModel,
     navController: NavController
 ) {
+    val customMode by settingsViewModel.customMode.collectAsState("default")
+    
+    CustomScreenContent(
+        customMode = customMode,
+        onBackClick = { navController.popBackStack() },
+        setCustomMode = settingsViewModel::saveCustomMode
+    )
+}
+
+@Composable
+fun CustomScreenContent(
+    customMode: String,
+    onBackClick: () -> Unit,
+    setCustomMode: (String) -> Unit
+) {
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "主题定制"
     ) {
-        val customMode by settingsViewModel.customMode.collectAsState("default")
-        SetThemeMode(
-            customMode = customMode,
-            setCustomMode = settingsViewModel::saveCustomMode
-        )
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
+            SetThemeMode(
+                customMode = customMode,
+                setCustomMode = setCustomMode
+            )
+        }
     }
 }
 

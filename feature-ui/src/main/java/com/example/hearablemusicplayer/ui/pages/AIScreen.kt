@@ -60,7 +60,6 @@ import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecomme
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
@@ -76,60 +75,103 @@ fun AIScreen(
     LaunchedEffect(Unit) {
         settingsViewModel.loadCurrentProviderConfig()
     }
-    
+
+    val musicWithExtraCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
+    val pendingCount by recommendationViewModel.pendingMusicCount.collectAsState(initial = 0)
+    val currentProvider by settingsViewModel.currentAiProvider.collectAsState()
+    val currentConfig by settingsViewModel.currentProviderConfig.collectAsState()
+    val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
+    val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
+    val progress by recommendationViewModel.processingProgress.collectAsState()
+    val processingResult by recommendationViewModel.processingResult.collectAsState()
+    val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
+
+    AIScreenContent(
+        musicWithExtraCount = musicWithExtraCount,
+        pendingCount = pendingCount,
+        currentProvider = currentProvider,
+        currentConfig = currentConfig,
+        isTestingApi = isTestingApi,
+        apiTestResult = apiTestResult,
+        progress = progress,
+        processingResult = processingResult,
+        autoBatchProcess = autoBatchProcess,
+        onProviderChange = settingsViewModel::switchAiProvider,
+        onTestConnection = settingsViewModel::testAiProviderConnection,
+        onSaveConfig = settingsViewModel::saveAiProviderConfig,
+        onClearTestResult = settingsViewModel::clearApiTestResult,
+        onAutoBatchProcessChange = settingsViewModel::saveAutoBatchProcess,
+        startAutoProcessExtraInfo = recommendationViewModel::startAutoProcessWithCurrentProvider,
+        pauseProcess = recommendationViewModel::pauseProcessing,
+        resumeProcess = recommendationViewModel::resumeProcessing,
+        cancelProcess = recommendationViewModel::cancelProcessing,
+        clearProcessingResult = recommendationViewModel::clearProcessingResult,
+        onBackClick = { navController.popBackStack() }
+    )
+}
+
+@Composable
+fun AIScreenContent(
+    musicWithExtraCount: Int,
+    pendingCount: Int,
+    currentProvider: AiProviderType,
+    currentConfig: AiProviderConfig?,
+    isTestingApi: Boolean,
+    apiTestResult: SettingsViewModel.ApiTestResult?,
+    progress: RecommendationViewModel.BatchProcessingProgress,
+    processingResult: GetDailyMusicRecommendationUseCase.ProcessingResult?,
+    autoBatchProcess: Boolean,
+    onProviderChange: (AiProviderType) -> Unit,
+    onTestConnection: (AiProviderType, String, String) -> Unit,
+    onSaveConfig: (AiProviderType, String, String) -> Unit,
+    onClearTestResult: () -> Unit,
+    onAutoBatchProcessChange: (Boolean) -> Unit,
+    startAutoProcessExtraInfo: () -> Unit,
+    pauseProcess: () -> Unit,
+    resumeProcess: () -> Unit,
+    cancelProcess: () -> Unit,
+    clearProcessingResult: () -> Unit,
+    onBackClick: () -> Unit
+) {
     SubScreen(
-        navController = navController,
+        onBackClick = onBackClick,
         title = "AI"
     ) {
-        val musicWithExtraCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
-        val pendingCount by recommendationViewModel.pendingMusicCount.collectAsState(initial = 0)
-        val currentProvider by settingsViewModel.currentAiProvider.collectAsState()
-        val currentConfig by settingsViewModel.currentProviderConfig.collectAsState()
-        val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
-        val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
-        val progress by recommendationViewModel.processingProgress.collectAsState()
-        val processingResult by recommendationViewModel.processingResult.collectAsState()
-        val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
-
-        // 服务商配置组件
-        AiProviderConfig(
-            currentProvider = currentProvider,
-            currentConfig = currentConfig,
-            isTestingApi = isTestingApi,
-            apiTestResult = apiTestResult,
-            onProviderChange = { provider ->
-                settingsViewModel.switchAiProvider(provider)
-            },
-            onTestConnection = { provider, apiKey, model ->
-                settingsViewModel.testAiProviderConnection(provider, apiKey, model)
-            },
-            onSaveConfig = { provider, apiKey, model ->
-                settingsViewModel.saveAiProviderConfig(provider, apiKey, model)
-            },
-            onClearTestResult = {
-                settingsViewModel.clearApiTestResult()
-            }
-        )
-
-        LoadMusicExtraInfo(
-            pendingCount = pendingCount,
-            musicWithExtraCount = musicWithExtraCount,
-            progress = progress,
-            isConfigured = currentConfig?.isConfigured == true,
-            autoBatchProcess = autoBatchProcess,
-            onAutoBatchProcessChange = settingsViewModel::saveAutoBatchProcess,
-            startAutoProcessExtraInfo = recommendationViewModel::startAutoProcessWithCurrentProvider,
-            pauseProcess = recommendationViewModel::pauseProcessing,
-            resumeProcess = recommendationViewModel::resumeProcessing,
-            cancelProcess = recommendationViewModel::cancelProcessing
-        )
-
-        // 处理结果卡片
-        processingResult?.let { result ->
-            ProcessingResultCard(
-                result = result,
-                onDismiss = recommendationViewModel::clearProcessingResult
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
+            // 服务商配置组件
+            AiProviderConfig(
+                currentProvider = currentProvider,
+                currentConfig = currentConfig,
+                isTestingApi = isTestingApi,
+                apiTestResult = apiTestResult,
+                onProviderChange = onProviderChange,
+                onTestConnection = onTestConnection,
+                onSaveConfig = onSaveConfig,
+                onClearTestResult = onClearTestResult
             )
+
+            LoadMusicExtraInfo(
+                pendingCount = pendingCount,
+                musicWithExtraCount = musicWithExtraCount,
+                progress = progress,
+                isConfigured = currentConfig?.isConfigured == true,
+                autoBatchProcess = autoBatchProcess,
+                onAutoBatchProcessChange = onAutoBatchProcessChange,
+                startAutoProcessExtraInfo = startAutoProcessExtraInfo,
+                pauseProcess = pauseProcess,
+                resumeProcess = resumeProcess,
+                cancelProcess = cancelProcess
+            )
+
+            // 处理结果卡片
+            processingResult?.let { result ->
+                ProcessingResultCard(
+                    result = result,
+                    onDismiss = clearProcessingResult
+                )
+            }
         }
     }
 }
