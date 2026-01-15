@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,34 +31,47 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.model.MusicInfo
-
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
 fun MusicList(
     musicInfoList: List<MusicInfo>,
-    navigate: (String) -> Unit,
-    playWith: suspend (MusicInfo) -> Unit,
-    recordPlayback: (Long, String) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit,
+    onItemClick: suspend (MusicInfo) -> Unit,
+    onAddToPlaylist: (MusicInfo) -> Unit,
+    onMenuClick: (MusicInfo) -> Unit,
+    showAddButton: Boolean,
+    showMenuButton: Boolean,
+    isPlaying: Boolean,
+    transparentBackgroundWhenPlaying: Boolean
 ) {
+    val haptic = rememberHapticFeedback()
+    val coroutineScope = rememberCoroutineScope()
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
             items = musicInfoList,
-            key = { musicInfo -> musicInfo.music.id } // 添加key参数，提高LazyColumn性能
+            key = { musicInfo -> musicInfo.music.id }
         ) { musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,
-                navigate = navigate,
-                playWith = playWith,
-                recordPlayback = recordPlayback,
-                addToPlaylist = addToPlaylist,
+                onItemClick = {
+                    haptic.performClick()
+                    coroutineScope.launch {
+                        onItemClick(musicInfo)
+                    }
+                },
+                onAddToPlaylist = { onAddToPlaylist(musicInfo) },
+                onMenuClick = { onMenuClick(musicInfo) },
+                showAddButton = showAddButton,
+                showMenuButton = showMenuButton,
+                isPlaying = isPlaying,
+                transparentBackgroundWhenPlaying = transparentBackgroundWhenPlaying,
                 modifier = Modifier
             )
         }
@@ -67,10 +82,13 @@ fun MusicList(
 @Composable
 fun MusicItem(
     musicInfo: MusicInfo,
-    navigate: (String) -> Unit,
-    playWith: suspend (MusicInfo) -> Unit,
-    recordPlayback: (Long, String) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit,
+    onItemClick: () -> Unit,
+    onAddToPlaylist: () -> Unit,
+    onMenuClick: () -> Unit,
+    showAddButton: Boolean,
+    showMenuButton: Boolean,
+    isPlaying: Boolean,
+    transparentBackgroundWhenPlaying: Boolean,
     modifier: Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -79,85 +97,77 @@ fun MusicItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .height(72.dp)
+            .clip(RoundedCornerShape(12.dp))
             .clickable {
                 haptic.performClick()
-                // 在协程中等待播放准备完成后再导航
-                scope.launch {
-                    playWith(musicInfo)
-                    recordPlayback(musicInfo.music.id, "MusicList")
-                }
-                navigate(Routes.PLAYER)
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+                onItemClick()
+            }
+            .background(
+                if (isPlaying && transparentBackgroundWhenPlaying)
+                    androidx.compose.ui.graphics.Color.Transparent
+                else
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        //专辑封面
-        Spacer(modifier = Modifier.width(12.dp))
         AsyncImage(
             model = musicInfo.music.albumArtUri,
             contentDescription = "Album art",
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(10.dp)),
-            placeholder = painterResource(R.drawable.none),
-            error = painterResource(R.drawable.none),
-            fallback = painterResource(R.drawable.none)
+                .size(56.dp)
+                .clip(RoundedCornerShape(8.dp))
         )
-        Spacer(modifier = Modifier.width(24.dp))
-        //音乐信息
-        Column(
-            modifier = Modifier.fillMaxWidth()
-                .weight(1f)
-        ) {
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = musicInfo.music.title,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
                 style = MaterialTheme.typography.bodySmall,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(modifier = Modifier.width(24.dp))
         Row {
-            IconButton(
-                onClick = {
-                    haptic.performConfirm()
-                    scope.launch {
-                        addToPlaylist(musicInfo)
+            if (showAddButton) {
+                IconButton(
+                    onClick = {
+                        haptic.performConfirm()
+                        scope.launch {
+                            onAddToPlaylist()
+                        }
                     }
-                },
-                modifier = Modifier
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.plus_square),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Add Button",
-                    modifier = Modifier.size(24.dp)
-                )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.plus_square),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        contentDescription = "Add Button",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
-
-            IconButton(
-                onClick = {
-                    haptic.performLightClick()
-                },
-                modifier = Modifier
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.dot_grid_1x2),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Meum Button",
-                    modifier = Modifier.size(24.dp)
-                )
+            if (showMenuButton) {
+                IconButton(
+                    onClick = {
+                        haptic.performLightClick()
+                        onMenuClick()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.dot_grid_1x2),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        contentDescription = "Menu Button",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

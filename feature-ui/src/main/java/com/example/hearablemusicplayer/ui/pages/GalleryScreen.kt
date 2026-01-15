@@ -19,6 +19,7 @@ import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
@@ -30,6 +31,7 @@ fun GalleryScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
@@ -42,6 +44,7 @@ fun GalleryScreen(
     }
 
     GalleryScreenContent(
+        isPlaying = isPlaying,
         musicInfoList = musicInfoList,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
@@ -72,6 +75,7 @@ fun GalleryScreen(
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreenContent(
+    isPlaying: Boolean,
     musicInfoList: List<MusicInfo>,
     selectedGenre: String,
     selectedOrder: String,
@@ -85,6 +89,7 @@ fun GalleryScreenContent(
     onFilterOrderChange: (String) -> Unit,
     navController: NavController
 ) {
+    val haptic = rememberHapticFeedback()
     TabScreen(
         title = "音乐库",
         hasSearchBotton = true,
@@ -107,10 +112,16 @@ fun GalleryScreenContent(
         ){
             MusicList(
                 musicInfoList = musicInfoList,
-                navigate = onNavigate,
-                playWith = playWith,
-                recordPlayback = recordPlayback,
-                addToPlaylist = addToPlaylist,
+                onItemClick = {
+                    haptic.performClick()
+                    playWith(it)
+                    onNavigate(Routes.PLAYER) },
+                onAddToPlaylist = addToPlaylist,
+                onMenuClick = { _ ->  },
+                showAddButton = true,
+                showMenuButton = true,
+                isPlaying = isPlaying,
+                transparentBackgroundWhenPlaying = true
             )
         }
     }

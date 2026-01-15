@@ -40,4 +40,7 @@ object Routes {
     
     /** 自定义页路由 */
     const val CUSTOM = "custom"
+
+    /** 歌曲详情页路由 */
+    const val SONG_DETAIL = "song_detail"
 }

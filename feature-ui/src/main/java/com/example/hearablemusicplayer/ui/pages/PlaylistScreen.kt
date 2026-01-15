@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -32,10 +33,12 @@ fun PlaylistScreen(
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController,
 ) {
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val playlistName by playlistViewModel.selectedPlaylistName.collectAsState()
     val playlist by playlistViewModel.selectedPlaylist.collectAsState(initial = emptyList())
     
     PlaylistScreenContent(
+        isPlaying = isPlaying,
         playlistName = playlistName,
         playlist = playlist,
         onBackClick = { navController.popBackStack() },
@@ -57,6 +60,7 @@ fun PlaylistScreen(
 @OptIn(UnstableApi::class)
 @Composable
 fun PlaylistScreenContent(
+    isPlaying: Boolean,
     playlistName: String,
     playlist: List<MusicInfo>,
     onBackClick: () -> Unit,
@@ -67,6 +71,7 @@ fun PlaylistScreenContent(
     recordPlayback: (Long, String) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     SubScreen(
         onBackClick = onBackClick,
         title = playlistName
@@ -82,10 +87,17 @@ fun PlaylistScreenContent(
             )
             MusicList(
                 musicInfoList = playlist,
-                navigate = onNavigate,
-                playWith = playWith,
-                recordPlayback = recordPlayback,
-                addToPlaylist = addToPlaylist
+                onItemClick = { music ->
+                    haptic.performClick()
+                    playWith(music)
+                    onNavigate(Routes.PLAYER)
+                },
+                onAddToPlaylist = { _ -> },
+                onMenuClick = { _ -> },
+                showAddButton = false,
+                showMenuButton = true,
+                isPlaying = isPlaying,
+                transparentBackgroundWhenPlaying = true
             )
         }
     }

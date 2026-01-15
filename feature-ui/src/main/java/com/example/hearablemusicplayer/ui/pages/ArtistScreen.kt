@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -34,10 +35,12 @@ fun ArtistScreen(
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController,
 ) {
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val artistName by playlistViewModel.selectedArtistName.collectAsState()
     val artistMusicList by playlistViewModel.selectedArtistMusicList.collectAsState(initial = emptyList())
     
     ArtistScreenContent(
+        isPlaying = isPlaying,
         artistName = artistName,
         artistMusicList = artistMusicList,
         onBackClick = { navController.popBackStack() },
@@ -59,6 +62,7 @@ fun ArtistScreen(
 @OptIn(UnstableApi::class)
 @Composable
 fun ArtistScreenContent(
+    isPlaying: Boolean,
     artistName: String,
     artistMusicList: List<MusicInfo>,
     onBackClick: () -> Unit,
@@ -69,6 +73,7 @@ fun ArtistScreenContent(
     recordPlayback: (Long, String) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     SubScreen(
         onBackClick = onBackClick,
         title = artistName
@@ -84,10 +89,16 @@ fun ArtistScreenContent(
             )
             MusicList(
                 musicInfoList = artistMusicList,
-                navigate = onNavigate,
-                playWith = playWith,
-                recordPlayback = recordPlayback,
-                addToPlaylist = addToPlaylist
+                onItemClick = {
+                    haptic.performClick()
+                    playWith(it)
+                    onNavigate(Routes.PLAYER) },
+                onAddToPlaylist = { _ ->  },
+                onMenuClick = { _ ->  },
+                showAddButton = false,
+                showMenuButton = true,
+                isPlaying = isPlaying,
+                transparentBackgroundWhenPlaying = false
             )
         }
     }

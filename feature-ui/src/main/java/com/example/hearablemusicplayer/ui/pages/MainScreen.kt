@@ -187,6 +187,15 @@ fun MainScreen(
                                 recommendationViewModel = recommendationViewModel
                             )
                         }
+                        composable(route = Routes.SONG_DETAIL,
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            SongDetailScreen(
+                                navController = navController,
+                                recommendationViewModel = recommendationViewModel
+                            )
+                        }
                         composable(route = Routes.GALLERY,
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }

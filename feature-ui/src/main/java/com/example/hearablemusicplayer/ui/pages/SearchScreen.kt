@@ -1,6 +1,8 @@
 package com.example.hearablemusicplayer.ui.pages
 
 import androidx.annotation.OptIn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,6 +36,8 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -42,6 +46,7 @@ fun SearchScreen(
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
     navController: NavController
 ){
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val searchResults by searchViewModel.searchResults.collectAsState(initial = emptyList())
 
@@ -50,6 +55,7 @@ fun SearchScreen(
     }
 
     SearchScreenContent(
+        isPlaying = isPlaying,
         searchQuery = searchQuery,
         searchResults = searchResults,
         onSearchQueryChange = {
@@ -67,6 +73,7 @@ fun SearchScreen(
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreenContent(
+    isPlaying: Boolean,
     searchQuery: String,
     searchResults: List<MusicInfo>,
     onSearchQueryChange: (String) -> Unit,
@@ -76,40 +83,61 @@ fun SearchScreenContent(
     recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     // 使用SubScreen模板
     SubScreen(
         onBackClick = onBackClick,
         title = "搜索"
     ) {
-        TextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            label = { Text("搜索您的音乐", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.magnifyingglass),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    contentDescription = "搜索") },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Search
-            ),
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent, // 聚焦时下划线颜色
-                unfocusedIndicatorColor = Color.Transparent, // 未聚焦时下划线颜色
-                disabledIndicatorColor = Color.Transparent // 禁用时下划线颜色
-            ),
-            shape = RoundedCornerShape(28.dp),
+        Column(
             modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        )
-        MusicList(
-            musicInfoList = searchResults,
-            navigate = onNavigate,
-            playWith = playWith,
-            recordPlayback = recordPlayback,
-            addToPlaylist = addToPlaylist,
-        )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            TextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                label = {
+                    Text(
+                        "搜索您的音乐",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.magnifyingglass),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = "搜索"
+                    )
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Search
+                ),
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent, // 聚焦时下划线颜色
+                    unfocusedIndicatorColor = Color.Transparent, // 未聚焦时下划线颜色
+                    disabledIndicatorColor = Color.Transparent // 禁用时下划线颜色
+                ),
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+            MusicList(
+                musicInfoList = searchResults,
+                onItemClick = {
+                    haptic.performClick()
+                    playWith(it)
+                    onNavigate(Routes.PLAYER) },
+                onAddToPlaylist = addToPlaylist,
+                onMenuClick = { _ ->  },
+                showAddButton = true,
+                showMenuButton = true,
+                isPlaying = isPlaying,
+                transparentBackgroundWhenPlaying = false
+            )
+        }
     }
 }
