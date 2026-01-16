@@ -78,6 +78,44 @@ fun MusicList(
 
 @OptIn(UnstableApi::class)
 @Composable
+fun FixedMusicList(
+    musicInfoList: List<MusicInfo>,
+    onItemClick: suspend (MusicInfo) -> Unit,
+    onAddToPlaylist: (MusicInfo) -> Unit,
+    onMenuClick: (MusicInfo) -> Unit,
+    showAddButton: Boolean,
+    showMenuButton: Boolean,
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val haptic = rememberHapticFeedback()
+    val coroutineScope = rememberCoroutineScope()
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        musicInfoList.forEach { musicInfo ->
+            MusicItem(
+                musicInfo = musicInfo,
+                onItemClick = {
+                    haptic.performClick()
+                    coroutineScope.launch {
+                        onItemClick(musicInfo)
+                    }
+                },
+                onAddToPlaylist = { onAddToPlaylist(musicInfo) },
+                onMenuClick = { onMenuClick(musicInfo) },
+                showAddButton = showAddButton,
+                showMenuButton = showMenuButton,
+                isPlaying = isPlaying,
+                modifier = Modifier
+            )
+        }
+    }
+}
+
+@OptIn(UnstableApi::class)
+@Composable
 fun MusicItem(
     musicInfo: MusicInfo,
     onItemClick: () -> Unit,

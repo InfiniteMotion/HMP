@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,7 +40,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.MusicList
+import com.example.hearablemusicplayer.ui.components.FixedMusicList
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -76,7 +78,7 @@ fun HomeScreen(
         }
     ) {
         Column(
-            modifier = Modifier
+            modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxSize()
                 .padding(bottom = 16.dp)
         ) {
@@ -180,14 +182,14 @@ fun HomeScreen(
                             Text(text = "播放心动歌单")
                         }
                     }
-                    MusicList(
+                    FixedMusicList(
                         musicInfoList = heartbeatList,
-                        onItemClick = { music ->
+                        onItemClick = {
                             haptic.performClick()
-                            navController.navigate(Routes.SongDetail(music.music.id))
-                        },
+                            playControlViewModel.playWith(it)
+                            navController.navigate(Routes.Player) },
                         onAddToPlaylist = { _ -> },
-                        onMenuClick = { _ -> },
+                        onMenuClick = {navController.navigate(Routes.SongDetail(it.music.id))},
                         showAddButton = false,
                         showMenuButton = true,
                         isPlaying = isPlaying,

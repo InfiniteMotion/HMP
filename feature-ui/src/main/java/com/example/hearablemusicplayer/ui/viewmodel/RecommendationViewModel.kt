@@ -227,7 +227,8 @@ class RecommendationViewModel @Inject constructor(
         // 监听每日推荐变化，自动获取相似歌曲
         viewModelScope.launch {
             dailyMusic.filterNotNull().collectLatest { music ->
-                _heartbeatList.value = currentPlaybackUseCase.getSimilarSongsByWeightedLabels(music.music.id, 10)
+                _heartbeatList.value = listOf(music) +
+                        currentPlaybackUseCase.getSimilarSongsByWeightedLabels(music.music.id, 10)
             }
         }
     }
