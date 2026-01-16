@@ -320,7 +320,7 @@ fun SearchButton(
         IconButton(
             onClick = {
                     haptic.performClick()
-                    navController.navigate(Routes.SEARCH)
+                    navController.navigate(Routes.Search)
                 },
         ) {
             Icon(

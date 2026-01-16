@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,7 +34,6 @@ import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
@@ -46,7 +46,6 @@ fun MusicList(
     showAddButton: Boolean,
     showMenuButton: Boolean,
     isPlaying: Boolean,
-    transparentBackgroundWhenPlaying: Boolean
 ) {
     val haptic = rememberHapticFeedback()
     val coroutineScope = rememberCoroutineScope()
@@ -71,7 +70,6 @@ fun MusicList(
                 showAddButton = showAddButton,
                 showMenuButton = showMenuButton,
                 isPlaying = isPlaying,
-                transparentBackgroundWhenPlaying = transparentBackgroundWhenPlaying,
                 modifier = Modifier
             )
         }
@@ -88,7 +86,6 @@ fun MusicItem(
     showAddButton: Boolean,
     showMenuButton: Boolean,
     isPlaying: Boolean,
-    transparentBackgroundWhenPlaying: Boolean,
     modifier: Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -104,8 +101,8 @@ fun MusicItem(
                 onItemClick()
             }
             .background(
-                if (isPlaying && transparentBackgroundWhenPlaying)
-                    androidx.compose.ui.graphics.Color.Transparent
+                if (isPlaying)
+                    Transparent
                 else
                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )

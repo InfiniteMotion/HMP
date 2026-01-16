@@ -30,6 +30,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
@@ -75,12 +77,15 @@ fun MainScreen(
         getPresetColorScheme(isDarkTheme)
     }
 
-    val defaultScreen = Routes.HOME
+    val defaultScreen = Routes.Home
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: defaultScreen
-    val swipePages = listOf(Routes.HOME, Routes.GALLERY, Routes.LIST, Routes.USER)
-    val currentIndex = swipePages.indexOf(currentRoute)
+    
+    val swipePages = listOf(Routes.Home, Routes.Gallery, Routes.List, Routes.User)
+    val currentIndex = swipePages.indexOfFirst { route ->
+        navBackStackEntry?.destination?.hasRoute(route::class) == true
+    }
+    val currentRoute = swipePages.getOrNull(currentIndex) ?: Routes.Home
 
     // 只在 swipePages 页启用手势
     val enableSwipe = currentIndex != -1
@@ -92,7 +97,7 @@ fun MainScreen(
                 val targetIndex = if (dragAmount > 0) currentIndex - 1 else currentIndex + 1
                 if (targetIndex in swipePages.indices) {
                     val targetRoute = swipePages[targetIndex]
-                    if (targetRoute != currentRoute) {
+                    if (targetIndex != currentIndex) {
                         // 翻页时给予触觉反馈
                         haptic.performLightClick()
                         navController.navigate(route = targetRoute) {
@@ -147,7 +152,7 @@ fun MainScreen(
                 containerColor = Transparent,
                 bottomBar = {}
             ) {
-                val contentModifier = if (currentRoute == "player") {
+                val contentModifier = if (navBackStackEntry?.destination?.hasRoute<Routes.Player>() == true) {
                     Modifier.padding(it)
                 } else {
                     Modifier
@@ -178,7 +183,7 @@ fun MainScreen(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
 
-                        composable(route = Routes.HOME,
+                        composable<Routes.Home>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
@@ -187,76 +192,75 @@ fun MainScreen(
                                 recommendationViewModel = recommendationViewModel
                             )
                         }
-                        composable(route = Routes.SONG_DETAIL,
+                        composable<Routes.SongDetail>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SongDetailScreen(
-                                navController = navController,
-                                recommendationViewModel = recommendationViewModel
+                                navController = navController
                             )
                         }
-                        composable(route = Routes.GALLERY,
+                        composable<Routes.Gallery>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             GalleryScreen(navController = navController)
                         }
-                        composable(route = Routes.PLAYER,
+                        composable<Routes.Player>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlayerScreen(navController = navController)
                         }
-                        composable(route = Routes.LIST,
+                        composable<Routes.List>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ListScreen(navController = navController)
                         }
-                        composable(route = Routes.USER,
+                        composable<Routes.User>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             UserScreen(settingsViewModel, recommendationViewModel, navController)
                         }
-                        composable(route = Routes.SETTING,
+                        composable<Routes.Setting>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SettingScreen(settingsViewModel, libraryViewModel, navController)
                         }
-                        composable(route = Routes.SEARCH,
+                        composable<Routes.Search>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SearchScreen(navController = navController)
                         }
-                        composable(route = Routes.PLAYLIST,
+                        composable<Routes.Playlist>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlaylistScreen(navController = navController)
                         }
-                        composable(route = Routes.ARTIST,
+                        composable<Routes.Artist>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ArtistScreen(navController = navController)
                         }
-                        composable(route = Routes.AUDIO_EFFECTS,
+                        composable<Routes.AudioEffects>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AudioEffectsScreen(navController = navController)
                         }
-                        composable(route = Routes.AI,
+                        composable<Routes.AI>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AIScreen(settingsViewModel, recommendationViewModel, libraryViewModel, navController)
                         }
-                        composable(route = Routes.CUSTOM,
+                        composable<Routes.Custom>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
@@ -264,7 +268,7 @@ fun MainScreen(
                         }
                     }
                 }
-                if (currentRoute != Routes.PLAYER) {
+                if (navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -274,12 +278,7 @@ fun MainScreen(
                         CustomBottomNavBar(
                             isPlaying = isPlaying,
                             currentRoute = currentRoute,
-                            onNavigate = { route ->
-                                navController.navigate(route = route) {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
+                            navController = navController
                         )
                     }
                 }

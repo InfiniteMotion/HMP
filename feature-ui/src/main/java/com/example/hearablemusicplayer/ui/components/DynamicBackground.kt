@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
@@ -185,7 +186,7 @@ fun DynamicBackground(
                         colors = listOf(
                             adjustedDominant.copy(alpha = layer1Alpha1),
                             adjustedDominant.copy(alpha = layer1Alpha2),
-                            Color.Transparent
+                            Transparent
                         ),
                         center = Offset(offset1X, offset1Y),
                         radius = radius
@@ -206,7 +207,7 @@ fun DynamicBackground(
                         colors = listOf(
                             adjustedVibrant.copy(alpha = layer2Alpha1),
                             adjustedVibrant.copy(alpha = layer2Alpha2),
-                            Color.Transparent
+                            Transparent
                         ),
                         center = Offset(offset2X, offset2Y),
                         radius = radius * 1.1f
@@ -233,7 +234,7 @@ fun DynamicBackground(
                         colors = listOf(
                             mixedColor.copy(alpha = layer3Alpha1),
                             mixedColor.copy(alpha = layer3Alpha2),
-                            Color.Transparent
+                            Transparent
                         ),
                         center = Offset(offset3X, offset3Y),
                         radius = radius * 0.8f
@@ -254,7 +255,7 @@ fun DynamicBackground(
                         colors = listOf(
                             adjustedAccent.copy(alpha = layer4Alpha1),
                             adjustedAccent.copy(alpha = layer4Alpha2),
-                            Color.Transparent
+                            Transparent
                         ),
                         center = Offset(offset4X, offset4Y),
                         radius = radius * 0.6f
@@ -272,7 +273,7 @@ fun DynamicBackground(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     adjustedDominant.copy(alpha = 0.3f),
-                                    Color.Transparent,
+                                    Transparent,
                                     adjustedVibrant.copy(alpha = 0.2f)
                                 )
                             )
@@ -290,7 +291,7 @@ fun DynamicBackground(
                         brush = Brush.radialGradient(
                             colors = listOf(
                                 adjustedPrimary.copy(alpha = glowAlpha1),
-                                Color.Transparent
+                                Transparent
                             ),
                             center = Offset(glowOffsetX, glowOffsetY),
                             radius = maxOf(widthPx, heightPx) * 0.6f

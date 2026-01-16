@@ -49,7 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -371,7 +371,7 @@ fun SeekBar(
                     modifier = Modifier
                         .size(4.dp)
                         .background(
-                            color = Color.Transparent,
+                            color = Transparent,
                         )
                 )
             }
@@ -701,7 +701,7 @@ fun PlaylistItem(
                 if (isCurrentPlaying) 
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 else 
-                    Color.Transparent,
+                    Transparent,
                 shape = RoundedCornerShape(12.dp) // 圆角背景
             )
             .padding(vertical = 8.dp, horizontal = 8.dp),

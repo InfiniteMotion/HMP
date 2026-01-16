@@ -1,6 +1,7 @@
 [versions]
 agp = "8.13.0"
 kotlin = "2.0.21"
+serialization = "1.7.3"
 ksp = "2.0.21-1.0.28"
 hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
@@ -77,6 +78,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 androidx-datastore-core-android = { group = "androidx.datastore", name = "datastore-core-android", version.ref = "datastorePreferences" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }

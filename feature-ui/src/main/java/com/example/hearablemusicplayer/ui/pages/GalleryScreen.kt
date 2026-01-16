@@ -54,11 +54,11 @@ fun GalleryScreen(
         addToPlaylist = playControlViewModel::addToPlaylist,
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
-            navController.navigate(Routes.PLAYER)
+            navController.navigate(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
-            navController.navigate(Routes.PLAYER)
+            navController.navigate(Routes.Player)
         },
         onFilterGenreChange = {
             libraryViewModel.updateOrderBy(it)
@@ -79,7 +79,7 @@ fun GalleryScreenContent(
     musicInfoList: List<MusicInfo>,
     selectedGenre: String,
     selectedOrder: String,
-    onNavigate: (String) -> Unit,
+    onNavigate: (Any) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
@@ -115,13 +115,12 @@ fun GalleryScreenContent(
                 onItemClick = {
                     haptic.performClick()
                     playWith(it)
-                    onNavigate(Routes.PLAYER) },
+                    onNavigate(Routes.Player) },
                 onAddToPlaylist = addToPlaylist,
-                onMenuClick = { _ ->  },
+                onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
                 showAddButton = true,
                 showMenuButton = true,
                 isPlaying = isPlaying,
-                transparentBackgroundWhenPlaying = true
             )
         }
     }

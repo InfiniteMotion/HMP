@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -121,8 +122,7 @@ fun ListScreenContent(
                         ScenarioCard(
                             label = label,
                             onClick = {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -149,8 +149,7 @@ fun ListScreenContent(
                         GenreCard(
                             label = label,
                             onClick = {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -172,19 +171,16 @@ fun ListScreenContent(
                     ListBanner(
                         listName = "默认列表",
                         listCoverUri = R.drawable.defaultlist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                     ListBanner(
                         listName = "红心列表",
                         listCoverUri = R.drawable.heartlist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                     ListBanner(
                         listName = "最近播放",
                         listCoverUri = R.drawable.historylist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
@@ -210,8 +206,7 @@ fun ListScreenContent(
                             MoodCard(
                                 label = label,
                                 onClick = {
-                                    playlistViewModel.getSelectedPlaylist(label)
-                                    navController.navigate(Routes.PLAYLIST)
+                                    navController.navigate(Routes.Playlist(label.name))
                                 }
                             )
                         }
@@ -236,8 +231,7 @@ fun ListScreenContent(
                     allTags.forEach { label ->
                         Box(
                             modifier = Modifier.clickable {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         ) {
                             Capsule(
@@ -284,7 +278,7 @@ private fun GenreCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                Transparent,
                                 Color.Black.copy(alpha = 0.7f)
                             )
                         )
@@ -328,7 +322,7 @@ private fun MoodCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                Transparent,
                                 Color.Black.copy(alpha = 0.6f)
                             )
                         )
@@ -364,7 +358,7 @@ private fun ScenarioCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                Transparent,
                                 Color.Black.copy(alpha = 0.4f),
                                 Color.Black.copy(alpha = 0.8f)
                             )

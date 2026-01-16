@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
@@ -18,14 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
 @Composable
 fun CustomBottomNavBar(
     isPlaying: Boolean,
-    currentRoute: String?,
-    onNavigate: (String) -> Unit,
+    currentRoute: Any?,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     val items = rememberBottomNavItems()
@@ -46,10 +48,13 @@ fun CustomBottomNavBar(
                 CustomNavItem(
                     isPlaying = isPlaying,
                     item = item,
-                    isSelected = currentRoute == item.route,
+                    isSelected = navController.currentBackStackEntry?.destination?.hasRoute(item.route::class) == true,
                     onClick = {
                         haptic.performClick()
-                        onNavigate(item.route)
+                        navController.navigate(item.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }

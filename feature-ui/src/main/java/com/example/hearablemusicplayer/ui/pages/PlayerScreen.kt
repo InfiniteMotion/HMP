@@ -212,7 +212,7 @@ fun PlayerScreen(
                 onHeartMode = viewModel::playHeartMode,
                 onArtistClick = { artistName ->
                     playlistViewModel.getSelectedArtistMusicList(artistName)
-                    navController.navigate(Routes.ARTIST)
+                    navController.navigate(Routes.Artist(artistName))
                 },
                 onClearPlaylist = viewModel::clearPlaylist,
                 onPlayItem = viewModel::playAt,

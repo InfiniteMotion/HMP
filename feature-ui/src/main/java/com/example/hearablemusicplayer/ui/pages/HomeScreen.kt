@@ -117,13 +117,12 @@ fun HomeScreen(
                         haptic.performClick()
                         scope.launch {
                             playControlViewModel.playWith(dailyMusic!!)
-                            navController.navigate(Routes.PLAYER)
+                            navController.navigate(Routes.Player)
                         }
                     },
                     onDetail = {
                         haptic.performClick()
-                        recommendationViewModel.selectSong(dailyMusic!!)
-                        navController.navigate(Routes.SONG_DETAIL)
+                        navController.navigate(Routes.SongDetail(dailyMusic!!.music.id))
                     }
                 )
             }
@@ -171,7 +170,7 @@ fun HomeScreen(
                                         playControlViewModel.clearPlaylist()
                                         playControlViewModel.addAllToPlaylistInOrder(list)
                                         playControlViewModel.playWith(list.first())
-                                        navController.navigate(Routes.PLAYER)
+                                        navController.navigate(Routes.Player)
                                     }
                                 }
                             },
@@ -185,15 +184,13 @@ fun HomeScreen(
                         musicInfoList = heartbeatList,
                         onItemClick = { music ->
                             haptic.performClick()
-                            playControlViewModel.playWith(music)
-                            navController.navigate(Routes.PLAYER)
+                            navController.navigate(Routes.SongDetail(music.music.id))
                         },
                         onAddToPlaylist = { _ -> },
                         onMenuClick = { _ -> },
                         showAddButton = false,
                         showMenuButton = true,
                         isPlaying = isPlaying,
-                        transparentBackgroundWhenPlaying = true
                     )
                 }
             }

@@ -51,7 +51,7 @@ fun UserScreen(
         userName = userName,
         avatarUri = avatarUri,
         listeningData = listeningData,
-        onNavigate = navController::navigate
+        onNavigate = { route -> navController.navigate(route) }
     )
 }
 
@@ -60,7 +60,7 @@ fun UserScreenContent(
     userName: String?,
     avatarUri: String,
     listeningData: List<ListeningDuration>,
-    onNavigate: (String) -> Unit
+    onNavigate: (Any) -> Unit
 ) {
     TabScreen {
         val sortedData = listeningData.sortedBy { it.date }.takeLast(35) // 取最近35天
@@ -122,7 +122,7 @@ fun UserScreenContent(
                             "主题定制",
                             R.drawable.slider_vertical_3,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { onNavigate(Routes.CUSTOM) }
+                            onClick = { onNavigate(Routes.Custom) }
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -130,7 +130,7 @@ fun UserScreenContent(
                             "音效效果",
                             R.drawable.identify_song,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { onNavigate(Routes.AUDIO_EFFECTS) }
+                            onClick = { onNavigate(Routes.AudioEffects) }
                         )
                     }
                 }
@@ -153,7 +153,7 @@ fun UserScreenContent(
                             "设置",
                             R.drawable.gearshape,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { onNavigate(Routes.SETTING) }
+                            onClick = { onNavigate(Routes.Setting) }
                         )
                     }
                 }

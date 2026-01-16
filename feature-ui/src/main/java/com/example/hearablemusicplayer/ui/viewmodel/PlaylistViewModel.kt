@@ -18,13 +18,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
+import com.example.hearablemusicplayer.ui.util.Routes
+
 @HiltViewModel
 class PlaylistViewModel @Inject constructor(
     private val managePlaylistUseCase: ManagePlaylistUseCase,
     private val getLabelPlaylistUseCase: GetLabelPlaylistUseCase,
     private val musicLabelUseCase: MusicLabelUseCase,
     private val settingsRepository: SettingsRepository,
-    private val getAllMusicUseCase: GetAllMusicUseCase
+    private val getAllMusicUseCase: GetAllMusicUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     // 标签分类列表名
@@ -84,6 +89,21 @@ class PlaylistViewModel @Inject constructor(
 
     init {
         initializeDefaultPlaylists()
+        
+        // 尝试从路由参数加载播放列表或艺术家
+        try {
+            val playlistArg = savedStateHandle.toRoute<Routes.Playlist>()
+            getSelectedPlaylist(playlistArg.name)
+        } catch (e: Exception) {
+            // 不是从 Playlist 路由进入
+        }
+
+        try {
+            val artistArg = savedStateHandle.toRoute<Routes.Artist>()
+            getSelectedArtistMusicList(artistArg.name)
+        } catch (e: Exception) {
+            // 不是从 Artist 路由进入
+        }
     }
 
     // 依据标签获取音乐列表

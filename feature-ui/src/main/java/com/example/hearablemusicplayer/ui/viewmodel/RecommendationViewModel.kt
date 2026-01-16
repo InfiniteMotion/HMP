@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
+import com.example.hearablemusicplayer.ui.util.Routes
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,7 +30,8 @@ class RecommendationViewModel @Inject constructor(
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val userSettingsUseCase: UserSettingsUseCase,
-    private val currentPlaybackUseCase: CurrentPlaybackUseCase
+    private val currentPlaybackUseCase: CurrentPlaybackUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     // 每日推荐歌曲
@@ -208,6 +212,14 @@ class RecommendationViewModel @Inject constructor(
     }
     
     init {
+        // 尝试从路由参数加载歌曲详情（如果是从 SongDetail 路由进入）
+        try {
+            val songDetail = savedStateHandle.toRoute<Routes.SongDetail>()
+            loadSongById(songDetail.musicId)
+        } catch (e: Exception) {
+            // 不是从 SongDetail 进入，忽略
+        }
+        
         getDailyRecommendationUseCase.resetProcessingState()
         _isProcessingExtraInfo.value = false
         _processingProgress.value = BatchProcessingProgress()
@@ -219,13 +231,19 @@ class RecommendationViewModel @Inject constructor(
             }
         }
     }
+
+    fun loadSongById(musicId: Long) {
+        viewModelScope.launch {
+            val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(musicId)
+            if (recommendation?.musicInfo != null) {
+                dailyMusic.value = recommendation.musicInfo
+                _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                _dailyMusicLabel.value = recommendation.labels
+            }
+        }
+    }
     
     fun selectSong(musicInfo: MusicInfo) {
-        dailyMusic.value = musicInfo
-        viewModelScope.launch {
-            val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(musicInfo.music.id)
-            _dailyMusicInfo.value = recommendation?.dailyMusicInfo
-            _dailyMusicLabel.value = recommendation?.labels ?: emptyList()
-        }
+        loadSongById(musicInfo.music.id)
     }
 }
