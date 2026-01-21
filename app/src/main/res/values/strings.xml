@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hearable Music Player</string>
+    <string name="app_name">Hearable Music</string>
     <!--    Tab labels-->
     <string name="tab_home">Home</string>
     <string name="tab_gallery">Gallery</string>

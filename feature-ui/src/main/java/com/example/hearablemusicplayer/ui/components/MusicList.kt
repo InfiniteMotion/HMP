@@ -1,9 +1,7 @@
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,12 +52,11 @@ fun MusicList(
     val coroutineScope = rememberCoroutineScope()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(
+        itemsIndexed(
             items = musicInfoList,
-            key = { musicInfo -> musicInfo.music.id }
-        ) { musicInfo ->
+            key = { index, musicInfo -> "${musicInfo.music.id}_$index" }
+        ) { index, musicInfo ->
             MusicItem(
                 musicInfo = musicInfo,
                 onItemClick = {
@@ -72,6 +72,9 @@ fun MusicList(
                 isPlaying = isPlaying,
                 modifier = Modifier
             )
+        }
+        item {
+            Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }
@@ -92,7 +95,6 @@ fun FixedMusicList(
     val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         musicInfoList.forEach { musicInfo ->
             MusicItem(
@@ -129,79 +131,90 @@ fun MusicItem(
     val scope = rememberCoroutineScope()
     val haptic = rememberHapticFeedback()
 
-    Row(
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .height(80.dp)
+            .padding(vertical = 4.dp)
             .clickable {
                 haptic.performClick()
                 onItemClick()
-            }
-            .background(
-                if (isPlaying)
-                    Transparent
-                else
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPlaying)
+                Transparent
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = if (isPlaying) 
+            CardDefaults.cardElevation(defaultElevation = 0.dp)
+        else 
+            CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        AsyncImage(
-            model = musicInfo.music.albumArtUri,
-            contentDescription = "Album art",
+        Row(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = musicInfo.music.title,
-                style = MaterialTheme.typography.titleMedium,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                .fillMaxSize()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = musicInfo.music.albumArtUri,
+                contentDescription = "Album art",
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
-            Text(
-                text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
-                style = MaterialTheme.typography.bodySmall,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Row {
-            if (showAddButton) {
-                IconButton(
-                    onClick = {
-                        haptic.performConfirm()
-                        scope.launch {
-                            onAddToPlaylist()
-                        }
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.plus_square),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Add Button",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = musicInfo.music.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
+                    style = MaterialTheme.typography.bodySmall,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
-            if (showMenuButton) {
-                IconButton(
-                    onClick = {
-                        haptic.performLightClick()
-                        onMenuClick()
+            Row {
+                if (showAddButton) {
+                    IconButton(
+                        onClick = {
+                            haptic.performConfirm()
+                            scope.launch {
+                                onAddToPlaylist()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.plus_square),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            contentDescription = "Add Button",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.dot_grid_1x2),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Menu Button",
-                        modifier = Modifier.size(24.dp)
-                    )
+                }
+                if (showMenuButton) {
+                    IconButton(
+                        onClick = {
+                            haptic.performLightClick()
+                            onMenuClick()
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.dot_grid_1x2),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            contentDescription = "Menu Button",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }

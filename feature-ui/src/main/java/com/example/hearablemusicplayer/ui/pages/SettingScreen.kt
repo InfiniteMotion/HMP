@@ -133,6 +133,7 @@ fun SettingScreenContent(
                 musicCount = musicCount,
                 refreshMusicList = onRefreshMusicList
             )
+            Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }

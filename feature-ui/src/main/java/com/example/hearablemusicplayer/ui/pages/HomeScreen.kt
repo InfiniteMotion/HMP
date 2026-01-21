@@ -1,16 +1,18 @@
 package com.example.hearablemusicplayer.ui.pages
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,8 +20,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +32,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,42 +82,45 @@ fun HomeScreen(
             }
         }
     ) {
-        Column(
-            modifier = Modifier.verticalScroll(rememberScrollState())
-                .fillMaxSize()
-                .padding(bottom = 16.dp)
-        ) {
-            Text(
-                text = "今日推荐",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-
-            if (dailyMusic == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
+        if (dailyMusic == null) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "暂未加载到数据",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "请重新启动应用或进行AI配置",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { navController.navigate(Routes.AI) },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "暂未加载到 Daily Music",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { navController.navigate(Routes.AI) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("前往 AI 配置")
-                        }
-                    }
+                    Text("前往 AI 配置页面")
                 }
-            } else {
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        } else {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = "今日推荐",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
                 DailyHeroCard(
                     music = dailyMusic!!,
                     onPlay = {
@@ -127,77 +135,76 @@ fun HomeScreen(
                         navController.navigate(Routes.SongDetail(dailyMusic!!.music.id))
                     }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Section 2: Heartbeat Playlist (Music List)
-            Text(
-                text = "今日心动歌单",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
+                // Section 2: Heartbeat Playlist (Music List)
+                Text(
+                    text = "今日心动歌单",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
 
-            val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
+                val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
 
-            if (heartbeatList.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "正在生成心动歌单...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Row(
+                if (heartbeatList.isEmpty()) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(100.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            onClick = {
-                                haptic.performClick()
-                                scope.launch {
-                                    val list = heartbeatList
-                                    if (list.isNotEmpty()) {
-                                        playControlViewModel.clearPlaylist()
-                                        playControlViewModel.addAllToPlaylistInOrder(list)
-                                        playControlViewModel.playWith(list.first())
-                                        navController.navigate(Routes.Player)
-                                    }
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(text = "播放心动歌单")
-                        }
+                        Text(
+                            text = "正在生成心动歌单...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    FixedMusicList(
-                        musicInfoList = heartbeatList,
-                        onItemClick = {
-                            haptic.performClick()
-                            playControlViewModel.playWith(it)
-                            navController.navigate(Routes.Player) },
-                        onAddToPlaylist = { _ -> },
-                        onMenuClick = {navController.navigate(Routes.SongDetail(it.music.id))},
-                        showAddButton = false,
-                        showMenuButton = true,
-                        isPlaying = isPlaying,
-                    )
+                } else {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = {
+                                    haptic.performClick()
+                                    scope.launch {
+                                        val list = heartbeatList
+                                        if (list.isNotEmpty()) {
+                                            playControlViewModel.clearPlaylist()
+                                            playControlViewModel.addAllToPlaylistInOrder(list)
+                                            playControlViewModel.playWith(list.first())
+                                            navController.navigate(Routes.Player)
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(text = "播放心动歌单")
+                            }
+                        }
+                        FixedMusicList(
+                            musicInfoList = heartbeatList,
+                            onItemClick = {
+                                haptic.performClick()
+                                playControlViewModel.playWith(it)
+                                navController.navigate(Routes.Player) },
+                            onAddToPlaylist = { _ -> },
+                            onMenuClick = {navController.navigate(Routes.SongDetail(it.music.id))},
+                            showAddButton = false,
+                            showMenuButton = true,
+                            isPlaying = isPlaying,
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(64.dp))
             }
-            
-            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
@@ -212,63 +219,77 @@ fun DailyHeroCard(
 ) {
     Card(
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 32.dp, vertical = 16.dp)
             .fillMaxWidth()
-            .height(240.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            .aspectRatio(1f)
+            .clickable(onClick = onDetail),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
                 model = music.music.albumArtUri,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(160.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = music.music.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = music.music.artist,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = music.music.album,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
-                        onClick = onPlay,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("播放")
-                    }
-                    Button(
-                        onClick = onDetail,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("详情")
-                    }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color.Transparent,
+                                0.5f to Color.Transparent,
+                                1.0f to Color.Black.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    Text(
+                        text = music.music.title,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = music.music.artist,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                FilledIconButton(
+                    onClick = onPlay,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(56.dp), // Larger touch target
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.play_fill),
+                        contentDescription = "Play",
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }

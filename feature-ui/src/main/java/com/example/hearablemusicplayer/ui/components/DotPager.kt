@@ -1,12 +1,14 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -30,10 +32,12 @@ fun DotPager(
         pageCount = { pageCount }
     )
     Column (modifier = modifier) {
-        HorizontalPager(state = pagerState) { page ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
             Box(
-                Modifier.fillMaxWidth()
-                    .height(410.dp),
+                Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 pageContent[page]()
@@ -43,8 +47,11 @@ fun DotPager(
         // 极简圆点指示器（仅多页时显示）
         if (pageCount > 1) {
             Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier,

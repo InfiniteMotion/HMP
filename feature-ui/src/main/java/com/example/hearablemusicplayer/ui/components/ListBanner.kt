@@ -29,7 +29,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.model.enum.LabelName
 import com.example.hearablemusicplayer.ui.util.Routes
-import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListGroupName(

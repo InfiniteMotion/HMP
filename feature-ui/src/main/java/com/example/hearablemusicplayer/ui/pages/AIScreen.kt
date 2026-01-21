@@ -19,8 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,7 +28,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -56,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
@@ -83,7 +79,6 @@ fun AIScreen(
     val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
     val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
     val progress by recommendationViewModel.processingProgress.collectAsState()
-    val processingResult by recommendationViewModel.processingResult.collectAsState()
     val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
 
     AIScreenContent(
@@ -94,7 +89,6 @@ fun AIScreen(
         isTestingApi = isTestingApi,
         apiTestResult = apiTestResult,
         progress = progress,
-        processingResult = processingResult,
         autoBatchProcess = autoBatchProcess,
         onProviderChange = settingsViewModel::switchAiProvider,
         onTestConnection = settingsViewModel::testAiProviderConnection,
@@ -105,7 +99,6 @@ fun AIScreen(
         pauseProcess = recommendationViewModel::pauseProcessing,
         resumeProcess = recommendationViewModel::resumeProcessing,
         cancelProcess = recommendationViewModel::cancelProcessing,
-        clearProcessingResult = recommendationViewModel::clearProcessingResult,
         onBackClick = { navController.popBackStack() }
     )
 }
@@ -119,7 +112,6 @@ fun AIScreenContent(
     isTestingApi: Boolean,
     apiTestResult: SettingsViewModel.ApiTestResult?,
     progress: RecommendationViewModel.BatchProcessingProgress,
-    processingResult: GetDailyMusicRecommendationUseCase.ProcessingResult?,
     autoBatchProcess: Boolean,
     onProviderChange: (AiProviderType) -> Unit,
     onTestConnection: (AiProviderType, String, String) -> Unit,
@@ -130,7 +122,6 @@ fun AIScreenContent(
     pauseProcess: () -> Unit,
     resumeProcess: () -> Unit,
     cancelProcess: () -> Unit,
-    clearProcessingResult: () -> Unit,
     onBackClick: () -> Unit
 ) {
     SubScreen(
@@ -168,13 +159,7 @@ fun AIScreenContent(
                 cancelProcess = cancelProcess
             )
 
-            // 处理结果卡片
-            processingResult?.let { result ->
-                ProcessingResultCard(
-                    result = result,
-                    onDismiss = clearProcessingResult
-                )
-            }
+            Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }
@@ -606,90 +591,6 @@ fun LoadMusicExtraInfo(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-/**
- * 处理结果卡片组件
- */
-@Composable
-fun ProcessingResultCard(
-    result: GetDailyMusicRecommendationUseCase.ProcessingResult,
-    onDismiss: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                result.isAllSuccess -> MaterialTheme.colorScheme.primaryContainer
-                result.failedCount > 0 -> MaterialTheme.colorScheme.errorContainer
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = if (result.wasCancelled) "处理已取消" else "处理完成",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row {
-                Text(
-                    "成功: ${result.successCount}",
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    "跳过: ${result.skippedCount}",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    "失败: ${result.failedCount}",
-                    color = if (result.failedCount > 0) MaterialTheme.colorScheme.error 
-                           else MaterialTheme.colorScheme.onSurface
-                )
-            }
-            
-            if (result.errors.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "失败详情:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                result.errors.take(3).forEach { error ->
-                    Text(
-                        text = "• $error",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (result.errors.size > 3) {
-                    Text(
-                        text = "...共 ${result.errors.size} 个错误",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text("关闭")
-            }
         }
     }
 }

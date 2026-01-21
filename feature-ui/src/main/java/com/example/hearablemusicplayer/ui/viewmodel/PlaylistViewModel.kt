@@ -118,6 +118,13 @@ class PlaylistViewModel @Inject constructor(
     fun getSelectedPlaylist(label: String) {
         _selectedPlaylistName.value = label
         viewModelScope.launch {
+            // 尝试匹配 LabelName
+            val labelEnum = LabelName.match(label)
+            if (labelEnum != null) {
+                _selectedPlaylist.value = musicLabelUseCase.getMusicListByLabel(labelEnum)
+                return@launch
+            }
+
             val id = when(label) {
                 "默认列表" -> settingsRepository.getCurrentPlaylistId()
                 "红心列表" -> settingsRepository.getLikedPlaylistId()
