@@ -26,8 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
@@ -45,7 +47,7 @@ fun TimerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("定时关闭") },
+        title = { Text(stringResource(R.string.sleep_timer)) },
         text = {
             // 使用Column组合预设选项和自定义输入
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -75,7 +77,7 @@ fun TimerDialog(
                                 }
                             )
                             Text(
-                                text = if (minutes == 0) "关闭定时" else "$minutes 分钟",
+                                text = if (minutes == 0) stringResource(R.string.timer_off) else stringResource(R.string.timer_minutes, minutes),
                                 modifier = Modifier.padding(start = 4.dp)
                             )
                         }
@@ -91,7 +93,7 @@ fun TimerDialog(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    Text("或", color = Color.Gray)
+                    Text(stringResource(R.string.or_label), color = Color.Gray)
 
                     // 数字输入框
                     OutlinedTextField(
@@ -111,7 +113,7 @@ fun TimerDialog(
                                 // 非法字符输入时忽略
                             }
                         },
-                        label = { Text("自定义分钟") },
+                        label = { Text(stringResource(R.string.custom_minutes)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f)
@@ -124,7 +126,7 @@ fun TimerDialog(
                 haptic.performConfirm()
                 onConfirm(selectedMinutes)
             }) {
-                Text("确定")
+                Text(stringResource(R.string.ok))
             }
         },
         dismissButton = {
@@ -132,7 +134,7 @@ fun TimerDialog(
                 haptic.performClick()
                 onDismiss()
             }) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

@@ -37,6 +37,8 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
+import androidx.compose.ui.res.stringResource
+
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreen(
@@ -85,7 +87,7 @@ fun SearchScreenContent(
     // 使用SubScreen模板
     SubScreen(
         onBackClick = onBackClick,
-        title = "搜索"
+        title = stringResource(R.string.search)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -97,7 +99,7 @@ fun SearchScreenContent(
                 onValueChange = onSearchQueryChange,
                 label = {
                     Text(
-                        "搜索您的音乐",
+                        stringResource(R.string.search_placeholder),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -105,7 +107,7 @@ fun SearchScreenContent(
                     Icon(
                         painter = painterResource(R.drawable.magnifyingglass),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        contentDescription = "搜索"
+                        contentDescription = stringResource(R.string.search)
                     )
                 },
                 keyboardOptions = KeyboardOptions(

@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -126,7 +127,7 @@ fun AIScreenContent(
 ) {
     SubScreen(
         onBackClick = onBackClick,
-        title = "AI"
+        title = stringResource(R.string.title_ai)
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
@@ -212,14 +213,14 @@ fun AiProviderConfig(
         }
     }
     
-    TitleWidget(title = "AI 服务商配置") {
+    TitleWidget(title = stringResource(R.string.ai_provider_config)) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
         ) {
             // 服务商选择下拉框
             Text(
-                text = "当前 AI 服务商",
+                text = stringResource(R.string.current_ai_provider),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -244,7 +245,7 @@ fun AiProviderConfig(
                     )
                     Icon(
                         painter = painterResource(R.drawable.chevron_down),
-                        contentDescription = "选择服务商",
+                        contentDescription = stringResource(R.string.select_provider),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -264,7 +265,7 @@ fun AiProviderConfig(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Icon(
                                             painter = painterResource(R.drawable.ic_public_ok),
-                                            contentDescription = "已选中",
+                                            contentDescription = stringResource(R.string.selected),
                                             modifier = Modifier.size(16.dp),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
@@ -289,7 +290,7 @@ fun AiProviderConfig(
             // 配置状态显示
             val isConfigured = currentConfig?.isConfigured == true && currentConfig.type == selectedProvider
             Text(
-                text = if (isConfigured) "✓ 已配置" else "⚠ 未配置",
+                text = if (isConfigured) stringResource(R.string.configured) else stringResource(R.string.not_configured),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isConfigured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
@@ -302,13 +303,13 @@ fun AiProviderConfig(
                 onValueChange = { apiKeyValue = it },
                 label = { 
                     Text(
-                        "API Key", 
+                        stringResource(R.string.api_key), 
                         color = MaterialTheme.colorScheme.onBackground
                     ) 
                 },
                 placeholder = {
                     Text(
-                        "请输入 ${selectedProvider.displayName} 的 API Key",
+                        stringResource(R.string.enter_api_key_placeholder, selectedProvider.displayName),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                     )
                 },
@@ -335,13 +336,13 @@ fun AiProviderConfig(
                 onValueChange = { modelValue = it },
                 label = { 
                     Text(
-                        "模型名称", 
+                        stringResource(R.string.model_name), 
                         color = MaterialTheme.colorScheme.onBackground
                     ) 
                 },
                 placeholder = {
                     Text(
-                        "默认: ${selectedProvider.defaultModel}",
+                        stringResource(R.string.default_model_placeholder, selectedProvider.defaultModel),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                     )
                 },
@@ -373,7 +374,7 @@ fun AiProviderConfig(
                         if (apiKeyValue.isNotBlank()) {
                             onTestConnection(selectedProvider, apiKeyValue, modelValue)
                         } else {
-                            Toast.makeText(context, "请输入 API Key", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.please_enter_api_key), Toast.LENGTH_SHORT).show()
                         }
                     },
                     enabled = apiKeyValue.isNotBlank() && !isTestingApi
@@ -385,7 +386,7 @@ fun AiProviderConfig(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("测试", color = MaterialTheme.colorScheme.onPrimary)
+                        Text(stringResource(R.string.test), color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
                 
@@ -397,14 +398,14 @@ fun AiProviderConfig(
                     onClick = {
                         if (apiKeyValue.isNotBlank()) {
                             onSaveConfig(selectedProvider, apiKeyValue, modelValue)
-                            Toast.makeText(context, "配置已保存", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.config_saved), Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "请输入 API Key", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.please_enter_api_key), Toast.LENGTH_SHORT).show()
                         }
                     },
                     enabled = apiKeyValue.isNotBlank()
                 ) {
-                    Text("保存", color = MaterialTheme.colorScheme.onPrimary)
+                    Text(stringResource(R.string.save), color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
             
@@ -412,7 +413,7 @@ fun AiProviderConfig(
             
             // 提示信息
             Text(
-                text = "切换服务商后，需要重新配置 API Key",
+                text = stringResource(R.string.provider_change_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -437,7 +438,7 @@ fun LoadMusicExtraInfo(
     val context = LocalContext.current
     
     TitleWidget(
-        title = "音乐信息补全",
+        title = stringResource(R.string.music_info_completion),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -453,12 +454,12 @@ fun LoadMusicExtraInfo(
             ) {
                 Column {
                     Text(
-                        text = "自动后台补全",
+                        text = stringResource(R.string.auto_background_completion),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "应用启动时自动开始补全音乐信息",
+                        text = stringResource(R.string.auto_background_completion_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -477,13 +478,13 @@ fun LoadMusicExtraInfo(
             // 待处理数量提示
             if (!progress.isProcessing) {
                 Text(
-                    text = "待补全音乐数量：$pendingCount 首",
+                    text = stringResource(R.string.pending_music_count, pendingCount),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(top = 16.dp),
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "已补全：$musicWithExtraCount 首",
+                    text = stringResource(R.string.completed_music_count, musicWithExtraCount),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -497,7 +498,7 @@ fun LoadMusicExtraInfo(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "正在处理：${progress.currentMusicTitle}",
+                        text = stringResource(R.string.processing_music, progress.currentMusicTitle),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -520,7 +521,7 @@ fun LoadMusicExtraInfo(
                     
                     if (progress.isPaused) {
                         Text(
-                            text = "已暂停",
+                            text = stringResource(R.string.paused),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 8.dp)
@@ -538,14 +539,14 @@ fun LoadMusicExtraInfo(
                                 onClick = resumeProcess,
                                 modifier = Modifier.width(100.dp)
                             ) {
-                                Text("继续", color = MaterialTheme.colorScheme.onPrimary)
+                                Text(stringResource(R.string.resume), color = MaterialTheme.colorScheme.onPrimary)
                             }
                         } else {
                             Button(
                                 onClick = pauseProcess,
                                 modifier = Modifier.width(100.dp)
                             ) {
-                                Text("暂停", color = MaterialTheme.colorScheme.onPrimary)
+                                Text(stringResource(R.string.pause), color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
                         
@@ -556,7 +557,7 @@ fun LoadMusicExtraInfo(
                                 containerColor = MaterialTheme.colorScheme.error
                             )
                         ) {
-                            Text("取消", color = MaterialTheme.colorScheme.onError)
+                            Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onError)
                         }
                     }
                 }
@@ -565,7 +566,7 @@ fun LoadMusicExtraInfo(
                 
                 if (!isConfigured) {
                     Text(
-                        text = "请先配置 AI 服务商",
+                        text = stringResource(R.string.please_config_provider),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -576,18 +577,18 @@ fun LoadMusicExtraInfo(
                     modifier = Modifier.width(300.dp),
                     onClick = {
                         if (!isConfigured) {
-                            Toast.makeText(context, "请先配置 AI 服务商", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.please_config_provider), Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         if (pendingCount <= 0) {
-                            Toast.makeText(context, "没有待处理的音乐", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.no_pending_music), Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         startAutoProcessExtraInfo()
                     },
                     enabled = true // 始终启用，在 onClick 中处理错误情况
                 ) {
-                    Text(text = "开始批量补全", color = MaterialTheme.colorScheme.onPrimary)
+                    Text(text = stringResource(R.string.start_batch_completion), color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

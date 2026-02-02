@@ -16,10 +16,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.BassBoostSlider
 import com.example.hearablemusicplayer.ui.components.CustomEqualizer
 import com.example.hearablemusicplayer.ui.components.EqualizerPresetSelector
@@ -79,7 +81,7 @@ fun AudioEffectsScreenContent(
     // 使用SubScreen模板
     SubScreen(
         onBackClick = onBackClick,
-        title = "音效设置"
+        title = stringResource(R.string.audio_effects_settings)
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
@@ -88,7 +90,7 @@ fun AudioEffectsScreenContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             TitleWidget(
-                title = "预设场景音效"
+                title = stringResource(R.string.preset_equalizer)
             ) {
                 EqualizerPresetSelector(
                     presets = equalizerPresets,
@@ -98,10 +100,11 @@ fun AudioEffectsScreenContent(
             }
 
             TitleWidget(
-                title = "音效设置"
+                title = stringResource(R.string.audio_effects_settings)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     BassBoostSlider(
@@ -120,7 +123,7 @@ fun AudioEffectsScreenContent(
             }
 
             TitleWidget(
-                title = "自定义均衡器"
+                title = stringResource(R.string.custom_equalizer)
             ) {
                 CustomEqualizer(
                     bandCount = equalizerBandCount,

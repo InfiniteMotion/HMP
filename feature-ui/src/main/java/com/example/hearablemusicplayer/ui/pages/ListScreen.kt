@@ -92,7 +92,7 @@ fun ListScreenContent(
     playlistViewModel: PlaylistViewModel
 ) {
     TabScreen(
-        title = "播放列表",
+        title = stringResource(R.string.title_playlist),
         hasSearchBotton = true,
         navController = navController
     ) {
@@ -170,17 +170,17 @@ fun ListScreenContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     ListBanner(
-                        listName = "默认列表",
+                        listName = stringResource(R.string.banner_default),
                         listCoverUri = R.drawable.defaultlist,
                         navController = navController
                     )
                     ListBanner(
-                        listName = "红心列表",
+                        listName = stringResource(R.string.banner_heart),
                         listCoverUri = R.drawable.heartlist,
                         navController = navController
                     )
                     ListBanner(
-                        listName = "最近播放",
+                        listName = stringResource(R.string.banner_history),
                         listCoverUri = R.drawable.historylist,
                         navController = navController
                     )
@@ -217,8 +217,8 @@ fun ListScreenContent(
             // 探索更多 (Language & Era) - 标签云
             LabelListGroup(
                 data = languageList + eraList,
-                bannerNameF = "探索",
-                bannerNameS = "更多",
+                bannerNameF = stringResource(R.string.explore),
+                bannerNameS = stringResource(R.string.more),
                 themeColorResId = R.color.HDPurple
             ) { list ->
                 FlowRow(
@@ -311,7 +311,7 @@ private fun GenreCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(12.dp)
-            )
+                )
         }
     }
 }
@@ -388,7 +388,7 @@ private fun ScenarioCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "适合此时此刻的音乐",
+                    text = stringResource(R.string.suitable_for_now),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )

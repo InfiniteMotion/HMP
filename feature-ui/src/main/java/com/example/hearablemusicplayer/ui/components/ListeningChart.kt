@@ -37,11 +37,8 @@ import java.util.Locale
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ListeningChart(
-    text: String,
     data: List<Int>,
-    days: List<String>
 ) {
-
     val (gridData, weekLabels) = remember(data) {
         val totalDays = 35 // 5周 x 7天
         val today = LocalDate.now()
@@ -85,97 +82,59 @@ fun ListeningChart(
         return MaterialTheme.colorScheme.primary.copy(alpha = ratio)
     }
 
-    Card(
+    Column(
         modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Transparent
-        ),
-        border = BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary),
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
+        // 星期表头
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = text, // e.g. "Monthly Activity"
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "Last 35 Days",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // 绘制热力图网格
-            // 7列 (Mon-Sun)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // 星期表头
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            weekLabels.forEach { label ->
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
-                    weekLabels.forEach { label ->
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
+                    Text(
+                        text = label,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
-                
-                Spacer(modifier = Modifier.height(2.dp))
-                
-                // 数据网格: 5行 x 7列
-                val rows = 5
-                val cols = 7
-                
-                for (row in 0 until rows) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        for (col in 0 until cols) {
-                            val index = row * cols + col
-                            // 调整宽高比，稍微扁一点点或者保持正方形但整体变小
-                            val weightModifier = Modifier.weight(1f).aspectRatio(1.5f)
-                            
-                            if (index < gridData.size) {
-                                val (date, value) = gridData[index]
-                                val color = getThemeColorForValue(value, maxValue)
-                                
-                                Box(
-                                    modifier = weightModifier
-                                        .clip(RoundedCornerShape(5.dp)) // 减小圆角 4.dp -> 3.dp
-                                        .background(color)
-                                )
-                            } else {
-                                Spacer(modifier = weightModifier)
-                            }
-                        }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        // 数据网格: 5行 x 7列
+        val rows = 5
+        val cols = 7
+
+        for (row in 0 until rows) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (col in 0 until cols) {
+                    val index = row * cols + col
+                    // 调整宽高比，稍微扁一点点或者保持正方形但整体变小
+                    val weightModifier = Modifier.weight(1f).aspectRatio(1.5f)
+
+                    if (index < gridData.size) {
+                        val (date, value) = gridData[index]
+                        val color = getThemeColorForValue(value, maxValue)
+
+                        Box(
+                            modifier = weightModifier
+                                .clip(RoundedCornerShape(5.dp)) // 减小圆角 4.dp -> 3.dp
+                                .background(color)
+                        )
+                    } else {
+                        Spacer(modifier = weightModifier)
                     }
                 }
             }

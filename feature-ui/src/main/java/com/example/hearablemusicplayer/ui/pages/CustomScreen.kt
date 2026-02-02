@@ -21,8 +21,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -50,7 +52,7 @@ fun CustomScreenContent(
 ) {
     SubScreen(
         onBackClick = onBackClick,
-        title = "主题定制"
+        title = stringResource(R.string.theme_customization)
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
@@ -73,7 +75,7 @@ fun SetThemeMode(
     setCustomMode: (String) -> Unit
 ){
     TitleWidget(
-        title = "设置主题明暗模式",
+        title = stringResource(R.string.set_theme_mode),
     ) {
         Row(
             modifier = Modifier
@@ -84,7 +86,7 @@ fun SetThemeMode(
         ) {
             val haptic = rememberHapticFeedback()
             ThemeModeButton(
-                text = "明",
+                text = stringResource(R.string.theme_light),
                 isSelected = customMode == "light",
                 onClick = {
                     setCustomMode("light")
@@ -92,7 +94,7 @@ fun SetThemeMode(
                 }
             )
             ThemeModeButton(
-                text = "暗",
+                text = stringResource(R.string.theme_dark),
                 isSelected = customMode == "dark",
                 onClick = {
                     setCustomMode("dark")
@@ -100,7 +102,7 @@ fun SetThemeMode(
                 }
             )
             ThemeModeButton(
-                text = "Auto",
+                text = stringResource(R.string.theme_auto),
                 isSelected = customMode == "default",
                 onClick = {
                     setCustomMode("default")
@@ -134,4 +136,3 @@ fun ThemeModeButton(
         )
     }
 }
-

@@ -36,7 +36,10 @@ fun SquareCard(
         colors = CardDefaults.cardColors(
             containerColor = Transparent
         ),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        ),
         onClick = onClick
     ) {
         Row(

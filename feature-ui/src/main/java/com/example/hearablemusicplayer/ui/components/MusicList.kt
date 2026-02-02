@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.ui.components
 
 import androidx.annotation.OptIn
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -141,16 +141,11 @@ fun MusicItem(
                 onItemClick()
             },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPlaying)
-                Transparent
-            else
-                MaterialTheme.colorScheme.surface
+        colors = CardDefaults.cardColors(containerColor = Transparent),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (isPlaying) 0.0f else 0.6f)
         ),
-        elevation = if (isPlaying) 
-            CardDefaults.cardElevation(defaultElevation = 0.dp)
-        else 
-            CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier

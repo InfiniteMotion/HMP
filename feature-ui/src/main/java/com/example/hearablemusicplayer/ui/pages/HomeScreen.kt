@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,7 @@ fun HomeScreen(
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
 
     TabScreen(
-        title = "每日推荐",
+        title = stringResource(R.string.title_home),
         trailing = {
             IconButton(
                 onClick = {
@@ -76,7 +77,7 @@ fun HomeScreen(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.player_d),
-                    contentDescription = "刷新每日推荐",
+                    contentDescription = stringResource(R.string.refresh_daily_recommendation),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -89,13 +90,13 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "暂未加载到数据",
+                    text = stringResource(R.string.no_data_loaded),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "请重新启动应用或进行AI配置",
+                    text = stringResource(R.string.relaunch_or_config_ai),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -104,7 +105,7 @@ fun HomeScreen(
                     onClick = { navController.navigate(Routes.AI) },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("前往 AI 配置页面")
+                    Text(stringResource(R.string.go_to_ai_config))
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -115,7 +116,7 @@ fun HomeScreen(
                     .padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = "今日推荐",
+                    text = stringResource(R.string.today_recommendation),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
@@ -140,7 +141,7 @@ fun HomeScreen(
 
                 // Section 2: Heartbeat Playlist (Music List)
                 Text(
-                    text = "今日心动歌单",
+                    text = stringResource(R.string.today_heartbeat_playlist),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
@@ -157,7 +158,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "正在生成心动歌单...",
+                            text = stringResource(R.string.generating_heartbeat_playlist),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -186,7 +187,7 @@ fun HomeScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(text = "播放心动歌单")
+                                Text(text = stringResource(R.string.play_heartbeat_playlist))
                             }
                         }
                         FixedMusicList(
@@ -295,4 +296,3 @@ fun DailyHeroCard(
         }
     }
 }
-

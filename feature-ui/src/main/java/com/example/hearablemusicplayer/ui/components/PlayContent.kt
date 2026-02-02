@@ -65,6 +65,7 @@ import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.domain.model.MusicLabel
 import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
+import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.delay
@@ -121,7 +122,7 @@ fun PlayContent(
             ){
                 PlayerHeader(onBackClick)
             }
-            Text("当前音乐: 无", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.no_current_music), color = MaterialTheme.colorScheme.onSurface)
         }
     } else {
         var showTimerDialog by remember { mutableStateOf(false) }
@@ -264,7 +265,7 @@ fun PlayerHeader(onBackClick: () -> Unit) {
             Icon(
                 painter = painterResource(R.drawable.chevron_down),
                 tint = MaterialTheme.colorScheme.onSurface,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.back),
                 modifier = Modifier.size(24.dp),
             )
         }
@@ -443,27 +444,36 @@ fun PlaybackControlsButtons(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onPrevious,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.backward_end_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Previous",
+                    contentDescription = stringResource(R.string.previous),
                 )
             }
 
-            IconButton(onClick = onPlayPause, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onPlayPause,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Play / Pause",
+                    contentDescription = stringResource(R.string.play_pause),
                 )
             }
 
-            IconButton(onClick = onNext, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onNext,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.forward_end_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Next",
+                    contentDescription = stringResource(R.string.next),
                 )
             }
         }
@@ -487,7 +497,7 @@ fun PlaybackControlsButtons(
                         }
                     ),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Playback Mode"
+                    contentDescription = stringResource(R.string.playback_mode),
                 )
             }
 
@@ -500,25 +510,17 @@ fun PlaybackControlsButtons(
                     isLiked = !isLiked
                 },
             ) {
-                if (isLiked) {
-                    Icon(
-                        painter = painterResource(R.drawable.heart_fill),
-                        contentDescription = "Favorite",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }else{
-                    Icon(
-                        painter = painterResource(R.drawable.heart),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Favorite",
-                    )
-                }
+                Icon(
+                    painter = painterResource(if (isLiked) R.drawable.heart_fill else R.drawable.heart),
+                    contentDescription = stringResource(R.string.favorite),
+                    tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
             }
             IconButton(onClick = onHeartMode) {
                 Icon(
                     painter = painterResource(R.drawable.identify_song),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "RecommendationMode"
+                    contentDescription = stringResource(R.string.recommendation_mode),
                 )
             }
             if(remainingTime == null){
@@ -526,7 +528,7 @@ fun PlaybackControlsButtons(
                     Icon(
                         painter = painterResource(R.drawable.timer),
                         tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Timer.kt"
+                        contentDescription = stringResource(R.string.sleep_timer),
                     )
                 }
             } else{
@@ -549,7 +551,7 @@ fun PlaybackControlsButtons(
                     painter = painterResource(
                         if (playlistExpanded) R.drawable.chevron_up_circle else R.drawable.music_note_list
                     ),
-                    contentDescription = "Playlist"
+                    contentDescription = stringResource(R.string.playlist),
                 )
             }
         }
@@ -625,7 +627,7 @@ fun PlaylistArea(
                     }
                 ) {
                     Text(
-                        text = "清空",
+                        text = stringResource(R.string.clear),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -728,7 +730,7 @@ fun PlaylistItem(
                 placeholder = painterResource(R.drawable.none),
                 error = painterResource(R.drawable.none)
             ),
-            contentDescription = "Album art",
+            contentDescription = stringResource(R.string.album_art),
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp)),
@@ -769,7 +771,7 @@ fun PlaylistItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.chevron_up_circle),
-                    contentDescription = "Pin to top",
+                    contentDescription = stringResource(R.string.pin_to_top),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -782,7 +784,7 @@ fun PlaylistItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.trash),
-                    contentDescription = "Remove",
+                    contentDescription = stringResource(R.string.remove),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

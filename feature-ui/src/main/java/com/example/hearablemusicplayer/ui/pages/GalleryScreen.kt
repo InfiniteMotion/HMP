@@ -10,11 +10,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
@@ -91,7 +93,7 @@ fun GalleryScreenContent(
 ) {
     val haptic = rememberHapticFeedback()
     TabScreen(
-        title = "音乐库",
+        title = stringResource(R.string.title_gallery),
         hasSearchBotton = true,
         navController = navController
     ) {

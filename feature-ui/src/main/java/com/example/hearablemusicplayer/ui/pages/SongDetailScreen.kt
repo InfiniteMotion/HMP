@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -57,7 +58,7 @@ fun SongDetailScreen(
 
     SubScreen(
         onBackClick = { navController.popBackStack() },
-        title = "歌曲详情"
+        title = stringResource(R.string.title_song_detail)
     ) {
         Column(
             modifier = Modifier
@@ -139,7 +140,7 @@ fun SongDetailScreen(
                         .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("加载中...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -186,12 +187,12 @@ fun SongDetailInfo(
         Spacer(modifier = Modifier.height(24.dp))
         
         val labelListTwo = listOf(
-            "歌曲介绍" to dailyMusicInfo.description,
-            "歌手介绍" to dailyMusicInfo.singerIntroduce,
-            "创作背景" to dailyMusicInfo.backgroundIntroduce,
-            "热门歌词" to dailyMusicInfo.lyric,
-            "歌曲成就" to dailyMusicInfo.rewards,
-            "类似音乐" to dailyMusicInfo.relevantMusic
+            stringResource(R.string.song_description) to dailyMusicInfo.description,
+            stringResource(R.string.artist_introduction) to dailyMusicInfo.singerIntroduce,
+            stringResource(R.string.creative_background) to dailyMusicInfo.backgroundIntroduce,
+            stringResource(R.string.popular_lyrics) to dailyMusicInfo.lyric,
+            stringResource(R.string.song_achievements) to dailyMusicInfo.rewards,
+            stringResource(R.string.similar_music) to dailyMusicInfo.relevantMusic
         )
         
         labelListTwo.forEach { (category, label) ->

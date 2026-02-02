@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
@@ -84,7 +85,7 @@ fun IntroScreen(
 
             )
         Text(
-            text = "欢迎来到",
+            text = stringResource(R.string.welcome_to),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -103,7 +104,7 @@ fun IntroScreen(
         }
         Spacer(modifier = Modifier.height(64.dp))
         Text(
-            text = "跟着向导快速完成配置",
+            text = stringResource(R.string.follow_guide_to_config),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -207,13 +208,13 @@ fun PermissionStep(
         verticalArrangement = Arrangement.Top
     ) {
         Text(
-            text = "1. 授予权限",
+            text = stringResource(R.string.intro_step_1),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "向您请求授予音频媒体文件访问权限和通知权限,我们需要这些权限来实现音乐扫描和通知栏控制。",
+            text = stringResource(R.string.intro_step_1_desc),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.widthIn(max = 300.dp),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -225,7 +226,7 @@ fun PermissionStep(
                 onClick = onRequestPermission,
                 modifier = Modifier.width(150.dp)
             ) {
-                Text("授予")
+                Text(stringResource(R.string.grant_permission))
             }
         } else {
             Button(
@@ -238,7 +239,7 @@ fun PermissionStep(
                 ),
                 modifier = Modifier.width(150.dp)
             ) {
-                Text("已授权!")
+                Text(stringResource(R.string.permission_granted))
             }
         }
     }
@@ -257,13 +258,13 @@ fun ScanMusicStep(
         verticalArrangement = Arrangement.Top
     ) {
         Text(
-            text = "2. 扫描音乐",
+            text = stringResource(R.string.intro_step_2),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "首次启动需要从设备中扫描音乐,后续您可以在设置中自行手动更新和扫描。",
+            text = stringResource(R.string.intro_step_2_desc),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.widthIn(max = 300.dp),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -281,14 +282,14 @@ fun ScanMusicStep(
                 ),
                 modifier = Modifier.width(150.dp)
             ) {
-                Text("扫描完毕!")
+                Text(stringResource(R.string.scan_finished))
             }
         } else {
             Button(
                 onClick = onStartScan,
                 modifier = Modifier.width(150.dp)
             ) {
-                Text("扫描")
+                Text(stringResource(R.string.scan))
             }
         }
         
@@ -310,13 +311,13 @@ fun StartExperienceStep(
         verticalArrangement = Arrangement.Top
     ) {
         Text(
-            text = "3. 开始体验",
+            text = stringResource(R.string.intro_step_3),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "设置完毕后,点击按钮即可开启您的音乐体验。",
+            text = stringResource(R.string.intro_step_3_desc),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.widthIn(max = 300.dp),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -326,7 +327,7 @@ fun StartExperienceStep(
             onClick = onFinished,
             modifier = Modifier.width(150.dp)
         ) {
-            Text("开始体验")
+            Text(stringResource(R.string.start_experience))
         }
     }
 }

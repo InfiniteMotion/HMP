@@ -10,12 +10,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 
 @Composable
@@ -28,7 +29,7 @@ fun MusicScanDialog(
     
     AlertDialog(
         onDismissRequest = { /* 扫描期间禁止关闭 */ },
-        title = { Text("扫描音乐") },
+        title = { Text(stringResource(R.string.scan_music_title)) },
         text = {
             if (isLoading) {
                 Column(
@@ -36,7 +37,7 @@ fun MusicScanDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("正在扫描设备中的音乐，请耐心等待……")
+                    Text(stringResource(R.string.scanning_desc))
                     Spacer(modifier = Modifier.height(16.dp))
                     CircularProgressIndicator(modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(16.dp))
@@ -47,7 +48,7 @@ fun MusicScanDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("扫描完成！已加载本地音乐${musicCount}首。")
+                    Text(stringResource(R.string.scan_complete_desc, musicCount))
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -55,7 +56,7 @@ fun MusicScanDialog(
         confirmButton = {
             if (!isLoading) {
                 TextButton(onClick = onDismiss) {
-                    Text("确定")
+                    Text(stringResource(R.string.ok))
                 }
             }
         }
