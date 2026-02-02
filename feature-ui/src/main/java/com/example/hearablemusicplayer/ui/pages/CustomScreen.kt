@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.ui.pages
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,19 +40,24 @@ fun CustomScreen(
     navController: NavController
 ) {
     val customMode by settingsViewModel.customMode.collectAsState("default")
+    val backgroundStyle by settingsViewModel.backgroundStyle.collectAsState("FLUID")
     
     CustomScreenContent(
         customMode = customMode,
+        backgroundStyle = backgroundStyle,
         onBackClick = { navController.popBackStack() },
-        setCustomMode = settingsViewModel::saveCustomMode
+        setCustomMode = settingsViewModel::saveCustomMode,
+        setBackgroundStyle = settingsViewModel::saveBackgroundStyle
     )
 }
 
 @Composable
 fun CustomScreenContent(
     customMode: String,
+    backgroundStyle: String,
     onBackClick: () -> Unit,
-    setCustomMode: (String) -> Unit
+    setCustomMode: (String) -> Unit,
+    setBackgroundStyle: (String) -> Unit
 ) {
     SubScreen(
         onBackClick = onBackClick,
@@ -64,6 +73,12 @@ fun CustomScreenContent(
                 customMode = customMode,
                 setCustomMode = setCustomMode
             )
+            
+            SetBackgroundStyle(
+                backgroundStyle = backgroundStyle,
+                setBackgroundStyle = setBackgroundStyle
+            )
+            
             Spacer(modifier = Modifier.height(64.dp))
         }
     }
@@ -134,5 +149,99 @@ fun ThemeModeButton(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+fun SetBackgroundStyle(
+    backgroundStyle: String,
+    setBackgroundStyle: (String) -> Unit
+) {
+    TitleWidget(
+        title = stringResource(R.string.set_background_style),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val haptic = rememberHapticFeedback()
+            
+            BackgroundStyleOption(
+                title = stringResource(R.string.style_fluid),
+                description = stringResource(R.string.style_fluid_desc),
+                isSelected = backgroundStyle == "FLUID",
+                onClick = {
+                    setBackgroundStyle("FLUID")
+                    haptic.performClick()
+                }
+            )
+            
+            BackgroundStyleOption(
+                title = stringResource(R.string.style_spots),
+                description = stringResource(R.string.style_spots_desc),
+                isSelected = backgroundStyle == "SPOTS",
+                onClick = {
+                    setBackgroundStyle("SPOTS")
+                    haptic.performClick()
+                }
+            )
+            
+            BackgroundStyleOption(
+                title = stringResource(R.string.style_blur),
+                description = stringResource(R.string.style_blur_desc),
+                isSelected = backgroundStyle == "BLUR",
+                onClick = {
+                    setBackgroundStyle("BLUR")
+                    haptic.performClick()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun BackgroundStyleOption(
+    title: String,
+    description: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
+                             else MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = isSelected,
+                onClick = null // Handled by Card clickable
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

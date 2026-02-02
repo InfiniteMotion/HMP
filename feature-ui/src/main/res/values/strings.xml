@@ -171,6 +171,13 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_auto">Auto</string>
+    <string name="set_background_style">Set Background Style</string>
+    <string name="style_fluid">Fluid Aurora</string>
+    <string name="style_spots">Immersion Spots</string>
+    <string name="style_blur">Retro Blur</string>
+    <string name="style_fluid_desc">Smooth color flow inspired by liquid motion (Recommended)</string>
+    <string name="style_spots_desc">Abstract color spots breathing on the background (Classic)</string>
+    <string name="style_blur_desc">Simple blurred cover with slow zoom effect (Battery Saver)</string>
     <string name="audio_effects_settings">Audio Effects Settings</string>
     <string name="preset_equalizer">Preset Equalizer</string>
     <string name="custom_equalizer">Custom Equalizer</string>

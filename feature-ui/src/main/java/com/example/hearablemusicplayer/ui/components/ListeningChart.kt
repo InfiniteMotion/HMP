@@ -62,19 +62,7 @@ fun ListeningChart(
     }
 
     val maxValue = (data.maxOrNull() ?: 1).toFloat().coerceAtLeast(1f)
-    
-    // 颜色计算函数
-    fun getColorForValue(value: Int, max: Float): Color {
-        if (value == 0) return Color.Gray.copy(alpha = 0.2f)
-        val ratio = value / max
-        return when {
-            ratio < 0.25f -> Color(0xFF9BE9A8) // GitHub Level 1
-            ratio < 0.5f -> Color(0xFF40C463)  // GitHub Level 2
-            ratio < 0.75f -> Color(0xFF30A14E) // GitHub Level 3
-            else -> Color(0xFF216E39)          // GitHub Level 4
-        }
-    }
-    
+
     @Composable
     fun getThemeColorForValue(value: Int, max: Float): Color {
         if (value == 0) return MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -85,7 +73,7 @@ fun ListeningChart(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // 星期表头

@@ -24,6 +24,8 @@ class SettingsViewModel @Inject constructor(
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
     val userName = userSettingsUseCase.userName
     val customMode = userSettingsUseCase.customMode
+    val backgroundStyle = userSettingsUseCase.backgroundStyle
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FLUID")
     
     private val _avatarUri = MutableStateFlow("")
     val avatarUri: StateFlow<String> = _avatarUri
@@ -49,6 +51,12 @@ class SettingsViewModel @Inject constructor(
     fun saveCustomMode(mode: String) {
         viewModelScope.launch {
             userSettingsUseCase.saveThemeMode(mode)
+        }
+    }
+
+    fun saveBackgroundStyle(style: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveBackgroundStyle(style)
         }
     }
     

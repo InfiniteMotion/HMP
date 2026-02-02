@@ -18,6 +18,9 @@ interface SettingsRepository {
     val themeMode: Flow<String>
     suspend fun saveThemeMode(themeMode: String)
     
+    val backgroundStyle: Flow<String>
+    suspend fun saveBackgroundStyle(style: String)
+    
     val isLoadMusic: Flow<Boolean>
     suspend fun saveIsLoadMusic(isLoadMusic: Boolean)
     

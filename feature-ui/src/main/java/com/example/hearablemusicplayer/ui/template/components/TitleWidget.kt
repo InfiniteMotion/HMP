@@ -73,6 +73,7 @@ fun TitleWidget(
             // Content Section with subtle top padding
             Box(
                 modifier = Modifier.fillMaxWidth()
+                    .padding(vertical = 16.dp)
             ) {
                 content()
             }

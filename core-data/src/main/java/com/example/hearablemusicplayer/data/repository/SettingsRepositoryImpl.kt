@@ -46,6 +46,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val AVATAR_URI = stringPreferencesKey("avatar_uri")
         val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val BACKGROUND_STYLE = stringPreferencesKey("background_style")
         
         // 多 AI 服务商配置键
         val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider")
@@ -91,6 +92,10 @@ class SettingsRepositoryImpl @Inject constructor(
     // 主题模式
     override val themeMode: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.THEME_MODE] ?: "default" }
+
+    // 动态背景风格
+    override val backgroundStyle: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.BACKGROUND_STYLE] ?: "FLUID" }
 
     // 应用是否已加载音乐,如果未设置则为 0
     override val isLoadMusic: Flow<Boolean> = dataStore.data
@@ -183,6 +188,13 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveThemeMode(themeMode: String) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.THEME_MODE] = themeMode
+        }
+    }
+
+    // 保存动态背景风格
+    override suspend fun saveBackgroundStyle(style: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.BACKGROUND_STYLE] = style
         }
     }
 

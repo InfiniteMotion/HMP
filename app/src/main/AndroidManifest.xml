@@ -28,6 +28,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="uiMode|screenLayout|orientation|screenSize|smallestScreenSize"
             android:theme="@style/Theme.HearableMusicPlayer">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

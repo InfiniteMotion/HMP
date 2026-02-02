@@ -170,7 +170,14 @@
     <string name="set_theme_mode">设置主题明暗模式</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
-    <string name="theme_auto">跟随系统</string>
+    <string name="theme_auto">默认</string>
+    <string name="set_background_style">设置动态背景风格</string>
+    <string name="style_fluid">流体极光</string>
+    <string name="style_spots">沉浸光斑</string>
+    <string name="style_blur">复古模糊</string>
+    <string name="style_fluid_desc">受流体运动启发的平滑色彩流动效果</string>
+    <string name="style_spots_desc">在背景上呼吸律动的抽象色块</string>
+    <string name="style_blur_desc">简单的模糊封面配合缓慢缩放效果</string>
     <string name="audio_effects_settings">音效设置</string>
     <string name="preset_equalizer">预设场景音效</string>
     <string name="custom_equalizer">自定义均衡器</string>
