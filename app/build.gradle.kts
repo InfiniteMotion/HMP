@@ -13,6 +13,16 @@ android {
         version = release(36)
     }
 
+    // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
+    signingConfigs {
+        create("unified") {
+            storeFile = file("hmp-unified-key.jks")
+            storePassword = "hmp123456"
+            keyAlias = "hmpkey"
+            keyPassword = "hmp123456"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.hearablemusicplayer"
         minSdk = 33
@@ -30,7 +40,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("unified")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("unified")
         }
     }
     compileOptions {
