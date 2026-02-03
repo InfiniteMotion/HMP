@@ -264,7 +264,7 @@ fun AiProviderConfig(
                                     if (provider == selectedProvider) {
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_public_ok),
+                                            painter = painterResource(R.drawable.ic_gallery_material_select_checkbox),
                                             contentDescription = stringResource(R.string.selected),
                                             modifier = Modifier.size(16.dp),
                                             tint = MaterialTheme.colorScheme.primary

@@ -21,10 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -284,17 +286,22 @@ fun BackButton(
     onClick: () -> Unit
 ){
     val haptic = rememberHapticFeedback()
-    IconButton(
+    FilledIconButton(
         onClick = {
             haptic.performClick()
             onClick()
         },
+        modifier = Modifier
+            .size(32.dp), // Larger touch target
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
         Icon(
-            painter = painterResource(R.drawable.back_to),
-            tint= MaterialTheme.colorScheme.onSurface,
+            painter = painterResource(id = R.drawable.chevron_left),
             contentDescription = "Back Button",
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(24.dp)
         )
     }
 }
@@ -314,17 +321,22 @@ fun SearchButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        IconButton(
+        FilledIconButton(
             onClick = {
-                    haptic.performClick()
-                    navController.navigate(Routes.Search)
-                },
+                haptic.performClick()
+                navController.navigate(Routes.Search)
+            },
+            modifier = Modifier
+                .size(48.dp), // Larger touch target
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
         ) {
             Icon(
-                painter = painterResource(R.drawable.magnifyingglass),
-                tint = MaterialTheme.colorScheme.onSurface,
+                painter = painterResource(id = R.drawable.magnifyingglass),
                 contentDescription = "Search Button",
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(28.dp)
             )
         }
     }

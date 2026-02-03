@@ -140,15 +140,42 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Section 2: Heartbeat Playlist (Music List)
-                Text(
-                    text = stringResource(R.string.today_heartbeat_playlist),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
-
                 val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.today_heartbeat_playlist),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                    if (heartbeatList.isNotEmpty()){
+                        FilledIconButton(
+                            onClick = {
+                                playControlViewModel.clearPlaylist()
+                                playControlViewModel.addAllToPlaylistInOrder(heartbeatList)
+                                playControlViewModel.playWith(heartbeatList.first())
+                                navController.navigate(Routes.Player)
+                            },
+                            modifier = Modifier
+                                .size(24.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.music_note_list),
+                                contentDescription = stringResource(R.string.play_heartbeat_playlist),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
 
                 if (heartbeatList.isEmpty()) {
                     Box(
@@ -165,31 +192,6 @@ fun HomeScreen(
                     }
                 } else {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = {
-                                    haptic.performClick()
-                                    scope.launch {
-                                        val list = heartbeatList
-                                        if (list.isNotEmpty()) {
-                                            playControlViewModel.clearPlaylist()
-                                            playControlViewModel.addAllToPlaylistInOrder(list)
-                                            playControlViewModel.playWith(list.first())
-                                            navController.navigate(Routes.Player)
-                                        }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(text = stringResource(R.string.play_heartbeat_playlist))
-                            }
-                        }
                         FixedMusicList(
                             musicInfoList = heartbeatList,
                             onItemClick = {
@@ -280,16 +282,16 @@ fun DailyHeroCard(
                     onClick = onPlay,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(56.dp), // Larger touch target
+                        .size(48.dp), // Larger touch target
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.play_fill),
+                        painter = painterResource(id = R.drawable.media_center),
                         contentDescription = "Play",
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

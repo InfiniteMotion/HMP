@@ -72,8 +72,9 @@ fun SongDetailScreen(
                 // Large Album Cover
                 AlbumCover(
                     music.music.albumArtUri,
-                    Arrangement.Center,
-                    280
+                    280.dp,
+                    corner = 20.dp,
+                    shadow = 10.dp
                 )
                 // Title and Artist
                 Column(

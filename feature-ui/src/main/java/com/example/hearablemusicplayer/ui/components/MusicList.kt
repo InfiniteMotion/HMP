@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer.ui.components
 import androidx.annotation.OptIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -142,37 +143,38 @@ fun MusicItem(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Transparent),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (isPlaying) 0.0f else 0.6f)
-        ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(top = 8.dp, bottom = 8.dp, start = 12.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AsyncImage(
-                model = musicInfo.music.albumArtUri,
-                contentDescription = "Album art",
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            AlbumCover(
+                uri = musicInfo.music.albumArtUri,
+                size = 56.dp,
+                corner = 10.dp,
+                shadow = 3.dp
             )
-            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = musicInfo.music.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "${musicInfo.music.artist} • ${musicInfo.music.album}",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = musicInfo.music.artist,
+                    style = MaterialTheme.typography.labelSmall,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = musicInfo.music.album,
+                    style = MaterialTheme.typography.labelSmall,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.onBackground
@@ -189,7 +191,7 @@ fun MusicItem(
                         }
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.plus_square),
+                            painter = painterResource(R.drawable.plus),
                             tint = MaterialTheme.colorScheme.onSurface,
                             contentDescription = "Add Button",
                             modifier = Modifier.size(24.dp)
@@ -204,7 +206,7 @@ fun MusicItem(
                         }
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.dot_grid_1x2),
+                            painter = painterResource(R.drawable.more),
                             tint = MaterialTheme.colorScheme.onSurface,
                             contentDescription = "Menu Button",
                             modifier = Modifier.size(24.dp)

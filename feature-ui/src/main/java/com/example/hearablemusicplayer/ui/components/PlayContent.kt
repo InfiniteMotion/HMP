@@ -321,8 +321,8 @@ fun MusicInfoExtra(
 ) {
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
-        { AlbumCover(musicInfo.music.albumArtUri, Arrangement.Center, 300) },
-        { Lyrics(lyrics, currentPosition, onSeek = onSeek) }
+        { AlbumCover(musicInfo.music.albumArtUri, 300.dp, 20.dp, 10.dp) },
+        { SmartLyrics(lyrics, currentPosition, onSeek = onSeek) }
     )
     DotPager(
         modifier = modifier.fillMaxWidth(),
@@ -660,7 +660,7 @@ fun PlaylistArea(
             ) {
                 itemsIndexed(
                     items = playlist,
-                    key = { index, item -> "${item.music.id}_$index" } // Ensure uniqueness even if the same song is in the list multiple times
+                    key = { index, item -> "${item.music.id}_$index" }
                 ) { index, musicInfo ->
                     PlaylistItem(
                         musicInfo = musicInfo,
@@ -681,6 +681,9 @@ fun PlaylistArea(
                             onRemoveFromPlaylist(musicInfo)
                         }
                     )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(64.dp))
                 }
             }
         }

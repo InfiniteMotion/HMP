@@ -140,13 +140,12 @@ fun Lyrics(
                         text = text,
                         textAlign = TextAlign.Center,
                         color = animatedColor,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Medium,
-                            lineHeight = 32.sp
-                        ),
+                        style =
+                            if (isCurrent) MaterialTheme.typography.headlineSmall
+                            else MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 8.dp)
                             .graphicsLayer {
                                 scaleX = animatedScale
                                 scaleY = animatedScale

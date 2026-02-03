@@ -214,8 +214,7 @@ fun BackgroundStyleOption(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
-                             else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
     ) {
