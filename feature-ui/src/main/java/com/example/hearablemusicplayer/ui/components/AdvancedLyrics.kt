@@ -37,32 +37,30 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.hearablemusicplayer.ui.R
 import kotlin.math.max
 
 /**
- * 智能歌词组件 - 一体化解决方案
- * 可直接替换原有的 Lyrics 组件
+ * 高级歌词组件 - 全新重构版本
+ * 基于SmartLyrics样式，但采用更完善的解析和显示逻辑
  */
 @Composable
-fun SmartLyrics(
+fun AdvancedLyrics(
     lyrics: String?,
     currentPosition: Long,
     modifier: Modifier = Modifier,
     onSeek: (Long) -> Unit = {}
 ) {
-    var displayMode by remember { mutableStateOf(DisplayMode.DUAL) } // LANG1, LANG2, DUAL
+    var displayMode by remember { mutableStateOf(DisplayMode.DUAL) }
     
     if (lyrics == null) {
         EmptyLyricsView(modifier)
         return
     }
 
-    val parsedLyrics = remember(lyrics) { parseLyrics(lyrics) }
+    val parsedLyrics = remember(lyrics) { EnhancedLyricsParser.parse(lyrics) }
     val scrollState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
     
@@ -108,7 +106,7 @@ fun SmartLyrics(
                 ) { index, lyricLine ->
                     val isCurrent = index == currentIndex
 
-                    SmartLyricItem(
+                    AdvancedLyricItem(
                         lyricLine = lyricLine,
                         isCurrent = isCurrent,
                         displayMode = displayMode,
@@ -150,10 +148,10 @@ fun SmartLyrics(
 }
 
 /**
- * 智能歌词项
+ * 高级歌词项 - 优化的渲染逻辑
  */
 @Composable
-private fun SmartLyricItem(
+private fun AdvancedLyricItem(
     lyricLine: LyricLineData,
     isCurrent: Boolean,
     displayMode: DisplayMode,
@@ -183,6 +181,8 @@ private fun SmartLyricItem(
         animationSpec = tween(durationMillis = 300),
         label = "BackgroundColor"
     )
+
+    val lyricTextStyle = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyMedium
     
     Surface(
         modifier = Modifier
@@ -209,9 +209,7 @@ private fun SmartLyricItem(
                         text = lyricLine.originalText,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 16.sp,
+                        style = lyricTextStyle,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -221,43 +219,34 @@ private fun SmartLyricItem(
                             text = lyricLine.translatedText,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 16.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
                 DisplayMode.DUAL -> {
-                    // 处理单行双语情况
+                    // 处理单行双语情况 - 优化的显示逻辑
                     if (lyricLine.translatedText == null) {
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
-                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            style = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 16.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
-                        // 分开展示原文和译文
+                        // 分开展示原文和译文 - 保持样式一致性
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
-                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            style = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 16.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                         
@@ -265,10 +254,7 @@ private fun SmartLyricItem(
                         Text(
                             text = lyricLine.translatedText,
                             textAlign = TextAlign.Center,
-                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = if (isCurrent) 16.sp else 14.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -305,7 +291,7 @@ private fun EmptyLyricsView(modifier: Modifier = Modifier) {
     }
 }
 
-// ==================== 内部数据结构和工具函数 ====================
+// ==================== 核心数据结构 ====================
 
 /**
  * 显示模式枚举
@@ -325,169 +311,255 @@ data class LyricLineData(
     val translatedText: String? = null
 )
 
+// ==================== 增强版歌词解析器 ====================
+
 /**
- * 智能歌词解析函数
+ * 增强版歌词解析器 - 全新重构的核心逻辑
  */
-private fun parseLyrics(lrcText: String): List<LyricLineData> {
-    if (lrcText.isBlank()) return emptyList()
+object EnhancedLyricsParser {
     
-    val timeRegex = """^\[(\d{2}):(\d{2})\.(\d{2,3})]""".toRegex()
-    val lines = lrcText.lines()
-    val parsedLines = mutableListOf<LyricLineData>()
-    
-    // 按时间戳分组
-    val groupedLines = mutableMapOf<Long, MutableList<String>>()
-    
-    lines.forEach { line ->
-        val match = timeRegex.find(line)
-        if (match != null) {
-            val (minutes, seconds, millis) = match.destructured
-            val timestamp = minutes.toLong() * 60000 + 
-                           seconds.toLong() * 1000 + 
-                           millis.padEnd(3, '0').take(3).toLong()
-            
-            val content = line.substring(match.range.last + 1).trim()
-            if (content.isNotEmpty()) {
-                groupedLines.getOrPut(timestamp) { mutableListOf() }.add(content)
+    /**
+     * 解析歌词文本为核心数据结构
+     */
+    fun parse(lrcText: String): List<LyricLineData> {
+        if (lrcText.isBlank()) return emptyList()
+        
+        val timeRegex = """^\[(\d{2}):(\d{2})\.(\d{2,3})]""".toRegex()
+        val lines = lrcText.lines()
+        val parsedLines = mutableListOf<LyricLineData>()
+        
+        // 按时间戳分组，保持每行独立
+        val groupedLines = mutableMapOf<Long, MutableList<String>>()
+        
+        lines.forEach { line ->
+            val match = timeRegex.find(line)
+            if (match != null) {
+                val (minutes, seconds, millis) = match.destructured
+                val timestamp = minutes.toLong() * 60000 + 
+                               seconds.toLong() * 1000 + 
+                               millis.padEnd(3, '0').take(3).toLong()
+                
+                val content = line.substring(match.range.last + 1).trim()
+                if (content.isNotEmpty()) {
+                    groupedLines.getOrPut(timestamp) { mutableListOf() }.add(content)
+                }
             }
         }
-    }
-    
-    // 智能解析每组歌词
-    groupedLines.toSortedMap().forEach { (timestamp, lineGroup) ->
-        when (lineGroup.size) {
-            1 -> {
-                // 单行歌词 - 直接显示，不做双语处理
-                parsedLines.add(LyricLineData(timestamp, lineGroup[0], null))
-            }
-            2 -> {
-                // 两行歌词 - 智能判断是否为双语
-                val (original, translated) = analyzeDualLineLyrics(lineGroup[0], lineGroup[1])
-                parsedLines.add(LyricLineData(timestamp, original, translated))
-            }
-            else -> {
-                // 多行歌词 - 选择最佳配对
-                val (original, translated) = extractBestPair(lineGroup)
-                parsedLines.add(LyricLineData(timestamp, original, translated))
+        
+        // 使用增强的解析逻辑处理每组歌词
+        groupedLines.toSortedMap().forEach { (timestamp, lineGroup) ->
+            when (lineGroup.size) {
+                1 -> {
+                    // 单行处理 - 使用智能双语检测
+                    val line = lineGroup[0]
+                    val result = DualLanguageAnalyzer.analyzeSingleLine(line)
+                    parsedLines.add(LyricLineData(timestamp, result.first, result.second))
+                }
+                2 -> {
+                    // 双行处理 - 智能语言配对
+                    val result = DualLanguageAnalyzer.analyzeDualLines(lineGroup[0], lineGroup[1])
+                    parsedLines.add(LyricLineData(timestamp, result.first, result.second))
+                }
+                else -> {
+                    // 多行处理 - 最佳配对选择
+                    val result = MultiLineProcessor.extractBestPair(lineGroup)
+                    parsedLines.add(LyricLineData(timestamp, result.first, result.second))
+                }
             }
         }
+        
+        return parsedLines
     }
-    
-    return parsedLines
 }
 
 /**
- * 智能识别语言并配对
+ * 双语分析器 - 核心智能分析逻辑
  */
-private fun analyzeDualLineLyrics(text1: String, text2: String): Pair<String, String?> {
-    detectLanguage(text1)
-    detectLanguage(text2)
+object DualLanguageAnalyzer {
     
-    // 统计两行歌词的整体语言分布
-    val combinedText = "$text1 $text2"
-    val chineseChars = combinedText.count { it.code in 0x4E00..0x9FFF }
-    val englishChars = combinedText.count { it.isLetter() && it.code < 128 }
-    val japaneseChars = combinedText.count { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF }
-    val koreanChars = combinedText.count { it.code in 0xAC00..0xD7AF }
+    /**
+     * 分析单行内容是否包含双语并进行拆分
+     */
+    fun analyzeSingleLine(text: String): Pair<String, String?> {
+        // 快速检测是否可能包含双语
+        if (!mayContainDualLanguages(text)) {
+            return Pair(text, null)
+        }
+        
+        // 使用多层次分析策略
+        return when {
+            containsClearLanguageBoundaries(text) -> {
+                splitByBoundaries(text)
+            }
+            containsMixedScriptPattern(text) -> {
+                extractByScript(text)
+            }
+            else -> {
+                Pair(text, null)
+            }
+        }
+    }
     
-    val totalLetters = chineseChars + englishChars + japaneseChars + koreanChars
-    if (totalLetters == 0) {
+    /**
+     * 分析双行内容的语言配对关系
+     */
+    fun analyzeDualLines(text1: String, text2: String): Pair<String, String?> {
+        val lang1 = detectDominantLanguage(text1)
+        val lang2 = detectDominantLanguage(text2)
+        
+        // 如果两行是不同语言，判定为双语
+        if (lang1 != lang2 && lang1 != Language.UNKNOWN && lang2 != Language.UNKNOWN) {
+            // 英文优先作为原文
+            return if (lang1 == Language.ENGLISH) {
+                Pair(text1, text2)
+            } else if (lang2 == Language.ENGLISH) {
+                Pair(text2, text1)
+            } else {
+                // 其他语言组合，按字典序决定
+                if (text1 < text2) Pair(text1, text2) else Pair(text2, text1)
+            }
+        }
+        
+        // 合并非双语内容
         return Pair("$text1 $text2", null)
     }
     
-    // 计算各语言占比
-    val chineseRatio = chineseChars.toFloat() / totalLetters
-    val englishRatio = englishChars.toFloat() / totalLetters
-    val japaneseRatio = japaneseChars.toFloat() / totalLetters
-    val koreanRatio = koreanChars.toFloat() / totalLetters
-    
-    // 设置双语判断阈值
-    val threshold = 0.25f
-    
-    // 统计达到阈值的语言种类数
-    var languageCount = 0
-    if (chineseRatio >= threshold) languageCount++
-    if (englishRatio >= threshold) languageCount++
-    if (japaneseRatio >= threshold) languageCount++
-    if (koreanRatio >= threshold) languageCount++
-    
-    // 如果存在两种及以上语言且占比合理，认为是双语
-    if (languageCount >= 2) {
-        // 确定主次语言
-        val languages = listOf(
-            "zh" to chineseRatio,
-            "en" to englishRatio,
-            "ja" to japaneseRatio,
-            "ko" to koreanRatio
-        ).filter { it.second >= threshold }.sortedByDescending { it.second }
+    // 私有辅助方法
+    private fun mayContainDualLanguages(text: String): Boolean {
+        val chineseCount = text.count { it.code in 0x4E00..0x9FFF }
+        val englishCount = text.count { it.isLetter() && it.code < 128 }
+        val japaneseCount = text.count { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF }
+        val koreanCount = text.count { it.code in 0xAC00..0xD7AF }
+        val cyrillicCount = text.count { it.code in 0x0400..0x04FF }
         
-        if (languages.size >= 2) {
-            // 英文优先作为原文
-            val (primaryLang, _) = languages.find { it.first == "en" } ?: languages[0]
-            val (_, _) = if (primaryLang == "en") languages[1] else languages[0]
-            
-            return when (primaryLang) {
-                "en" -> Pair(text1, text2)
-                else -> Pair(text2, text1)
-            }
+        val languageCounts = listOf(chineseCount, englishCount, japaneseCount, koreanCount, cyrillicCount)
+        val nonZeroLanguages = languageCounts.count { it > 0 }
+        
+        return nonZeroLanguages >= 2
+    }
+    
+    private fun containsClearLanguageBoundaries(text: String): Boolean {
+        // 检测明显的语言切换边界
+        return "[\\u4e00-\\u9fff][a-zA-Z]|[a-zA-Z][\\u4e00-\\u9fff]".toRegex().containsMatchIn(text)
+    }
+    
+    private fun splitByBoundaries(text: String): Pair<String, String?> {
+        // 按Unicode脚本边界拆分
+        val chinesePart = text.filter { it.code in 0x4E00..0x9FFF }
+        val englishPart = "\\b[a-zA-Z]+(?:'[a-zA-Z]+)*\\b".toRegex()
+            .findAll(text)
+            .map { it.value }
+            .joinToString(" ")
+        
+        return if (chinesePart.isNotBlank() && englishPart.isNotBlank()) {
+            Pair(englishPart, chinesePart)
+        } else {
+            Pair(text, null)
         }
     }
     
-    // 不满足双语条件，合并为单行
-    return Pair("$text1 $text2", null)
-}
-
-/**
- * 从多行中提取最佳的原文-译文对
- */
-private fun extractBestPair(lines: List<String>): Pair<String, String?> {
-    if (lines.size < 2) return Pair(lines.firstOrNull() ?: "", null)
+    private fun containsMixedScriptPattern(text: String): Boolean {
+        // 检测混合脚本模式
+        return text.any { it.code in 0x4E00..0x9FFF } && 
+               text.any { it.isLetter() && it.code < 128 }
+    }
     
-    // 简单策略：第一行原文，最后一行译文
-    val firstLine = lines.first()
-    val lastLine = lines.last()
+    private fun extractByScript(text: String): Pair<String, String?> {
+        // 基于脚本类型的提取
+        val chineseChars = text.filter { it.code in 0x4E00..0x9FFF }
+        val japaneseChars = text.filter { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF }
+        val koreanChars = text.filter { it.code in 0xAC00..0xD7AF }
+        val cyrillicChars = text.filter { it.code in 0x0400..0x04FF }
+        
+        val englishWords = text.split("\\s+".toRegex())
+            .filter { it.all { char -> char.isLetter() && char.code < 128 } }
+            .filter { it.length > 1 }
+        
+        val englishPart = englishWords.joinToString(" ")
+        
+        // 按优先级组合非拉丁字符
+        val nonLatinPart = buildString {
+            append(chineseChars)
+            append(japaneseChars)
+            append(koreanChars)
+            append(cyrillicChars)
+        }
+        
+        return if (englishPart.isNotBlank() && nonLatinPart.isNotBlank()) {
+            Pair(englishPart, nonLatinPart)
+        } else {
+            Pair(text, null)
+        }
+    }
     
-    return if (firstLine != lastLine) {
-        val (original, translated) = analyzeDualLineLyrics(firstLine, lastLine)
-        Pair(original, translated)
-    } else {
-        Pair(firstLine, null)
+    private fun detectDominantLanguage(text: String): Language {
+        val chineseChars = text.count { it.code in 0x4E00..0x9FFF }
+        val englishChars = text.count { it.isLetter() && it.code < 128 }
+        val japaneseChars = text.count { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF }
+        val koreanChars = text.count { it.code in 0xAC00..0xD7AF }
+        val cyrillicChars = text.count { it.code in 0x0400..0x04FF }
+        
+        val totalChars = chineseChars + englishChars + japaneseChars + koreanChars + cyrillicChars
+        
+        if (totalChars == 0) return Language.UNKNOWN
+        
+        val chineseRatio = chineseChars.toFloat() / totalChars
+        val englishRatio = englishChars.toFloat() / totalChars
+        val japaneseRatio = japaneseChars.toFloat() / totalChars
+        val koreanRatio = koreanChars.toFloat() / totalChars
+        val cyrillicRatio = cyrillicChars.toFloat() / totalChars
+        
+        return when {
+            chineseRatio > 0.6 -> Language.CHINESE
+            englishRatio > 0.6 -> Language.ENGLISH
+            japaneseRatio > 0.6 -> Language.JAPANESE
+            koreanRatio > 0.6 -> Language.KOREAN
+            cyrillicRatio > 0.6 -> Language.RUSSIAN
+            else -> Language.MIXED
+        }
     }
 }
 
 /**
- * 语言检测枚举
+ * 多行处理器 - 处理三行及以上的歌词
  */
-private enum class Language {
-    ENGLISH, CHINESE, JAPANESE, KOREAN, MIXED, UNKNOWN
+object MultiLineProcessor {
+    
+    /**
+     * 从多行中提取最佳的原文-译文对
+     */
+    fun extractBestPair(lines: List<String>): Pair<String, String?> {
+        if (lines.size < 2) return Pair(lines.firstOrNull() ?: "", null)
+        
+        // 策略1: 第一行原文，最后一行译文
+        val firstLine = lines.first()
+        val lastLine = lines.last()
+        
+        if (firstLine != lastLine) {
+            val result = DualLanguageAnalyzer.analyzeDualLines(firstLine, lastLine)
+            if (result.second != null) {
+                return result
+            }
+        }
+        
+        // 策略2: 寻找最可能的双语配对
+        for (i in lines.indices) {
+            for (j in i + 1 until lines.size) {
+                val result = DualLanguageAnalyzer.analyzeDualLines(lines[i], lines[j])
+                if (result.second != null) {
+                    return result
+                }
+            }
+        }
+        
+        // 策略3: 合并所有行作为单语内容
+        return Pair(lines.joinToString(" "), null)
+    }
 }
 
 /**
- * 简单语言检测
+ * 语言枚举
  */
-private fun detectLanguage(text: String): Language {
-    val chineseChars = text.count { it.code in 0x4E00..0x9FFF }
-    val englishChars = text.count { it.isLetter() && it.code < 128 }
-    val japaneseChars = text.count { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF }
-    val koreanChars = text.count { it.code in 0xAC00..0xD7AF }
-    
-    val totalLetters = chineseChars + englishChars + japaneseChars + koreanChars
-    if (totalLetters == 0) return Language.UNKNOWN
-    
-    // 计算各语言字符占比
-    val chineseRatio = chineseChars.toFloat() / totalLetters
-    val englishRatio = englishChars.toFloat() / totalLetters
-    val japaneseRatio = japaneseChars.toFloat() / totalLetters
-    val koreanRatio = koreanChars.toFloat() / totalLetters
-    
-    // 设置识别阈值
-    val threshold = 0.3f
-    
-    return when {
-        chineseRatio >= threshold && chineseRatio > englishRatio && chineseRatio > japaneseRatio && chineseRatio > koreanRatio -> Language.CHINESE
-        englishRatio >= threshold && englishRatio > chineseRatio && englishRatio > japaneseRatio && englishRatio > koreanRatio -> Language.ENGLISH
-        japaneseRatio >= threshold && japaneseRatio > chineseRatio && japaneseRatio > englishRatio && japaneseRatio > koreanRatio -> Language.JAPANESE
-        koreanRatio >= threshold && koreanRatio > chineseRatio && koreanRatio > englishRatio && koreanRatio > japaneseRatio -> Language.KOREAN
-        else -> Language.MIXED
-    }
+enum class Language {
+    ENGLISH, CHINESE, JAPANESE, KOREAN, RUSSIAN, MIXED, UNKNOWN
 }
