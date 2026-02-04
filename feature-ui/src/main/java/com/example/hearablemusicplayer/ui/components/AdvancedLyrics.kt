@@ -1,9 +1,6 @@
 package com.example.hearablemusicplayer.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,11 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,17 +24,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.hearablemusicplayer.ui.R
 import kotlin.math.max
 
@@ -51,10 +49,14 @@ fun AdvancedLyrics(
     lyrics: String?,
     currentPosition: Long,
     modifier: Modifier = Modifier,
-    onSeek: (Long) -> Unit = {}
+    onSeek: (Long) -> Unit = {},
+    // 歌词配置参数
+    originalTextSize: Int = 14,
+    translatedTextSize: Int = 14,
+    currentTimeTextSize: Int = 16,
+    lineSpacing: Int = 6,
+    displayMode: DisplayMode = DisplayMode.DUAL
 ) {
-    var displayMode by remember { mutableStateOf(DisplayMode.DUAL) }
-    
     if (lyrics == null) {
         EmptyLyricsView(modifier)
         return
@@ -68,7 +70,7 @@ fun AdvancedLyrics(
     val currentIndex by remember(parsedLyrics, currentPosition) {
         derivedStateOf {
             if (parsedLyrics.isEmpty()) {
-                0
+                -1
             } else {
                 parsedLyrics.binarySearch { it.timestamp.compareTo(currentPosition) }.let { index ->
                     if (index >= 0) index else max(0, -index - 2)
@@ -82,13 +84,14 @@ fun AdvancedLyrics(
         if (currentIndex >= 0 && currentIndex < parsedLyrics.size) {
             scrollState.animateScrollToItem(
                 index = currentIndex,
-                scrollOffset = -300
+                scrollOffset = -200
             )
         }
     }
     
     Column(
         modifier = modifier.fillMaxSize()
+            .padding(vertical = 16.dp)
     ) {
         // 歌词区域
         Box(
@@ -104,42 +107,20 @@ fun AdvancedLyrics(
                     items = parsedLyrics,
                     key = { index, item -> "${item.timestamp}_${index}" }
                 ) { index, lyricLine ->
-                    val isCurrent = index == currentIndex
+                    val isCurrent = index == currentIndex && currentIndex >= 0
 
                     AdvancedLyricItem(
                         lyricLine = lyricLine,
                         isCurrent = isCurrent,
                         displayMode = displayMode,
+                        originalTextSize = originalTextSize,
+                        translatedTextSize = translatedTextSize,
+                        currentTimeTextSize = currentTimeTextSize,
+                        lineSpacing = lineSpacing,
                         onClick = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             onSeek(lyricLine.timestamp)
                         }
-                    )
-                }
-            }
-            
-            // 圆形语言切换按钮（仅在双语时显示）
-            if (parsedLyrics.any { it.translatedText != null }) {
-                FloatingActionButton(
-                    onClick = { 
-                        val nextMode = when (displayMode) {
-                            DisplayMode.LANG1 -> DisplayMode.LANG2
-                            DisplayMode.LANG2 -> DisplayMode.DUAL
-                            DisplayMode.DUAL -> DisplayMode.LANG1
-                        }
-                        displayMode = nextMode
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 12.dp, bottom = 12.dp)
-                        .size(40.dp),
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_gallery_search_things),
-                        contentDescription = "切换语言显示",
-                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -155,53 +136,35 @@ private fun AdvancedLyricItem(
     lyricLine: LyricLineData,
     isCurrent: Boolean,
     displayMode: DisplayMode,
+    originalTextSize: Int = 14,
+    translatedTextSize: Int = 14,
+    currentTimeTextSize: Int = 16,
+    lineSpacing: Int = 6,
     onClick: () -> Unit
 ) {
-    val animatedScale by animateFloatAsState(
-        targetValue = if (isCurrent) 1.05f else 1f,
-        animationSpec = spring(
-            stiffness = Spring.StiffnessMedium,
-            dampingRatio = Spring.DampingRatioMediumBouncy
-        ),
-        label = "LyricScale"
-    )
-    
     val animatedAlpha by animateFloatAsState(
         targetValue = if (isCurrent) 1f else 0.7f,
         animationSpec = tween(durationMillis = 200),
         label = "LyricAlpha"
     )
-    
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isCurrent) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0f)
-        },
-        animationSpec = tween(durationMillis = 300),
-        label = "BackgroundColor"
-    )
 
-    val lyricTextStyle = if (isCurrent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyMedium
-    
+    val lineSpacing = ((if (lyricLine.translatedText != null) 2 else 1) * lineSpacing).dp
+
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
+            .padding(horizontal = 32.dp, vertical = lineSpacing)
             .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
+                scaleX = if (isCurrent) 1.05f else 1f
+                scaleY = if (isCurrent) 1.05f else 1f
                 alpha = animatedAlpha
             }
+            .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() },
-        color = backgroundColor,
-        shape = MaterialTheme.shapes.small
+        color = Transparent,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when (displayMode) {
                 DisplayMode.LANG1 -> {
@@ -209,8 +172,9 @@ private fun AdvancedLyricItem(
                         text = lyricLine.originalText,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = lyricTextStyle,
-                        modifier = Modifier.fillMaxWidth()
+                        fontSize = originalTextSize.sp,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier
                     )
                 }
                 DisplayMode.LANG2 -> {
@@ -219,16 +183,18 @@ private fun AdvancedLyricItem(
                             text = lyricLine.translatedText,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
+                            fontSize = translatedTextSize.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
                         )
                     } else {
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
+                            fontSize = originalTextSize.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
                         )
                     }
                 }
@@ -238,24 +204,27 @@ private fun AdvancedLyricItem(
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
+                            fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
                         )
                     } else {
                         // 分开展示原文和译文 - 保持样式一致性
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
+                            fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
                         )
                         
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = lyricLine.translatedText,
                             textAlign = TextAlign.Center,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
+                            fontSize = translatedTextSize.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
                         )
                     }
                 }

@@ -322,7 +322,7 @@ fun MusicInfoExtra(
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
         { AlbumCover(musicInfo.music.albumArtUri, 300.dp, 20.dp, 10.dp) },
-        { AdvancedLyrics(lyrics, currentPosition, onSeek = onSeek) }
+        { AdvancedLyrics(lyrics, currentPosition, modifier = Modifier, onSeek = onSeek) }
     )
     DotPager(
         modifier = modifier.fillMaxWidth(),

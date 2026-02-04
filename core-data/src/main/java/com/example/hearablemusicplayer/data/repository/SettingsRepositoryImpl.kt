@@ -12,6 +12,7 @@ import com.example.hearablemusicplayer.data.util.SecureStorageHelper
 
 import com.example.hearablemusicplayer.domain.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
+import com.example.hearablemusicplayer.domain.model.DisplayMode
 import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.repository.SettingsRepository
@@ -77,6 +78,13 @@ class SettingsRepositoryImpl @Inject constructor(
         val LAST_DAILY_REFRESH_TIMESTAMP = longPreferencesKey("last_daily_refresh_timestamp") // 上次刷新时间戳
         val APP_LAUNCH_COUNT_SINCE_REFRESH = intPreferencesKey("app_launch_count_since_refresh") // 自上次刷新后的启动次数
         val CURRENT_DAILY_MUSIC_ID = longPreferencesKey("current_daily_music_id") // 当前每日推荐的音乐ID
+        
+        // 歌词配置设置
+        val LYRICS_ORIGINAL_TEXT_SIZE = intPreferencesKey("lyrics_original_text_size")
+        val LYRICS_TRANSLATED_TEXT_SIZE = intPreferencesKey("lyrics_translated_text_size")
+        val LYRICS_CURRENT_TIME_TEXT_SIZE = intPreferencesKey("lyrics_current_time_text_size")
+        val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
+        val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
     }
 
     // DataStore 访问实例
@@ -528,8 +536,7 @@ class SettingsRepositoryImpl @Inject constructor(
                 preferences.asMap().entries.forEachIndexed { index, entry ->
                     if (index > 0) append(",")
                     append("\"${entry.key.name}\":")
-                    val value = entry.value
-                    when (value) {
+                    when (val value = entry.value) {
                         is String -> append("\"$value\"")
                         is Boolean -> append(value)
                         is Long -> append(value)
@@ -633,6 +640,85 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.e("SettingsRepository", "Unexpected error during restore", e)
             kotlin.Result.failure(e)
+        }
+    }
+
+    // ==================== 歌词配置实现 ====================
+
+    override val lyricsOriginalTextSize: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] ?: 14 }
+
+    override suspend fun saveLyricsOriginalTextSize(size: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] = size
+        }
+    }
+
+    override suspend fun getLyricsOriginalTextSize(): Int {
+        return dataStore.data.first()[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] ?: 14
+    }
+
+    override val lyricsTranslatedTextSize: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] ?: 14 }
+
+    override suspend fun saveLyricsTranslatedTextSize(size: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] = size
+        }
+    }
+
+    override suspend fun getLyricsTranslatedTextSize(): Int {
+        return dataStore.data.first()[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] ?: 14
+    }
+
+    override val lyricsCurrentTimeTextSize: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] ?: 16 }
+
+    override suspend fun saveLyricsCurrentTimeTextSize(size: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] = size
+        }
+    }
+
+    override suspend fun getLyricsCurrentTimeTextSize(): Int {
+        return dataStore.data.first()[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] ?: 16
+    }
+
+    override val lyricsLineSpacing: Flow<Int> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.LYRICS_LINE_SPACING] ?: 6 }
+
+    override suspend fun saveLyricsLineSpacing(spacing: Int) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_LINE_SPACING] = spacing
+        }
+    }
+
+    override suspend fun getLyricsLineSpacing(): Int {
+        return dataStore.data.first()[PreferencesKeys.LYRICS_LINE_SPACING] ?: 6
+    }
+
+    override val lyricsDisplayMode: Flow<DisplayMode> = dataStore.data
+        .map { prefs ->
+            val modeStr = prefs[PreferencesKeys.LYRICS_DISPLAY_MODE] ?: "DUAL"
+            try {
+                DisplayMode.valueOf(modeStr)
+            } catch (e: IllegalArgumentException) {
+                DisplayMode.DUAL
+            }
+        }
+
+    override suspend fun saveLyricsDisplayMode(mode: DisplayMode) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_DISPLAY_MODE] = mode.name
+        }
+    }
+
+    override suspend fun getLyricsDisplayMode(): DisplayMode {
+        val modeStr = dataStore.data.first()[PreferencesKeys.LYRICS_DISPLAY_MODE] ?: "DUAL"
+        return try {
+            DisplayMode.valueOf(modeStr)
+        } catch (e: IllegalArgumentException) {
+            DisplayMode.DUAL
         }
     }
 
