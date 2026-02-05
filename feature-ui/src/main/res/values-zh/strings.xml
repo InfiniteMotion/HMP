@@ -1,0 +1,193 @@
+<resources>
+    <string name="app_name">Hearable Music Player</string>
+    <!-- Tab labels -->
+    <string name="tab_home">首页</string>
+    <string name="tab_gallery">图库</string>
+    <string name="tab_player">播放器</string>
+    <string name="tab_list">列表</string>
+    <string name="tab_user">用户</string>
+
+    <!-- Banner Labels -->
+    <string name="banner_daily_A">默认列表</string>
+    <string name="banner_daily_AA">Default</string>
+    <string name="banner_daily_B">风格</string>
+    <string name="banner_daily_BB">Genre</string>
+    <string name="banner_daily_C">情绪</string>
+    <string name="banner_daily_CC">Mood</string>
+    <string name="banner_daily_D">场景</string>
+    <string name="banner_daily_DD">Scenario</string>
+    <string name="banner_daily_E">语言</string>
+    <string name="banner_daily_EE">Language</string>
+    <string name="banner_daily_F">年代</string>
+    <string name="banner_daily_FF">Era</string>
+    <string name="banner_daily_G">个人</string>
+    <string name="banner_daily_GG">Personal</string>
+
+    <!-- AI Screen -->
+    <string name="title_ai">AI</string>
+    <string name="ai_provider_config">AI 服务商配置</string>
+    <string name="current_ai_provider">当前 AI 服务商</string>
+    <string name="select_provider">选择服务商</string>
+    <string name="selected">已选中</string>
+    <string name="configured">✓ 已配置</string>
+    <string name="not_configured">⚠ 未配置</string>
+    <string name="api_key">API Key</string>
+    <string name="enter_api_key_placeholder">请输入 %1$s 的 API Key</string>
+    <string name="model_name">模型名称</string>
+    <string name="default_model_placeholder">默认: %1$s</string>
+    <string name="test">测试</string>
+    <string name="save">保存</string>
+    <string name="please_enter_api_key">请输入 API Key</string>
+    <string name="config_saved">配置已保存</string>
+    <string name="provider_change_hint">切换服务商后，需要重新配置 API Key</string>
+    <string name="music_info_completion">音乐信息补全</string>
+    <string name="auto_background_completion">自动后台补全</string>
+    <string name="auto_background_completion_desc">应用启动时自动开始补全音乐信息</string>
+    <string name="pending_music_count">待补全音乐数量：%1$d 首</string>
+    <string name="completed_music_count">已补全：%1$d 首</string>
+    <string name="processing_music">正在处理：%1$s</string>
+    <string name="paused">已暂停</string>
+    <string name="resume">继续</string>
+    <string name="pause">暂停</string>
+    <string name="cancel">取消</string>
+    <string name="please_config_provider">请先配置 AI 服务商</string>
+    <string name="no_pending_music">没有待处理的音乐</string>
+    <string name="start_batch_completion">开始批量补全</string>
+
+    <!-- Search Screen -->
+    <string name="search">搜索</string>
+    <string name="search_placeholder">搜索您的音乐</string>
+
+    <!-- Settings Screen -->
+    <string name="title_settings">设置</string>
+    <string name="avatar">头像</string>
+    <string name="change_avatar">更改头像</string>
+    <string name="change">更改</string>
+    <string name="avatar_changed">头像已更改!</string>
+    <string name="avatar_change_cancelled">放弃更改头像！</string>
+    <string name="user_name">用户名</string>
+    <string name="enter_new_user_name">请输入新的用户名</string>
+    <string name="change_user_name">更改用户名</string>
+    <string name="music_scan">音乐扫描</string>
+    <string name="current_music_count">当前音乐数量：%1$d 首</string>
+    <string name="scan_method_desc">可选择方式从设备中读取音乐信息</string>
+    <string name="scan_method_warning">增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）</string>
+    <string name="incremental_load">增量加载</string>
+    <string name="reload">重新加载</string>
+    <string name="daily_recommendation_strategy">每日推荐刷新策略</string>
+    <string name="select_refresh_strategy">选择每日推荐的刷新方式</string>
+    <string name="refresh_mode_label">刷新模式</string>
+    <string name="refresh_by_time">按时间刷新</string>
+    <string name="refresh_by_startup">按启动次数刷新</string>
+    <string name="refresh_smart">智能刷新（预留）</string>
+    <string name="switched_to">已切换到: %1$s</string>
+    <string name="refresh_interval_hours">刷新间隔（小时）</string>
+    <string name="current_setting_time">当前设置：每 %1$d 小时刷新一次</string>
+    <string name="startup_count_label">启动次数</string>
+    <string name="current_setting_startup">当前设置：每启动 %1$d 次后刷新</string>
+    <string name="smart_refresh_desc">智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。</string>
+
+    <!-- Home Screen -->
+    <string name="go_to_ai_config">前往 AI 配置页面</string>
+    <string name="title_home">首页</string>
+    <string name="refresh_daily_recommendation">刷新每日推荐</string>
+    <string name="no_data_loaded">暂未加载到数据</string>
+    <string name="relaunch_or_config_ai">请重新启动应用或进行 AI 配置</string>
+    <string name="today_recommendation">今日推荐</string>
+    <string name="today_heartbeat_playlist">今日心动歌单</string>
+    <string name="generating_heartbeat_playlist">正在生成心动歌单...</string>
+    <string name="play_heartbeat_playlist">播放心动歌单</string>
+
+    <!-- Song Detail Screen -->
+    <string name="loading">加载中...</string>
+    <string name="title_song_detail">歌曲详情</string>
+    <string name="song_description">歌曲介绍</string>
+    <string name="artist_introduction">歌手介绍</string>
+    <string name="creative_background">创作背景</string>
+    <string name="popular_lyrics">热门歌词</string>
+    <string name="song_achievements">歌曲成就</string>
+    <string name="similar_music">类似音乐</string>
+
+    <!-- Gallery Screen -->
+    <string name="title_gallery">音乐库</string>
+    <string name="sort">排序</string>
+    <string name="order">方式</string>
+    <string name="sort_title">歌曲名</string>
+    <string name="sort_artist">歌手名</string>
+    <string name="sort_duration">时长</string>
+    <string name="sort_size">大小</string>
+    <string name="sort_play_count">播放次数</string>
+    <string name="sort_add_time">添加时间</string>
+    <string name="order_asc">升序</string>
+    <string name="order_desc">降序</string>
+
+    <!-- Intro Screen -->
+    <string name="grant_permission">授予</string>
+    <string name="permission_granted">已授权!</string>
+    <string name="scan_finished">扫描完毕!</string>
+    <string name="scan">扫描</string>
+    <string name="start_experience">开始体验</string>
+    <string name="welcome_to">欢迎来到</string>
+    <string name="follow_guide_to_config">跟着向导快速完成配置</string>
+    <string name="intro_step_1">1. 授予权限</string>
+    <string name="intro_step_1_desc">向您请求授予音频媒体文件访问权限和通知权限，我们需要这些权限来实现音乐扫描和通知栏控制。</string>
+    <string name="intro_step_2">2. 扫描音乐</string>
+    <string name="intro_step_2_desc">首次启动需要从设备中扫描音乐，后续您可以在设置中自行手动更新和扫描。</string>
+    <string name="intro_step_3">3. 开始体验</string>
+    <string name="intro_step_3_desc">设置完毕后，点击按钮即可开启您的音乐体验。</string>
+
+    <!-- Dialogs -->
+    <string name="scan_music_title">扫描音乐</string>
+    <string name="scanning_desc">正在扫描设备中的音乐，请耐心等待……</string>
+    <string name="scan_complete_desc">扫描完成！已加载本地音乐%1$d首。</string>
+    <string name="ok">确定</string>
+    <string name="sleep_timer">定时关闭</string>
+    <string name="timer_off">关闭定时</string>
+    <string name="timer_minutes">%1$d 分钟</string>
+    <string name="or_label">或</string>
+    <string name="custom_minutes">自定义分钟</string>
+
+    <!-- Components -->
+    <string name="no_current_music">当前音乐: 无</string>
+    <string name="clear">清空</string>
+    <string name="back">返回</string>
+    <string name="previous">上一首</string>
+    <string name="play_pause">播放/暂停</string>
+    <string name="next">下一首</string>
+    <string name="playback_mode">播放模式</string>
+    <string name="favorite">收藏</string>
+    <string name="recommendation_mode">心动模式</string>
+    <string name="playlist">播放列表</string>
+    <string name="pin_to_top">置顶</string>
+    <string name="remove">移除</string>
+    <string name="album_art">专辑封面</string>
+    
+    <!-- User Screen -->
+    <string name="listening_duration_chart_title">近期听歌时长(分钟)</string>
+    <string name="theme_customization">主题定制</string>
+    <string name="audio_effects">音效效果</string>
+    <string name="ai_services">AI服务</string>
+    <string name="set_theme_mode">设置主题明暗模式</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_auto">默认</string>
+    <string name="set_background_style">设置动态背景风格</string>
+    <string name="style_fluid">流体极光</string>
+    <string name="style_spots">沉浸光斑</string>
+    <string name="style_blur">复古模糊</string>
+    <string name="style_fluid_desc">受流体运动启发的平滑色彩流动效果</string>
+    <string name="style_spots_desc">在背景上呼吸律动的抽象色块</string>
+    <string name="style_blur_desc">简单的模糊封面配合缓慢缩放效果</string>
+    <string name="audio_effects_settings">音效设置</string>
+    <string name="preset_equalizer">预设场景音效</string>
+    <string name="custom_equalizer">自定义均衡器</string>
+
+    <!-- List Screen -->
+    <string name="title_playlist">播放列表</string>
+    <string name="explore">探索</string>
+    <string name="more">更多</string>
+    <string name="suitable_for_now">适合此时此刻的音乐</string>
+    <string name="banner_default">默认列表</string>
+    <string name="banner_heart">红心列表</string>
+    <string name="banner_history">最近播放</string>
+</resources>

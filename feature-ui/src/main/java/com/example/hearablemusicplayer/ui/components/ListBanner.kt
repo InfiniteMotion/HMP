@@ -29,7 +29,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.model.enum.LabelName
 import com.example.hearablemusicplayer.ui.util.Routes
-import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListGroupName(
@@ -74,7 +73,6 @@ fun ListGroupName(
 fun ListBanner(
     listName: String = "",
     listCoverUri: Int,
-    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     val imageModifier = Modifier
@@ -87,8 +85,7 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                playlistViewModel.getSelectedPlaylist(listName)
-                navController.navigate(Routes.PLAYLIST)
+                navController.navigate(Routes.Playlist(listName))
             }
     ) {
         AsyncImage(
@@ -113,7 +110,6 @@ fun ListBanner(
 fun ListBanner(
     listName: LabelName,
     listCoverUri: Int,
-    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     val imageModifier = Modifier
@@ -126,8 +122,7 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
-                playlistViewModel.getSelectedPlaylist(listName)
-                navController.navigate(Routes.PLAYLIST)
+                navController.navigate(Routes.Playlist(listName.name))
             }
     ) {
         AsyncImage(

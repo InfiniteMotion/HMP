@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.content.Context
-import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -43,10 +42,12 @@ data class PaletteColors(
     // 活力色调系列
     val vibrantColor: Color = Color(0xFF2A2A2A),
     val darkVibrantColor: Color = Color(0xFF0F0F0F),
+    val lightVibrantColor: Color = Color(0xFF808080),
     
     // 柔和色调系列
     val mutedColor: Color = Color(0xFF222222),
     val darkMutedColor: Color = Color(0xFF111111),
+    val lightMutedColor: Color = Color(0xFF666666),
     
     // 辅助色调
     val accentColor: Color = Color(0xFF444444)
@@ -113,7 +114,7 @@ class PlayControlViewModel @Inject constructor(
     // Delegated Methods
     fun playOrResume() = musicController.playOrResume()
     fun pauseMusic() = musicController.pauseMusic()
-    fun playNext(forceChange: Boolean = true) = musicController.playNext(forceChange)
+    fun playNext() = musicController.playNext()
     fun playPrevious() = musicController.playPrevious()
     fun seekTo(position: Long) = musicController.seekTo(position)
     fun togglePlaybackModeByOrder() = musicController.togglePlaybackModeByOrder()
@@ -206,13 +207,15 @@ class PlayControlViewModel @Inject constructor(
                             val lightMuted = palette.lightMutedSwatch?.rgb
 
                             PaletteColors(
-                                dominantColor = Color(darkMuted ?: darkVibrant ?: dominant),
-                                primaryColor = Color(lightVibrant ?: vibrant ?: dominant),
-                                vibrantColor = Color(vibrant ?: darkVibrant ?: lightVibrant ?: 0xFF2A2A2A.toInt()),
-                                darkVibrantColor = Color(darkVibrant ?: vibrant ?: 0xFF0F0F0F.toInt()),
-                                mutedColor = Color(muted ?: lightMuted ?: darkMuted ?: 0xFF222222.toInt()),
-                                darkMutedColor = Color(darkMuted ?: muted ?: 0xFF111111.toInt()),
-                                accentColor = Color(lightVibrant ?: vibrant ?: lightMuted ?: 0xFF444444.toInt())
+                                dominantColor = Color(dominant),
+                                primaryColor = Color(vibrant ?: dominant),
+                                vibrantColor = Color(vibrant ?: dominant),
+                                darkVibrantColor = Color(darkVibrant ?: vibrant ?: dominant),
+                                lightVibrantColor = Color(lightVibrant ?: vibrant ?: dominant),
+                                mutedColor = Color(muted ?: dominant),
+                                darkMutedColor = Color(darkMuted ?: muted ?: dominant),
+                                lightMutedColor = Color(lightMuted ?: muted ?: dominant),
+                                accentColor = Color(lightVibrant ?: vibrant ?: dominant)
                             )
                         }
                     } ?: PaletteColors()

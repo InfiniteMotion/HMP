@@ -2,8 +2,8 @@ package com.example.hearablemusicplayer.domain.repository
 
 import com.example.hearablemusicplayer.domain.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
+import com.example.hearablemusicplayer.domain.model.DisplayMode
 import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -18,6 +18,9 @@ interface SettingsRepository {
     val themeMode: Flow<String>
     suspend fun saveThemeMode(themeMode: String)
     
+    val backgroundStyle: Flow<String>
+    suspend fun saveBackgroundStyle(style: String)
+    
     val isLoadMusic: Flow<Boolean>
     suspend fun saveIsLoadMusic(isLoadMusic: Boolean)
     
@@ -27,9 +30,6 @@ interface SettingsRepository {
     // Playback State
     val currentMusicId: Flow<Long?>
     suspend fun saveCurrentMusicId(id: Long)
-    
-    val playbackMode: Flow<PlaybackMode>
-    suspend fun savePlaybackMode(mode: PlaybackMode)
     
     val currentPlaylistId: Flow<Long?>
     suspend fun saveCurrentPlaylistId(playlistId: Long)
@@ -87,6 +87,27 @@ interface SettingsRepository {
     val dailyRefreshMode: Flow<String>
     suspend fun saveDailyRefreshMode(mode: String)
     
+    // Lyrics Configuration
+    val lyricsOriginalTextSize: Flow<Int>
+    suspend fun saveLyricsOriginalTextSize(size: Int)
+    suspend fun getLyricsOriginalTextSize(): Int
+    
+    val lyricsTranslatedTextSize: Flow<Int>
+    suspend fun saveLyricsTranslatedTextSize(size: Int)
+    suspend fun getLyricsTranslatedTextSize(): Int
+    
+    val lyricsCurrentTimeTextSize: Flow<Int>
+    suspend fun saveLyricsCurrentTimeTextSize(size: Int)
+    suspend fun getLyricsCurrentTimeTextSize(): Int
+
+    val lyricsLineSpacing: Flow<Int>
+    suspend fun saveLyricsLineSpacing(spacing: Int)
+    suspend fun getLyricsLineSpacing(): Int
+    
+    val lyricsDisplayMode: Flow<DisplayMode>
+    suspend fun saveLyricsDisplayMode(mode: DisplayMode)
+    suspend fun getLyricsDisplayMode(): DisplayMode
+
     val dailyRefreshHours: Flow<Int>
     suspend fun saveDailyRefreshHours(hours: Int)
     
@@ -105,7 +126,7 @@ interface SettingsRepository {
     suspend fun getCurrentDailyMusicId(): Long?
     
     // Backup / Restore
-    suspend fun backupSettings(): kotlin.Result<File>
-    suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit>
-    suspend fun cleanOldBackups(keepCount: Int = 3): kotlin.Result<Unit>
+    suspend fun backupSettings(): Result<File>
+    suspend fun restoreSettings(backupFile: File): Result<Unit>
+    suspend fun cleanOldBackups(keepCount: Int = 3): Result<Unit>
 }

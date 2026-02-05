@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.ui.pages
 
 import androidx.activity.ComponentActivity
+import androidx.annotation.ColorRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -90,7 +92,7 @@ fun ListScreenContent(
     playlistViewModel: PlaylistViewModel
 ) {
     TabScreen(
-        title = "播放列表",
+        title = stringResource(R.string.title_playlist),
         hasSearchBotton = true,
         navController = navController
     ) {
@@ -102,12 +104,12 @@ fun ListScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 适用场景 (Scenario) - 沉浸推荐
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(R.string.banner_daily_D),
-                    bannerNameS = stringResource(R.string.banner_daily_DD),
-                    themeColorResId = R.color.HDGreen
-                )
+            LabelListGroup(
+                data = scenarioList,
+                bannerNameF = stringResource(R.string.banner_daily_D),
+                bannerNameS = stringResource(R.string.banner_daily_DD),
+                themeColorResId = R.color.HDGreen
+            ) { list ->
                 val scenarioListState = rememberLazyListState()
                 val scenarioFlingBehavior = rememberSnapFlingBehavior(lazyListState = scenarioListState)
 
@@ -117,12 +119,11 @@ fun ListScreenContent(
                     contentPadding = PaddingValues(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(scenarioList) { label ->
+                    items(list) { label ->
                         ScenarioCard(
                             label = label,
                             onClick = {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -130,12 +131,12 @@ fun ListScreenContent(
             }
 
             // 风格流派 (Genre) - 横向画廊
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(R.string.banner_daily_B),
-                    bannerNameS = stringResource(R.string.banner_daily_BB),
-                    themeColorResId = R.color.HDBlue
-                )
+            LabelListGroup(
+                data = genreList,
+                bannerNameF = stringResource(R.string.banner_daily_B),
+                bannerNameS = stringResource(R.string.banner_daily_BB),
+                themeColorResId = R.color.HDBlue
+            ) { list ->
                 val genreListState = rememberLazyListState()
                 val genreFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
                 
@@ -145,12 +146,11 @@ fun ListScreenContent(
                     contentPadding = PaddingValues(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(genreList) { label ->
+                    items(list) { label ->
                         GenreCard(
                             label = label,
                             onClick = {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -170,34 +170,30 @@ fun ListScreenContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     ListBanner(
-                        listName = "默认列表",
+                        listName = stringResource(R.string.banner_default),
                         listCoverUri = R.drawable.defaultlist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                     ListBanner(
-                        listName = "红心列表",
+                        listName = stringResource(R.string.banner_heart),
                         listCoverUri = R.drawable.heartlist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                     ListBanner(
-                        listName = "最近播放",
+                        listName = stringResource(R.string.banner_history),
                         listCoverUri = R.drawable.historylist,
-                        playlistViewModel = playlistViewModel,
                         navController = navController
                     )
                 }
             }
 
             // 音乐情绪 (Mood) - 网格探索
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(R.string.banner_daily_C),
-                    bannerNameS = stringResource(R.string.banner_daily_CC),
-                    themeColorResId = R.color.HDOrange
-                )
-                // 使用 LazyHorizontalGrid 来展示2行
+            LabelListGroup(
+                data = moodList,
+                bannerNameF = stringResource(R.string.banner_daily_C),
+                bannerNameS = stringResource(R.string.banner_daily_CC),
+                themeColorResId = R.color.HDOrange
+            ) { list ->
                 Box(modifier = Modifier.height(220.dp)) {
                     LazyHorizontalGrid(
                         rows = GridCells.Fixed(2),
@@ -206,12 +202,11 @@ fun ListScreenContent(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(moodList) { label ->
+                        items(list) { label ->
                             MoodCard(
                                 label = label,
                                 onClick = {
-                                    playlistViewModel.getSelectedPlaylist(label)
-                                    navController.navigate(Routes.PLAYLIST)
+                                    navController.navigate(Routes.Playlist(label.name))
                                 }
                             )
                         }
@@ -220,24 +215,22 @@ fun ListScreenContent(
             }
 
             // 探索更多 (Language & Era) - 标签云
-            Column {
-                ListGroupName(
-                    bannerNameF = "探索",
-                    bannerNameS = "更多",
-                    themeColorResId = R.color.HDPurple
-                )
+            LabelListGroup(
+                data = languageList + eraList,
+                bannerNameF = stringResource(R.string.explore),
+                bannerNameS = stringResource(R.string.more),
+                themeColorResId = R.color.HDPurple
+            ) { list ->
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                         .padding(horizontal = 20.dp)
                 ) {
-                    val allTags = languageList + eraList
-                    allTags.forEach { label ->
+                    list.forEach { label ->
                         Box(
                             modifier = Modifier.clickable {
-                                playlistViewModel.getSelectedPlaylist(label)
-                                navController.navigate(Routes.PLAYLIST)
+                                navController.navigate(Routes.Playlist(label.name))
                             }
                         ) {
                             Capsule(
@@ -255,6 +248,26 @@ fun ListScreenContent(
 }
 
 // ================== 局部组件定义 ==================
+
+@Composable
+fun <T> LabelListGroup(
+    data: List<T>,
+    bannerNameF: String,
+    bannerNameS: String,
+    @ColorRes themeColorResId: Int,
+    content: @Composable (List<T>) -> Unit
+) {
+    if (data.isNotEmpty()) {
+        Column {
+            ListGroupName(
+                bannerNameF = bannerNameF,
+                bannerNameS = bannerNameS,
+                themeColorResId = themeColorResId
+            )
+            content(data)
+        }
+    }
+}
 
 @Composable
 private fun GenreCard(
@@ -284,7 +297,7 @@ private fun GenreCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                Transparent,
                                 Color.Black.copy(alpha = 0.7f)
                             )
                         )
@@ -298,7 +311,7 @@ private fun GenreCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(12.dp)
-            )
+                )
         }
     }
 }
@@ -325,14 +338,6 @@ private fun MoodCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.6f)
-                            )
-                        )
-                    )
             )
         }
     }
@@ -364,7 +369,7 @@ private fun ScenarioCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                Transparent,
                                 Color.Black.copy(alpha = 0.4f),
                                 Color.Black.copy(alpha = 0.8f)
                             )
@@ -383,7 +388,7 @@ private fun ScenarioCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "适合此时此刻的音乐",
+                    text = stringResource(R.string.suitable_for_now),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )

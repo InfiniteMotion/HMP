@@ -10,15 +10,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
 import com.example.hearablemusicplayer.ui.template.pages.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
@@ -30,6 +33,7 @@ fun GalleryScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
+    val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
@@ -42,6 +46,7 @@ fun GalleryScreen(
     }
 
     GalleryScreenContent(
+        isPlaying = isPlaying,
         musicInfoList = musicInfoList,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
@@ -51,11 +56,11 @@ fun GalleryScreen(
         addToPlaylist = playControlViewModel::addToPlaylist,
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
-            navController.navigate(Routes.PLAYER)
+            navController.navigate(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
-            navController.navigate(Routes.PLAYER)
+            navController.navigate(Routes.Player)
         },
         onFilterGenreChange = {
             libraryViewModel.updateOrderBy(it)
@@ -72,10 +77,11 @@ fun GalleryScreen(
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreenContent(
+    isPlaying: Boolean,
     musicInfoList: List<MusicInfo>,
     selectedGenre: String,
     selectedOrder: String,
-    onNavigate: (String) -> Unit,
+    onNavigate: (Any) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
@@ -85,8 +91,9 @@ fun GalleryScreenContent(
     onFilterOrderChange: (String) -> Unit,
     navController: NavController
 ) {
+    val haptic = rememberHapticFeedback()
     TabScreen(
-        title = "音乐库",
+        title = stringResource(R.string.title_gallery),
         hasSearchBotton = true,
         navController = navController
     ) {
@@ -107,10 +114,15 @@ fun GalleryScreenContent(
         ){
             MusicList(
                 musicInfoList = musicInfoList,
-                navigate = onNavigate,
-                playWith = playWith,
-                recordPlayback = recordPlayback,
-                addToPlaylist = addToPlaylist,
+                onItemClick = {
+                    haptic.performClick()
+                    playWith(it)
+                    onNavigate(Routes.Player) },
+                onAddToPlaylist = { _ -> },
+                onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
+                showAddButton = false,
+                showMenuButton = true,
+                isPlaying = isPlaying,
             )
         }
     }

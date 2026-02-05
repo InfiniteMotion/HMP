@@ -4,12 +4,23 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "com.example.hearablemusicplayer"
     compileSdk {
         version = release(36)
+    }
+
+    // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
+    signingConfigs {
+        create("unified") {
+            storeFile = file("hmp-unified-key.jks")
+            storePassword = "hmp123456"
+            keyAlias = "hmpkey"
+            keyPassword = "hmp123456"
+        }
     }
 
     defaultConfig {
@@ -29,7 +40,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("unified")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("unified")
         }
     }
     compileOptions {

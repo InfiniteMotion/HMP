@@ -40,11 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen
@@ -105,7 +107,7 @@ fun SettingScreenContent(
     // 使用SubScreen模板
     SubScreen(
         onBackClick = onBackClick,
-        title = "设置"
+        title = stringResource(R.string.title_settings)
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
@@ -133,6 +135,7 @@ fun SettingScreenContent(
                 musicCount = musicCount,
                 refreshMusicList = onRefreshMusicList
             )
+            Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }
@@ -143,7 +146,7 @@ fun UpdateAvatar(
     updateAvatar: (String) -> Unit
 ){
     TitleWidget(
-        title = "头像",
+        title = stringResource(R.string.avatar),
     ) {
         Column (
             modifier = Modifier
@@ -199,7 +202,7 @@ fun UpdateAvatar(
                             launcher.launch("image/*")  // 打开图片选择器
                         }
                     ) {
-                        Text(text = "更改头像", color = MaterialTheme.colorScheme.onPrimary)
+                        Text(text = stringResource(R.string.change_avatar), color = MaterialTheme.colorScheme.onPrimary)
                     }
                 } else {
                     AsyncImage(
@@ -213,18 +216,18 @@ fun UpdateAvatar(
                     Button(
                         onClick = {
                             updateAvatar(uriImg.value)
-                            Toast.makeText(context, "头像已更改!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.avatar_changed), Toast.LENGTH_SHORT).show()
                         }
                     ) {
-                        Text(text = "更改", color = MaterialTheme.colorScheme.onPrimary)
+                        Text(text = stringResource(R.string.change), color = MaterialTheme.colorScheme.onPrimary)
                     }
                     Button(
                         onClick = {
                             uriImg.value = ""
-                            Toast.makeText(context, "放弃更改头像！", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.avatar_change_cancelled), Toast.LENGTH_SHORT).show()
                         }
                     ) {
-                        Text(text = "取消", color = MaterialTheme.colorScheme.onPrimary)
+                        Text(text = stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -238,7 +241,7 @@ fun UpdateUserName(
     updateUserName: (String) -> Unit,
 ){
     TitleWidget(
-        title = "用户名",
+        title = stringResource(R.string.user_name),
     ) {
         Column (
             modifier = Modifier
@@ -249,7 +252,7 @@ fun UpdateUserName(
         ) {
             var name by rememberSaveable { mutableStateOf("") }
             Text(
-                text = userName?:"用户名",
+                text = userName?:stringResource(R.string.user_name),
                 style = MaterialTheme.typography.displayLarge,
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onBackground
@@ -262,7 +265,7 @@ fun UpdateUserName(
                     onValueChange = {
                         name = it
                     },
-                    label = { Text("请输入新的用户名") },
+                    label = { Text(stringResource(R.string.enter_new_user_name)) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Default
@@ -287,7 +290,7 @@ fun UpdateUserName(
                     updateUserName(name)
                 }
             ) {
-                Text(text = "更改用户名", color = MaterialTheme.colorScheme.onPrimary)
+                Text(text = stringResource(R.string.change_user_name), color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
@@ -299,7 +302,7 @@ fun ReloadMusic(
     refreshMusicList: () -> Unit,
 ) {
     TitleWidget(
-        title = "音乐扫描",
+        title = stringResource(R.string.music_scan),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -307,19 +310,19 @@ fun ReloadMusic(
         ) {
             var isLoading by remember { mutableStateOf(false) }
             Text(
-                text = "当前音乐数量：${musicCount} 首",
+                text = stringResource(R.string.current_music_count, musicCount),
                 style = MaterialTheme.typography.displayMedium,
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "可选择方式从设备中读取音乐信息",
+                text = stringResource(R.string.scan_method_desc),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(8.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）",
+                text = stringResource(R.string.scan_method_warning),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 16.dp, horizontal = 32.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -336,7 +339,7 @@ fun ReloadMusic(
                     },
                     enabled = !isLoading
                 ) {
-                    Text("增量加载", color = MaterialTheme.colorScheme.onPrimary)
+                    Text(stringResource(R.string.incremental_load), color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Spacer(modifier = Modifier.width(32.dp))
                 Button(
@@ -347,7 +350,7 @@ fun ReloadMusic(
                     },
                     enabled = !isLoading
                 ) {
-                    Text("重新加载", color = MaterialTheme.colorScheme.onPrimary)
+                    Text(stringResource(R.string.reload), color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -370,7 +373,7 @@ fun DailyRefreshSettings(
     val context = LocalContext.current
     
     TitleWidget(
-        title = "每日推荐刷新策略",
+        title = stringResource(R.string.daily_recommendation_strategy),
     ) {
         Column(
             modifier = Modifier
@@ -379,7 +382,7 @@ fun DailyRefreshSettings(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "选择每日推荐的刷新方式",
+                text = stringResource(R.string.select_refresh_strategy),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -387,11 +390,11 @@ fun DailyRefreshSettings(
             // 刷新模式选择
             var expanded by remember { mutableStateOf(false) }
             val refreshModes = listOf(
-                "time" to "按时间刷新",
-                "startup" to "按启动次数刷新",
-                "smart" to "智能刷新（预留）"
+                "time" to stringResource(R.string.refresh_by_time),
+                "startup" to stringResource(R.string.refresh_by_startup),
+                "smart" to stringResource(R.string.refresh_smart)
             )
-            val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: "按时间刷新"
+            val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: stringResource(R.string.refresh_by_time)
             
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -401,7 +404,7 @@ fun DailyRefreshSettings(
                     value = currentModeLabel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("刷新模式") },
+                    label = { Text(stringResource(R.string.refresh_mode_label)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                     .fillMaxWidth()
@@ -423,7 +426,7 @@ fun DailyRefreshSettings(
                             onClick = {
                                 onSaveRefreshMode(mode)
                                 expanded = false
-                                Toast.makeText(context, "已切换到: $label", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.switched_to, label), Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -445,7 +448,7 @@ fun DailyRefreshSettings(
                                 }
                             }
                         },
-                        label = { Text("刷新间隔（小时）") },
+                        label = { Text(stringResource(R.string.refresh_interval_hours)) },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done
@@ -456,7 +459,7 @@ fun DailyRefreshSettings(
                     )
                     
                     Text(
-                        text = "当前设置：每 $refreshHours 小时刷新一次",
+                        text = stringResource(R.string.current_setting_time, refreshHours),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -474,7 +477,7 @@ fun DailyRefreshSettings(
                                 }
                             }
                         },
-                        label = { Text("启动次数") },
+                        label = { Text(stringResource(R.string.startup_count_label)) },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done
@@ -485,14 +488,14 @@ fun DailyRefreshSettings(
                     )
                     
                     Text(
-                        text = "当前设置：每启动 $startupCount 次后刷新",
+                        text = stringResource(R.string.current_setting_startup, startupCount),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 "smart" -> {
                     Text(
-                        text = "智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。",
+                        text = stringResource(R.string.smart_refresh_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -25,11 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.hearablemusicplayer.ui.components.BackgroundStyle
 import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
@@ -41,9 +44,9 @@ import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import kotlin.math.abs
-
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -62,6 +65,13 @@ fun MainScreen(
 
     // 根据customMode确定主题模式
     val customMode by settingsViewModel.customMode.collectAsState("default")
+    val backgroundStyleString by settingsViewModel.backgroundStyle.collectAsState("FLUID")
+    val backgroundStyle = try {
+        BackgroundStyle.valueOf(backgroundStyleString)
+    } catch (e: Exception) {
+        BackgroundStyle.FLUID
+    }
+    
     val isDarkTheme = when (customMode) {
         "light" -> false
         "dark" -> true
@@ -75,12 +85,15 @@ fun MainScreen(
         getPresetColorScheme(isDarkTheme)
     }
 
-    val defaultScreen = Routes.HOME
+    val defaultScreen = Routes.Home
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: defaultScreen
-    val swipePages = listOf(Routes.HOME, Routes.GALLERY, Routes.LIST, Routes.USER)
-    val currentIndex = swipePages.indexOf(currentRoute)
+    
+    val swipePages = listOf(Routes.Home, Routes.Gallery, Routes.List, Routes.User)
+    val currentIndex = swipePages.indexOfFirst { route ->
+        navBackStackEntry?.destination?.hasRoute(route::class) == true
+    }
+    val currentRoute = swipePages.getOrNull(currentIndex) ?: Routes.Home
 
     // 只在 swipePages 页启用手势
     val enableSwipe = currentIndex != -1
@@ -92,13 +105,11 @@ fun MainScreen(
                 val targetIndex = if (dragAmount > 0) currentIndex - 1 else currentIndex + 1
                 if (targetIndex in swipePages.indices) {
                     val targetRoute = swipePages[targetIndex]
-                    if (targetRoute != currentRoute) {
-                        // 翻页时给予触觉反馈
-                        haptic.performLightClick()
-                        navController.navigate(route = targetRoute) {
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                    // 翻页时给予触觉反馈
+                    haptic.performLightClick()
+                    navController.navigate(route = targetRoute) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             }
@@ -110,34 +121,29 @@ fun MainScreen(
         colorScheme = colorScheme
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 全局动态背景层（仅在音乐播放时显示，带过渡动画）
+            // 1. 静态背景层 (始终存在，确保无黑屏)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            )
+
+            // 2. 全局动态背景层 (仅在播放时覆盖在静态背景之上，带过渡动画)
             AnimatedVisibility(
                 visible = isPlaying && currentMusic != null,
-                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
-                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
-                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
-                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
+                enter = fadeIn(
+                    animationSpec = tween(durationMillis = 800, easing = AnimationConfig.EASE_IN_OUT)
+                ),
+                exit = fadeOut(
+                    animationSpec = tween(durationMillis = 800, easing = AnimationConfig.EASE_IN_OUT)
+                )
             ) {
                 DynamicBackground(
                     albumArtUri = currentMusic?.music?.albumArtUri,
                     paletteColors = paletteColors,
                     isDarkTheme = isDarkTheme,
+                    style = backgroundStyle,
                     modifier = Modifier
-                )
-            }
-            
-            // 音乐未播放时显示纯色背景（带过渡动画）
-            AnimatedVisibility(
-                visible = !(isPlaying && currentMusic != null),
-                enter = scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
-                        fadeIn(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)),
-                exit = scaleOut(targetScale = 0.95f, animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)) +
-                        fadeOut(animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
                 )
             }
 
@@ -147,7 +153,7 @@ fun MainScreen(
                 containerColor = Transparent,
                 bottomBar = {}
             ) {
-                val contentModifier = if (currentRoute == "player") {
+                val contentModifier = if (navBackStackEntry?.destination?.hasRoute<Routes.Player>() == true) {
                     Modifier.padding(it)
                 } else {
                     Modifier
@@ -178,7 +184,7 @@ fun MainScreen(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
 
-                        composable(route = Routes.HOME,
+                        composable<Routes.Home>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
@@ -187,67 +193,89 @@ fun MainScreen(
                                 recommendationViewModel = recommendationViewModel
                             )
                         }
-                        composable(route = Routes.GALLERY,
+                        composable<Routes.SongDetail>(
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            SongDetailScreen(
+                                navController = navController
+                            )
+                        }
+                        composable<Routes.Gallery>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             GalleryScreen(navController = navController)
                         }
-                        composable(route = Routes.PLAYER,
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
+                        composable<Routes.Player>(
+                            enterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { it }, // 从底部滑入
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                ) + fadeIn(
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                )
+                            },
+                            exitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { it }, // 向底部滑出
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                ) + fadeOut(
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                )
+                            }
                         ) {
                             PlayerScreen(navController = navController)
                         }
-                        composable(route = Routes.LIST,
+                        composable<Routes.List>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ListScreen(navController = navController)
                         }
-                        composable(route = Routes.USER,
+                        composable<Routes.User>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             UserScreen(settingsViewModel, recommendationViewModel, navController)
                         }
-                        composable(route = Routes.SETTING,
+                        composable<Routes.Setting>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SettingScreen(settingsViewModel, libraryViewModel, navController)
                         }
-                        composable(route = Routes.SEARCH,
+                        composable<Routes.Search>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             SearchScreen(navController = navController)
                         }
-                        composable(route = Routes.PLAYLIST,
+                        composable<Routes.Playlist>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             PlaylistScreen(navController = navController)
                         }
-                        composable(route = Routes.ARTIST,
+                        composable<Routes.Artist>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             ArtistScreen(navController = navController)
                         }
-                        composable(route = Routes.AUDIO_EFFECTS,
+                        composable<Routes.AudioEffects>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AudioEffectsScreen(navController = navController)
                         }
-                        composable(route = Routes.AI,
+                        composable<Routes.AI>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
                             AIScreen(settingsViewModel, recommendationViewModel, libraryViewModel, navController)
                         }
-                        composable(route = Routes.CUSTOM,
+                        composable<Routes.Custom>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
@@ -255,22 +283,29 @@ fun MainScreen(
                         }
                     }
                 }
-                if (currentRoute != Routes.PLAYER) {
+                // 使用 AnimatedVisibility 包裹 CustomBottomNavBar 实现滑入滑出动画
+                AnimatedVisibility(
+                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false,
+                    enter = slideInVertically(
+                        initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
+                        animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                    ),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it }, // 向底部滑出 (偏移量为自身高度)
+                        animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                ) {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
                             .background(if(isPlaying) Transparent else MaterialTheme.colorScheme.surface)
                     ) {
                         CustomBottomNavBar(
                             isPlaying = isPlaying,
                             currentRoute = currentRoute,
-                            onNavigate = { route ->
-                                navController.navigate(route = route) {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
+                            navController = navController
                         )
                     }
                 }

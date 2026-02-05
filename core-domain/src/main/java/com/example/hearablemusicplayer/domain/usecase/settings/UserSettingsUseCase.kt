@@ -32,6 +32,12 @@ class UserSettingsUseCase @Inject constructor(
     suspend fun saveThemeMode(mode: String) {
         settingsRepository.saveThemeMode(mode)
     }
+
+    // 动态背景风格
+    val backgroundStyle: Flow<String> = settingsRepository.backgroundStyle
+    suspend fun saveBackgroundStyle(style: String) {
+        settingsRepository.saveBackgroundStyle(style)
+    }
     
     // 头像URI
     suspend fun getAvatarUri(): String? {

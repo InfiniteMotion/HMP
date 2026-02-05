@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,7 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -64,6 +65,7 @@ import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.domain.model.MusicLabel
 import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
+import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.delay
@@ -120,15 +122,16 @@ fun PlayContent(
             ){
                 PlayerHeader(onBackClick)
             }
-            Text("当前音乐: 无", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.no_current_music), color = MaterialTheme.colorScheme.onSurface)
         }
     } else {
         var showTimerDialog by remember { mutableStateOf(false) }
+        var playlistExpanded by remember { mutableStateOf(false) }
         
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
         ) {
+            val screenHeight = maxHeight
             val scrollState = rememberScrollState()
             
             Column(
@@ -136,87 +139,108 @@ fun PlayContent(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
+                // 播放器主界面容器：强制填满一屏高度
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .height(screenHeight)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .weight(1f) // 使顶部区域占据剩余空间
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        PlayerHeader(onBackClick)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        MusicInfo(musicInfo.music, onArtistClick)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // 封面区域：使用 weight(1f) 实现弹性缩放
+                        MusicInfoExtra(
+                            musicInfo = musicInfo,
+                            labels = labels,
+                            lyrics = lyrics,
+                            currentPosition = currentPosition,
+                            onSeek = onSeek,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    
                     Spacer(modifier = Modifier.height(16.dp))
-                    PlayerHeader(onBackClick)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo.music, onArtistClick)
+                    
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SeekBar(
+                            currentPosition = currentPosition,
+                            duration = duration,
+                            onSeek = onSeek
+                        )
+                        // 播放控制按钮区
+                        PlaybackControlsButtons(
+                            isPlaying = isPlaying,
+                            playbackMode = playbackMode,
+                            isLike = isLiked,
+                            remainingTime = remainingTime,
+                            playlistExpanded = playlistExpanded,
+                            onPlayPause = {
+                                haptic.performClick()
+                                onPlayPause()
+                            },
+                            onNext = {
+                                haptic.performClick()
+                                onNext()
+                            },
+                            onPrevious = {
+                                haptic.performClick()
+                                onPrevious()
+                            },
+                            onPlaybackModeChange = {
+                                haptic.performContextClick()
+                                onPlaybackModeChange()
+                            },
+                            onFavorite = {
+                                haptic.performConfirm()
+                                onFavorite()
+                            },
+                            onTimerClick = {
+                                haptic.performClick()
+                                showTimerDialog = true
+                            },
+                            onHeartMode = {
+                                haptic.performConfirm()
+                                onHeartMode()
+                            },
+                            onPlaylistToggle = {
+                                playlistExpanded = !playlistExpanded
+                            }
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
-                    MusicInfoExtra(
-                        musicInfo = musicInfo,
-                        labels = labels,
-                        lyrics = lyrics,
-                        currentPosition = currentPosition,
-                        onSeek = onSeek
-                    )
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    SeekBar(
-                        currentPosition = currentPosition,
-                        duration = duration,
-                        onSeek = onSeek
-                    )
-                    // 播放控制按钮
-                    PlaybackControls(
-                        isPlaying = isPlaying,
-                        playbackMode = playbackMode,
-                        isLike = isLiked,
-                        remainingTime = remainingTime,
-                        onPlayPause = {
-                            haptic.performClick()
-                            onPlayPause()
-                        },
-                        onNext = {
-                            haptic.performClick()
-                            onNext()
-                        },
-                        onPrevious = {
-                            haptic.performClick()
-                            onPrevious()
-                        },
-                        onPlaybackModeChange = {
-                            haptic.performContextClick()
-                            onPlaybackModeChange()
-                        },
-                        onFavorite = {
-                            haptic.performConfirm()
-                            onFavorite()
-                        },
-                        onTimerClick = {
-                            haptic.performClick()
-                            showTimerDialog = true
-                        },
-                        onHeartMode = {
-                            haptic.performConfirm()
-                            onHeartMode()
-                        },
-                        scrollState = scrollState,
-                        playlist = playlist,
-                        currentIndex = currentIndex,
-                        onClearPlaylist = onClearPlaylist,
-                        onPlayItem = onPlayItem,
-                        onMoveToTop = onMoveToTop,
-                        onRemoveFromPlaylist = onRemoveFromPlaylist
-                    )
-                }
+
+                // 播放列表区域：位于主界面下方
+                PlaylistArea(
+                    expanded = playlistExpanded,
+                    playlist = playlist,
+                    currentIndex = currentIndex,
+                    scrollState = scrollState,
+                    onClearPlaylist = onClearPlaylist,
+                    onPlayItem = onPlayItem,
+                    onMoveToTop = onMoveToTop,
+                    onRemoveFromPlaylist = onRemoveFromPlaylist
+                )
             }
             if (showTimerDialog) {
                 TimerDialog(
-                    onDismiss = { showTimerDialog = false },
+                    onDismiss = { },
                     onConfirm = { minutes: Int ->
                         if(minutes==0){
                             onCancelTimer()
                         }else{
                             onTimerClick(minutes)
                         }
-                        showTimerDialog = false
                     }
                 )
             }
@@ -241,7 +265,7 @@ fun PlayerHeader(onBackClick: () -> Unit) {
             Icon(
                 painter = painterResource(R.drawable.chevron_down),
                 tint = MaterialTheme.colorScheme.onSurface,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.back),
                 modifier = Modifier.size(24.dp),
             )
         }
@@ -293,22 +317,18 @@ fun MusicInfoExtra(
     lyrics: String?,
     currentPosition: Long,
     onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val contents = listOf<@Composable () -> Unit>(
         { LabelsCapsule(musicInfo.extra,labels) },
-        { AlbumCover(musicInfo.music.albumArtUri, Arrangement.Center,300) },
-        { Lyrics(lyrics, currentPosition, onSeek = onSeek) }
+        { AlbumCover(musicInfo.music.albumArtUri, 300.dp, 20.dp, 10.dp) },
+        { AdvancedLyrics(lyrics, currentPosition, modifier = Modifier, onSeek = onSeek) }
     )
-    Row (
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ){
-        DotPager(
-            modifier = Modifier.size(340.dp,420.dp),
-            pageContent = contents,
-            initialPage = 1
-        )
-    }
+    DotPager(
+        modifier = modifier.fillMaxWidth(),
+        pageContent = contents,
+        initialPage = 1
+    )
 }
 
 // 音乐进度条和时间显示
@@ -371,7 +391,7 @@ fun SeekBar(
                     modifier = Modifier
                         .size(4.dp)
                         .background(
-                            color = Color.Transparent,
+                            color = Transparent,
                         )
                 )
             }
@@ -397,11 +417,12 @@ fun SeekBar(
 
 // 播放控制按钮（上一首、播放/暂停、下一首）
 @Composable
-fun PlaybackControls(
+fun PlaybackControlsButtons(
     isPlaying: Boolean,
     playbackMode: PlaybackMode,
     isLike: Boolean,
     remainingTime: Long?,
+    playlistExpanded: Boolean,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -409,65 +430,9 @@ fun PlaybackControls(
     onFavorite: () -> Unit,
     onTimerClick: () -> Unit,
     onHeartMode: () -> Unit,
-    scrollState: ScrollState,
-    playlist: List<MusicInfo>,
-    currentIndex: Int,
-    onClearPlaylist: () -> Unit,
-    onPlayItem: suspend (MusicInfo) -> Unit,
-    onMoveToTop: (MusicInfo) -> Unit,
-    onRemoveFromPlaylist: (MusicInfo) -> Unit
+    onPlaylistToggle: () -> Unit
 ) {
-    var playlistExpanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
-    val listState = rememberLazyListState()
-    val density = LocalDensity.current
-    val coroutineScope = rememberCoroutineScope()
-    
-    // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿
-    LaunchedEffect(playlist.size, currentIndex) {
-        // 当播放列表数据变化时，在后台更新 listState，但不滚动
-        // 这样首次展开时已经有缓存的状态
-        if (playlist.isNotEmpty() && !playlistExpanded) {
-            // 静默地准备好位置，不执行动画
-            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
-        }
-    }
-    
-    // 监听播放模式变化，当模式改变时重新定位当前播放歌曲
-    LaunchedEffect(playbackMode, playlist.size) {
-        if (playlist.isNotEmpty() && playlistExpanded) {
-            // 短暂延迟后重新定位当前播放项，确保列表已更新
-            delay(100)
-            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
-        }
-    }
-    
-    // 当播放列表展开时，滚动页面使播放列表底部与屏幕底部对齐
-    LaunchedEffect(playlistExpanded) {
-        if (playlistExpanded) {
-            // 步骤1：等待播放列表区域完全展开（减少等待时间，让动画更流畅）
-            delay(320) // expandVertically动画默认300ms + 20ms缓冲
-            
-            // 步骤2：滚动页面到底部，使播放列表底部与屏幕底部对齐
-            val playlistHeightPx = with(density) { 560.dp.toPx() }
-            val targetScroll = (scrollState.value + playlistHeightPx).toInt()
-            scrollState.animateScrollTo(
-                value = targetScroll.coerceAtMost(scrollState.maxValue),
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = FastOutSlowInEasing
-                )
-            )
-            
-            // 步骤3：页面滚动开始后稍等片刻，定位当前播放项（与滚动动画并行，体验更流畅）
-            if (playlist.isNotEmpty()) {
-                delay(150) // 短暂延迟后立即开始定位，与页面滚动形成流畅过渡
-                listState.animateScrollToItem(
-                    index = currentIndex.coerceIn(0, playlist.lastIndex),
-                )
-            }
-        }
-    }
     
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -479,27 +444,36 @@ fun PlaybackControls(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onPrevious,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.backward_end_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Previous",
+                    contentDescription = stringResource(R.string.previous),
                 )
             }
 
-            IconButton(onClick = onPlayPause, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onPlayPause,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Play / Pause",
+                    contentDescription = stringResource(R.string.play_pause),
                 )
             }
 
-            IconButton(onClick = onNext, modifier = Modifier.size(72.dp)) {
+            IconButton(
+                onClick = onNext,
+                modifier = Modifier.size(72.dp)
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.forward_end_fill),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Next",
+                    contentDescription = stringResource(R.string.next),
                 )
             }
         }
@@ -523,7 +497,7 @@ fun PlaybackControls(
                         }
                     ),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "Playback Mode"
+                    contentDescription = stringResource(R.string.playback_mode),
                 )
             }
 
@@ -536,25 +510,17 @@ fun PlaybackControls(
                     isLiked = !isLiked
                 },
             ) {
-                if (isLiked) {
-                    Icon(
-                        painter = painterResource(R.drawable.heart_fill),
-                        contentDescription = "Favorite",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }else{
-                    Icon(
-                        painter = painterResource(R.drawable.heart),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Favorite",
-                    )
-                }
+                Icon(
+                    painter = painterResource(if (isLiked) R.drawable.heart_fill else R.drawable.heart),
+                    contentDescription = stringResource(R.string.favorite),
+                    tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
             }
             IconButton(onClick = onHeartMode) {
                 Icon(
                     painter = painterResource(R.drawable.identify_song),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = "RecommendationMode"
+                    contentDescription = stringResource(R.string.recommendation_mode),
                 )
             }
             if(remainingTime == null){
@@ -562,12 +528,12 @@ fun PlaybackControls(
                     Icon(
                         painter = painterResource(R.drawable.timer),
                         tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Timer.kt"
+                        contentDescription = stringResource(R.string.sleep_timer),
                     )
                 }
             } else{
                 Text(
-                    text = formatTime(remainingTime),  // 使用 formatTime 函数
+                    text = formatTime(remainingTime),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.clickable { onTimerClick() },
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -577,7 +543,7 @@ fun PlaybackControls(
             IconButton(
                 onClick = {
                     haptic.performClick()
-                    playlistExpanded = !playlistExpanded
+                    onPlaylistToggle()
                 }
             ) {
                 Icon(
@@ -585,100 +551,142 @@ fun PlaybackControls(
                     painter = painterResource(
                         if (playlistExpanded) R.drawable.chevron_up_circle else R.drawable.music_note_list
                     ),
-                    contentDescription = "Playlist"
+                    contentDescription = stringResource(R.string.playlist),
                 )
             }
         }
-        
-        // 可展开的播放列表区域
-        AnimatedVisibility(
-            visible = playlistExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+    }
+}
+
+// 播放列表区域组件
+@Composable
+fun PlaylistArea(
+    expanded: Boolean,
+    playlist: List<MusicInfo>,
+    currentIndex: Int,
+    scrollState: ScrollState,
+    onClearPlaylist: () -> Unit,
+    onPlayItem: suspend (MusicInfo) -> Unit,
+    onMoveToTop: (MusicInfo) -> Unit,
+    onRemoveFromPlaylist: (MusicInfo) -> Unit
+) {
+    val haptic = rememberHapticFeedback()
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿
+    LaunchedEffect(playlist.size, currentIndex) {
+        if (playlist.isNotEmpty() && !expanded) {
+            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
+        }
+    }
+    
+    // 当播放列表展开时，滚动页面使播放列表底部与屏幕底部对齐
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            delay(320)
+            val playlistHeightPx = with(density) { 560.dp.toPx() }
+            val targetScroll = (scrollState.value + playlistHeightPx).toInt()
+            scrollState.animateScrollTo(
+                value = targetScroll.coerceAtMost(scrollState.maxValue),
+                animationSpec = tween(
+                    durationMillis = 400,
+                    easing = FastOutSlowInEasing
+                )
+            )
+            
+            if (playlist.isNotEmpty()) {
+                delay(150)
+                listState.animateScrollToItem(
+                    index = currentIndex.coerceIn(0, playlist.lastIndex),
+                )
+            }
+        }
+    }
+
+    AnimatedVisibility(
+        visible = expanded,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(start = 16.dp, end = 32.dp, top = 12.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 顶部显示总数和当前序号，及清空按钮
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 32.dp, top = 12.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 清空列表按钮
-                    TextButton(
-                        onClick = {
-                            haptic.performLightClick()
-                            onClearPlaylist()
-                        }
-                    ) {
-                        Text(
-                            text = "清空",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                TextButton(
+                    onClick = {
+                        haptic.performLightClick()
+                        onClearPlaylist()
                     }
-
+                ) {
                     Text(
-                        text = "${currentIndex + 1}/${playlist.size}",
+                        text = stringResource(R.string.clear),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
-                
-                // 播放列表内容（禁用嵌套滚动，避免触发播放页下拉）
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(500.dp)
-                        .padding(horizontal = 16.dp)
-                        .nestedScroll(remember {
-                            // 只消耗向父级传递的滚动事件，不影响 LazyColumn 内部滚动
-                            object : NestedScrollConnection {
-                                override fun onPostScroll(
-                                    consumed: Offset,
-                                    available: Offset,
-                                    source: NestedScrollSource
-                                ): Offset {
-                                    // 消耗所有剩余的滚动事件，防止传递给父级
-                                    // available 是 LazyColumn 没有消耗的部分
-                                    return available
-                                }
+
+                Text(
+                    text = "${currentIndex + 1}/${playlist.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(500.dp)
+                    .padding(horizontal = 16.dp)
+                    .nestedScroll(remember {
+                        object : NestedScrollConnection {
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
+                                return available
                             }
-                        })
-                ) {
-                    itemsIndexed(
-                        items = playlist,
-                        key = { _, item -> item.music.id } // 使用唯一 key 优化重组性能
-                    ) { index, musicInfo ->
-                        PlaylistItem(
-                            musicInfo = musicInfo,
-                            isCurrentPlaying = index == currentIndex,
-                            index = index + 1,
-                            onItemClick = {
-                                haptic.performClick()
-                                coroutineScope.launch {
-                                    onPlayItem(musicInfo)
-                                }
-                            },
-                            onPinClick = {
-                                haptic.performConfirm()
-                                onMoveToTop(musicInfo)
-                            },
-                            onRemoveClick = {
-                                haptic.performLightClick()
-                                onRemoveFromPlaylist(musicInfo)
+                        }
+                    })
+            ) {
+                itemsIndexed(
+                    items = playlist,
+                    key = { index, item -> "${item.music.id}_$index" }
+                ) { index, musicInfo ->
+                    PlaylistItem(
+                        musicInfo = musicInfo,
+                        isCurrentPlaying = index == currentIndex,
+                        index = index + 1,
+                        onItemClick = {
+                            haptic.performClick()
+                            coroutineScope.launch {
+                                onPlayItem(musicInfo)
                             }
-                        )
-                    }
+                        },
+                        onPinClick = {
+                            haptic.performConfirm()
+                            onMoveToTop(musicInfo)
+                        },
+                        onRemoveClick = {
+                            haptic.performLightClick()
+                            onRemoveFromPlaylist(musicInfo)
+                        }
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(64.dp))
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -701,7 +709,7 @@ fun PlaylistItem(
                 if (isCurrentPlaying) 
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 else 
-                    Color.Transparent,
+                    Transparent,
                 shape = RoundedCornerShape(12.dp) // 圆角背景
             )
             .padding(vertical = 8.dp, horizontal = 8.dp),
@@ -725,7 +733,7 @@ fun PlaylistItem(
                 placeholder = painterResource(R.drawable.none),
                 error = painterResource(R.drawable.none)
             ),
-            contentDescription = "Album art",
+            contentDescription = stringResource(R.string.album_art),
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp)),
@@ -766,7 +774,7 @@ fun PlaylistItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.chevron_up_circle),
-                    contentDescription = "Pin to top",
+                    contentDescription = stringResource(R.string.pin_to_top),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -779,7 +787,7 @@ fun PlaylistItem(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.trash),
-                    contentDescription = "Remove",
+                    contentDescription = stringResource(R.string.remove),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

@@ -40,7 +40,8 @@ fun EqualizerPresetSelector(
     onPresetSelected: (Int) -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 将预设列表分成两行
@@ -250,13 +251,32 @@ fun CustomEqualizer(
     }
     
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 均衡器滑块区域
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            for (i in 0 until bandCount) {
+                EqualizerBand(
+                    bandIndex = i,
+                    frequencyLabel = frequencyLabels.getOrElse(i) { "${i + 1}" },
+                    currentLevel = currentBandLevels.getOrElse(i) { 0f },
+                    levelRange = bandLevelRange,
+                    onLevelChanged = { level -> onBandLevelChanged(i, level) }
+                )
+            }
+        }
         // 重置全部按钮
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
             Box(
                 modifier = Modifier
@@ -275,25 +295,6 @@ fun CustomEqualizer(
                     text = "重置全部",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        
-        // 均衡器滑块区域
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            for (i in 0 until bandCount) {
-                EqualizerBand(
-                    bandIndex = i,
-                    frequencyLabel = frequencyLabels.getOrElse(i) { "${i + 1}" },
-                    currentLevel = currentBandLevels.getOrElse(i) { 0f },
-                    levelRange = bandLevelRange,
-                    onLevelChanged = { level -> onBandLevelChanged(i, level) }
                 )
             }
         }

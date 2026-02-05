@@ -50,24 +50,34 @@ fun generateDynamicColorScheme(
     isDarkTheme: Boolean
 ): ColorScheme {
     return if (isDarkTheme) {
-        // 暗色主题 - 只替换primary相关颜色
+        // 暗色主题 - 使用亮色系作为强调色
+        val primary = paletteColors.lightVibrantColor
+        val secondary = paletteColors.vibrantColor
+
         darkColorScheme(
-            primary = paletteColors.dominantColor,
-            primaryContainer = paletteColors.dominantColor.copy(alpha = 0.12f),
-            onPrimary = paletteColors.primaryColor,
-            onPrimaryContainer = paletteColors.dominantColor.copy(alpha = 0.87f),
-            secondary = paletteColors.vibrantColor,
-            onSecondary = paletteColors.primaryColor,
+            primary = primary,
+            primaryContainer = paletteColors.darkMutedColor.copy(alpha = 0.5f),
+            onPrimary = androidx.compose.ui.graphics.Color.Black,
+            onPrimaryContainer = paletteColors.lightVibrantColor,
+            secondary = secondary,
+            onSecondary = androidx.compose.ui.graphics.Color.Black,
+            background = DarkBackground,
+            surface = DarkSurface
         )
     } else {
-        // 亮色主题 - 只替换primary相关颜色
+        // 亮色主题 - 使用深色系作为强调色
+        val primary = paletteColors.darkVibrantColor
+        val secondary = paletteColors.vibrantColor
+
         lightColorScheme(
-            primary = paletteColors.dominantColor,
-            primaryContainer = paletteColors.dominantColor.copy(alpha = 0.12f),
-            onPrimary = paletteColors.primaryColor,
-            onPrimaryContainer = paletteColors.dominantColor.copy(alpha = 0.87f),
-            secondary = paletteColors.vibrantColor,
-            onSecondary = paletteColors.primaryColor,
+            primary = primary,
+            primaryContainer = paletteColors.lightMutedColor.copy(alpha = 0.5f),
+            onPrimary = androidx.compose.ui.graphics.Color.White,
+            onPrimaryContainer = paletteColors.darkVibrantColor,
+            secondary = secondary,
+            onSecondary = androidx.compose.ui.graphics.Color.White,
+            background = LightBackground,
+            surface = LightSurface
         )
     }
 }

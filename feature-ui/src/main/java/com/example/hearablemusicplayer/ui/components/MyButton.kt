@@ -21,15 +21,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,16 +40,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -143,16 +142,16 @@ fun PlayControlButtonOne(
                 color = Transparent,
             ) {
                 val genres = listOf(
-                    "歌曲名" to "title",
-                    "歌手名" to "artist",
-                    "时长" to "duration",
-                    "大小" to "fileSize",
-                    "播放次数" to "playCount",
-                    "添加时间" to "id"
+                    stringResource(R.string.sort_title) to "title",
+                    stringResource(R.string.sort_artist) to "artist",
+                    stringResource(R.string.sort_duration) to "duration",
+                    stringResource(R.string.sort_size) to "fileSize",
+                    stringResource(R.string.sort_play_count) to "playCount",
+                    stringResource(R.string.sort_add_time) to "id"
                 )
                 val orders = listOf(
-                    "升序" to "ASC",
-                    "降序" to "DESC"
+                    stringResource(R.string.order_asc) to "ASC",
+                    stringResource(R.string.order_desc) to "DESC"
                 )
                 Column(
                     modifier = Modifier.padding(8.dp),
@@ -164,7 +163,7 @@ fun PlayControlButtonOne(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "排序",
+                            text = stringResource(R.string.sort),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp)
@@ -197,7 +196,7 @@ fun PlayControlButtonOne(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "方式",
+                            text = stringResource(R.string.order),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp)
@@ -287,17 +286,22 @@ fun BackButton(
     onClick: () -> Unit
 ){
     val haptic = rememberHapticFeedback()
-    IconButton(
+    FilledIconButton(
         onClick = {
             haptic.performClick()
             onClick()
         },
+        modifier = Modifier
+            .size(32.dp), // Larger touch target
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
         Icon(
-            painter = painterResource(R.drawable.back_to),
-            tint= MaterialTheme.colorScheme.onSurface,
+            painter = painterResource(id = R.drawable.chevron_left),
             contentDescription = "Back Button",
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(24.dp)
         )
     }
 }
@@ -317,17 +321,22 @@ fun SearchButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        IconButton(
+        FilledIconButton(
             onClick = {
-                    haptic.performClick()
-                    navController.navigate(Routes.SEARCH)
-                },
+                haptic.performClick()
+                navController.navigate(Routes.Search)
+            },
+            modifier = Modifier
+                .size(48.dp), // Larger touch target
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
         ) {
             Icon(
-                painter = painterResource(R.drawable.magnifyingglass),
-                tint = MaterialTheme.colorScheme.onSurface,
+                painter = painterResource(id = R.drawable.magnifyingglass),
                 contentDescription = "Search Button",
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(28.dp)
             )
         }
     }

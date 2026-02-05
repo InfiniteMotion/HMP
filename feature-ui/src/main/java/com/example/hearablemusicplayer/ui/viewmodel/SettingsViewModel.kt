@@ -2,9 +2,13 @@ package com.example.hearablemusicplayer.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.unit.sp
 import com.example.hearablemusicplayer.domain.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.model.DisplayMode
+import com.example.hearablemusicplayer.domain.model.LyricsConfig
 import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
+import com.example.hearablemusicplayer.domain.usecase.settings.LyricsSettingsUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val userSettingsUseCase: UserSettingsUseCase,
+    private val lyricsSettingsUseCase: LyricsSettingsUseCase,
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase
 ) : ViewModel() {
     
@@ -24,6 +29,8 @@ class SettingsViewModel @Inject constructor(
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
     val userName = userSettingsUseCase.userName
     val customMode = userSettingsUseCase.customMode
+    val backgroundStyle = userSettingsUseCase.backgroundStyle
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FLUID")
     
     private val _avatarUri = MutableStateFlow("")
     val avatarUri: StateFlow<String> = _avatarUri
@@ -49,6 +56,12 @@ class SettingsViewModel @Inject constructor(
     fun saveCustomMode(mode: String) {
         viewModelScope.launch {
             userSettingsUseCase.saveThemeMode(mode)
+        }
+    }
+
+    fun saveBackgroundStyle(style: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveBackgroundStyle(style)
         }
     }
     
@@ -115,6 +128,89 @@ class SettingsViewModel @Inject constructor(
     
     private val _isTestingApi = MutableStateFlow(false)
     val isTestingApi: StateFlow<Boolean> = _isTestingApi
+    
+    // ==================== 歌词配置相关 ====================
+    
+    // 文本大小配置
+    val lyricsOriginalTextSize = lyricsSettingsUseCase.originalTextSize
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 14)
+    
+    val lyricsTranslatedTextSize = lyricsSettingsUseCase.translatedTextSize
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 14)
+    
+    val lyricsCurrentTimeTextSize = lyricsSettingsUseCase.currentTimeTextSize
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 16)
+    
+    // 间距配置
+    val lyricsLineSpacing = lyricsSettingsUseCase.lineSpacing
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 6)
+    
+    // 显示模式配置
+    val lyricsDisplayMode = lyricsSettingsUseCase.displayMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DisplayMode.DUAL)
+    
+    // ==================== 歌词配置操作方法 ====================
+    
+    fun saveLyricsOriginalTextSize(size: Int) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveOriginalTextSize(size)
+        }
+    }
+    
+    fun saveLyricsTranslatedTextSize(size: Int) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveTranslatedTextSize(size)
+        }
+    }
+    
+    fun saveLyricsCurrentTimeTextSize(size: Int) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveCurrentTimeTextSize(size)
+        }
+    }
+    
+    fun saveLyricsLineSpacing(spacing: Int) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveLineSpacing(spacing)
+        }
+    }
+    
+    fun saveLyricsDisplayMode(mode: DisplayMode) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveDisplayMode(mode)
+        }
+    }
+    
+    /**
+     * 获取完整的歌词配置
+     */
+    fun getLyricsConfig(): LyricsConfig {
+        return LyricsConfig(
+            originalTextSize = lyricsOriginalTextSize.value,
+            translatedTextSize = lyricsTranslatedTextSize.value,
+            currentTimeTextSize = lyricsCurrentTimeTextSize.value,
+            lineSpacing = lyricsLineSpacing.value,
+            displayMode = lyricsDisplayMode.value
+        )
+    }
+    
+    /**
+     * 保存完整的歌词配置
+     */
+    fun saveLyricsConfig(config: LyricsConfig) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveLyricsConfig(config)
+        }
+    }
+    
+    /**
+     * 重置歌词配置为默认值
+     */
+    fun resetLyricsConfig() {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.resetToDefault()
+        }
+    }
     
     fun testAiProviderConnection(provider: AiProviderType, apiKey: String, model: String) {
         viewModelScope.launch {

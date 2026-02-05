@@ -9,21 +9,29 @@ import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.domain.model.MusicLabel
 import com.example.hearablemusicplayer.domain.usecase.music.GetAllMusicUseCase
 import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
+import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.settings.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
+import com.example.hearablemusicplayer.ui.util.Routes
 import javax.inject.Inject
 
 @HiltViewModel
 class RecommendationViewModel @Inject constructor(
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
     private val getAllMusicUseCase: GetAllMusicUseCase,
-    private val userSettingsUseCase: UserSettingsUseCase
+    private val userSettingsUseCase: UserSettingsUseCase,
+    private val currentPlaybackUseCase: CurrentPlaybackUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     // 每日推荐歌曲
@@ -32,6 +40,10 @@ class RecommendationViewModel @Inject constructor(
     val dailyMusicInfo: StateFlow<DailyMusicInfo?> = _dailyMusicInfo
     private val _dailyMusicLabel = MutableStateFlow<List<MusicLabel?>>(emptyList())
     val dailyMusicLabel: StateFlow<List<MusicLabel?>> = _dailyMusicLabel
+
+    // 心动歌单（相似歌曲）
+    private val _heartbeatList = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val heartbeatList: StateFlow<List<MusicInfo>> = _heartbeatList
     
     // 待处理音乐数量
     val pendingMusicCount: StateFlow<Int> = getAllMusicUseCase
@@ -200,8 +212,35 @@ class RecommendationViewModel @Inject constructor(
     }
     
     init {
+        // 尝试从路由参数加载歌曲详情（如果是从 SongDetail 路由进入）
+        try {
+            val songDetail = savedStateHandle.toRoute<Routes.SongDetail>()
+            loadSongById(songDetail.musicId)
+        } catch (e: Exception) {
+            // 不是从 SongDetail 进入，忽略
+        }
+        
         getDailyRecommendationUseCase.resetProcessingState()
         _isProcessingExtraInfo.value = false
         _processingProgress.value = BatchProcessingProgress()
+        
+        // 监听每日推荐变化，自动获取相似歌曲
+        viewModelScope.launch {
+            dailyMusic.filterNotNull().collectLatest { music ->
+                _heartbeatList.value = listOf(music) +
+                        currentPlaybackUseCase.getSimilarSongsByWeightedLabels(music.music.id, 10)
+            }
+        }
+    }
+
+    fun loadSongById(musicId: Long) {
+        viewModelScope.launch {
+            val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(musicId)
+            if (recommendation?.musicInfo != null) {
+                dailyMusic.value = recommendation.musicInfo
+                _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                _dailyMusicLabel.value = recommendation.labels
+            }
+        }
     }
 }
