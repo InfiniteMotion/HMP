@@ -39,7 +39,6 @@ class SettingsRepositoryImpl @Inject constructor(
         val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
         val IS_LOAD_MUSIC = booleanPreferencesKey("is_load_music")
         val CURRENT_MUSIC_ID = longPreferencesKey("current_music_id")
-        val PLAYBACK_MODE = stringPreferencesKey("playback_mode")
         val CURRENT_PLAYLIST_ID = longPreferencesKey("current_playlist_id")
         val LIKED_PLAYLIST_ID = longPreferencesKey("liked_playlist_id")
         val RECENT_PLAYLIST_ID = longPreferencesKey("recent_playlist_id")
@@ -112,14 +111,6 @@ class SettingsRepositoryImpl @Inject constructor(
     // 当前正在播放的音乐 ID,如果未设置则为 null
     override val currentMusicId: Flow<Long?> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.CURRENT_MUSIC_ID] }
-
-    // 播放模式(SEQUENTIAL、REPEAT_ONE、SHUFFLE),存储为字符串
-    override val playbackMode: Flow<PlaybackMode> = dataStore.data
-        .map { prefs ->
-            prefs[PreferencesKeys.PLAYBACK_MODE]?.let {
-                try { PlaybackMode.valueOf(it) } catch (e: IllegalArgumentException) { null }
-            } ?: PlaybackMode.SEQUENTIAL  // 默认值
-        }
 
     // 当前播放列表 ID,用于恢复列表上下文
     override val currentPlaylistId: Flow<Long?> = dataStore.data
@@ -228,13 +219,6 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveCurrentMusicId(id: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_MUSIC_ID] = id
-        }
-    }
-
-    // 保存播放模式
-    override suspend fun savePlaybackMode(mode: PlaybackMode) {
-        dataStore.edit { prefs ->
-            prefs[PreferencesKeys.PLAYBACK_MODE] = mode.name
         }
     }
 
@@ -591,9 +575,7 @@ class SettingsRepositoryImpl @Inject constructor(
                         PreferencesKeys.CURRENT_MUSIC_ID.name -> {
                             prefs[PreferencesKeys.CURRENT_MUSIC_ID] = value.toLong()
                         }
-                        PreferencesKeys.PLAYBACK_MODE.name -> {
-                            prefs[PreferencesKeys.PLAYBACK_MODE] = value.trim('"')
-                        }
+
                         PreferencesKeys.CURRENT_PLAYLIST_ID.name -> {
                             prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] = value.toLong()
                         }

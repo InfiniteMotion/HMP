@@ -4,7 +4,6 @@ import com.example.hearablemusicplayer.domain.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
 import com.example.hearablemusicplayer.domain.model.DisplayMode
 import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -31,9 +30,6 @@ interface SettingsRepository {
     // Playback State
     val currentMusicId: Flow<Long?>
     suspend fun saveCurrentMusicId(id: Long)
-    
-    val playbackMode: Flow<PlaybackMode>
-    suspend fun savePlaybackMode(mode: PlaybackMode)
     
     val currentPlaylistId: Flow<Long?>
     suspend fun saveCurrentPlaylistId(playlistId: Long)
@@ -130,7 +126,7 @@ interface SettingsRepository {
     suspend fun getCurrentDailyMusicId(): Long?
     
     // Backup / Restore
-    suspend fun backupSettings(): kotlin.Result<File>
-    suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit>
-    suspend fun cleanOldBackups(keepCount: Int = 3): kotlin.Result<Unit>
+    suspend fun backupSettings(): Result<File>
+    suspend fun restoreSettings(backupFile: File): Result<Unit>
+    suspend fun cleanOldBackups(keepCount: Int = 3): Result<Unit>
 }

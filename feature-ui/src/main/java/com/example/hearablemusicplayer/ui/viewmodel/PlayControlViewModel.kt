@@ -114,7 +114,7 @@ class PlayControlViewModel @Inject constructor(
     // Delegated Methods
     fun playOrResume() = musicController.playOrResume()
     fun pauseMusic() = musicController.pauseMusic()
-    fun playNext(forceChange: Boolean = true) = musicController.playNext(forceChange)
+    fun playNext() = musicController.playNext()
     fun playPrevious() = musicController.playPrevious()
     fun seekTo(position: Long) = musicController.seekTo(position)
     fun togglePlaybackModeByOrder() = musicController.togglePlaybackModeByOrder()

@@ -104,7 +104,7 @@ fun DynamicBackground(
              Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(Color.White.copy(alpha = 0.3f))
             )
         }
     }
@@ -200,7 +200,7 @@ fun FluidBackground(
         )
 
         // 图片透明度控制 - 亮色模式提升透明度，防止太淡
-        val imageAlpha = if (isDarkTheme) 0.6f else 0.6f
+        val imageAlpha = if (isDarkTheme) 0.6f else 0.4f
         
         // 增加饱和度和对比度的矩阵
         val colorMatrix = ColorMatrix().apply {

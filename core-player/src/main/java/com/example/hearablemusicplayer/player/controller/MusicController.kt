@@ -15,7 +15,6 @@ import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.repository.SettingsRepository
 import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackModeUseCase
 import com.example.hearablemusicplayer.domain.usecase.playback.TimerUseCase
 import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.player.service.MusicPlayService
@@ -50,7 +49,6 @@ import javax.inject.Singleton
 class MusicController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val currentPlaybackUseCase: CurrentPlaybackUseCase,
-    private val playbackModeUseCase: PlaybackModeUseCase,
     private val playbackHistoryUseCase: PlaybackHistoryUseCase,
     private val timerUseCase: TimerUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
@@ -71,9 +69,7 @@ class MusicController @Inject constructor(
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val service = (binder as? MusicPlayService.MusicPlayServiceBinder)?.getService()
             if (service != null) {
-                if (service is MusicPlayService) {
-                    activityClass?.let { service.setMainActivityClass(it) }
-                }
+                activityClass?.let { service.setMainActivityClass(it) }
                 bindPlayControl(service)
             }
         }
@@ -225,18 +221,6 @@ class MusicController @Inject constructor(
                     }
                 }
         }
-
-        // Watch Playback Mode
-        scope.launch {
-            playbackModeUseCase.playbackMode
-                .filterNotNull()
-                .collectLatest { mode ->
-                    _playbackMode.value = mode
-                    updateCurrentPlaylist()
-                }
-        }
-        
-        // Watch Current Music for preload info
         scope.launch {
             currentPlayingMusic
                 .filterNotNull()
@@ -253,7 +237,9 @@ class MusicController @Inject constructor(
             val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
             _originalPlaylist = list
             _currentPlaylist.value = list
+            _playbackMode.value = PlaybackMode.SEQUENTIAL
             _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
+            _shuffledPlaylist = null
         } catch (e: Exception) {
             // Ignore
         }
@@ -371,13 +357,12 @@ class MusicController @Inject constructor(
         val currentTrack = currentPlayingMusic.value
         _currentPlaylist.value = when (_playbackMode.value) {
             PlaybackMode.SHUFFLE -> {
-                if (_shuffledPlaylist == null) {
-                    _shuffledPlaylist = _originalPlaylist.shuffled()
-                }
+                _shuffledPlaylist = _originalPlaylist.shuffled()
                 _shuffledPlaylist!!
             }
             else -> _originalPlaylist
         }
+        persistCurrentPlaylistToDatabase()
         _currentIndex.value = currentTrack?.let { track ->
             _currentPlaylist.value.indexOfFirst { it.music.id == track.music.id }
         }?.takeIf { it >= 0 } ?: 0
@@ -385,10 +370,6 @@ class MusicController @Inject constructor(
 
     private fun togglePlaybackMode(newMode: PlaybackMode) {
         _playbackMode.value = newMode
-        scope.launch {
-            playbackModeUseCase.savePlaybackMode(newMode)
-        }
-        _shuffledPlaylist = null
         updateCurrentPlaylist()
     }
 
@@ -423,9 +404,9 @@ class MusicController @Inject constructor(
         persistCurrentPlaylistToDatabase()
     }
 
-    fun playNext(forceChange: Boolean = true) = scope.launch {
+    fun playNext() = scope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
-        if (forceChange || _playbackMode.value != PlaybackMode.REPEAT_ONE) {
+        if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
             _currentIndex.value = (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
         }
         playCurrentTrack("Next")
@@ -433,8 +414,9 @@ class MusicController @Inject constructor(
 
     fun playPrevious() = scope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
-        val size = _currentPlaylist.value.size
-        _currentIndex.value = (_currentIndex.value - 1 + size).mod(size)
+        if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
+            _currentIndex.value = (_currentIndex.value - 1).mod(_currentPlaylist.value.size)
+        }
         playCurrentTrack("Previous")
     }
 
@@ -450,11 +432,11 @@ class MusicController @Inject constructor(
         playStartTime = System.currentTimeMillis()
         lastDurationRecordTime = playStartTime
         
-        playNext(forceChange = false)
+        playNext()
     }
 
     override fun onPlaybackNext() {
-        playNext(forceChange = true)
+        playNext()
     }
 
     override fun onPlaybackPrev() {
@@ -465,7 +447,7 @@ class MusicController @Inject constructor(
         _isPlaying.value = isPlaying
     }
 
-    private suspend fun playCurrentTrack(source: String) {
+    private fun playCurrentTrack(source: String) {
         if (playControl == null) {
             Log.e("MusicController", "playCurrentTrack: playControl is null")
             return
@@ -650,8 +632,7 @@ class MusicController @Inject constructor(
         scope.launch {
             try {
                 val playlistId = currentPlayListId.filterNotNull().first()
-                val playlist = _originalPlaylist
-                managePlaylistUseCase.resetPlaylistItems(playlistId, playlist)
+                managePlaylistUseCase.resetPlaylistItems(playlistId, _currentPlaylist.value)
             } catch (e: Exception) {
                 // Ignore
             }

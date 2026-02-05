@@ -243,8 +243,4 @@ class RecommendationViewModel @Inject constructor(
             }
         }
     }
-    
-    fun selectSong(musicInfo: MusicInfo) {
-        loadSongById(musicInfo.music.id)
-    }
 }

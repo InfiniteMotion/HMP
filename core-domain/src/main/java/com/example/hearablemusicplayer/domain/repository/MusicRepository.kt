@@ -41,7 +41,7 @@ interface MusicRepository {
     suspend fun getMusicExtraById(musicId: Long): DailyMusicInfo
     
     // Device Scan
-    suspend fun loadMusicFromDevice(): kotlin.Result<Unit>
+    suspend fun loadMusicFromDevice(): Result<Unit>
     val isScanning: Flow<Boolean>
     
     // AI / Extra Fetching
@@ -49,9 +49,9 @@ interface MusicRepository {
         providerConfig: AiProviderConfig,
         title: String,
         artist: String
-    ): kotlin.Result<DailyMusicInfo>
+    ): Result<DailyMusicInfo>
     
-    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): kotlin.Result<Boolean>
+    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean>
     
     // Listening Duration
     suspend fun insertPlayback(history: PlaybackHistory)

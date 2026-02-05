@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -204,6 +203,7 @@ private fun AdvancedLyricItem(
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier
@@ -213,6 +213,7 @@ private fun AdvancedLyricItem(
                         Text(
                             text = lyricLine.originalText,
                             textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier
@@ -222,6 +223,7 @@ private fun AdvancedLyricItem(
                         Text(
                             text = lyricLine.translatedText,
                             textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = translatedTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier
