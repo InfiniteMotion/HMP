@@ -1,14 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 package com.example.hearablemusicplayer.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,29 +24,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import coil.compose.rememberAsyncImagePainter
 import com.example.hearablemusicplayer.domain.model.Music
 import com.example.hearablemusicplayer.domain.model.MusicInfo
 import com.example.hearablemusicplayer.domain.model.MusicLabel
@@ -68,8 +46,6 @@ import com.example.hearablemusicplayer.ui.R
 import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 // 格式化时间为 mm:ss
 fun formatTime(millis: Long): String {
@@ -539,244 +515,6 @@ fun PlaybackControlsButtons(
                         if (playlistExpanded) R.drawable.chevron_up_circle else R.drawable.music_note_list
                     ),
                     contentDescription = stringResource(R.string.playlist),
-                )
-            }
-        }
-    }
-}
-
-// 播放列表区域组件
-@Composable
-fun PlaylistArea(
-    expanded: Boolean,
-    playlist: List<MusicInfo>,
-    currentIndex: Int,
-    scrollState: ScrollState,
-    onClearPlaylist: () -> Unit,
-    onPlayItem: suspend (MusicInfo) -> Unit,
-    onMoveToTop: (MusicInfo) -> Unit,
-    onRemoveFromPlaylist: (MusicInfo) -> Unit
-) {
-    val haptic = rememberHapticFeedback()
-    val listState = rememberLazyListState()
-    val density = LocalDensity.current
-    val coroutineScope = rememberCoroutineScope()
-
-    // 预加载：提前准备好播放列表的初始状态，避免首次展开卡顿
-    LaunchedEffect(playlist.size, currentIndex) {
-        if (playlist.isNotEmpty() && !expanded) {
-            listState.scrollToItem(currentIndex.coerceIn(0, playlist.lastIndex))
-        }
-    }
-    
-    // 当播放列表展开时，滚动页面使播放列表底部与屏幕底部对齐
-    LaunchedEffect(expanded) {
-        if (expanded) {
-            delay(320)
-            val playlistHeightPx = with(density) { 560.dp.toPx() }
-            val targetScroll = (scrollState.value + playlistHeightPx).toInt()
-            scrollState.animateScrollTo(
-                value = targetScroll.coerceAtMost(scrollState.maxValue),
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = FastOutSlowInEasing
-                )
-            )
-            
-            if (playlist.isNotEmpty()) {
-                delay(150)
-                listState.animateScrollToItem(
-                    index = currentIndex.coerceIn(0, playlist.lastIndex),
-                )
-            }
-        }
-    }
-
-    AnimatedVisibility(
-        visible = expanded,
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 32.dp, top = 12.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = {
-                        haptic.performLightClick()
-                        onClearPlaylist()
-                    }
-                ) {
-                    Text(
-                        text = stringResource(R.string.clear),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Text(
-                    text = "${currentIndex + 1}/${playlist.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(500.dp)
-                    .padding(horizontal = 16.dp)
-                    .nestedScroll(remember {
-                        object : NestedScrollConnection {
-                            override fun onPostScroll(
-                                consumed: Offset,
-                                available: Offset,
-                                source: NestedScrollSource
-                            ): Offset {
-                                return available
-                            }
-                        }
-                    })
-            ) {
-                itemsIndexed(
-                    items = playlist,
-                    key = { index, item -> "${item.music.id}_$index" }
-                ) { index, musicInfo ->
-                    PlaylistItem(
-                        musicInfo = musicInfo,
-                        isCurrentPlaying = index == currentIndex,
-                        index = index + 1,
-                        onItemClick = {
-                            haptic.performClick()
-                            coroutineScope.launch {
-                                onPlayItem(musicInfo)
-                            }
-                        },
-                        onPinClick = {
-                            haptic.performConfirm()
-                            onMoveToTop(musicInfo)
-                        },
-                        onRemoveClick = {
-                            haptic.performLightClick()
-                            onRemoveFromPlaylist(musicInfo)
-                        }
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(64.dp))
-                }
-            }
-        }
-    }
-}
-
-// 播放列表项
-@Composable
-fun PlaylistItem(
-    musicInfo: MusicInfo,
-    isCurrentPlaying: Boolean,
-    index: Int,
-    onItemClick: () -> Unit,
-    onPinClick: () -> Unit,
-    onRemoveClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp)) // 圆角裁剪
-            .clickable(onClick = onItemClick)
-            .background(
-                if (isCurrentPlaying) 
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                else 
-                    Transparent,
-                shape = RoundedCornerShape(12.dp) // 圆角背景
-            )
-            .padding(vertical = 8.dp, horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 序号
-        Text(
-            text = "$index",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (isCurrentPlaying) 
-                MaterialTheme.colorScheme.primary 
-            else 
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.width(32.dp)
-        )
-        
-        // 专辑封面（使用简化版本，不使用 AlbumCover 以避免布局问题）
-        androidx.compose.foundation.Image(
-            painter = rememberAsyncImagePainter(
-                model = musicInfo.music.albumArtUri,
-                placeholder = painterResource(R.drawable.none),
-                error = painterResource(R.drawable.none)
-            ),
-            contentDescription = stringResource(R.string.album_art),
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop
-        )
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        // 标题和艺术家
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = musicInfo.music.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isCurrentPlaying) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = musicInfo.music.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        
-        // 操作按钮组
-        Row {
-            // 置顶按钮
-            IconButton(
-                onClick = onPinClick,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.chevron_up_circle),
-                    contentDescription = stringResource(R.string.pin_to_top),
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            
-            // 移除按钮
-            IconButton(
-                onClick = onRemoveClick,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.trash),
-                    contentDescription = stringResource(R.string.remove),
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }

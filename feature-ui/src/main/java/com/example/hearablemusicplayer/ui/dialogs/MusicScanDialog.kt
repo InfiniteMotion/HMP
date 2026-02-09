@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ fun MusicScanDialog(
     
     AlertDialog(
         onDismissRequest = { /* 扫描期间禁止关闭 */ },
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text(stringResource(R.string.scan_music_title)) },
         text = {
             if (isLoading) {

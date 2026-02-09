@@ -129,7 +129,7 @@ class PlayControlViewModel @Inject constructor(
     fun addAllToPlaylistInOrder(playlist: List<MusicInfo>) = musicController.addAllToPlaylistInOrder(playlist)
     fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) = musicController.addAllToPlaylistByShuffle(playlist)
     fun recordPlayback(musicId: Long, source: String?) = musicController.recordPlayback(musicId, source)
-    
+
     fun playHeartMode() = musicController.playHeartMode()
     fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) = musicController.updateMusicLikedStatus(musicInfo, liked)
     fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
