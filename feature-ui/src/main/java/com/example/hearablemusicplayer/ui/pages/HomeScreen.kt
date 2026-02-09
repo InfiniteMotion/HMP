@@ -197,7 +197,7 @@ fun HomeScreen(
                             onItemClick = {
                                 haptic.performClick()
                                 playControlViewModel.playWith(it)
-                                navController.navigate(Routes.Player) },
+                                },
                             onAddToPlaylist = { _ -> },
                             onMenuClick = {navController.navigate(Routes.SongDetail(it.music.id))},
                             showAddButton = false,

@@ -91,7 +91,7 @@ fun SearchScreenContent(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
-                .padding(24.dp),
+                .padding(top = 16.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             TextField(
@@ -130,7 +130,7 @@ fun SearchScreenContent(
                 onItemClick = {
                     haptic.performClick()
                     playWith(it)
-                    onNavigate(Routes.Player) },
+                    },
                 onAddToPlaylist = addToPlaylist,
                 onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
                 showAddButton = true,

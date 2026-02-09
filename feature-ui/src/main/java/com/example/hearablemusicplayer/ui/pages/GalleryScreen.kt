@@ -117,7 +117,7 @@ fun GalleryScreenContent(
                 onItemClick = {
                     haptic.performClick()
                     playWith(it)
-                    onNavigate(Routes.Player) },
+                    },
                 onAddToPlaylist = { _ -> },
                 onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
                 showAddButton = false,

@@ -163,6 +163,7 @@
     <string name="album_art">专辑封面</string>
     
     <!-- User Screen -->
+    <string name="title_user">用户</string>
     <string name="listening_duration_chart_title">近期听歌时长(分钟)</string>
     <string name="theme_customization">主题定制</string>
     <string name="audio_effects">音效效果</string>

@@ -7,24 +7,33 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -33,20 +42,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.BackgroundStyle
-import com.example.hearablemusicplayer.ui.components.CustomBottomNavBar
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
+import com.example.hearablemusicplayer.ui.components.MiniPlayerFloatingBar
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.Routes
-import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import kotlin.math.abs
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -56,12 +61,12 @@ fun MainScreen(
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel()
 ) {
-    val haptic = rememberHapticFeedback()
-
     // 订阅调色板、当前曲目与播放状态
     val currentMusic by playControlViewModel.currentPlayingMusic.collectAsState()
     val paletteColors by playControlViewModel.paletteColors.collectAsState()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val currentPosition by playControlViewModel.currentPosition.collectAsState()
+    val duration by playControlViewModel.duration.collectAsState()
 
     // 根据customMode确定主题模式
     val customMode by settingsViewModel.customMode.collectAsState("default")
@@ -85,35 +90,27 @@ fun MainScreen(
         getPresetColorScheme(isDarkTheme)
     }
 
-    val defaultScreen = Routes.Home
+    val defaultScreen = Routes.Tabs
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    
-    val swipePages = listOf(Routes.Home, Routes.Gallery, Routes.List, Routes.User)
-    val currentIndex = swipePages.indexOfFirst { route ->
-        navBackStackEntry?.destination?.hasRoute(route::class) == true
+
+    val tabCount = 4
+    val savedTabIndex = rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberTabsPagerState(
+        pageCount = tabCount,
+        initialPage = savedTabIndex.intValue
+    )
+    LaunchedEffect(pagerState.currentPage) {
+        savedTabIndex.intValue = pagerState.currentPage
     }
-    val currentRoute = swipePages.getOrNull(currentIndex) ?: Routes.Home
-
-    // 只在 swipePages 页启用手势
-    val enableSwipe = currentIndex != -1
-
-    val swipeModifier = Modifier.pointerInput(enableSwipe, currentIndex) {
-        if (!enableSwipe) return@pointerInput
-        detectHorizontalDragGestures { _, dragAmount ->
-            if (abs(dragAmount) > 50f) {
-                val targetIndex = if (dragAmount > 0) currentIndex - 1 else currentIndex + 1
-                if (targetIndex in swipePages.indices) {
-                    val targetRoute = swipePages[targetIndex]
-                    // 翻页时给予触觉反馈
-                    haptic.performLightClick()
-                    navController.navigate(route = targetRoute) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            }
-        }
+    val tabHeader: @Composable () -> Unit = {
+        TabPageIndicator(
+            currentPage = pagerState.currentPage,
+            totalPages = tabCount,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        )
     }
 
     // 应用主题(根据播放状态切换)
@@ -162,7 +159,6 @@ fun MainScreen(
                 }
                 Box(
                     modifier = contentModifier
-                        .then(swipeModifier)
                 ) {
                     NavHost(
                         navController = navController,
@@ -184,13 +180,17 @@ fun MainScreen(
                             animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
                         )
 
-                        composable<Routes.Home>(
+                        composable<Routes.Tabs>(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            HomeScreen(
+                            TabsHost(
                                 navController = navController,
-                                recommendationViewModel = recommendationViewModel
+                                pagerState = pagerState,
+                                // 不再传递 tabHeader，因为已经在外部显示
+                                tabHeader = {},
+                                recommendationViewModel = recommendationViewModel,
+                                settingsViewModel = settingsViewModel
                             )
                         }
                         composable<Routes.SongDetail>(
@@ -200,12 +200,6 @@ fun MainScreen(
                             SongDetailScreen(
                                 navController = navController
                             )
-                        }
-                        composable<Routes.Gallery>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            GalleryScreen(navController = navController)
                         }
                         composable<Routes.Player>(
                             enterTransition = {
@@ -226,18 +220,6 @@ fun MainScreen(
                             }
                         ) {
                             PlayerScreen(navController = navController)
-                        }
-                        composable<Routes.List>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            ListScreen(navController = navController)
-                        }
-                        composable<Routes.User>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            UserScreen(settingsViewModel, recommendationViewModel, navController)
                         }
                         composable<Routes.Setting>(
                             enterTransition = { pageEnterTransition },
@@ -282,10 +264,61 @@ fun MainScreen(
                             CustomScreen(settingsViewModel, navController)
                         }
                     }
+                    
+                    // 在导航宿主之上显示固定的 TabPageIndicator
+                    val isInTabs = navBackStackEntry?.destination?.hasRoute<Routes.Tabs>() == true
+                    AnimatedVisibility(
+                        visible = isInTabs,
+                        enter = fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = AnimationConfig.EASE_OUT
+                            )
+                        ) + scaleIn(
+                            initialScale = 0.8f,
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = AnimationConfig.EASE_OUT
+                            )
+                        ) + slideInVertically(
+                            initialOffsetY = { -it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = AnimationConfig.EASE_OUT
+                            )
+                        ),
+                        exit = fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = AnimationConfig.EASE_IN
+                            )
+                        ) + scaleOut(
+                            targetScale = 0.9f,
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = AnimationConfig.EASE_IN
+                            )
+                        ) + slideOutVertically(
+                            targetOffsetY = { -it / 2 },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = AnimationConfig.EASE_IN
+                            )
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            tabHeader()
+                        }
+                    }
                 }
                 // 使用 AnimatedVisibility 包裹 CustomBottomNavBar 实现滑入滑出动画
                 AnimatedVisibility(
-                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false,
+                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false && currentMusic != null,
                     enter = slideInVertically(
                         initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                         animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
@@ -300,15 +333,58 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .navigationBarsPadding()
-                            .background(if(isPlaying) Transparent else MaterialTheme.colorScheme.surface)
                     ) {
-                        CustomBottomNavBar(
+                        MiniPlayerFloatingBar(
+                            musicInfo = currentMusic!!,
                             isPlaying = isPlaying,
-                            currentRoute = currentRoute,
-                            navController = navController
+                            progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                            onPlayPause = {
+                                if (isPlaying) {
+                                    playControlViewModel.pauseMusic()
+                                } else {
+                                    playControlViewModel.playOrResume()
+                                }
+                            },
+                            onNext = { playControlViewModel.playNext() },
+                            onPrev = { playControlViewModel.playPrevious() },
+                            onOpenPlayer = { navController.navigate(Routes.Player) }
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun TabPageIndicator(
+    modifier: Modifier = Modifier,
+    currentPage: Int,
+    totalPages: Int = 4,
+    activeColor: Color = MaterialTheme.colorScheme.primary,
+    inactiveColor: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(totalPages) { index ->
+            val isSelected = index == currentPage
+            val dotColor = if (isSelected) activeColor else inactiveColor
+            val dotSize = if (isSelected) 10.dp else 8.dp
+
+            Box(
+                modifier = Modifier
+                    .size(dotSize)
+                    .background(
+                        color = dotColor,
+                        shape = RoundedCornerShape(dotSize / 2)
+                    )
+            )
+
+            if (index < totalPages - 1) {
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(24.dp))
             }
         }
     }

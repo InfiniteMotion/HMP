@@ -163,6 +163,7 @@
     <string name="album_art">Album Art</string>
 
     <!-- User Screen -->
+    <string name="title_user">User</string>
     <string name="listening_duration_chart_title">Recent Listening Duration (Mins)</string>
     <string name="theme_customization">Theme Customization</string>
     <string name="audio_effects">Audio Effects</string>

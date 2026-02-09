@@ -51,7 +51,7 @@ fun SubScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()
-                .padding(top = 16.dp, bottom = 48.dp),
+                .padding(top = 16.dp, bottom = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(

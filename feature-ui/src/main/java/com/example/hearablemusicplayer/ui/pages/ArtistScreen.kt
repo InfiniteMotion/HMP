@@ -85,7 +85,7 @@ fun ArtistScreenContent(
                 onItemClick = {
                     haptic.performClick()
                     playWith(it)
-                    onNavigate(Routes.Player) },
+                    },
                 onAddToPlaylist = addToPlaylist,
                 onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
                 showAddButton = true,
