@@ -16,10 +16,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
@@ -51,12 +49,10 @@ fun PlayerScreen(
     val dismissThreshold = with(density) { 220.dp.toPx() }
     val offsetY = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-    var visible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val haptic = rememberHapticFeedback()
 
     LaunchedEffect(Unit) {
-        visible = true
         viewModel.toastEvent.collect { event ->
             Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
         }

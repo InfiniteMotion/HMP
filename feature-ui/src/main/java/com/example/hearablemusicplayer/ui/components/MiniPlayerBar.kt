@@ -41,9 +41,9 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun MiniPlayerFloatingBar(
+fun MiniPlayerBar(
     modifier: Modifier = Modifier,
-    musicInfo: MusicInfo,
+    musicInfo: MusicInfo?,
     isPlaying: Boolean,
     progress: Float = 0f, // 0f-1f的进度值
     onPlayPause: () -> Unit,
@@ -52,6 +52,9 @@ fun MiniPlayerFloatingBar(
     onOpenPlayer: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
+    val musicTitle = musicInfo?.music?.title ?: "Music Title"
+    val artistName = musicInfo?.music?.artist ?: "Artist Name"
+    val albumArtUri = musicInfo?.music?.albumArtUri ?: ""
     
     Card(
         modifier = modifier
@@ -97,13 +100,11 @@ fun MiniPlayerFloatingBar(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 // 专辑封面
-                AsyncImage(
-                    model = musicInfo.music.albumArtUri,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
+                AlbumCover(
+                    uri = albumArtUri,
+                    size = 48.dp,
+                    corner = 8.dp,
+                    shadow = 5.dp,
                 )
                 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -111,7 +112,7 @@ fun MiniPlayerFloatingBar(
                 // 音乐信息
                 Column (modifier = Modifier.weight(1f)) {
                     Text(
-                        text = musicInfo.music.title,
+                        text = musicTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -119,7 +120,7 @@ fun MiniPlayerFloatingBar(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = musicInfo.music.artist,
+                        text = artistName,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

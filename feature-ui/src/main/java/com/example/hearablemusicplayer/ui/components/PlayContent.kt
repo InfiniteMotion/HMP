@@ -111,139 +111,124 @@ fun PlayContent(
 ){
     val haptic = rememberHapticFeedback()
 
-    if (musicInfo == null) {
-        // 当前没有播放的音乐时显示文字
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+    var showTimerDialog by remember { mutableStateOf(false) }
+    var playlistExpanded by remember { mutableStateOf(false) }
+
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val screenHeight = maxHeight
+        val scrollState = rememberScrollState()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
         ) {
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter)
-            ){
-                PlayerHeader(onBackClick)
-            }
-            Text(stringResource(R.string.no_current_music), color = MaterialTheme.colorScheme.onSurface)
-        }
-    } else {
-        var showTimerDialog by remember { mutableStateOf(false) }
-        var playlistExpanded by remember { mutableStateOf(false) }
-        
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            val screenHeight = maxHeight
-            val scrollState = rememberScrollState()
-            
+            // 播放器主界面容器：强制填满一屏高度
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
+                    .fillMaxWidth()
+                    .height(screenHeight)
             ) {
-                // 播放器主界面容器：强制填满一屏高度
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(screenHeight)
+                        .padding(horizontal = 16.dp)
+                        .weight(1f) // 使顶部区域占据剩余空间
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .weight(1f) // 使顶部区域占据剩余空间
-                    ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        PlayerHeader(onBackClick)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        MusicInfo(musicInfo.music, onArtistClick)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // 封面区域：使用 weight(1f) 实现弹性缩放
-                        MusicInfoExtra(
-                            musicInfo = musicInfo,
-                            labels = labels,
-                            lyrics = lyrics,
-                            currentPosition = currentPosition,
-                            onSeek = onSeek,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    
                     Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SeekBar(
-                            currentPosition = currentPosition,
-                            duration = duration,
-                            onSeek = onSeek
-                        )
-                        // 播放控制按钮区
-                        PlaybackControlsButtons(
-                            isPlaying = isPlaying,
-                            playbackMode = playbackMode,
-                            isLike = isLiked,
-                            remainingTime = remainingTime,
-                            playlistExpanded = playlistExpanded,
-                            onPlayPause = {
-                                haptic.performClick()
-                                onPlayPause()
-                            },
-                            onNext = {
-                                haptic.performClick()
-                                onNext()
-                            },
-                            onPrevious = {
-                                haptic.performClick()
-                                onPrevious()
-                            },
-                            onPlaybackModeChange = {
-                                haptic.performContextClick()
-                                onPlaybackModeChange()
-                            },
-                            onFavorite = {
-                                haptic.performConfirm()
-                                onFavorite()
-                            },
-                            onTimerClick = {
-                                haptic.performClick()
-                                showTimerDialog = true
-                            },
-                            onHeartMode = {
-                                haptic.performConfirm()
-                                onHeartMode()
-                            },
-                            onPlaylistToggle = {
-                                playlistExpanded = !playlistExpanded
-                            }
-                        )
-                    }
+                    PlayerHeader(onBackClick)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    MusicInfo(musicInfo?.music, onArtistClick)
                     Spacer(modifier = Modifier.height(16.dp))
+                    // 封面区域：使用 weight(1f) 实现弹性缩放
+                    MusicInfoExtra(
+                        musicInfo = musicInfo,
+                        labels = labels,
+                        lyrics = lyrics,
+                        currentPosition = currentPosition,
+                        onSeek = onSeek,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
-                // 播放列表区域：位于主界面下方
-                PlaylistArea(
-                    expanded = playlistExpanded,
-                    playlist = playlist,
-                    currentIndex = currentIndex,
-                    scrollState = scrollState,
-                    onClearPlaylist = onClearPlaylist,
-                    onPlayItem = onPlayItem,
-                    onMoveToTop = onMoveToTop,
-                    onRemoveFromPlaylist = onRemoveFromPlaylist
-                )
-            }
-            if (showTimerDialog) {
-                TimerDialog(
-                    onDismiss = { },
-                    onConfirm = { minutes: Int ->
-                        if(minutes==0){
-                            onCancelTimer()
-                        }else{
-                            onTimerClick(minutes)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SeekBar(
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onSeek = onSeek
+                    )
+                    // 播放控制按钮区
+                    PlaybackControlsButtons(
+                        isPlaying = isPlaying,
+                        playbackMode = playbackMode,
+                        isLike = isLiked,
+                        remainingTime = remainingTime,
+                        playlistExpanded = playlistExpanded,
+                        onPlayPause = {
+                            haptic.performClick()
+                            onPlayPause()
+                        },
+                        onNext = {
+                            haptic.performClick()
+                            onNext()
+                        },
+                        onPrevious = {
+                            haptic.performClick()
+                            onPrevious()
+                        },
+                        onPlaybackModeChange = {
+                            haptic.performContextClick()
+                            onPlaybackModeChange()
+                        },
+                        onFavorite = {
+                            haptic.performConfirm()
+                            onFavorite()
+                        },
+                        onTimerClick = {
+                            haptic.performClick()
+                            showTimerDialog = true
+                        },
+                        onHeartMode = {
+                            haptic.performConfirm()
+                            onHeartMode()
+                        },
+                        onPlaylistToggle = {
+                            playlistExpanded = !playlistExpanded
                         }
-                    }
-                )
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
+
+            // 播放列表区域：位于主界面下方
+            PlaylistArea(
+                expanded = playlistExpanded,
+                playlist = playlist,
+                currentIndex = currentIndex,
+                scrollState = scrollState,
+                onClearPlaylist = onClearPlaylist,
+                onPlayItem = onPlayItem,
+                onMoveToTop = onMoveToTop,
+                onRemoveFromPlaylist = onRemoveFromPlaylist
+            )
+        }
+        if (showTimerDialog) {
+            TimerDialog(
+                onDismiss = { },
+                onConfirm = { minutes: Int ->
+                    if(minutes==0){
+                        onCancelTimer()
+                    }else{
+                        onTimerClick(minutes)
+                    }
+                }
+            )
         }
     }
 }
@@ -274,13 +259,16 @@ fun PlayerHeader(onBackClick: () -> Unit) {
 
 // 歌曲标题、艺术家、专辑信息
 @Composable
-fun MusicInfo(music: Music, onArtistClick: (String) -> Unit) {
+fun MusicInfo(
+    music: Music?,
+    onArtistClick: (String) -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
     ) {
         Text(
-            text = music.title,
+            text = music?.title ?: "Music Title",
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.displayMedium,
@@ -288,31 +276,30 @@ fun MusicInfo(music: Music, onArtistClick: (String) -> Unit) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-                text = music.artist,
+                text = music?.artist ?: "Artist",
                 maxLines = 1,
                 overflow = TextOverflow.MiddleEllipsis,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickable {
-                    onArtistClick(music.artist)
+                    onArtistClick(music?.artist ?: "Artist")
                 }
             )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = music.album,
+            text = music?.album ?: "Album",
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
     }
 }
 
 // 标签，专辑封面，歌词
 @Composable
 fun MusicInfoExtra(
-    musicInfo: MusicInfo,
+    musicInfo: MusicInfo?,
     labels: List<MusicLabel?>,
     lyrics: String?,
     currentPosition: Long,
@@ -320,8 +307,8 @@ fun MusicInfoExtra(
     modifier: Modifier = Modifier
 ) {
     val contents = listOf<@Composable () -> Unit>(
-        { LabelsCapsule(musicInfo.extra,labels) },
-        { AlbumCover(musicInfo.music.albumArtUri, 300.dp, 20.dp, 10.dp) },
+        { LabelsCapsule(musicInfo?.extra,labels) },
+        { AlbumCover(musicInfo?.music?.albumArtUri, 300.dp, 20.dp, 10.dp) },
         { AdvancedLyrics(lyrics, currentPosition, modifier = Modifier, onSeek = onSeek) }
     )
     DotPager(

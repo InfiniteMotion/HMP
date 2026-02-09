@@ -43,7 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.BackgroundStyle
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
-import com.example.hearablemusicplayer.ui.components.MiniPlayerFloatingBar
+import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
@@ -318,7 +318,7 @@ fun MainScreen(
                 }
                 // 使用 AnimatedVisibility 包裹 CustomBottomNavBar 实现滑入滑出动画
                 AnimatedVisibility(
-                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false && currentMusic != null,
+                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false,
                     enter = slideInVertically(
                         initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                         animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
@@ -334,8 +334,8 @@ fun MainScreen(
                         modifier = Modifier
                             .navigationBarsPadding()
                     ) {
-                        MiniPlayerFloatingBar(
-                            musicInfo = currentMusic!!,
+                        MiniPlayerBar(
+                            musicInfo = currentMusic,
                             isPlaying = isPlaying,
                             progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
                             onPlayPause = {

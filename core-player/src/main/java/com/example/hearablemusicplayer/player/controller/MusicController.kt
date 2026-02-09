@@ -285,16 +285,9 @@ class MusicController @Inject constructor(
     }
 
     fun clearPlaylist() {
-        val currentMusic = currentPlayingMusic.value
-        if (currentMusic != null) {
-            _originalPlaylist = listOf(currentMusic)
-            _currentPlaylist.value = listOf(currentMusic)
-            _currentIndex.value = 0
-        } else {
-            _originalPlaylist = emptyList()
-            _currentPlaylist.value = emptyList()
-            _currentIndex.value = 0
-        }
+        _originalPlaylist = emptyList()
+        _currentPlaylist.value = emptyList()
+        _currentIndex.value = 0
         persistCurrentPlaylistToDatabase()
     }
 
