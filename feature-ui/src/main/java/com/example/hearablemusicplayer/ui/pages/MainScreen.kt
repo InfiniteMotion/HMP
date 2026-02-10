@@ -17,10 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -31,7 +28,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,6 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.hearablemusicplayer.ui.components.BackgroundStyle
 import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
+import com.example.hearablemusicplayer.ui.components.TabPageIndicator
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
@@ -109,7 +106,6 @@ fun MainScreen(
             totalPages = tabCount,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
         )
     }
 
@@ -308,15 +304,14 @@ fun MainScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
+                                .fillMaxWidth(),
                             contentAlignment = Alignment.TopCenter
                         ) {
                             tabHeader()
                         }
                     }
                 }
-                // 使用 AnimatedVisibility 包裹 CustomBottomNavBar 实现滑入滑出动画
+                // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
                 AnimatedVisibility(
                     visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false,
                     enter = slideInVertically(
@@ -351,40 +346,6 @@ fun MainScreen(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun TabPageIndicator(
-    modifier: Modifier = Modifier,
-    currentPage: Int,
-    totalPages: Int = 4,
-    activeColor: Color = MaterialTheme.colorScheme.primary,
-    inactiveColor: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-) {
-    androidx.compose.foundation.layout.Row(
-        modifier = modifier,
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        repeat(totalPages) { index ->
-            val isSelected = index == currentPage
-            val dotColor = if (isSelected) activeColor else inactiveColor
-            val dotSize = if (isSelected) 10.dp else 8.dp
-
-            Box(
-                modifier = Modifier
-                    .size(dotSize)
-                    .background(
-                        color = dotColor,
-                        shape = RoundedCornerShape(dotSize / 2)
-                    )
-            )
-
-            if (index < totalPages - 1) {
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(24.dp))
             }
         }
     }

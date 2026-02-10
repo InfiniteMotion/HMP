@@ -44,14 +44,15 @@ fun TabScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 32.dp, end = 32.dp, top = 48.dp, bottom = 16.dp),
+                    .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (title != null) {
+                if (title != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(top = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.displayLarge,

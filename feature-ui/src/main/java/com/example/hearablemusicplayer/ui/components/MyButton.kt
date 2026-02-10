@@ -311,33 +311,22 @@ fun SearchButton(
     navController: NavController
 ){
     val haptic = rememberHapticFeedback()
-    Box(
-        modifier = Modifier.size(48.dp)
-            .clip(CircleShape)
-            .border(
-                width = 2.dp,
-                shape = RoundedCornerShape(48),
-                color = MaterialTheme.colorScheme.primary,
-            ),
-        contentAlignment = Alignment.Center
+    FilledIconButton(
+        onClick = {
+            haptic.performClick()
+            navController.navigate(Routes.Search)
+        },
+        modifier = Modifier
+            .size(32.dp), // Larger touch target
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
-        FilledIconButton(
-            onClick = {
-                haptic.performClick()
-                navController.navigate(Routes.Search)
-            },
-            modifier = Modifier
-                .size(48.dp), // Larger touch target
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.magnifyingglass),
-                contentDescription = "Search Button",
-                modifier = Modifier.size(28.dp)
-            )
-        }
+        Icon(
+            painter = painterResource(id = R.drawable.magnifyingglass),
+            contentDescription = "Search Button",
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
