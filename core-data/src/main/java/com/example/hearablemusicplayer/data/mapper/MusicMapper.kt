@@ -6,16 +6,17 @@ import com.example.hearablemusicplayer.data.database.UserInfo as UserInfoEntity
 import com.example.hearablemusicplayer.data.database.MusicInfo as MusicInfoEntity
 import com.example.hearablemusicplayer.data.database.MusicLabel as MusicLabelEntity
 import com.example.hearablemusicplayer.data.database.ListeningDuration as ListeningDurationEntity
-import com.example.hearablemusicplayer.domain.model.Music
-import com.example.hearablemusicplayer.domain.model.MusicExtra
-import com.example.hearablemusicplayer.domain.model.UserInfo
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.ListeningDuration
+import com.example.hearablemusicplayer.domain.music.Music
+import com.example.hearablemusicplayer.domain.music.MusicExtra
+import com.example.hearablemusicplayer.domain.music.UserInfo
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicLabel
+import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
+import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory as DataLabelCategory
 import com.example.hearablemusicplayer.data.database.myenum.LabelName as DataLabelName
-import com.example.hearablemusicplayer.domain.model.enum.LabelCategory as DomainLabelCategory
-import com.example.hearablemusicplayer.domain.model.enum.LabelName as DomainLabelName
+import com.example.hearablemusicplayer.domain.enum.LabelCategory as DomainLabelCategory
+import com.example.hearablemusicplayer.domain.enum.LabelName as DomainLabelName
 
 // Music
 fun MusicEntity.toDomain(): Music = Music(
@@ -140,16 +141,17 @@ fun ListeningDuration.toEntity(): ListeningDurationEntity = ListeningDurationEnt
 )
 
 // PlaybackHistory
-fun com.example.hearablemusicplayer.data.database.PlaybackHistory.toDomain(): com.example.hearablemusicplayer.domain.model.PlaybackHistory = com.example.hearablemusicplayer.domain.model.PlaybackHistory(
-    id = id,
-    musicId = musicId,
-    playedAt = playedAt,
-    playDuration = playDuration,
-    isCompleted = isCompleted,
-    source = source
-)
+fun com.example.hearablemusicplayer.data.database.PlaybackHistory.toDomain(): PlaybackHistory =
+    PlaybackHistory(
+        id = id,
+        musicId = musicId,
+        playedAt = playedAt,
+        playDuration = playDuration,
+        isCompleted = isCompleted,
+        source = source
+    )
 
-fun com.example.hearablemusicplayer.domain.model.PlaybackHistory.toEntity(): com.example.hearablemusicplayer.data.database.PlaybackHistory = com.example.hearablemusicplayer.data.database.PlaybackHistory(
+fun PlaybackHistory.toEntity(): com.example.hearablemusicplayer.data.database.PlaybackHistory = com.example.hearablemusicplayer.data.database.PlaybackHistory(
     id = id,
     musicId = musicId,
     playedAt = playedAt,

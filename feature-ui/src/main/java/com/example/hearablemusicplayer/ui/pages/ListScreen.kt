@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.components.ListBanner

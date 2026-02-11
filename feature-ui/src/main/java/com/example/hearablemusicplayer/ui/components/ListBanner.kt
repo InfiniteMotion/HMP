@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.ui.util.Routes
 
 @Composable

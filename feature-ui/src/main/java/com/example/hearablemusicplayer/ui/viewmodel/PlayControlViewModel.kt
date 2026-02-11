@@ -9,10 +9,10 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicLabel
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext

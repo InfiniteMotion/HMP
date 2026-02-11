@@ -2,14 +2,13 @@ package com.example.hearablemusicplayer.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.compose.ui.unit.sp
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.DisplayMode
-import com.example.hearablemusicplayer.domain.model.LyricsConfig
-import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
-import com.example.hearablemusicplayer.domain.usecase.settings.LyricsSettingsUseCase
-import com.example.hearablemusicplayer.domain.usecase.settings.UserSettingsUseCase
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsConfig
+import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.LyricsSettingsUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

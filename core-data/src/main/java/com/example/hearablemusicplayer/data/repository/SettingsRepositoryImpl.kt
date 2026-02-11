@@ -10,12 +10,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.hearablemusicplayer.data.util.SecureStorageHelper
 
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
-import com.example.hearablemusicplayer.domain.model.DisplayMode
-import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.config.DailyRefreshConfig
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

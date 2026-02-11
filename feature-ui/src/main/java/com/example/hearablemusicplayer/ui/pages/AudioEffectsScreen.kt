@@ -20,7 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
+import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.BassBoostSlider
 import com.example.hearablemusicplayer.ui.components.CustomEqualizer

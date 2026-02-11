@@ -3,9 +3,9 @@ package com.example.hearablemusicplayer.data.di
 import com.example.hearablemusicplayer.data.repository.MusicRepositoryImpl
 import com.example.hearablemusicplayer.data.repository.PlaylistRepositoryImpl
 import com.example.hearablemusicplayer.data.repository.SettingsRepositoryImpl
-import com.example.hearablemusicplayer.domain.repository.MusicRepository
-import com.example.hearablemusicplayer.domain.repository.PlaylistRepository
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.music.MusicRepository
+import com.example.hearablemusicplayer.domain.playlist.PlaylistRepository
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

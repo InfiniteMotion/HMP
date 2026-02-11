@@ -38,10 +38,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.model.Music
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.music.Music
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicLabel
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog

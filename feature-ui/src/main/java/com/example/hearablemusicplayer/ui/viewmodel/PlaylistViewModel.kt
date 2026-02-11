@@ -2,14 +2,13 @@ package com.example.hearablemusicplayer.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
-import com.example.hearablemusicplayer.domain.model.enum.LabelName
-import com.example.hearablemusicplayer.domain.usecase.music.GetAllMusicUseCase
-import com.example.hearablemusicplayer.domain.usecase.music.MusicLabelUseCase
-import com.example.hearablemusicplayer.domain.usecase.playlist.GetLabelPlaylistUseCase
-import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.enum.LabelCategory
+import com.example.hearablemusicplayer.domain.enum.LabelName
+import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.MusicLabelUseCase
+import com.example.hearablemusicplayer.domain.playlist.usecase.ManagePlaylistUseCase
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +24,6 @@ import com.example.hearablemusicplayer.ui.util.Routes
 @HiltViewModel
 class PlaylistViewModel @Inject constructor(
     private val managePlaylistUseCase: ManagePlaylistUseCase,
-    private val getLabelPlaylistUseCase: GetLabelPlaylistUseCase,
     private val musicLabelUseCase: MusicLabelUseCase,
     private val settingsRepository: SettingsRepository,
     private val getAllMusicUseCase: GetAllMusicUseCase,

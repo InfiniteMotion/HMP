@@ -52,8 +52,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.template.components.TitleWidget
 import com.example.hearablemusicplayer.ui.template.pages.SubScreen

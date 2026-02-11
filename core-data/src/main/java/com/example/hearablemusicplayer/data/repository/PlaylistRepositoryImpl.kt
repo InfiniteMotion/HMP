@@ -5,10 +5,10 @@ import com.example.hearablemusicplayer.data.database.PlaylistDao
 import com.example.hearablemusicplayer.data.database.PlaylistItemDao
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.Playlist
-import com.example.hearablemusicplayer.domain.model.PlaylistItem
-import com.example.hearablemusicplayer.domain.repository.PlaylistRepository
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.playlist.Playlist
+import com.example.hearablemusicplayer.domain.playlist.PlaylistItem
+import com.example.hearablemusicplayer.domain.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

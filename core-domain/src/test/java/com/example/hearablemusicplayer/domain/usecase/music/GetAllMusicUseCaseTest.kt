@@ -1,10 +1,11 @@
 package com.example.hearablemusicplayer.domain.usecase.music
 
 import app.cash.turbine.test
-import com.example.hearablemusicplayer.domain.model.Music
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.music.Music
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicRepository
 import com.example.hearablemusicplayer.domain.CoroutineTestRule
+import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
