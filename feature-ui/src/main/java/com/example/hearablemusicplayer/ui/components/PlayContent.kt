@@ -40,10 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.domain.music.Music
 import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicLabel
 import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.ui.R
 import androidx.compose.ui.res.stringResource
+import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
+import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
+import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
@@ -65,10 +67,11 @@ fun PlayContent(
     playbackMode: PlaybackMode,
     remainingTime: Long?,
     isLiked: Boolean,
-    labels: List<MusicLabel?>,
     lyrics: String?,
     playlist: List<MusicInfo>,
     currentIndex: Int,
+    defaultAlgorithmType: AlgorithmType?,
+    defaultTemplate: WeightTemplate?,
     onBackClick: () -> Unit,
     onSeek: (Long) -> Unit,
     onPlayPause: () -> Unit,
@@ -79,6 +82,8 @@ fun PlayContent(
     onTimerClick: (Int) -> Unit,
     onCancelTimer: () -> Unit,
     onHeartMode: () -> Unit,
+    onGeneratePlaylist: (Long) -> Unit,
+    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit,
     onArtistClick: (String) -> Unit,
     onClearPlaylist: () -> Unit,
     onPlayItem: suspend (MusicInfo) -> Unit,
@@ -121,10 +126,13 @@ fun PlayContent(
                     // 封面区域：使用 weight(1f) 实现弹性缩放
                     MusicInfoExtra(
                         musicInfo = musicInfo,
-                        labels = labels,
                         lyrics = lyrics,
                         currentPosition = currentPosition,
+                        defaultAlgorithmType = defaultAlgorithmType,
+                        defaultTemplate = defaultTemplate,
                         onSeek = onSeek,
+                        onGeneratePlaylist = onGeneratePlaylist,
+                        onSaveDefaultConfig = onSaveDefaultConfig,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -276,16 +284,48 @@ fun MusicInfo(
 @Composable
 fun MusicInfoExtra(
     musicInfo: MusicInfo?,
-    labels: List<MusicLabel?>,
     lyrics: String?,
     currentPosition: Long,
+    defaultAlgorithmType: AlgorithmType?,
+    defaultTemplate: WeightTemplate?,
     onSeek: (Long) -> Unit,
+    onGeneratePlaylist: (Long) -> Unit,
+    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val contents = listOf<@Composable () -> Unit>(
-        { LabelsCapsule(musicInfo?.extra,labels) },
-        { AlbumCover(musicInfo?.music?.albumArtUri, 300.dp, 20.dp, 10.dp) },
-        { AdvancedLyrics(lyrics, currentPosition, modifier = Modifier, onSeek = onSeek) }
+        {
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (musicInfo?.extra != null) {
+                    TechnicalInfoCard(musicInfo.extra)
+                }
+                if (musicInfo?.extra?.isGetExtraInfo == true){
+                    GeneratePlaylistComboButtons(
+                        musicInfo.music.id,
+                        defaultAlgorithmType,
+                        defaultTemplate,
+                        onGeneratePlaylist,
+                        onSaveDefaultConfig
+                    )
+                }
+            }
+        },
+        {
+            AlbumCover(
+                musicInfo?.music?.albumArtUri,
+                300.dp,
+                20.dp,
+                10.dp)
+        },
+        {
+            AdvancedLyrics(
+                lyrics,
+                currentPosition,
+                modifier = Modifier,
+                onSeek = onSeek)
+        }
     )
     DotPager(
         modifier = modifier.fillMaxWidth(),

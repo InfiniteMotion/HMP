@@ -28,40 +28,40 @@ enum class AlgorithmType {
  * 标签优先级配置数据模型
  * 用于标签优先级推荐算法的配置
  */
-data class PriorityTag(
+/**
+ * 权重模板枚举
+ * 预设的不同场景下的标签权重配置
+ */
+enum class WeightTemplate {
     /**
-     * 标签类别
+     * 平衡权重配置
+     * 各类别标签权重相对均衡
      */
-    val category: LabelCategory,
+    BALANCED,
     
     /**
-     * 具体标签名称（可选）
-     * 如果为null，则表示该类别下的所有标签
+     * 流派优先配置
+     * GENRE权重最高，强调音乐风格的一致性
      */
-    val specificLabel: LabelName? = null,
+    GENRE_FOCUS,
     
     /**
-     * 优先级权重
-     * 数值越大优先级越高
+     * 情绪优先配置
+     * MOOD权重最高，注重情感氛围的连贯性
      */
-    val priorityWeight: Int
-) {
+    MOOD_FOCUS,
     
-    companion object {
-        /**
-         * 创建类别级别的优先级配置
-         */
-        fun categoryPriority(category: LabelCategory, weight: Int): PriorityTag {
-            return PriorityTag(category = category, priorityWeight = weight)
-        }
-        
-        /**
-         * 创建具体标签的优先级配置
-         */
-        fun specificTagPriority(category: LabelCategory, label: LabelName, weight: Int): PriorityTag {
-            return PriorityTag(category = category, specificLabel = label, priorityWeight = weight)
-        }
-    }
+    /**
+     * 场景优先配置
+     * SCENARIO权重最高，关注使用场景的匹配度
+     */
+    SCENARIO_FOCUS,
+    
+    /**
+     * 年代优先配置
+     * ERA权重最高，强调时间背景的一致性
+     */
+    ERA_FOCUS
 }
 
 /**
@@ -99,6 +99,13 @@ data class ExtensionConfig(
      */
     fun getMaxExtendedLength(): Int {
         return (minLength * maxExtensionFactor).toInt()
+    }
+    
+    /**
+     * 将配置序列化为JSON字符串
+     */
+    fun toJson(): String {
+        return "{\"minLength\":$minLength,\"qualityDropThreshold\":$qualityDropThreshold,\"maxExtensionFactor\":$maxExtensionFactor}"
     }
     
     companion object {

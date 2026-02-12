@@ -78,10 +78,12 @@ fun PlayerScreen(
     val playbackMode by viewModel.playbackMode.collectAsState()
     val remainingTime by viewModel.timerRemaining.collectAsState()
     val isLiked by viewModel.likeStatus.collectAsState()
-    val labels by viewModel.currentMusicLabels.collectAsState()
     val lyrics by viewModel.currentMusicLyrics.collectAsState()
     val playlist by viewModel.currentPlaylist.collectAsState()
     val currentIndex by viewModel.currentIndex.collectAsState()
+    val defaultAlgorithmType by viewModel.defaultAlgorithmType.collectAsState()
+    val defaultTemplate by viewModel.defaultWeightTemplate.collectAsState()
+
 
     // 监听音乐变化并加载相关信息
     LaunchedEffect(musicInfo?.music?.id) {
@@ -175,10 +177,11 @@ fun PlayerScreen(
             playbackMode = playbackMode,
             remainingTime = remainingTime,
             isLiked = isLiked,
-            labels = labels,
             lyrics = lyrics,
             playlist = playlist,
             currentIndex = currentIndex,
+            defaultAlgorithmType = defaultAlgorithmType,
+            defaultTemplate = defaultTemplate,
             onBackClick = { navController.popBackStack() },
             onSeek = viewModel::seekTo,
             onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
@@ -191,6 +194,8 @@ fun PlayerScreen(
             onTimerClick = viewModel::startTimer,
             onCancelTimer = viewModel::cancelTimer,
             onHeartMode = viewModel::playHeartMode,
+            onGeneratePlaylist = viewModel::generatePlaylist,
+            onSaveDefaultConfig = viewModel::saveAlgorithmConfig,
             onArtistClick = { artistName ->
                 playlistViewModel.getSelectedArtistMusicList(artistName)
                 navController.navigate(Routes.Artist(artistName))

@@ -126,6 +126,19 @@ interface SettingsRepository {
     suspend fun getCurrentDailyMusicId(): Long?
 
     // Backup / Restore
+    // Playlist Algorithm Configuration
+    val defaultAlgorithmType: Flow<String>
+    suspend fun saveDefaultAlgorithmType(type: String)
+    suspend fun getDefaultAlgorithmType(): String
+    
+    val defaultWeightTemplate: Flow<String>
+    suspend fun saveDefaultWeightTemplate(template: String)
+    suspend fun getDefaultWeightTemplate(): String
+    
+    val defaultExtensionConfig: Flow<String>
+    suspend fun saveDefaultExtensionConfig(configJson: String)
+    suspend fun getDefaultExtensionConfig(): String
+    
     suspend fun backupSettings(): Result<File>
     suspend fun restoreSettings(backupFile: File): Result<Unit>
     suspend fun cleanOldBackups(keepCount: Int = 3): Result<Unit>
