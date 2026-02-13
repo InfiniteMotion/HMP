@@ -13,6 +13,7 @@ import com.example.hearablemusicplayer.data.util.SecureStorageHelper
 import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.config.DailyRefreshConfig
 import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -83,6 +84,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val LYRICS_CURRENT_TIME_TEXT_SIZE = intPreferencesKey("lyrics_current_time_text_size")
         val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
         val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
+        val LYRICS_ALIGNMENT = stringPreferencesKey("lyrics_alignment")
         
         // 播放列表算法配置
         val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
@@ -705,6 +707,31 @@ class SettingsRepositoryImpl @Inject constructor(
             DisplayMode.valueOf(modeStr)
         } catch (e: IllegalArgumentException) {
             DisplayMode.DUAL
+        }
+    }
+
+    override val lyricsAlignment: Flow<LyricsAlignment> = dataStore.data
+        .map { prefs ->
+            val alignmentStr = prefs[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
+            try {
+                LyricsAlignment.valueOf(alignmentStr)
+            } catch (e: IllegalArgumentException) {
+                LyricsAlignment.CENTER
+            }
+        }
+
+    override suspend fun saveLyricsAlignment(alignment: LyricsAlignment) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_ALIGNMENT] = alignment.name
+        }
+    }
+
+    override suspend fun getLyricsAlignment(): LyricsAlignment {
+        val alignmentStr = dataStore.data.first()[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
+        return try {
+            LyricsAlignment.valueOf(alignmentStr)
+        } catch (e: IllegalArgumentException) {
+            LyricsAlignment.CENTER
         }
     }
 

@@ -517,7 +517,7 @@ class MusicController @Inject constructor(
         }
     }
 
-    suspend fun playAt(musicInfo: MusicInfo) {
+    fun playAt(musicInfo: MusicInfo) {
         switchToMusicInPlaylist(musicInfo)
         playCurrentTrack("ManualPlay")
     }

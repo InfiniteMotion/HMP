@@ -2,6 +2,7 @@ package com.example.hearablemusicplayer.domain.setting
 
 import com.example.hearablemusicplayer.domain.config.DailyRefreshConfig
 import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import kotlinx.coroutines.flow.Flow
@@ -107,6 +108,10 @@ interface SettingsRepository {
     val lyricsDisplayMode: Flow<DisplayMode>
     suspend fun saveLyricsDisplayMode(mode: DisplayMode)
     suspend fun getLyricsDisplayMode(): DisplayMode
+
+    val lyricsAlignment: Flow<LyricsAlignment>
+    suspend fun saveLyricsAlignment(alignment: LyricsAlignment)
+    suspend fun getLyricsAlignment(): LyricsAlignment
 
     val dailyRefreshHours: Flow<Int>
     suspend fun saveDailyRefreshHours(hours: Int)

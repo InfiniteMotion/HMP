@@ -38,6 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.music.Music
 import com.example.hearablemusicplayer.domain.music.MusicInfo
@@ -75,6 +77,12 @@ fun PlayContent(
     currentIndex: Int,
     defaultAlgorithmType: AlgorithmType?,
     defaultTemplate: WeightTemplate?,
+    lyricsOriginalTextSize: Int = 14,
+    lyricsTranslatedTextSize: Int = 14,
+    lyricsCurrentTimeTextSize: Int = 16,
+    lyricsLineSpacing: Int = 6,
+    lyricsDisplayMode: DisplayMode = DisplayMode.DUAL,
+    lyricsAlignment: LyricsAlignment = LyricsAlignment.CENTER,
     onBackClick: () -> Unit,
     onSeek: (Long) -> Unit,
     onPlayPause: () -> Unit,
@@ -133,6 +141,12 @@ fun PlayContent(
                         currentPosition = currentPosition,
                         defaultAlgorithmType = defaultAlgorithmType,
                         defaultTemplate = defaultTemplate,
+                        originalTextSize = lyricsOriginalTextSize,
+                        translatedTextSize = lyricsTranslatedTextSize,
+                        currentTimeTextSize = lyricsCurrentTimeTextSize,
+                        lineSpacing = lyricsLineSpacing,
+                        displayMode = lyricsDisplayMode,
+                        alignment = lyricsAlignment,
                         onSeek = onSeek,
                         onGeneratePlaylist = onGeneratePlaylist,
                         onSaveDefaultConfig = onSaveDefaultConfig,
@@ -292,6 +306,12 @@ fun MusicInfoExtra(
     currentPosition: Long,
     defaultAlgorithmType: AlgorithmType?,
     defaultTemplate: WeightTemplate?,
+    originalTextSize: Int = 14,
+    translatedTextSize: Int = 14,
+    currentTimeTextSize: Int = 16,
+    lineSpacing: Int = 6,
+    displayMode: DisplayMode = DisplayMode.DUAL,
+    alignment: LyricsAlignment = LyricsAlignment.CENTER,
     onSeek: (Long) -> Unit,
     onGeneratePlaylist: (Long) -> Unit,
     onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
@@ -325,10 +345,16 @@ fun MusicInfoExtra(
         },
         {
             AdvancedLyrics(
-                lyrics,
-                currentPosition,
-                modifier = Modifier,
-                onSeek = onSeek
+                modifier = Modifier.padding(vertical = 16.dp),
+                lyrics = lyrics,
+                currentPosition = currentPosition,
+                onSeek = onSeek,
+                originalTextSize = originalTextSize,
+                translatedTextSize = translatedTextSize,
+                currentTimeTextSize = currentTimeTextSize,
+                lineSpacing = lineSpacing,
+                displayMode = displayMode,
+                alignment = alignment
             )
         }
     )

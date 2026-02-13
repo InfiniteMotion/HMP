@@ -36,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.ui.R
 import kotlin.math.max
 
@@ -45,16 +47,16 @@ import kotlin.math.max
  */
 @Composable
 fun AdvancedLyrics(
+    modifier: Modifier = Modifier,
     lyrics: String?,
     currentPosition: Long,
-    modifier: Modifier = Modifier,
     onSeek: (Long) -> Unit = {},
-    // 歌词配置参数
     originalTextSize: Int = 14,
     translatedTextSize: Int = 14,
     currentTimeTextSize: Int = 16,
     lineSpacing: Int = 6,
-    displayMode: DisplayMode = DisplayMode.DUAL
+    displayMode: DisplayMode = DisplayMode.DUAL,
+    alignment: LyricsAlignment = LyricsAlignment.CENTER
 ) {
     if (lyrics == null) {
         EmptyLyricsView(modifier)
@@ -64,6 +66,12 @@ fun AdvancedLyrics(
     val parsedLyrics = remember(lyrics) { EnhancedLyricsParser.parse(lyrics) }
     val scrollState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
+
+    val lazyColumnHorizontalAlignment = when (alignment) {
+        LyricsAlignment.LEFT -> Alignment.Start
+        LyricsAlignment.CENTER -> Alignment.CenterHorizontally
+        LyricsAlignment.RIGHT -> Alignment.End
+    }
     
     // 找到当前播放位置对应的歌词行
     val currentIndex by remember(parsedLyrics, currentPosition) {
@@ -90,7 +98,6 @@ fun AdvancedLyrics(
     
     Column(
         modifier = modifier.fillMaxSize()
-            .padding(vertical = 16.dp)
     ) {
         // 歌词区域
         Box(
@@ -99,7 +106,7 @@ fun AdvancedLyrics(
             LazyColumn(
                 state = scrollState,
                 modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = lazyColumnHorizontalAlignment,
                 contentPadding = PaddingValues(vertical = 120.dp)
             ) {
                 itemsIndexed(
@@ -116,6 +123,7 @@ fun AdvancedLyrics(
                         translatedTextSize = translatedTextSize,
                         currentTimeTextSize = currentTimeTextSize,
                         lineSpacing = lineSpacing,
+                        alignment = alignment,
                         onClick = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             onSeek(lyricLine.timestamp)
@@ -139,6 +147,7 @@ private fun AdvancedLyricItem(
     translatedTextSize: Int = 14,
     currentTimeTextSize: Int = 16,
     lineSpacing: Int = 6,
+    alignment: LyricsAlignment = LyricsAlignment.CENTER,
     onClick: () -> Unit
 ) {
     val animatedAlpha by animateFloatAsState(
@@ -148,6 +157,18 @@ private fun AdvancedLyricItem(
     )
 
     val lineSpacing = ((if (lyricLine.translatedText != null) 2 else 1) * lineSpacing).dp
+
+    val textAlign = when (alignment) {
+        LyricsAlignment.LEFT -> TextAlign.Start
+        LyricsAlignment.CENTER -> TextAlign.Center
+        LyricsAlignment.RIGHT -> TextAlign.End
+    }
+
+    val horizontalAlignment = when (alignment) {
+        LyricsAlignment.LEFT -> Alignment.Start
+        LyricsAlignment.CENTER -> Alignment.CenterHorizontally
+        LyricsAlignment.RIGHT -> Alignment.End
+    }
 
     Surface(
         modifier = Modifier
@@ -163,13 +184,13 @@ private fun AdvancedLyricItem(
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = horizontalAlignment,
         ) {
             when (displayMode) {
                 DisplayMode.LANG1 -> {
                     Text(
                         text = lyricLine.originalText,
-                        textAlign = TextAlign.Center,
+                        textAlign = textAlign,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = originalTextSize.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -180,7 +201,7 @@ private fun AdvancedLyricItem(
                     if (lyricLine.translatedText != null) {
                         Text(
                             text = lyricLine.translatedText,
-                            textAlign = TextAlign.Center,
+                            textAlign = textAlign,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = translatedTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -189,7 +210,7 @@ private fun AdvancedLyricItem(
                     } else {
                         Text(
                             text = lyricLine.originalText,
-                            textAlign = TextAlign.Center,
+                            textAlign = textAlign,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -198,21 +219,19 @@ private fun AdvancedLyricItem(
                     }
                 }
                 DisplayMode.DUAL -> {
-                    // 处理单行双语情况 - 优化的显示逻辑
                     if (lyricLine.translatedText == null) {
                         Text(
                             text = lyricLine.originalText,
-                            textAlign = TextAlign.Center,
+                            textAlign = textAlign,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier
                         )
                     } else {
-                        // 分开展示原文和译文 - 保持样式一致性
                         Text(
                             text = lyricLine.originalText,
-                            textAlign = TextAlign.Center,
+                            textAlign = textAlign,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -222,7 +241,7 @@ private fun AdvancedLyricItem(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = lyricLine.translatedText,
-                            textAlign = TextAlign.Center,
+                            textAlign = textAlign,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = translatedTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -260,17 +279,6 @@ private fun EmptyLyricsView(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
-}
-
-// ==================== 核心数据结构 ====================
-
-/**
- * 显示模式枚举
- */
-enum class DisplayMode {
-    LANG1,  // 只显示语言一
-    LANG2,  // 只显示语言二
-    DUAL    // 双语显示
 }
 
 /**

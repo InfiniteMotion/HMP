@@ -1,6 +1,7 @@
 package com.example.hearablemusicplayer.domain.setting.usecase
 
 import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.domain.config.LyricsConfig
 import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +51,14 @@ class LyricsSettingsUseCase @Inject constructor(
         settingsRepository.saveLyricsDisplayMode(mode)
     }
 
+    // ==================== 对齐配置 ====================
+
+    val alignment: Flow<LyricsAlignment> = settingsRepository.lyricsAlignment
+
+    suspend fun saveAlignment(alignment: LyricsAlignment) {
+        settingsRepository.saveLyricsAlignment(alignment)
+    }
+
     // ==================== 综合配置操作 ====================
 
     /**
@@ -61,7 +70,8 @@ class LyricsSettingsUseCase @Inject constructor(
             translatedTextSize = settingsRepository.getLyricsTranslatedTextSize(),
             currentTimeTextSize = settingsRepository.getLyricsCurrentTimeTextSize(),
             lineSpacing = settingsRepository.getLyricsLineSpacing(),
-            displayMode = settingsRepository.getLyricsDisplayMode()
+            displayMode = settingsRepository.getLyricsDisplayMode(),
+            alignment = settingsRepository.getLyricsAlignment()
         )
     }
 
@@ -74,6 +84,7 @@ class LyricsSettingsUseCase @Inject constructor(
         saveCurrentTimeTextSize(config.currentTimeTextSize)
         saveLineSpacing(config.lineSpacing)
         saveDisplayMode(config.displayMode)
+        saveAlignment(config.alignment)
     }
 
     /**

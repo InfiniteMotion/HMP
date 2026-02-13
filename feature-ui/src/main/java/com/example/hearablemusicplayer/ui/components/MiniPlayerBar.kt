@@ -22,15 +22,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -55,7 +52,7 @@ fun MiniPlayerBar(
     val musicTitle = musicInfo?.music?.title ?: "Music Title"
     val artistName = musicInfo?.music?.artist ?: "Artist Name"
     val albumArtUri = musicInfo?.music?.albumArtUri ?: ""
-    
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -91,7 +88,7 @@ fun MiniPlayerBar(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,9 +103,9 @@ fun MiniPlayerBar(
                     corner = 8.dp,
                     shadow = 5.dp,
                 )
-                
+
                 Spacer(modifier = Modifier.width(12.dp))
-                
+
                 // 音乐信息
                 Column (modifier = Modifier.weight(1f)) {
                     Text(
@@ -127,9 +124,9 @@ fun MiniPlayerBar(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 // 控制按钮组
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -150,7 +147,7 @@ fun MiniPlayerBar(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    
+
                     // 播放/暂停按钮
                     IconButton(
                         onClick = {
@@ -170,7 +167,7 @@ fun MiniPlayerBar(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    
+
                     // 下一首按钮
                     IconButton(
                         onClick = {

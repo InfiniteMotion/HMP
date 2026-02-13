@@ -33,10 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 // 播放器主界面
@@ -44,6 +47,7 @@ import kotlinx.coroutines.launch
 fun PlayerScreen(
     viewModel: PlayControlViewModel = hiltViewModel(),
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
     navController: NavController
 ) {
     val density = LocalDensity.current
@@ -68,7 +72,7 @@ fun PlayerScreen(
     DisposableEffect(Unit) {
         viewModel.startProgressTracking()
         onDispose {
-            viewModel.stopProgressTracking()
+
         }
     }
 
@@ -84,6 +88,14 @@ fun PlayerScreen(
     val currentIndex by viewModel.currentIndex.collectAsState()
     val defaultAlgorithmType by viewModel.defaultAlgorithmType.collectAsState()
     val defaultTemplate by viewModel.defaultWeightTemplate.collectAsState()
+
+    // 歌词配置
+    val lyricsOriginalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
+    val lyricsTranslatedTextSize by settingsViewModel.lyricsTranslatedTextSize.collectAsState()
+    val lyricsCurrentTimeTextSize by settingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
+    val lyricsLineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
+    val lyricsDisplayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
+    val lyricsAlignment by settingsViewModel.lyricsAlignment.collectAsState()
 
 
     // 监听音乐变化并加载相关信息
@@ -183,6 +195,12 @@ fun PlayerScreen(
             currentIndex = currentIndex,
             defaultAlgorithmType = defaultAlgorithmType,
             defaultTemplate = defaultTemplate,
+            lyricsOriginalTextSize = lyricsOriginalTextSize,
+            lyricsTranslatedTextSize = lyricsTranslatedTextSize,
+            lyricsCurrentTimeTextSize = lyricsCurrentTimeTextSize,
+            lyricsLineSpacing = lyricsLineSpacing,
+            lyricsDisplayMode = lyricsDisplayMode,
+            lyricsAlignment = lyricsAlignment,
             onBackClick = { navController.popBackStack() },
             onSeek = viewModel::seekTo,
             onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
@@ -194,7 +212,7 @@ fun PlayerScreen(
             },
             onTimerClick = viewModel::startTimer,
             onCancelTimer = viewModel::cancelTimer,
-            onHeartMode = viewModel::playHeartMode,
+            onHeartMode = { navController.navigate(Routes.Lyrics) },
             onGeneratePlaylist = viewModel::generatePlaylist,
             onSaveDefaultConfig = viewModel::saveAlgorithmConfig,
             onArtistClick = { artistName ->

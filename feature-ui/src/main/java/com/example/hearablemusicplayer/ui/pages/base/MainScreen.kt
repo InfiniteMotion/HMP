@@ -46,6 +46,7 @@ import com.example.hearablemusicplayer.ui.pages.SearchScreen
 import com.example.hearablemusicplayer.ui.pages.SettingScreen
 import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
 import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
+import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
@@ -268,6 +269,26 @@ fun MainScreen(
                             exitTransition = { pageExitTransition }
                         ) {
                             CustomScreen(settingsViewModel, navController)
+                        }
+                        composable<Routes.Lyrics>(
+                            enterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                ) + fadeIn(
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                )
+                            },
+                            exitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { it },
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                ) + fadeOut(
+                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                                )
+                            }
+                        ) {
+                            LyricsScreen()
                         }
                     }
                     

@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(UnstableApi::class)
     override fun onDestroy() {
         super.onDestroy()
+        musicController.release()
         musicController.unbindService()
     }
 

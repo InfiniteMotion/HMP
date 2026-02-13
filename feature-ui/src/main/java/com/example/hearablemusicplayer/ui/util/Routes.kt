@@ -48,4 +48,7 @@ object Routes {
 
     /** 歌曲详情页路由 */
     @Serializable data class SongDetail(val musicId: Long)
+
+    /** 歌词页路由 */
+    @Serializable object Lyrics
 }
