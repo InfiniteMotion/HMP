@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween

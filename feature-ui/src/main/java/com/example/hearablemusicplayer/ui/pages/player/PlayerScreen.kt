@@ -1,5 +1,6 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
-package com.example.hearablemusicplayer.ui.pages
+@file:OptIn(UnstableApi::class)
+
+package com.example.hearablemusicplayer.ui.pages.player
 
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -30,8 +31,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.ui.components.PlayContent
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel

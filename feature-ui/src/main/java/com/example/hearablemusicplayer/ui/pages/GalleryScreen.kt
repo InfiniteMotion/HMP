@@ -24,7 +24,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.GalleryList
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
-import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel

@@ -27,8 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
 fun ListGroupName(
@@ -75,6 +75,7 @@ fun ListBanner(
     listCoverUri: Int,
     navController: NavController
 ) {
+    val haptic = rememberHapticFeedback()
     val imageModifier = Modifier
         .size(100.dp)
         .shadow(elevation = 5.dp, shape = RoundedCornerShape(15.dp))
@@ -85,6 +86,7 @@ fun ListBanner(
         modifier = Modifier
             .width(110.dp)
             .clickable {
+                haptic.performClick()
                 navController.navigate(Routes.Playlist(listName))
             }
     ) {
@@ -106,39 +108,3 @@ fun ListBanner(
     }
 }
 
-@Composable
-fun ListBanner(
-    listName: LabelName,
-    listCoverUri: Int,
-    navController: NavController
-) {
-    val imageModifier = Modifier
-        .size(100.dp)
-        .shadow(elevation = 5.dp, shape = RoundedCornerShape(15.dp))
-        .clip(RoundedCornerShape(15.dp))
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(110.dp)
-            .clickable {
-                navController.navigate(Routes.Playlist(listName.name))
-            }
-    ) {
-        AsyncImage(
-            model = listCoverUri,
-            contentDescription = "Album art",
-            contentScale = ContentScale.Crop,
-            modifier = imageModifier
-        )
-        Spacer(modifier = Modifier.height(5.dp))
-        Text(
-            text = listName.name,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.widthIn(max = 120.dp),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}

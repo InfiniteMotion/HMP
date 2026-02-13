@@ -20,7 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.player.controller.MusicController
 import com.example.hearablemusicplayer.ui.pages.IntroScreen
-import com.example.hearablemusicplayer.ui.pages.MainScreen
+import com.example.hearablemusicplayer.ui.pages.base.MainScreen
 import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel

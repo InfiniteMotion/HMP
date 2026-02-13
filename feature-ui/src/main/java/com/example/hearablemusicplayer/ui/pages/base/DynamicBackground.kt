@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -330,7 +331,7 @@ fun SpotsBackground(
             val widthPx = size.width
             val heightPx = size.height
             val maxDim = max(widthPx, heightPx)
-            val minDim = kotlin.math.min(widthPx, heightPx)
+            val minDim = min(widthPx, heightPx)
             val centerX = widthPx / 2
             val centerY = heightPx / 2
             

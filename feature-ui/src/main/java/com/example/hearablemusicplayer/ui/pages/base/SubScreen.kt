@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.template.pages
+package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing

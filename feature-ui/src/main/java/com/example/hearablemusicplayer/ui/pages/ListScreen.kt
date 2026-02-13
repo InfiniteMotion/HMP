@@ -53,9 +53,10 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
-import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
@@ -75,8 +76,7 @@ fun ListScreen(
         scenarioList = scenarioList,
         languageList = languageList,
         eraList = eraList,
-        navController = navController,
-        playlistViewModel = playlistViewModel
+        navController = navController
     )
 }
 
@@ -88,9 +88,9 @@ fun ListScreenContent(
     scenarioList: List<LabelName>,
     languageList: List<LabelName>,
     eraList: List<LabelName>,
-    navController: NavController,
-    playlistViewModel: PlaylistViewModel
+    navController: NavController
 ) {
+    val haptic = rememberHapticFeedback()
     TabScreen(
         title = stringResource(R.string.title_playlist),
         hasSearchBotton = true,
@@ -123,6 +123,7 @@ fun ListScreenContent(
                         ScenarioCard(
                             label = label,
                             onClick = {
+                                haptic.performClick()
                                 navController.navigate(Routes.Playlist(label.name))
                             }
                         )
@@ -150,6 +151,7 @@ fun ListScreenContent(
                         GenreCard(
                             label = label,
                             onClick = {
+                                haptic.performClick()
                                 navController.navigate(Routes.Playlist(label.name))
                             }
                         )
@@ -206,6 +208,7 @@ fun ListScreenContent(
                             MoodCard(
                                 label = label,
                                 onClick = {
+                                    haptic.performClick()
                                     navController.navigate(Routes.Playlist(label.name))
                                 }
                             )
@@ -230,6 +233,7 @@ fun ListScreenContent(
                     list.forEach { label ->
                         Box(
                             modifier = Modifier.clickable {
+                                haptic.performClick()
                                 navController.navigate(Routes.Playlist(label.name))
                             }
                         ) {

@@ -1,5 +1,4 @@
-@file:androidx.annotation.OptIn(UnstableApi::class)
-package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.pages.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,19 +32,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.music.Music
 import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.enum.PlaybackMode
-import com.example.hearablemusicplayer.ui.R
-import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
 import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.components.DotPager
+import com.example.hearablemusicplayer.ui.components.GeneratePlaylistComboButtons
+import com.example.hearablemusicplayer.ui.components.PlaylistArea
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
@@ -206,9 +209,9 @@ fun PlayContent(
             TimerDialog(
                 onDismiss = { },
                 onConfirm = { minutes: Int ->
-                    if(minutes==0){
+                    if (minutes == 0) {
                         onCancelTimer()
-                    }else{
+                    } else {
                         onTimerClick(minutes)
                     }
                 }
@@ -260,15 +263,15 @@ fun MusicInfo(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-                text = music?.artist ?: "Artist",
-                maxLines = 1,
-                overflow = TextOverflow.MiddleEllipsis,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable {
-                    onArtistClick(music?.artist ?: "Artist")
-                }
-            )
+            text = music?.artist ?: "Artist",
+            maxLines = 1,
+            overflow = TextOverflow.MiddleEllipsis,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clickable {
+                onArtistClick(music?.artist ?: "Artist")
+            }
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = music?.album ?: "Album",
@@ -283,6 +286,7 @@ fun MusicInfo(
 // 标签，专辑封面，歌词
 @Composable
 fun MusicInfoExtra(
+    modifier: Modifier = Modifier,
     musicInfo: MusicInfo?,
     lyrics: String?,
     currentPosition: Long,
@@ -290,8 +294,7 @@ fun MusicInfoExtra(
     defaultTemplate: WeightTemplate?,
     onSeek: (Long) -> Unit,
     onGeneratePlaylist: (Long) -> Unit,
-    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit,
-    modifier: Modifier = Modifier
+    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
 ) {
     val contents = listOf<@Composable () -> Unit>(
         {
@@ -301,7 +304,7 @@ fun MusicInfoExtra(
                 if (musicInfo?.extra != null) {
                     TechnicalInfoCard(musicInfo.extra)
                 }
-                if (musicInfo?.extra?.isGetExtraInfo == true){
+                if (musicInfo?.extra?.isGetExtraInfo == true) {
                     GeneratePlaylistComboButtons(
                         musicInfo.music.id,
                         defaultAlgorithmType,
@@ -317,14 +320,16 @@ fun MusicInfoExtra(
                 musicInfo?.music?.albumArtUri,
                 300.dp,
                 20.dp,
-                10.dp)
+                10.dp
+            )
         },
         {
             AdvancedLyrics(
                 lyrics,
                 currentPosition,
                 modifier = Modifier,
-                onSeek = onSeek)
+                onSeek = onSeek
+            )
         }
     )
     DotPager(
@@ -394,7 +399,7 @@ fun SeekBar(
                     modifier = Modifier
                         .size(4.dp)
                         .background(
-                            color = Transparent,
+                            color = Color.Transparent,
                         )
                 )
             }
@@ -436,7 +441,7 @@ fun PlaybackControlsButtons(
     onPlaylistToggle: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
-    
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -526,7 +531,7 @@ fun PlaybackControlsButtons(
                     contentDescription = stringResource(R.string.recommendation_mode),
                 )
             }
-            if(remainingTime == null){
+            if (remainingTime == null) {
                 IconButton(onClick = onTimerClick) {
                     Icon(
                         painter = painterResource(R.drawable.timer),
@@ -534,7 +539,7 @@ fun PlaybackControlsButtons(
                         contentDescription = stringResource(R.string.sleep_timer),
                     )
                 }
-            } else{
+            } else {
                 Text(
                     text = formatTime(remainingTime),
                     style = MaterialTheme.typography.bodySmall,

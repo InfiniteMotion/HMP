@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.pages.player
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement

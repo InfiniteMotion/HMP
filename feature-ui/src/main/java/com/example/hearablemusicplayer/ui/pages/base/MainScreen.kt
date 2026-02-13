@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -29,7 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -37,10 +36,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.hearablemusicplayer.ui.components.BackgroundStyle
-import com.example.hearablemusicplayer.ui.components.DynamicBackground
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
-import com.example.hearablemusicplayer.ui.components.TabPageIndicator
+import com.example.hearablemusicplayer.ui.pages.AIScreen
+import com.example.hearablemusicplayer.ui.pages.ArtistScreen
+import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
+import com.example.hearablemusicplayer.ui.pages.CustomScreen
+import com.example.hearablemusicplayer.ui.pages.PlaylistScreen
+import com.example.hearablemusicplayer.ui.pages.SearchScreen
+import com.example.hearablemusicplayer.ui.pages.SettingScreen
+import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
+import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
@@ -251,7 +256,12 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            AIScreen(settingsViewModel, recommendationViewModel, libraryViewModel, navController)
+                            AIScreen(
+                                settingsViewModel,
+                                recommendationViewModel,
+                                libraryViewModel,
+                                navController
+                            )
                         }
                         composable<Routes.Custom>(
                             enterTransition = { pageEnterTransition },

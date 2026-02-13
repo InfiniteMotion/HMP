@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.pages.player
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

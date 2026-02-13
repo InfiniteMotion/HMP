@@ -55,8 +55,8 @@ import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.template.components.TitleWidget
-import com.example.hearablemusicplayer.ui.template.pages.SubScreen
+import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel

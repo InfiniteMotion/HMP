@@ -33,9 +33,10 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.ListeningChart
 import com.example.hearablemusicplayer.ui.components.SquareCard
-import com.example.hearablemusicplayer.ui.template.components.TitleWidget
-import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
@@ -72,6 +73,7 @@ fun UserScreenContent(
     TabScreen{
         val sortedData = listeningData.sortedBy { it.date }.takeLast(35) // 取最近35天
         val chartData = sortedData.map { ((it.duration / (1000 * 60)).toInt()) }
+        val haptic = rememberHapticFeedback()
 
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
@@ -136,7 +138,10 @@ fun UserScreenContent(
                             stringResource(R.string.theme_customization),
                             R.drawable.slider_vertical_3,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { navController.navigate(Routes.Custom) }
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.Custom)
+                            }
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -144,7 +149,10 @@ fun UserScreenContent(
                             stringResource(R.string.audio_effects),
                             R.drawable.identify_song,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { navController.navigate(Routes.AudioEffects) }
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.AudioEffects)
+                            }
                         )
                     }
                 }
@@ -159,7 +167,10 @@ fun UserScreenContent(
                             stringResource(R.string.ai_services),
                             R.drawable.icloud,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { navController.navigate(Routes.AI) }
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.AI)
+                            }
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -167,7 +178,10 @@ fun UserScreenContent(
                             stringResource(R.string.title_settings),
                             R.drawable.gearshape,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
-                            onClick = { navController.navigate(Routes.Setting) }
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.Setting)
+                            }
                         )
                     }
                 }

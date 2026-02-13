@@ -1,4 +1,4 @@
-package com.example.hearablemusicplayer.ui.pages
+package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -13,7 +13,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.ui.template.pages.LocalTabHeaderContent
+import com.example.hearablemusicplayer.ui.pages.GalleryScreen
+import com.example.hearablemusicplayer.ui.pages.HomeScreen
+import com.example.hearablemusicplayer.ui.pages.ListScreen
+import com.example.hearablemusicplayer.ui.pages.UserScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel

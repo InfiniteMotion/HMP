@@ -36,8 +36,8 @@ import com.example.hearablemusicplayer.domain.music.MusicLabel
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.Capsule
-import com.example.hearablemusicplayer.ui.template.components.TitleWidget
-import com.example.hearablemusicplayer.ui.template.pages.SubScreen
+import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
@@ -141,7 +141,10 @@ fun SongDetailScreen(
                         .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(stringResource(R.string.loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.loading),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
