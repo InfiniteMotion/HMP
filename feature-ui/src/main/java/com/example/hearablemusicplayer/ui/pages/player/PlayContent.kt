@@ -221,13 +221,14 @@ fun PlayContent(
         }
         if (showTimerDialog) {
             TimerDialog(
-                onDismiss = { },
+                onDismiss = { showTimerDialog = false },
                 onConfirm = { minutes: Int ->
                     if (minutes == 0) {
                         onCancelTimer()
                     } else {
                         onTimerClick(minutes)
                     }
+                    showTimerDialog = false
                 }
             )
         }

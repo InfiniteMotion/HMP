@@ -2,8 +2,11 @@ package com.example.hearablemusicplayer.ui.pages.player
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,9 +37,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.domain.config.DisplayMode
@@ -46,6 +56,7 @@ import com.example.hearablemusicplayer.ui.components.VerticalSegmentedControl
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import kotlinx.coroutines.delay
 
 /**
  * 独立歌词页面
@@ -70,33 +81,79 @@ fun LyricsScreen(
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
+    var isControlsVisible by remember { mutableStateOf(true) }
+    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val haptic = rememberHapticFeedback()
+    val view = LocalView.current
+    val window = (view.context as? android.app.Activity)?.window
+    val windowInsetsController = remember(window, view) {
+        window?.let { WindowCompat.getInsetsController(it, view) }
+    }
 
     // 开启播放进度跟踪
     DisposableEffect(Unit) {
         playControlViewModel.startProgressTracking()
         onDispose {
-
+            // 退出时恢复底部播放栏和状态栏
+            playControlViewModel.setMiniPlayerVisible(true)
+            windowInsetsController?.show(WindowInsetsCompat.Type.statusBars())
         }
     }
 
+    // 自动隐藏逻辑：5秒无操作自动隐藏
+    LaunchedEffect(lastInteractionTime, isSettingsPanelVisible) {
+        if (isSettingsPanelVisible) {
+            // 设置面板打开时，始终显示控件
+            isControlsVisible = true
+            windowInsetsController?.show(WindowInsetsCompat.Type.statusBars())
+        } else {
+            // 设置面板关闭时，5秒后隐藏
+            isControlsVisible = true
+            windowInsetsController?.show(WindowInsetsCompat.Type.statusBars())
+            delay(5000L)
+            isControlsVisible = false
+            windowInsetsController?.hide(WindowInsetsCompat.Type.statusBars())
+            // 设置隐藏行为为短暂显示后自动再次隐藏（可选）
+            windowInsetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    // 同步控制 MiniPlayerBar 的显示隐藏
+    LaunchedEffect(isControlsVisible) {
+        playControlViewModel.setMiniPlayerVisible(isControlsVisible)
+    }
+
     val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+    val bottomPadding by animateDpAsState(targetValue = if (isControlsVisible) 80.dp else 0.dp)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit) {
+                // 点击屏幕切换显示/隐藏状态
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        // 任何交互都重置隐藏计时器并显示控件
+                        lastInteractionTime = System.currentTimeMillis()
+                    }
+                }
+            }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp)
+                .padding(bottom = bottomPadding)
         ) {
             // 歌词展示区域
             AdvancedLyrics(
                 modifier = if(!isSettingsPanelVisible) Modifier.weight(1f) else Modifier.padding(bottom = 240.dp),
                 lyrics = lyrics,
                 currentPosition = currentPosition,
-                onSeek = { playControlViewModel.seekTo(it) },
+                onSeek = { 
+                    lastInteractionTime = System.currentTimeMillis()
+                    playControlViewModel.seekTo(it) 
+                },
                 originalTextSize = originalTextSize,
                 translatedTextSize = translatedTextSize,
                 currentTimeTextSize = currentTimeTextSize,
@@ -111,8 +168,8 @@ fun LyricsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 128.dp),
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it }
         ) {
             LyricsSettingsPanel(
                 originalTextSize = originalTextSize,
@@ -129,17 +186,23 @@ fun LyricsScreen(
                 onAlignmentChange = { settingsViewModel.saveLyricsAlignment(it) }
             )
         }
-        Box(
+
+        // 设置按钮（右下角）
+        AnimatedVisibility(
+            visible = isControlsVisible,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
                 .padding(bottom = 80.dp)
-                .padding(16.dp)
+                .padding(16.dp),
+            enter = fadeIn(),
+            exit = fadeOut()
         ) {
             IconButton(
                 onClick = {
                     haptic.performLightClick()
                     isSettingsPanelVisible = !isSettingsPanelVisible
+                    lastInteractionTime = System.currentTimeMillis()
                 },
                 modifier = Modifier.size(32.dp),
             ) {

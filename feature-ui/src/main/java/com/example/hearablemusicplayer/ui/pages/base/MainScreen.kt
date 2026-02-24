@@ -154,6 +154,8 @@ fun MainScreen(
             ) {
                 val contentModifier = if (navBackStackEntry?.destination?.hasRoute<Routes.Player>() == true) {
                     Modifier.padding(it)
+                } else if (navBackStackEntry?.destination?.hasRoute<Routes.Lyrics>() == true) {
+                    Modifier.padding(it)
                 } else {
                     Modifier
                         .padding(it)
@@ -343,8 +345,9 @@ fun MainScreen(
                     }
                 }
                 // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
+                val isMiniPlayerVisible by playControlViewModel.isMiniPlayerVisible.collectAsState()
                 AnimatedVisibility(
-                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false,
+                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false && isMiniPlayerVisible,
                     enter = slideInVertically(
                         initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                         animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)

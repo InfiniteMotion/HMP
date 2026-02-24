@@ -1,14 +1,15 @@
 package com.example.hearablemusicplayer.ui.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
-import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.MusicLabel
 import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
+import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.domain.setting.usecase.CurrentPlaybackUseCase
 import com.example.hearablemusicplayer.domain.setting.usecase.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,9 +21,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
-import com.example.hearablemusicplayer.ui.util.Routes
 import javax.inject.Inject
 
 @HiltViewModel
@@ -210,16 +208,8 @@ class RecommendationViewModel @Inject constructor(
             }
         }
     }
-    
-    init {
-        // 尝试从路由参数加载歌曲详情（如果是从 SongDetail 路由进入）
-        try {
-            val songDetail = savedStateHandle.toRoute<Routes.SongDetail>()
-            loadSongById(songDetail.musicId)
-        } catch (e: Exception) {
-            // 不是从 SongDetail 进入，忽略
-        }
-        
+
+    init {        
         getDailyRecommendationUseCase.resetProcessingState()
         _isProcessingExtraInfo.value = false
         _processingProgress.value = BatchProcessingProgress()
@@ -229,17 +219,6 @@ class RecommendationViewModel @Inject constructor(
             dailyMusic.filterNotNull().collectLatest { music ->
                 _heartbeatList.value = listOf(music) +
                         currentPlaybackUseCase.getSimilarSongsByWeightedLabels(music.music.id, 10)
-            }
-        }
-    }
-
-    fun loadSongById(musicId: Long) {
-        viewModelScope.launch {
-            val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(musicId)
-            if (recommendation?.musicInfo != null) {
-                dailyMusic.value = recommendation.musicInfo
-                _dailyMusicInfo.value = recommendation.dailyMusicInfo
-                _dailyMusicLabel.value = recommendation.labels
             }
         }
     }

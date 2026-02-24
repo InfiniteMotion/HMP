@@ -126,6 +126,13 @@ class MusicController @Inject constructor(
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
+    private val _isMiniPlayerVisible = MutableStateFlow(true)
+    val isMiniPlayerVisible: StateFlow<Boolean> = _isMiniPlayerVisible.asStateFlow()
+
+    fun setMiniPlayerVisible(visible: Boolean) {
+        _isMiniPlayerVisible.value = visible
+    }
+
     // Playlist
     private var _originalPlaylist: List<MusicInfo> = emptyList()
     private val _currentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())

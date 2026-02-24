@@ -104,6 +104,9 @@ class PlayControlViewModel @Inject constructor(
     private val _paletteColors = MutableStateFlow(PaletteColors())
     val paletteColors: StateFlow<PaletteColors> = _paletteColors.asStateFlow()
 
+    // UI Visibility States
+    val isMiniPlayerVisible: StateFlow<Boolean> = musicController.isMiniPlayerVisible
+
     init {
         // Forward controller toasts
         viewModelScope.launch {
@@ -161,6 +164,10 @@ class PlayControlViewModel @Inject constructor(
 
     fun startProgressTracking() = musicController.startProgressTracking()
     fun stopProgressTracking() = musicController.stopProgressTracking()
+
+    fun setMiniPlayerVisible(visible: Boolean) {
+        musicController.setMiniPlayerVisible(visible)
+    }
 
     fun preloadCurrentMusicInfo() {
         val music = currentPlayingMusic.value

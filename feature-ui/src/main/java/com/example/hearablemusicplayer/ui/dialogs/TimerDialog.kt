@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,7 +45,7 @@ fun TimerDialog(
 
     // 新增状态：记录用户输入的自定义分钟数
     var selectedMinutes by remember { mutableIntStateOf(0) }
-    var customMinutes by remember { mutableIntStateOf(0) }
+    var customMinutesInput by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -99,20 +100,19 @@ fun TimerDialog(
 
                     // 数字输入框
                     OutlinedTextField(
-                        value = customMinutes.toString(),
+                        value = customMinutesInput,
                         onValueChange = { input ->
+                            // 允许为空，方便用户清空重新输入
+                            if (input.isEmpty()) {
+                                customMinutesInput = ""
+                                return@OutlinedTextField
+                            }
+                            
                             // 尝试解析输入值为整数
-                            try {
-                                val minutes = input.toIntOrNull() ?: return@OutlinedTextField
-                                if (minutes >= 0) {
-                                    customMinutes = minutes
-                                    selectedMinutes = minutes // 同步到选中值
-                                } else {
-                                    // 输入负数时重置
-                                    customMinutes = 0
-                                }
-                            } catch (_: NumberFormatException) {
-                                // 非法字符输入时忽略
+                            val minutes = input.toIntOrNull()
+                            if (minutes != null && minutes >= 0) {
+                                customMinutesInput = input
+                                selectedMinutes = minutes // 同步到选中值
                             }
                         },
                         label = { Text(stringResource(R.string.custom_minutes)) },

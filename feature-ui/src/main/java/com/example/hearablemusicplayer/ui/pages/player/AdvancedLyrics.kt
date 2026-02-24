@@ -4,11 +4,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +68,7 @@ fun AdvancedLyrics(
     val parsedLyrics = remember(lyrics) { EnhancedLyricsParser.parse(lyrics) }
     val scrollState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
+    val density = LocalDensity.current
 
     val lazyColumnHorizontalAlignment = when (alignment) {
         LyricsAlignment.LEFT -> Alignment.Start
@@ -86,28 +89,37 @@ fun AdvancedLyrics(
         }
     }
     
-    // 自动滚动到当前行
-    LaunchedEffect(currentIndex) {
-        if (currentIndex >= 0 && currentIndex < parsedLyrics.size) {
-            scrollState.animateScrollToItem(
-                index = currentIndex,
-                scrollOffset = -200
-            )
-        }
-    }
-    
     Column(
         modifier = modifier.fillMaxSize()
     ) {
         // 歌词区域
-        Box(
+        BoxWithConstraints(
             modifier = Modifier.weight(1f)
         ) {
+            val containerHeight = maxHeight
+            val containerHeightPx = with(density) { containerHeight.toPx() }
+            
+            // 自动滚动到当前行
+            LaunchedEffect(currentIndex) {
+                if (currentIndex >= 0 && currentIndex < parsedLyrics.size) {
+                    // 动态计算偏移量使其居中
+                    // scrollOffset 是相对于列表顶部的偏移量，为负值时项向下移动
+                    // 我们希望项在容器中间，所以偏移量应为 -(容器高度 / 2 - 项预估高度 / 2)
+                    // 这里假设单行高度约为 60-80px，取 40px 作为偏移补偿
+                    val offset = -(containerHeightPx / 2).toInt() + with(density) { 40.dp.toPx() }.toInt()
+                    
+                    scrollState.animateScrollToItem(
+                        index = currentIndex,
+                        scrollOffset = offset
+                    )
+                }
+            }
+
             LazyColumn(
                 state = scrollState,
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = lazyColumnHorizontalAlignment,
-                contentPadding = PaddingValues(vertical = 120.dp)
+                contentPadding = PaddingValues(vertical = containerHeight / 2)
             ) {
                 itemsIndexed(
                     items = parsedLyrics,
