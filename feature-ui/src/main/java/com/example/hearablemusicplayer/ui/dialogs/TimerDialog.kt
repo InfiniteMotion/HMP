@@ -1,0 +1,143 @@
+﻿package com.example.hearablemusicplayer.ui.dialogs
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+
+@Composable
+fun TimerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    val haptic = rememberHapticFeedback()
+    // 原始预设时间选项
+    val timeOptions = listOf(0, 15, 30, 45, 60, 90)
+
+    // 新增状态：记录用户输入的自定义分钟数
+    var selectedMinutes by remember { mutableIntStateOf(0) }
+    var customMinutesInput by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = { Text(stringResource(R.string.sleep_timer)) },
+        text = {
+            // 使用Column组合预设选项和自定义输入
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 预设时间选项网格
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    userScrollEnabled = false
+                ) {
+                    items(timeOptions) { minutes ->
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .fillMaxSize()
+                        ) {
+                            RadioButton(
+                                selected = selectedMinutes == minutes,
+                                onClick = {
+                                    haptic.performLightClick()
+                                    selectedMinutes = minutes
+                                }
+                            )
+                            Text(
+                                text = if (minutes == 0) stringResource(R.string.timer_off) else stringResource(R.string.timer_minutes, minutes),
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 自定义输入区域
+                Spacer(modifier = Modifier.height(24.dp)) // 添加间距
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(stringResource(R.string.or_label), color = Color.Gray)
+
+                    // 数字输入框
+                    OutlinedTextField(
+                        value = customMinutesInput,
+                        onValueChange = { input ->
+                            // 允许为空，方便用户清空重新输入
+                            if (input.isEmpty()) {
+                                customMinutesInput = ""
+                                return@OutlinedTextField
+                            }
+                            
+                            // 尝试解析输入值为整数
+                            val minutes = input.toIntOrNull()
+                            if (minutes != null && minutes >= 0) {
+                                customMinutesInput = input
+                                selectedMinutes = minutes // 同步到选中值
+                            }
+                        },
+                        label = { Text(stringResource(R.string.custom_minutes)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                haptic.performConfirm()
+                onConfirm(selectedMinutes)
+            }) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                haptic.performClick()
+                onDismiss()
+            }) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}

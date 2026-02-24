@@ -7,9 +7,10 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -44,6 +44,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
+import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
+import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.Routes
@@ -236,7 +239,8 @@ fun PlayControlButtonTwo(
 ) {
     val haptic = rememberHapticFeedback()
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(vertical = 24.dp),
     ) {
         Row(
@@ -311,32 +315,130 @@ fun SearchButton(
     navController: NavController
 ){
     val haptic = rememberHapticFeedback()
-    Box(
-        modifier = Modifier.size(48.dp)
-            .clip(CircleShape)
-            .border(
-                width = 2.dp,
-                shape = RoundedCornerShape(48),
-                color = MaterialTheme.colorScheme.primary,
-            ),
-        contentAlignment = Alignment.Center
+    FilledIconButton(
+        onClick = {
+            haptic.performClick()
+            navController.navigate(Routes.Search)
+        },
+        modifier = Modifier
+            .size(32.dp), // Larger touch target
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
-        FilledIconButton(
-            onClick = {
+        Icon(
+            painter = painterResource(id = R.drawable.magnifyingglass),
+            contentDescription = "Search Button",
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+/**
+ * 播放列表生成组合按钮组件
+ * 提供智能播放列表生成功能入口，采用两排组合按钮布局
+ * 第一排：偏好选择（多选一）
+ * 第二排：算法选择（二选一）+ 生成按钮
+ */
+@Composable
+fun GeneratePlaylistComboButtons(
+    seedMusicId: Long,
+    defaultAlgorithmType: AlgorithmType?,
+    defaultTemplate: WeightTemplate?,
+    onGeneratePlaylist: (Long) -> Unit,
+    onSaveDefaultConfig: ((AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit)
+) {
+    val haptic = rememberHapticFeedback()
+    var selectedAlgorithm by remember { mutableStateOf(defaultAlgorithmType?: AlgorithmType.OPTIMIZED_SIMILARITY) }
+    var selectedTemplate by remember { mutableStateOf(defaultTemplate?: WeightTemplate.BALANCED) }
+    val weightOptions = listOf(
+        SegmentedOption(
+            id = WeightTemplate.BALANCED.name,
+            label = "平衡"
+        ),
+        SegmentedOption(
+            id = WeightTemplate.GENRE_FOCUS.name,
+            label = "风格"
+        ),
+        SegmentedOption(
+            id = WeightTemplate.MOOD_FOCUS.name,
+            label = "情绪"
+        ),
+        SegmentedOption(
+            id = WeightTemplate.SCENARIO_FOCUS.name,
+            label = "场景"
+        ),
+        SegmentedOption(
+            id = WeightTemplate.ERA_FOCUS.name,
+            label = "年代"
+        )
+    )
+    val algorithmOptions = listOf(
+        SegmentedOption(
+            id = AlgorithmType.OPTIMIZED_SIMILARITY.name,
+            label = "相似"
+        ),
+        SegmentedOption(
+            id = AlgorithmType.CHAIN_SIMILARITY.name,
+            label = "心动"
+        )
+    )
+    Column(
+        modifier = Modifier
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        SegmentedControl(
+            modifier = Modifier,
+            options = weightOptions,
+            selectedOption = selectedTemplate.name,
+            onOptionSelected = { optionId ->
+                WeightTemplate.entries.find { it.name == optionId }?.let {
+                    selectedTemplate = it
+                }
+                onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
                 haptic.performClick()
-                navController.navigate(Routes.Search)
             },
-            modifier = Modifier
-                .size(48.dp), // Larger touch target
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+            showIcons = false
+        )
+
+        SegmentedControl(
+            modifier = Modifier,
+            options = algorithmOptions,
+            selectedOption = selectedAlgorithm.name,
+            onOptionSelected = { optionId ->
+                AlgorithmType.entries.find { it.name == optionId }?.let {
+                    selectedAlgorithm = it
+                }
+                onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
+                haptic.performClick()
+            },
+            showIcons = false
+        )
+
+        Row(
+            modifier = Modifier.height(48.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                .clickable { onGeneratePlaylist(seedMusicId) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.magnifyingglass),
-                contentDescription = "Search Button",
-                modifier = Modifier.size(28.dp)
+                painter = painterResource(id = R.drawable.lightbulb),
+                tint = MaterialTheme.colorScheme.primary,
+                contentDescription = "generate Button",
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "生成推荐列表",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

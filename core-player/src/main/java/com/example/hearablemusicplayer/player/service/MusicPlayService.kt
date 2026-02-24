@@ -28,7 +28,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionResult
 import coil.imageLoader
 import coil.request.ImageRequest
-import com.example.hearablemusicplayer.domain.model.Music
+import com.example.hearablemusicplayer.domain.music.Music
 import com.example.hearablemusicplayer.player.AudioEffectManager
 import com.example.hearablemusicplayer.player.R
 import dagger.hilt.android.AndroidEntryPoint

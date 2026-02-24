@@ -10,12 +10,12 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.hearablemusicplayer.data.util.SecureStorageHelper
 
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.DailyRefreshConfig
-import com.example.hearablemusicplayer.domain.model.DisplayMode
-import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.config.DailyRefreshConfig
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
+import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -84,6 +84,12 @@ class SettingsRepositoryImpl @Inject constructor(
         val LYRICS_CURRENT_TIME_TEXT_SIZE = intPreferencesKey("lyrics_current_time_text_size")
         val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
         val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
+        val LYRICS_ALIGNMENT = stringPreferencesKey("lyrics_alignment")
+        
+        // 播放列表算法配置
+        val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
+        val DEFAULT_WEIGHT_TEMPLATE = stringPreferencesKey("default_weight_template")
+        val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
     }
 
     // DataStore 访问实例
@@ -704,6 +710,31 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override val lyricsAlignment: Flow<LyricsAlignment> = dataStore.data
+        .map { prefs ->
+            val alignmentStr = prefs[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
+            try {
+                LyricsAlignment.valueOf(alignmentStr)
+            } catch (e: IllegalArgumentException) {
+                LyricsAlignment.CENTER
+            }
+        }
+
+    override suspend fun saveLyricsAlignment(alignment: LyricsAlignment) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LYRICS_ALIGNMENT] = alignment.name
+        }
+    }
+
+    override suspend fun getLyricsAlignment(): LyricsAlignment {
+        val alignmentStr = dataStore.data.first()[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
+        return try {
+            LyricsAlignment.valueOf(alignmentStr)
+        } catch (e: IllegalArgumentException) {
+            LyricsAlignment.CENTER
+        }
+    }
+
     /**
      * 清理旧备份文件(保留最近的 3 个)
      */
@@ -730,5 +761,46 @@ class SettingsRepositoryImpl @Inject constructor(
             Log.e("SettingsRepository", "Failed to clean old backups", e)
             kotlin.Result.failure(e)
         }
+    }
+    
+    // ==================== 播放列表算法配置实现 ====================
+    
+    override val defaultAlgorithmType: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] ?: "OPTIMIZED_SIMILARITY" }
+    
+    override suspend fun saveDefaultAlgorithmType(type: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] = type
+        }
+    }
+    
+    override suspend fun getDefaultAlgorithmType(): String {
+        return dataStore.data.first()[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] ?: "OPTIMIZED_SIMILARITY"
+    }
+    
+    override val defaultWeightTemplate: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] ?: "BALANCED" }
+    
+    override suspend fun saveDefaultWeightTemplate(template: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] = template
+        }
+    }
+    
+    override suspend fun getDefaultWeightTemplate(): String {
+        return dataStore.data.first()[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] ?: "BALANCED"
+    }
+    
+    override val defaultExtensionConfig: Flow<String> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] ?: "{}" }
+    
+    override suspend fun saveDefaultExtensionConfig(configJson: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] = configJson
+        }
+    }
+    
+    override suspend fun getDefaultExtensionConfig(): String {
+        return dataStore.data.first()[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] ?: "{}"
     }
 }

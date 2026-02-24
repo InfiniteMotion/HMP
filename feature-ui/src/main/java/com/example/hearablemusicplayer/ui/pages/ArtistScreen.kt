@@ -12,10 +12,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.components.MusicList
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonTwo
-import com.example.hearablemusicplayer.ui.template.pages.SubScreen
+import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -85,9 +85,9 @@ fun ArtistScreenContent(
                 onItemClick = {
                     haptic.performClick()
                     playWith(it)
-                    onNavigate(Routes.Player) },
+                },
                 onAddToPlaylist = addToPlaylist,
-                onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
+                onMenuClick = { onNavigate(Routes.SongDetail(it.music.id)) },
                 showAddButton = true,
                 showMenuButton = true,
                 isPlaying = isPlaying,
