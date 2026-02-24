@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
  * 使用object定义所有路由，确保全局唯一性和类型安全
  */
 object Routes {
+    /** Tabs 容器页路由（Home/Gallery/List/User 的统一承载） */
+    @Serializable object Tabs
+
     /** 主页路由 */
     @Serializable object Home
     
@@ -45,4 +48,7 @@ object Routes {
 
     /** 歌曲详情页路由 */
     @Serializable data class SongDetail(val musicId: Long)
+
+    /** 歌词页路由 */
+    @Serializable object Lyrics
 }

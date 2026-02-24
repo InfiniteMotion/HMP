@@ -101,10 +101,15 @@
     <!-- Song Detail Screen -->
     <string name="loading">Loading...</string>
     <string name="title_song_detail">Song Detail</string>
+    <string name="song_detail_tab_intro">Intro</string>
+    <string name="song_detail_tab_lyrics">Lyrics</string>
+    <string name="song_detail_tab_more">More</string>
+    <string name="song_detail_empty">No content available</string>
     <string name="song_description">Description</string>
     <string name="artist_introduction">Artist Info</string>
     <string name="creative_background">Background</string>
     <string name="popular_lyrics">Popular Lyrics</string>
+    <string name="lyrics">Lyrics</string>
     <string name="song_achievements">Achievements</string>
     <string name="similar_music">Similar Music</string>
 
@@ -163,6 +168,7 @@
     <string name="album_art">Album Art</string>
 
     <!-- User Screen -->
+    <string name="title_user">User</string>
     <string name="listening_duration_chart_title">Recent Listening Duration (Mins)</string>
     <string name="theme_customization">Theme Customization</string>
     <string name="audio_effects">Audio Effects</string>
@@ -181,6 +187,14 @@
     <string name="audio_effects_settings">Audio Effects Settings</string>
     <string name="preset_equalizer">Preset Equalizer</string>
     <string name="custom_equalizer">Custom Equalizer</string>
+    <string name="duration_format">%1$d:%2$02d</string>
+    <string name="play">Play</string>
+    <string name="add_to_playlist">Add to Playlist</string>
+    <string name="artist">Artist</string>
+    <string name="album">Album</string>
+    <string name="duration">Duration</string>
+    <string name="genre">Genre</string>
+    <string name="year">Year</string>
 
     <!-- List Screen -->
     <string name="title_playlist">Playlist</string>
@@ -190,4 +204,5 @@
     <string name="banner_default">Default</string>
     <string name="banner_heart">Heart</string>
     <string name="banner_history">History</string>
+    <string name="share">Share</string>
 </resources>

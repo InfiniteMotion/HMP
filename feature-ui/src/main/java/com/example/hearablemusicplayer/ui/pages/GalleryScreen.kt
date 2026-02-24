@@ -3,11 +3,15 @@ package com.example.hearablemusicplayer.ui.pages
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -15,11 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.model.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.MusicList
+import com.example.hearablemusicplayer.ui.components.GalleryList
+import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
-import com.example.hearablemusicplayer.ui.template.pages.TabScreen
+import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
@@ -54,6 +59,12 @@ fun GalleryScreen(
         playWith = playControlViewModel::playWith,
         recordPlayback = playControlViewModel::recordPlayback,
         addToPlaylist = playControlViewModel::addToPlaylist,
+        onFavorite = playControlViewModel::updateMusicLikedStatus,
+        onShare =  {  },
+        onDetail = {
+            navController.navigate(Routes.SongDetail(it.music.id))
+        },
+        onRemove = {  },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
             navController.navigate(Routes.Player)
@@ -82,9 +93,13 @@ fun GalleryScreenContent(
     selectedGenre: String,
     selectedOrder: String,
     onNavigate: (Any) -> Unit,
-    playWith: suspend (MusicInfo) -> Unit,
+    playWith: (MusicInfo) -> Unit,
     recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
+    onFavorite: (MusicInfo, Boolean) -> Unit,
+    onShare: (MusicInfo) -> Unit,
+    onDetail: (MusicInfo) -> Unit,
+    onRemove: (MusicInfo) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
@@ -92,6 +107,9 @@ fun GalleryScreenContent(
     navController: NavController
 ) {
     val haptic = rememberHapticFeedback()
+    var showDetailDialog by remember { mutableStateOf(false) }
+    var selectedMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
+    
     TabScreen(
         title = stringResource(R.string.title_gallery),
         hasSearchBotton = true,
@@ -109,20 +127,76 @@ fun GalleryScreenContent(
                 onShufflePlay = onShufflePlay
             )
         }
+        
+        // 使用 GalleryList 组件
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)
         ){
-            MusicList(
+            GalleryList(
                 musicInfoList = musicInfoList,
-                onItemClick = {
+                onItemClick = { musicInfo ->
                     haptic.performClick()
-                    playWith(it)
-                    onNavigate(Routes.Player) },
-                onAddToPlaylist = { _ -> },
-                onMenuClick = {onNavigate(Routes.SongDetail(it.music.id))},
-                showAddButton = false,
-                showMenuButton = true,
+                    playWith(musicInfo)
+                },
+                onMenuClick = { musicInfo ->
+                    selectedMusicInfo = musicInfo
+                    showDetailDialog = true
+                },
                 isPlaying = isPlaying,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // 音乐详情弹窗
+        if (showDetailDialog) {
+            MusicDetailDialog(
+                musicInfo = selectedMusicInfo,
+                onDismiss = {
+                    showDetailDialog = false
+                    selectedMusicInfo = null
+                },
+                onPlay = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        playWith(musicInfo)
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                },
+                onAddToPlaylist = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        addToPlaylist(musicInfo)
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                },
+                onFavorite = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        musicInfo.userInfo?.liked?.let { onFavorite(musicInfo, !it) }
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                },
+                onShare = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        onShare(musicInfo)
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                },
+                onDetail = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        onDetail(musicInfo)
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                },
+                onRemove = {
+                    selectedMusicInfo?.let { musicInfo ->
+                        onRemove(musicInfo)
+                        showDetailDialog = false
+                        selectedMusicInfo = null
+                    }
+                }
             )
         }
     }

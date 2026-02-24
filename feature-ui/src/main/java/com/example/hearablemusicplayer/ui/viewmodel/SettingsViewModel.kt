@@ -2,14 +2,14 @@ package com.example.hearablemusicplayer.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.compose.ui.unit.sp
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.DisplayMode
-import com.example.hearablemusicplayer.domain.model.LyricsConfig
-import com.example.hearablemusicplayer.domain.model.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.usecase.music.GetDailyMusicRecommendationUseCase
-import com.example.hearablemusicplayer.domain.usecase.settings.LyricsSettingsUseCase
-import com.example.hearablemusicplayer.domain.usecase.settings.UserSettingsUseCase
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.config.DisplayMode
+import com.example.hearablemusicplayer.domain.config.LyricsAlignment
+import com.example.hearablemusicplayer.domain.config.LyricsConfig
+import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.LyricsSettingsUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.UserSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -148,6 +148,10 @@ class SettingsViewModel @Inject constructor(
     // 显示模式配置
     val lyricsDisplayMode = lyricsSettingsUseCase.displayMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DisplayMode.DUAL)
+
+    // 对齐配置
+    val lyricsAlignment = lyricsSettingsUseCase.alignment
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsAlignment.CENTER)
     
     // ==================== 歌词配置操作方法 ====================
     
@@ -181,6 +185,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
     
+    fun saveLyricsAlignment(alignment: LyricsAlignment) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveAlignment(alignment)
+        }
+    }
+    
     /**
      * 获取完整的歌词配置
      */
@@ -190,7 +200,8 @@ class SettingsViewModel @Inject constructor(
             translatedTextSize = lyricsTranslatedTextSize.value,
             currentTimeTextSize = lyricsCurrentTimeTextSize.value,
             lineSpacing = lyricsLineSpacing.value,
-            displayMode = lyricsDisplayMode.value
+            displayMode = lyricsDisplayMode.value,
+            alignment = lyricsAlignment.value
         )
     }
     

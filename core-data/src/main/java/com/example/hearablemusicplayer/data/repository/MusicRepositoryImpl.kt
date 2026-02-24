@@ -20,18 +20,17 @@ import com.example.hearablemusicplayer.data.database.UserInfo
 import com.example.hearablemusicplayer.data.database.UserInfoDao
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory as DataLabelCategory
 import com.example.hearablemusicplayer.data.database.myenum.LabelName as DataLabelName
-import com.example.hearablemusicplayer.domain.model.enum.LabelCategory
-import com.example.hearablemusicplayer.domain.model.enum.LabelName
+import com.example.hearablemusicplayer.domain.enum.LabelCategory
+import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
 import com.example.hearablemusicplayer.data.network.AiApiResult
-import com.example.hearablemusicplayer.domain.model.PlaybackHistory as PlaybackHistoryDomain
-import com.example.hearablemusicplayer.data.network.DeepSeekAPIWrapper
+import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
 import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
-import com.example.hearablemusicplayer.domain.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.model.DailyMusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.repository.MusicRepository
+import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
+import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicRepository
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -48,8 +47,8 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.hearablemusicplayer.domain.model.ListeningDuration as ListeningDurationDomain
-import com.example.hearablemusicplayer.domain.model.MusicLabel as MusicLabelDomain
+import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration as ListeningDurationDomain
+import com.example.hearablemusicplayer.domain.music.MusicLabel as MusicLabelDomain
 
 @Singleton
 class MusicRepositoryImpl @Inject constructor(
@@ -60,7 +59,6 @@ class MusicRepositoryImpl @Inject constructor(
     private val musicLabelDao: MusicLabelDao,
     private val playbackHistoryDao: PlaybackHistoryDao,
     private val listeningDurationDao: ListeningDurationDao,
-    private val deepSeekAPIWrapper: DeepSeekAPIWrapper,
     private val multiProviderApiAdapter: MultiProviderApiAdapter,
     private val gson: Gson,
     @ApplicationContext private val context: Context

@@ -7,16 +7,16 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.PlaybackHistory
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.repository.SettingsRepository
-import com.example.hearablemusicplayer.domain.usecase.playback.CurrentPlaybackUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.PlaybackHistoryUseCase
-import com.example.hearablemusicplayer.domain.usecase.playback.TimerUseCase
-import com.example.hearablemusicplayer.domain.usecase.playlist.ManagePlaylistUseCase
+import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicLabel
+import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
+import com.example.hearablemusicplayer.domain.setting.usecase.CurrentPlaybackUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.PlaybackHistoryUseCase
+import com.example.hearablemusicplayer.domain.setting.usecase.TimerUseCase
+import com.example.hearablemusicplayer.domain.playlist.usecase.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.player.service.MusicPlayService
 import com.example.hearablemusicplayer.player.service.PlayControl
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -125,6 +125,13 @@ class MusicController @Inject constructor(
     // Playback State
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    private val _isMiniPlayerVisible = MutableStateFlow(true)
+    val isMiniPlayerVisible: StateFlow<Boolean> = _isMiniPlayerVisible.asStateFlow()
+
+    fun setMiniPlayerVisible(visible: Boolean) {
+        _isMiniPlayerVisible.value = visible
+    }
 
     // Playlist
     private var _originalPlaylist: List<MusicInfo> = emptyList()
@@ -285,16 +292,9 @@ class MusicController @Inject constructor(
     }
 
     fun clearPlaylist() {
-        val currentMusic = currentPlayingMusic.value
-        if (currentMusic != null) {
-            _originalPlaylist = listOf(currentMusic)
-            _currentPlaylist.value = listOf(currentMusic)
-            _currentIndex.value = 0
-        } else {
-            _originalPlaylist = emptyList()
-            _currentPlaylist.value = emptyList()
-            _currentIndex.value = 0
-        }
+        _originalPlaylist = emptyList()
+        _currentPlaylist.value = emptyList()
+        _currentIndex.value = 0
         persistCurrentPlaylistToDatabase()
     }
 
@@ -524,7 +524,7 @@ class MusicController @Inject constructor(
         }
     }
 
-    suspend fun playAt(musicInfo: MusicInfo) {
+    fun playAt(musicInfo: MusicInfo) {
         switchToMusicInPlaylist(musicInfo)
         playCurrentTrack("ManualPlay")
     }

@@ -9,10 +9,15 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.example.hearablemusicplayer.domain.model.AudioEffectSettings
-import com.example.hearablemusicplayer.domain.model.MusicInfo
-import com.example.hearablemusicplayer.domain.model.MusicLabel
-import com.example.hearablemusicplayer.domain.model.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.MusicLabel
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
+import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
+import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistUseCase
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,11 +25,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -57,7 +65,9 @@ data class PaletteColors(
 @UnstableApi
 class PlayControlViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val musicController: MusicController
+    private val musicController: MusicController,
+    private val generatePlaylistUseCase: GeneratePlaylistUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     // Delegate flows to MusicController
@@ -72,13 +82,14 @@ class PlayControlViewModel @Inject constructor(
     val currentPosition: StateFlow<Long> = musicController.currentPosition
     val duration: StateFlow<Long> = musicController.duration
     val timerRemaining: StateFlow<Long?> = musicController.timerRemaining
-    
+
     // Audio Effect States
     val audioEffectSettings: StateFlow<AudioEffectSettings> = musicController.audioEffectSettings
     val equalizerPresets: StateFlow<List<String>> = musicController.equalizerPresets
     val equalizerBandCount: StateFlow<Int> = musicController.equalizerBandCount
     val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = musicController.equalizerBandLevelRange
-    val currentEqualizerBandLevels: StateFlow<FloatArray> = musicController.currentEqualizerBandLevels
+    val currentEqualizerBandLevels: StateFlow<FloatArray> =
+        musicController.currentEqualizerBandLevels
 
     // Events
     private val _toastEvent = MutableSharedFlow<UiEvent.ShowToast>(
@@ -92,6 +103,9 @@ class PlayControlViewModel @Inject constructor(
     private val paletteCache = mutableMapOf<String, PaletteColors>()
     private val _paletteColors = MutableStateFlow(PaletteColors())
     val paletteColors: StateFlow<PaletteColors> = _paletteColors.asStateFlow()
+
+    // UI Visibility States
+    val isMiniPlayerVisible: StateFlow<Boolean> = musicController.isMiniPlayerVisible
 
     init {
         // Forward controller toasts
@@ -118,37 +132,50 @@ class PlayControlViewModel @Inject constructor(
     fun playPrevious() = musicController.playPrevious()
     fun seekTo(position: Long) = musicController.seekTo(position)
     fun togglePlaybackModeByOrder() = musicController.togglePlaybackModeByOrder()
-    
-    fun playWith(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playWith(musicInfo) }
+
+    fun playWith(musicInfo: MusicInfo) =
+        viewModelScope.launch { musicController.playWith(musicInfo) }
+
     fun playAt(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playAt(musicInfo) }
-    
+
     fun addToPlaylist(musicInfo: MusicInfo) = musicController.addToPlaylist(musicInfo)
     fun removeFromPlaylist(musicInfo: MusicInfo) = musicController.removeFromPlaylist(musicInfo)
     fun moveToTop(musicInfo: MusicInfo) = musicController.moveToTop(musicInfo)
     fun clearPlaylist() = musicController.clearPlaylist()
-    fun addAllToPlaylistInOrder(playlist: List<MusicInfo>) = musicController.addAllToPlaylistInOrder(playlist)
-    fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) = musicController.addAllToPlaylistByShuffle(playlist)
-    fun recordPlayback(musicId: Long, source: String?) = musicController.recordPlayback(musicId, source)
-    
+    fun addAllToPlaylistInOrder(playlist: List<MusicInfo>) =
+        musicController.addAllToPlaylistInOrder(playlist)
+
+    fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) =
+        musicController.addAllToPlaylistByShuffle(playlist)
+
+    fun recordPlayback(musicId: Long, source: String?) =
+        musicController.recordPlayback(musicId, source)
+
     fun playHeartMode() = musicController.playHeartMode()
-    fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) = musicController.updateMusicLikedStatus(musicInfo, liked)
+    fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) =
+        musicController.updateMusicLikedStatus(musicInfo, liked)
+
     fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
     fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
     fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
-    
+
     fun startTimer(minutes: Int) = musicController.startTimer(minutes)
     fun cancelTimer() = musicController.cancelTimer()
 
     fun startProgressTracking() = musicController.startProgressTracking()
     fun stopProgressTracking() = musicController.stopProgressTracking()
-    
+
+    fun setMiniPlayerVisible(visible: Boolean) {
+        musicController.setMiniPlayerVisible(visible)
+    }
+
     fun preloadCurrentMusicInfo() {
         val music = currentPlayingMusic.value
         if (music != null) {
             musicController.preloadCurrentMusicInfo(music)
         }
     }
-    
+
     // Audio Effects Delegates
     fun initializeAudioEffects() = musicController.initializeAudioEffects()
     fun setEqualizerPreset(preset: Int) = musicController.setEqualizerPreset(preset)
@@ -156,7 +183,7 @@ class PlayControlViewModel @Inject constructor(
     fun setSurroundSound(enabled: Boolean) = musicController.setSurroundSound(enabled)
     fun setReverb(preset: Int) = musicController.setReverb(preset)
     fun setCustomEqualizer(bandLevels: FloatArray) = musicController.setCustomEqualizer(bandLevels)
-    
+
     // Getters for Audio Effect UI
     fun getCurrentEqualizerPreset() = musicController.getCurrentEqualizerPreset()
     fun getBassBoostLevel() = musicController.getBassBoostLevel()
@@ -231,6 +258,74 @@ class PlayControlViewModel @Inject constructor(
             } catch (e: Exception) {
                 // 提取失败使用回退色
                 _paletteColors.value = PaletteColors()
+            }
+        }
+    }
+
+    // ==================== 播放列表生成方法 ====================
+    /**
+     * 生成播放列表并添加到当前播放队列
+     */
+    fun generatePlaylist(
+        seedMusicId: Long = currentPlayingMusic.value?.music?.id ?: 0
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = generatePlaylistUseCase.execute(
+                    seedMusicId = seedMusicId,
+                )
+
+                when (result) {
+                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Success -> {
+                        // 将生成的播放列表添加到当前播放队列
+                        addAllToPlaylistInOrder(result.playlist)
+                        _toastEvent.emit(UiEvent.ShowToast("已生成${result.actualLength}首歌曲的播放列表"))
+                    }
+
+                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Error -> {
+                        _toastEvent.emit(UiEvent.ShowToast("生成播放列表失败: ${result.message}"))
+                    }
+                }
+            } catch (e: Exception) {
+                _toastEvent.emit(UiEvent.ShowToast("生成播放列表时发生错误: ${e.message}"))
+            }
+        }
+    }
+
+    val defaultAlgorithmType: StateFlow<AlgorithmType> = 
+        settingsRepository.defaultAlgorithmType.map { typeName ->
+            AlgorithmType.valueOf(typeName)
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AlgorithmType.OPTIMIZED_SIMILARITY
+        )
+
+    val defaultWeightTemplate: StateFlow<WeightTemplate> = settingsRepository.defaultWeightTemplate.map { typeName ->
+        WeightTemplate.valueOf(typeName)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = WeightTemplate.BALANCED
+    )
+
+    /**
+     * 保存默认算法配置
+     */
+    fun saveAlgorithmConfig(
+        algorithmType: AlgorithmType,
+        weightTemplate: WeightTemplate,
+        extensionConfig: ExtensionConfig
+    ) {
+        viewModelScope.launch {
+            try {
+                settingsRepository.saveDefaultAlgorithmType(algorithmType.name)
+                settingsRepository.saveDefaultWeightTemplate(weightTemplate.name)
+                // 使用ExtensionConfig的toJson方法进行序列化
+                settingsRepository.saveDefaultExtensionConfig(extensionConfig.toJson())
+                _toastEvent.emit(UiEvent.ShowToast("已保存默认配置"))
+            } catch (e: Exception) {
+                _toastEvent.emit(UiEvent.ShowToast("保存配置失败: ${e.message}"))
             }
         }
     }

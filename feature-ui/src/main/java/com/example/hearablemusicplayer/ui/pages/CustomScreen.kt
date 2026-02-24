@@ -29,8 +29,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.template.components.TitleWidget
-import com.example.hearablemusicplayer.ui.template.pages.SubScreen
+import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
@@ -73,12 +73,12 @@ fun CustomScreenContent(
                 customMode = customMode,
                 setCustomMode = setCustomMode
             )
-            
+
             SetBackgroundStyle(
                 backgroundStyle = backgroundStyle,
                 setBackgroundStyle = setBackgroundStyle
             )
-            
+
             Spacer(modifier = Modifier.height(64.dp))
         }
     }
