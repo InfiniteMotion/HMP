@@ -33,13 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
 // 播放器主界面
@@ -56,6 +55,7 @@ fun PlayerScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val haptic = rememberHapticFeedback()
+    val hazeState = rememberHazeState()
 
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collect { event ->
@@ -222,7 +222,8 @@ fun PlayerScreen(
             onClearPlaylist = viewModel::clearPlaylist,
             onPlayItem = viewModel::playAt,
             onMoveToTop = viewModel::moveToTop,
-            onRemoveFromPlaylist = viewModel::removeFromPlaylist
+            onRemoveFromPlaylist = viewModel::removeFromPlaylist,
+            hazeState = hazeState
         )
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -15,15 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,9 +34,14 @@ import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 // 音乐详情卡片弹窗 - 优化版UI布局
 @OptIn(UnstableApi::class)
+@kotlin.OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun MusicDetailDialog(
     musicInfo: MusicInfo?,
@@ -44,27 +51,59 @@ fun MusicDetailDialog(
     onFavorite: () -> Unit,
     onShare: () -> Unit,
     onDetail: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    hazeState: HazeState? = null
 ) {
     if (musicInfo == null) return
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(28.dp),
-        title = {
-            Text(
-                text = musicInfo.music.title,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        text = {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(enabled = false) {}, // Intercept clicks
+        contentAlignment = Alignment.Center
+    ) {
+        // Scrim
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onDismiss)
+        )
+
+        // Dialog Content
+        val dialogShape = RoundedCornerShape(28.dp)
+        
+        Card(
+            modifier = Modifier
+                .padding(24.dp)
+                .clip(dialogShape)
+                .then(
+                    if (hazeState != null) {
+                        Modifier.hazeEffect(
+                            state = hazeState,
+                            style = HazeMaterials.thin()
+                        )
+                    } else Modifier
+                ),
+            shape = dialogShape,
+            colors = CardDefaults.cardColors(
+                containerColor = if (hazeState != null) Color.Transparent else MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Text(
+                    text = musicInfo.music.title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .heightIn(max = 130.dp),
@@ -136,12 +175,8 @@ fun MusicDetailDialog(
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
-    )
+    }
 }
 
 @Composable
@@ -165,12 +200,14 @@ private fun InfoRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -196,12 +233,14 @@ fun MenuOption(
             painter = painterResource(iconRes),
             contentDescription = stringResource(labelRes),
             modifier = Modifier
-                .size(18.dp)
+                .size(18.dp),
+            tint = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = stringResource(labelRes),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }

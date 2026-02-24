@@ -1,143 +1,193 @@
 ﻿package com.example.hearablemusicplayer.ui.dialogs
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.SegmentedControl
+import com.example.hearablemusicplayer.ui.components.SegmentedOption
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 
+@OptIn(ExperimentalHazeMaterialsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TimerDialog(
     onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
+    onConfirm: (Int) -> Unit,
+    hazeState: HazeState? = null
 ) {
     val haptic = rememberHapticFeedback()
-    // 原始预设时间选项
-    val timeOptions = listOf(0, 15, 30, 45, 60, 90)
-
-    // 新增状态：记录用户输入的自定义分钟数
-    var selectedMinutes by remember { mutableIntStateOf(0) }
+    
+    // State
+    var selectedOption by remember { mutableStateOf("0") }
     var customMinutesInput by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = { Text(stringResource(R.string.sleep_timer)) },
-        text = {
-            // 使用Column组合预设选项和自定义输入
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // 预设时间选项网格
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 200.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    userScrollEnabled = false
-                ) {
-                    items(timeOptions) { minutes ->
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .fillMaxSize()
-                        ) {
-                            RadioButton(
-                                selected = selectedMinutes == minutes,
-                                onClick = {
-                                    haptic.performLightClick()
-                                    selectedMinutes = minutes
-                                }
-                            )
-                            Text(
-                                text = if (minutes == 0) stringResource(R.string.timer_off) else stringResource(R.string.timer_minutes, minutes),
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
+    // Segmented control options
+    val options = listOf(
+        SegmentedOption("0", stringResource(R.string.timer_off)),
+        SegmentedOption("15", "15 min"),
+        SegmentedOption("30", "30 min"),
+        SegmentedOption("60", "60 min")
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(enabled = false) {}, // Intercept clicks
+        contentAlignment = Alignment.Center
+    ) {
+        // Scrim
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(onClick = onDismiss)
+        )
+
+        val dialogShape = RoundedCornerShape(28.dp)
+
+        Card(
+            modifier = Modifier
+                .padding(24.dp)
+                .clip(dialogShape)
+                .then(
+                    if (hazeState != null) {
+                        Modifier.hazeEffect(
+                            state = hazeState,
+                            style = HazeMaterials.thin()
+                        )
+                    } else Modifier
+                ),
+            shape = dialogShape,
+            colors = CardDefaults.cardColors(
+                containerColor = if (hazeState != null) Transparent else MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.sleep_timer),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                // Segmented Control
+                SegmentedControl(
+                    modifier = Modifier.fillMaxWidth(),
+                    options = options,
+                    selectedOption = selectedOption,
+                    onOptionSelected = { optionId ->
+                        haptic.performClick()
+                        selectedOption = optionId
+                        if (optionId != "custom") {
+                            customMinutesInput = ""
                         }
                     }
-                }
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 自定义输入区域
-                Spacer(modifier = Modifier.height(24.dp)) // 添加间距
+                // Custom Input
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(stringResource(R.string.or_label), color = Color.Gray)
-
-                    // 数字输入框
                     OutlinedTextField(
                         value = customMinutesInput,
                         onValueChange = { input ->
-                            // 允许为空，方便用户清空重新输入
-                            if (input.isEmpty()) {
-                                customMinutesInput = ""
-                                return@OutlinedTextField
-                            }
-                            
-                            // 尝试解析输入值为整数
-                            val minutes = input.toIntOrNull()
-                            if (minutes != null && minutes >= 0) {
+                            // Allow digits only
+                            if (input.all { it.isDigit() }) {
                                 customMinutesInput = input
-                                selectedMinutes = minutes // 同步到选中值
+                                if (input.isNotEmpty()) {
+                                    selectedOption = "custom"
+                                }
                             }
                         },
                         label = { Text(stringResource(R.string.custom_minutes)) },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                haptic.performConfirm()
-                onConfirm(selectedMinutes)
-            }) {
-                Text(stringResource(R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                haptic.performClick()
-                onDismiss()
-            }) {
-                Text(stringResource(R.string.cancel))
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            haptic.performClick()
+                            onDismiss()
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            haptic.performConfirm()
+                            val minutes = when {
+                                selectedOption == "custom" -> customMinutesInput.toIntOrNull() ?: 0
+                                else -> selectedOption.toIntOrNull() ?: 0
+                            }
+                            onConfirm(minutes)
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ok),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
             }
         }
-    )
+    }
 }

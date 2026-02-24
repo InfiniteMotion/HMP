@@ -147,8 +147,12 @@
     <string name="scan_complete_desc">扫描完成！已加载本地音乐%1$d首。</string>
     <string name="ok">确定</string>
     <string name="sleep_timer">定时关闭</string>
-    <string name="timer_off">关闭定时</string>
+    <string name="timer_off">关闭</string>
     <string name="timer_minutes">%1$d 分钟</string>
+    <string name="label_hours">小时</string>
+    <string name="label_minutes">分钟</string>
+    <string name="timer_desc_format">将在 %1$d 小时 %2$d 分钟后停止播放</string>
+    <string name="timer_desc_off">不开启定时</string>
     <string name="or_label">或</string>
     <string name="custom_minutes">自定义分钟</string>
 

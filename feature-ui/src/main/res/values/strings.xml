@@ -149,6 +149,10 @@
     <string name="sleep_timer">Sleep Timer</string>
     <string name="timer_off">Off</string>
     <string name="timer_minutes">%1$d mins</string>
+    <string name="label_hours">Hours</string>
+    <string name="label_minutes">Minutes</string>
+    <string name="timer_desc_format">Stop playback in %1$d h %2$d min</string>
+    <string name="timer_desc_off">Timer is off</string>
     <string name="or_label">or</string>
     <string name="custom_minutes">Custom Minutes</string>
 
