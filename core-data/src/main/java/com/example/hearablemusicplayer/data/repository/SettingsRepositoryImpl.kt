@@ -803,4 +803,75 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun getDefaultExtensionConfig(): String {
         return dataStore.data.first()[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] ?: "{}"
     }
+
+    // ==================== Snapshot Export/Import ====================
+    override suspend fun exportAppSettingsSnapshot(): com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot {
+        val prefs = dataStore.data.first()
+        val userName = prefs[PreferencesKeys.USER_NAME]
+        val avatarUri = prefs[PreferencesKeys.AVATAR_URI]
+        val themeMode = prefs[PreferencesKeys.THEME_MODE] ?: "default"
+        val backgroundStyle = prefs[PreferencesKeys.BACKGROUND_STYLE] ?: "FLUID"
+        val autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false
+        val dailyRefreshMode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time"
+        val dailyRefreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24
+        val dailyRefreshStartupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3
+        
+        val currentAiProvider = AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
+        val aiProviderConfigs = AiProviderType.entries.associateWith { getProviderConfig(it) }
+
+        return com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot(
+            userName = userName,
+            avatarUri = avatarUri,
+            themeMode = themeMode,
+            backgroundStyle = backgroundStyle,
+            autoBatchProcess = autoBatchProcess,
+            dailyRefreshMode = dailyRefreshMode,
+            dailyRefreshHours = dailyRefreshHours,
+            dailyRefreshStartupCount = dailyRefreshStartupCount,
+            currentAiProvider = currentAiProvider,
+            aiProviderConfigs = aiProviderConfigs
+        )
+    }
+
+    override suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot) {
+        dataStore.edit { prefs ->
+            snapshot.userName?.let { prefs[PreferencesKeys.USER_NAME] = it }
+            snapshot.avatarUri?.let { prefs[PreferencesKeys.AVATAR_URI] = it }
+            prefs[PreferencesKeys.THEME_MODE] = snapshot.themeMode
+            prefs[PreferencesKeys.BACKGROUND_STYLE] = snapshot.backgroundStyle
+            prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = snapshot.autoBatchProcess
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.dailyRefreshStartupCount
+            prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = snapshot.currentAiProvider.name
+        }
+        
+        // Restore AI configs
+        snapshot.aiProviderConfigs.forEach { (type, config) ->
+            saveProviderConfig(config)
+        }
+    }
+
+    override suspend fun exportDailyRecommendationSnapshot(): com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot? {
+        val prefs = dataStore.data.first()
+        return com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot(
+            currentDailyMusicId = prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID],
+            lastRefreshTimestamp = prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L,
+            mode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
+            refreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
+            startupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
+            launchCountSinceRefresh = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
+        )
+    }
+
+    override suspend fun restoreDailyRecommendationSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot) {
+        dataStore.edit { prefs ->
+            snapshot.currentDailyMusicId?.let { prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = it }
+            prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = snapshot.lastRefreshTimestamp
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.mode
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.refreshHours
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.startupCount
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = snapshot.launchCountSinceRefresh
+        }
+    }
 }

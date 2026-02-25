@@ -49,4 +49,10 @@ interface PlaybackHistoryDao {
 
     @Query("DELETE FROM PlaybackHistory")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM PlaybackHistory")
+    suspend fun getAllHistory(): List<PlaybackHistory>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(history: List<PlaybackHistory>)
 }

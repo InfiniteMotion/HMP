@@ -1,5 +1,7 @@
 package com.example.hearablemusicplayer.ui.pages
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,14 +19,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -39,10 +47,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign.Companion.Center
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.R
@@ -54,6 +66,9 @@ import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun SettingScreen(
@@ -69,6 +84,9 @@ fun SettingScreen(
     val refreshMode by settingsViewModel.dailyRefreshMode.collectAsState()
     val refreshHours by settingsViewModel.dailyRefreshHours.collectAsState()
     val startupCount by settingsViewModel.dailyRefreshStartupCount.collectAsState()
+    
+    // Backup State
+    val localBackups by settingsViewModel.localBackups.collectAsState()
 
     SettingScreenContent(
         avatarUri = avatarUri,
@@ -77,6 +95,7 @@ fun SettingScreen(
         refreshMode = refreshMode,
         refreshHours = refreshHours,
         startupCount = startupCount,
+        localBackups = localBackups,
         onBackClick = { navController.popBackStack() },
         onSaveAvatarUri = settingsViewModel::saveAvatarUri,
         onSaveUserName = settingsViewModel::saveUserName,
@@ -84,7 +103,11 @@ fun SettingScreen(
         onFullRescan = libraryViewModel::fullRescan,
         onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
         onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
-        onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount
+        onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount,
+        onExportBackup = settingsViewModel::exportBackup,
+        onRestoreBackup = settingsViewModel::restoreBackup,
+        onDeleteBackup = settingsViewModel::deleteLocalBackup,
+        onRefreshBackups = settingsViewModel::loadLocalBackups
     )
 }
 
@@ -96,6 +119,7 @@ fun SettingScreenContent(
     refreshMode: String,
     refreshHours: Int,
     startupCount: Int,
+    localBackups: List<File>,
     onBackClick: () -> Unit,
     onSaveAvatarUri: (String) -> Unit,
     onSaveUserName: (String) -> Unit,
@@ -103,7 +127,11 @@ fun SettingScreenContent(
     onFullRescan: () -> Unit,
     onSaveDailyRefreshMode: (String) -> Unit,
     onSaveDailyRefreshHours: (Int) -> Unit,
-    onSaveDailyRefreshStartupCount: (Int) -> Unit
+    onSaveDailyRefreshStartupCount: (Int) -> Unit,
+    onExportBackup: ((File) -> Unit, (String) -> Unit) -> Unit,
+    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
+    onDeleteBackup: (File) -> Unit,
+    onRefreshBackups: () -> Unit
 ) {
     // 使用SubScreen模板
     SubScreen(
@@ -124,6 +152,13 @@ fun SettingScreenContent(
                 userName = userName,
                 updateUserName = onSaveUserName
             )
+            UserDataBackupSection(
+                localBackups = localBackups,
+                onExportBackup = onExportBackup,
+                onRestoreBackup = onRestoreBackup,
+                onDeleteBackup = onDeleteBackup,
+                onRefreshBackups = onRefreshBackups
+            )
             DailyRefreshSettings(
                 refreshMode = refreshMode,
                 refreshHours = refreshHours,
@@ -142,6 +177,7 @@ fun SettingScreenContent(
     }
 }
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun UpdateAvatar(
     avatarUri: String,
@@ -360,9 +396,199 @@ fun ReloadMusic(
     }
 }
 
+@SuppressLint("LocalContextGetResourceValueCall")
+@Composable
+fun UserDataBackupSection(
+    localBackups: List<File>,
+    onExportBackup: ((File) -> Unit, (String) -> Unit) -> Unit,
+    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
+    onDeleteBackup: (File) -> Unit,
+    onRefreshBackups: () -> Unit
+) {
+    val context = LocalContext.current
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var selectedBackupFile by remember { mutableStateOf<File?>(null) }
+    
+    // File Picker for External Restore
+    val restoreLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val tempFile = File(context.cacheDir, "restore_temp.json")
+                val outputStream = FileOutputStream(tempFile)
+                inputStream?.copyTo(outputStream)
+                inputStream?.close()
+                outputStream.close()
+                selectedBackupFile = tempFile
+                showRestoreDialog = true
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    TitleWidget(title = stringResource(R.string.backup)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.backup_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = Center
+            )
+
+            // Local Backups List
+            if (localBackups.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.local_backup),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        IconButton(onClick = onRefreshBackups) {
+                            Icon(
+                                painter = painterResource(R.drawable.externaldrive),
+                                contentDescription = "Refresh",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    localBackups.forEach { file ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = file.name,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = Ellipsis
+                                    )
+                                    Text(
+                                        text = SimpleDateFormat(
+                                            "yyyy/MM/dd HH:mm",
+                                            Locale.getDefault()
+                                        ).format(Date(file.lastModified())),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    selectedBackupFile = file
+                                    showRestoreDialog = true
+                                }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_gallery_material_select_checkbox),
+                                        contentDescription = "Restore",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = { onDeleteBackup(file) }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.trash),
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        restoreLauncher.launch(arrayOf("application/json"))
+                    }
+                ) {
+                    Text(stringResource(R.string.restore_backup))
+                }
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onExportBackup({ file ->
+                            // Share Intent
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_backup)))
+                        }, { error ->
+                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        })
+                    }
+                ) {
+                    Text(stringResource(R.string.export_backup))
+                }
+            }
+        }
+    }
+    
+    if (showRestoreDialog && selectedBackupFile != null) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDialog = false },
+            title = { Text("Confirm Restore") },
+            text = { Text("Restoring will overwrite current data. Are you sure?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRestoreBackup(selectedBackupFile!!, {
+                            Toast.makeText(context, "Restore Successful", Toast.LENGTH_SHORT).show()
+                        }, { error ->
+                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        })
+                        showRestoreDialog = false
+                    }
+                ) {
+                    Text("Restore")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
 /**
  * 每日推荐刷新策略设置
  */
+@SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyRefreshSettings(
@@ -411,7 +637,10 @@ fun DailyRefreshSettings(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryEditable, // 核心参数
+                        enabled = true // 可选参数，控制菜单是否可用
+                    ),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Transparent,
                         unfocusedIndicatorColor = Transparent,

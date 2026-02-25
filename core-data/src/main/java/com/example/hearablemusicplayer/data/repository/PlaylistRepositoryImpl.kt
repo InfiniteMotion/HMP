@@ -5,6 +5,7 @@ import com.example.hearablemusicplayer.data.database.PlaylistDao
 import com.example.hearablemusicplayer.data.database.PlaylistItemDao
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
+import com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.domain.playlist.PlaylistItem
@@ -57,5 +58,59 @@ class PlaylistRepositoryImpl @Inject constructor(
 
     override suspend fun getPlaylistByIdList(playlistIdList: List<Long>): List<MusicInfo> {
         return musicAllDao.getPlaylistByIdList(playlistIdList).map { it.toDomain() }
+    }
+
+    // ==================== Snapshot Export/Import ====================
+    override suspend fun exportPlaylistsSnapshot(): PlaylistsSnapshot {
+        val playlists = playlistDao.getAllPlaylists().map {
+            Playlist(
+                id = it.id,
+                name = it.name
+            )
+        }
+        
+        val items = playlistItemDao.getAllPlaylistItems().map {
+            PlaylistItem(
+                songUrl = it.songUrl,
+                songId = it.songId,
+                playlistId = it.playlistId
+            )
+        }
+        
+        return PlaylistsSnapshot(
+            playlists = playlists,
+            playlistItems = items
+        )
+    }
+
+    override suspend fun restoreFromSnapshot(snapshot: PlaylistsSnapshot) {
+        // Clear existing
+        playlistDao.deleteAll()
+        playlistItemDao.deleteAll()
+        
+        // Restore playlists
+        val playlists = snapshot.playlists.map {
+            com.example.hearablemusicplayer.data.database.Playlist(
+                id = it.id,
+                name = it.name
+            )
+        }
+        playlistDao.insertAll(playlists)
+        
+        // Restore items
+        // Group by playlistId to assign correct order
+        val groupedItems = snapshot.playlistItems.groupBy { it.playlistId }
+        val finalItems = groupedItems.flatMap { (_, list) ->
+            list.mapIndexed { index, it ->
+                com.example.hearablemusicplayer.data.database.PlaylistItem(
+                    songUrl = it.songUrl,
+                    songId = it.songId,
+                    playlistId = it.playlistId,
+                    itemOrder = index
+                )
+            }
+        }
+        
+        playlistItemDao.insertPlaylist(finalItems)
     }
 }

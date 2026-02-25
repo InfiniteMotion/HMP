@@ -17,4 +17,8 @@ interface PlaylistRepository {
     fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>>
     suspend fun getPlaylistById(playlistId: Long): List<MusicInfo>
     suspend fun getPlaylistByIdList(playlistIdList: List<Long>): List<MusicInfo>
+
+    // Snapshot Export/Import
+    suspend fun exportPlaylistsSnapshot(): com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot
+    suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot)
 }

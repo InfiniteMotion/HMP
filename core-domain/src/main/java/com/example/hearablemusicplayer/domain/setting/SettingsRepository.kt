@@ -144,6 +144,13 @@ interface SettingsRepository {
     suspend fun saveDefaultExtensionConfig(configJson: String)
     suspend fun getDefaultExtensionConfig(): String
     
+    // Snapshot Export/Import
+    suspend fun exportAppSettingsSnapshot(): com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot
+    suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot)
+    
+    suspend fun exportDailyRecommendationSnapshot(): com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot?
+    suspend fun restoreDailyRecommendationSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot)
+
     suspend fun backupSettings(): Result<File>
     suspend fun restoreSettings(backupFile: File): Result<Unit>
     suspend fun cleanOldBackups(keepCount: Int = 3): Result<Unit>

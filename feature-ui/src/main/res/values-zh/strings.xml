@@ -86,6 +86,13 @@
     <string name="startup_count_label">启动次数</string>
     <string name="current_setting_startup">当前设置：每启动 %1$d 次后刷新</string>
     <string name="smart_refresh_desc">智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。</string>
+    <string name="backup">备份与恢复</string>
+    <string name="share_backup">备份分享</string>
+    <string name="export_backup">导出</string>
+    <string name="restore_backup">导入</string>
+    <string name="backup_desc">备份内容包括：应用设置、播放列表、听歌统计以及 AI 标签等。</string>
+    <string name="dismiss">隐藏</string>
+    <string name="local_backup">本地备份</string>
 
     <!-- Home Screen -->
     <string name="go_to_ai_config">前往 AI 配置页面</string>

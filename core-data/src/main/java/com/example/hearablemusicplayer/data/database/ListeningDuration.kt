@@ -29,4 +29,10 @@ interface ListeningDurationDao {
     
     @Query("UPDATE listeningDuration SET duration = duration + :additionalDuration, updatedAt = :updateTime WHERE date = :date")
     suspend fun updateDuration(date: String, additionalDuration: Long, updateTime: Long)
+
+    @Query("SELECT * FROM listeningDuration")
+    suspend fun getAllDurations(): List<ListeningDuration>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(durations: List<ListeningDuration>)
 }

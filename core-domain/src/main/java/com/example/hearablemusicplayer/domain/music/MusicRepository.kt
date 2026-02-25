@@ -69,4 +69,11 @@ interface MusicRepository {
     suspend fun incrementPlayCount(musicId: Long)
     suspend fun incrementSkippedCount(musicId: Long)
     suspend fun updateLastPlayed(musicId: Long, timestamp: Long)
+
+    // Snapshot Export/Import
+    suspend fun exportMusicUserStateSnapshot(): com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot
+    suspend fun restoreMusicUserState(snapshot: com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot)
+    
+    suspend fun exportListeningStatsSnapshot(): com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot
+    suspend fun restoreListeningStats(snapshot: com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot)
 }

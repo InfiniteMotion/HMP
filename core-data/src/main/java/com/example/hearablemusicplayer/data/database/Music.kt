@@ -186,6 +186,9 @@ interface MusicExtraDao {
 
     @Query("UPDATE musicExtra SET isDeleted = 0 WHERE id IN (:ids)")
     suspend fun markActiveByIds(ids: List<Long>)
+
+    @Query("SELECT * FROM musicExtra")
+    suspend fun getAllExtras(): List<MusicExtra>
 }
 
 @Dao
@@ -255,6 +258,9 @@ interface UserInfoDao {
 
     @Query("UPDATE userInfo SET isDeleted = 0 WHERE id IN (:ids)")
     suspend fun markActiveByIds(ids: List<Long>)
+
+    @Query("SELECT * FROM userInfo")
+    suspend fun getAllUserInfos(): List<UserInfo>
 }
 
 @Dao

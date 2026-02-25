@@ -86,6 +86,14 @@
     <string name="startup_count_label">Startup Count</string>
     <string name="current_setting_startup">Current setting: Refresh every %1$d startups</string>
     <string name="smart_refresh_desc">Smart refresh will automatically determine the best time to refresh based on your listening habits and time of day. Currently defaults to 24-hour refresh.</string>
+    <string name="backup">Backup &amp; Restore</string>
+    <string name="share_backup">Share Backup</string>
+    <string name="export_backup">Export Backup</string>
+    <string name="restore_backup">Restore Backup</string>
+    <string name="backup_desc">Backup includes: app settings, playlists, listening stats, and AI labels.</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="local_backup">Local Backups</string>
+
 
     <!-- Home Screen -->
     <string name="go_to_ai_config">Go to AI Config</string>
