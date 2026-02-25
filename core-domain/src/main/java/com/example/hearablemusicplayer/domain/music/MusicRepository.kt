@@ -57,6 +57,13 @@ interface MusicRepository {
     suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean>
 
     // Listening Duration
-    suspend fun insertPlayback(history: PlaybackHistory)
+    suspend fun insertPlayback(history: PlaybackHistory): Long
+    suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean)
     suspend fun recordListeningDuration(duration: Long)
+    fun getPlaybackHistory(musicId: Long, limit: Int = 5): Flow<List<PlaybackHistory>>
+
+    // User Stats
+    suspend fun incrementPlayCount(musicId: Long)
+    suspend fun incrementSkippedCount(musicId: Long)
+    suspend fun updateLastPlayed(musicId: Long, timestamp: Long)
 }

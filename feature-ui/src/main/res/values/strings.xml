@@ -103,15 +103,34 @@
     <string name="title_song_detail">Song Detail</string>
     <string name="song_detail_tab_intro">Intro</string>
     <string name="song_detail_tab_lyrics">Lyrics</string>
-    <string name="song_detail_tab_more">More</string>
+    <string name="song_detail_tab_user">User</string>
     <string name="song_detail_empty">No content available</string>
     <string name="song_description">Description</string>
     <string name="artist_introduction">Artist Info</string>
     <string name="creative_background">Background</string>
     <string name="popular_lyrics">Popular Lyrics</string>
     <string name="lyrics">Lyrics</string>
+    <string name="labels">Labels</string>
     <string name="song_achievements">Achievements</string>
     <string name="similar_music">Similar Music</string>
+    <string name="style_mood">Style &amp; Mood</string>
+    <string name="technical_details">Technical Details</string>
+    <string name="personal_stats">Personal Stats</string>
+    <string name="bitrate">Bitrate</string>
+    <string name="samplerate">Sample Rate</string>
+    <string name="format">Format</string>
+    <string name="liked_status">Favorite</string>
+    <string name="liked_yes">Yes</string>
+    <string name="liked_no">No</string>
+    <string name="skipped_count">Skipped</string>
+    <string name="user_rating">Rating</string>
+    <string name="playlist_count">In Playlists</string>
+    <string name="last_played">Last Played</string>
+    <string name="recent_history">Recent History</string>
+    <string name="played_at">Played at</string>
+    <string name="play_source">Source</string>
+    <string name="completed">Completed</string>
+    <string name="incomplete">Incomplete</string>
 
     <!-- Gallery Screen -->
     <string name="title_gallery">Gallery</string>

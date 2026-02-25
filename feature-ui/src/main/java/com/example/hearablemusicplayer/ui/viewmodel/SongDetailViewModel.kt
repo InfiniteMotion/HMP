@@ -8,24 +8,30 @@ import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.MusicLabel
 import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
 import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
+import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
+import com.example.hearablemusicplayer.domain.setting.usecase.PlaybackHistoryUseCase
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SongDetailData(
     val musicInfo: MusicInfo,
     val dailyMusicInfo: DailyMusicInfo?,
-    val labels: List<MusicLabel?>
+    val labels: List<MusicLabel?>,
+    val playbackHistory: List<PlaybackHistory> = emptyList()
 )
 
 @HiltViewModel
 class SongDetailViewModel @Inject constructor(
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
+    private val playbackHistoryUseCase: PlaybackHistoryUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -51,13 +57,18 @@ class SongDetailViewModel @Inject constructor(
             try {
                 val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(musicId)
                 if (recommendation?.musicInfo != null) {
-                    _uiState.value = UiState.Success(
-                        SongDetailData(
-                            musicInfo = recommendation.musicInfo!!,
-                            dailyMusicInfo = recommendation.dailyMusicInfo,
-                            labels = recommendation.labels
+                    val historyFlow = playbackHistoryUseCase.getPlaybackHistory(musicId, 5)
+                    
+                    historyFlow.collectLatest { history ->
+                        _uiState.value = UiState.Success(
+                            SongDetailData(
+                                musicInfo = recommendation.musicInfo!!,
+                                dailyMusicInfo = recommendation.dailyMusicInfo,
+                                labels = recommendation.labels,
+                                playbackHistory = history
+                            )
                         )
-                    )
+                    }
                 } else {
                     _uiState.value = UiState.Error("Music not found")
                 }

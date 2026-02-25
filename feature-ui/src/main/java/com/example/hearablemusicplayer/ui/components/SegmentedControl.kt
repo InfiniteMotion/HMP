@@ -42,7 +42,7 @@ fun SegmentedControl(
     Surface(
         modifier = modifier.height(52.dp)
             .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
         color = Transparent
     ) {
         Row(

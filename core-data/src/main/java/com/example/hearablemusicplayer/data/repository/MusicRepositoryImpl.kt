@@ -465,10 +465,14 @@ class MusicRepositoryImpl @Inject constructor(
     // ------------------- 用户播放记录相关操作 -------------------
 
     // 插入一条播放记录
-    override suspend fun insertPlayback(history: PlaybackHistoryDomain) {
-        playbackHistoryDao.insert(history.toEntity())
+    override suspend fun insertPlayback(history: PlaybackHistoryDomain): Long {
+        return playbackHistoryDao.insert(history.toEntity())
     }
-    
+
+    override suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean) {
+        playbackHistoryDao.updatePlaybackRecord(id, duration, isCompleted)
+    }
+
     // 记录收听时长
     override suspend fun recordListeningDuration(duration: Long) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -492,5 +496,21 @@ class MusicRepositoryImpl @Inject constructor(
     
     override fun getRecentListeningDurations(limit: Int): Flow<List<ListeningDurationDomain>> {
         return listeningDurationDao.getRecentDurations(limit).map { list -> list.map { it.toDomain() } }
+    }
+
+    override fun getPlaybackHistory(musicId: Long, limit: Int): Flow<List<PlaybackHistoryDomain>> {
+        return playbackHistoryDao.getHistoryForMusic(musicId, limit).map { list -> list.map { it.toDomain() } }
+    }
+
+    override suspend fun incrementPlayCount(musicId: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.incrementPlayCount(musicId)
+    }
+
+    override suspend fun incrementSkippedCount(musicId: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.incrementSkippedCount(musicId)
+    }
+
+    override suspend fun updateLastPlayed(musicId: Long, timestamp: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.updateLastPlayed(musicId, timestamp)
     }
 }

@@ -103,15 +103,34 @@
     <string name="title_song_detail">歌曲详情</string>
     <string name="song_detail_tab_intro">介绍</string>
     <string name="song_detail_tab_lyrics">歌词</string>
-    <string name="song_detail_tab_more">更多</string>
+    <string name="song_detail_tab_user">用户</string>
     <string name="song_detail_empty">暂无内容</string>
     <string name="song_description">歌曲介绍</string>
     <string name="artist_introduction">歌手介绍</string>
     <string name="creative_background">创作背景</string>
     <string name="popular_lyrics">热门歌词</string>
     <string name="lyrics">歌词</string>
+    <string name="labels">标签</string>
     <string name="song_achievements">歌曲成就</string>
     <string name="similar_music">类似音乐</string>
+    <string name="style_mood">风格与情绪</string>
+    <string name="technical_details">音频参数</string>
+    <string name="personal_stats">个人偏好</string>
+    <string name="bitrate">比特率</string>
+    <string name="samplerate">采样率</string>
+    <string name="format">格式</string>
+    <string name="liked_status">收藏状态</string>
+    <string name="last_played">上次播放</string>
+    <string name="liked_yes">是</string>
+    <string name="liked_no">否</string>
+    <string name="skipped_count">跳过次数</string>
+    <string name="user_rating">用户评分</string>
+    <string name="playlist_count">播放列表数</string>
+    <string name="recent_history">最近历史</string>
+    <string name="played_at">播放时间</string>
+    <string name="play_source">播放源</string>
+    <string name="completed">Completed</string>
+    <string name="incomplete">Incomplete</string>
 
     <!-- Gallery Screen -->
     <string name="title_gallery">音乐库</string>

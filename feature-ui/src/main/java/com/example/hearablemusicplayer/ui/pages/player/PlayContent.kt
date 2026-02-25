@@ -333,7 +333,7 @@ fun MusicInfoExtra(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 if (musicInfo?.extra != null) {
-                    TechnicalInfoCard(musicInfo.extra)
+                    TechnicalInfoCard(musicInfo.extra, modifier = Modifier.padding(16.dp))
                 }
                 if (musicInfo?.extra?.isGetExtraInfo == true) {
                     GeneratePlaylistComboButtons(

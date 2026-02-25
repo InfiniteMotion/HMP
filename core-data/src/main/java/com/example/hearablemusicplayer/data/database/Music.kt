@@ -51,7 +51,7 @@ data class UserInfo(
     @PrimaryKey val id: Long,
     val liked: Boolean = false,
     val disLiked: Boolean = false,
-    val lastPlayed: Int? = null,
+    val lastPlayed: Long? = null,
     val playCount: Int? = null,
     val skippedCount: Int? = null,
     val userRating: Int? = null,
@@ -179,6 +179,39 @@ interface UserInfoDao {
     //更新某首歌的红心(喜欢)状态
     @Query("UPDATE userInfo SET liked = :liked WHERE id = :id")
     suspend fun updateLikedStatus(id: Long, liked: Boolean)
+
+    @Query("UPDATE userInfo SET playCount = COALESCE(playCount, 0) + 1 WHERE id = :id")
+    suspend fun incrementPlayCountOnly(id: Long): Int
+
+    @Query("UPDATE userInfo SET skippedCount = COALESCE(skippedCount, 0) + 1 WHERE id = :id")
+    suspend fun incrementSkippedCountOnly(id: Long): Int
+
+    @Transaction
+    suspend fun incrementPlayCount(id: Long) {
+        val rowsAffected = incrementPlayCountOnly(id)
+        if (rowsAffected == 0) {
+            insert(UserInfo(id = id, playCount = 1))
+        }
+    }
+
+    @Transaction
+    suspend fun incrementSkippedCount(id: Long) {
+        val rowsAffected = incrementSkippedCountOnly(id)
+        if (rowsAffected == 0) {
+            insert(UserInfo(id = id, skippedCount = 1))
+        }
+    }
+
+    @Query("UPDATE userInfo SET lastPlayed = :timestamp WHERE id = :id")
+    suspend fun updateLastPlayedOnly(id: Long, timestamp: Long): Int
+
+    @Transaction
+    suspend fun updateLastPlayed(id: Long, timestamp: Long) {
+        val rowsAffected = updateLastPlayedOnly(id, timestamp)
+        if (rowsAffected == 0) {
+            insert(UserInfo(id = id, lastPlayed = timestamp))
+        }
+    }
 
     @Query("SELECT * FROM userInfo WHERE id = :id")
     suspend fun getUserInfoById(id: Long): UserInfo?

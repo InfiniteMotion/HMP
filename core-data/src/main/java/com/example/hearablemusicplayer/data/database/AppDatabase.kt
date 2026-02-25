@@ -3,6 +3,8 @@ package com.example.hearablemusicplayer.data.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.hearablemusicplayer.data.database.myenum.LabelConverters
 
 @Database(
@@ -16,7 +18,7 @@ import com.example.hearablemusicplayer.data.database.myenum.LabelConverters
         PlaybackHistory::class,
         ListeningDuration::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(LabelConverters::class)
@@ -30,4 +32,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun playlistItemDao(): PlaylistItemDao
     abstract fun playbackHistoryDao(): PlaybackHistoryDao
     abstract fun listeningDurationDao(): ListeningDurationDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // lastPlayed 从 Int? 改为 Long? 在 SQLite 中仍为 INTEGER 类型
+                // 且其他统计字段已存在于版本 1 中，因此此处无需执行 SQL 变更
+            }
+        }
+    }
 }

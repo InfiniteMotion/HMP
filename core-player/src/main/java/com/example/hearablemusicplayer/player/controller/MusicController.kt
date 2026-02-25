@@ -184,6 +184,12 @@ class MusicController @Inject constructor(
     private var lastDurationRecordTime: Long = 0L
     private val durationRecordThreshold = 30000L
 
+    // 互动数据记录追踪
+    private var currentPlaybackHistoryId: Long? = null
+    private var totalPlayedDurationInSession: Long = 0L
+    private val skipThresholdMs = 20000L // 20秒以内切歌算跳过
+    private val skipThresholdPercent = 0.15f // 播放不足15%算跳过
+
     // Timer
     private var timerJob: Job? = null
     val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
@@ -278,6 +284,7 @@ class MusicController @Inject constructor(
         if (_isPlaying.value && playStartTime > 0 &&
             (now - lastDurationRecordTime) >= durationRecordThreshold) {
             val duration = now - playStartTime
+            totalPlayedDurationInSession += duration
             scope.launch {
                 playbackHistoryUseCase.recordListeningDuration(duration)
             }
@@ -334,6 +341,7 @@ class MusicController @Inject constructor(
         if (playStartTime > 0) {
             val duration = System.currentTimeMillis() - playStartTime
             if (duration > 0) {
+                totalPlayedDurationInSession += duration
                 scope.launch {
                     playbackHistoryUseCase.recordListeningDuration(duration)
                 }
@@ -421,17 +429,7 @@ class MusicController @Inject constructor(
     }
 
     override fun onPlaybackEnded() {
-        if (playStartTime > 0) {
-            val duration = System.currentTimeMillis() - playStartTime
-            if (duration > 0) {
-                scope.launch {
-                    playbackHistoryUseCase.recordListeningDuration(duration)
-                }
-            }
-        }
-        playStartTime = System.currentTimeMillis()
-        lastDurationRecordTime = playStartTime
-        
+        endCurrentPlaybackSession(isCompleted = true)
         playNext()
     }
 
@@ -452,6 +450,10 @@ class MusicController @Inject constructor(
             Log.e("MusicController", "playCurrentTrack: playControl is null")
             return
         }
+        
+        // 结束上一个会话（如果有的话）
+        endCurrentPlaybackSession(isCompleted = false)
+
         stopProgressTracking()
         val track = _currentPlaylist.value.getOrNull(_currentIndex.value) ?: return
         
@@ -472,8 +474,47 @@ class MusicController @Inject constructor(
         _currentPosition.value = 0L
         playControl?.playSingleMusic(track.music)
         _duration.value = track.music.duration
+        
+        // 重置会话追踪数据
+        playStartTime = System.currentTimeMillis()
+        lastDurationRecordTime = playStartTime
+        totalPlayedDurationInSession = 0L
+        
         startProgressTracking()
-        recordPlayback(track.music.id, source)
+        startNewPlaybackSession(track.music.id, source)
+    }
+
+    private fun startNewPlaybackSession(musicId: Long, source: String?) {
+        scope.launch {
+            currentPlaybackHistoryId = playbackHistoryUseCase.startPlaybackSession(musicId, source)
+        }
+    }
+
+    private fun endCurrentPlaybackSession(isCompleted: Boolean) {
+        val historyId = currentPlaybackHistoryId ?: return
+        val currentMusic = currentPlayingMusic.value ?: return
+        val musicId = currentMusic.music.id
+        
+        // 计算最后的播放时长
+        if (_isPlaying.value && playStartTime > 0) {
+            totalPlayedDurationInSession += (System.currentTimeMillis() - playStartTime)
+        }
+        
+        val duration = totalPlayedDurationInSession
+        val totalDuration = currentMusic.music.duration
+        
+        scope.launch {
+            if (isCompleted) {
+                playbackHistoryUseCase.completePlaybackSession(historyId, musicId, totalDuration)
+            } else {
+                // 只要没有播放完成（手动切换或停止），就视作跳过
+                playbackHistoryUseCase.skipPlaybackSession(historyId, musicId, duration, true)
+            }
+        }
+        
+        currentPlaybackHistoryId = null
+        totalPlayedDurationInSession = 0L
+        playStartTime = 0L
     }
 
     fun addToPlaylist(musicInfo: MusicInfo) {
@@ -536,19 +577,6 @@ class MusicController @Inject constructor(
 
     private fun currentMusicPath(): String? {
         return _currentPlaylist.value.getOrNull(_currentIndex.value)?.music?.path
-    }
-
-    fun recordPlayback(musicId: Long, source: String?) {
-        scope.launch {
-            val history = PlaybackHistory(
-                musicId = musicId,
-                playedAt = System.currentTimeMillis(),
-                playDuration = 0,
-                isCompleted = true,
-                source = source
-            )
-            playbackHistoryUseCase.insertPlayback(history)
-        }
     }
 
     fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) {
@@ -786,6 +814,7 @@ class MusicController @Inject constructor(
     }
     
     fun release() {
+        endCurrentPlaybackSession(isCompleted = false)
         stopProgressTracking()
         unbindService()
         scope.launch {
