@@ -291,6 +291,84 @@ class MusicRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun syncMusicFromDeviceIncremental(): kotlin.Result<Unit> = withContext(Dispatchers.IO) {
+        _isScanning.value = true
+        try {
+            val (scannedMusic, scannedExtra, scannedUserInfo) = performMusicScan()
+
+            val existingIds = musicDao.getAllActiveIds().toSet()
+            val scannedIds = scannedMusic.map { it.id }.toSet()
+
+            val newIds = scannedIds - existingIds
+            val commonIds = scannedIds.intersect(existingIds)
+            val missingIds = existingIds - scannedIds
+
+            if (newIds.isNotEmpty()) {
+                val newMusic = scannedMusic.filter { it.id in newIds }
+                val newExtra = scannedExtra.filter { it.id in newIds }
+                val newUserInfo = scannedUserInfo.filter { it.id in newIds }
+
+                newMusic.chunked(BATCH_SIZE).forEach { batch -> musicDao.insertAll(batch) }
+                newExtra.chunked(BATCH_SIZE).forEach { batch -> musicExtraDao.insertAll(batch) }
+                newUserInfo.chunked(BATCH_SIZE).forEach { batch -> userInfoDao.insertAll(batch) }
+            }
+
+            if (commonIds.isNotEmpty()) {
+                val commonMusicById = scannedMusic.filter { it.id in commonIds }.associateBy { it.id }
+                val commonExtraById = scannedExtra.filter { it.id in commonIds }.associateBy { it.id }
+
+                commonIds.chunked(BATCH_SIZE).forEach { idBatch ->
+                    idBatch.forEach { id ->
+                        val scannedMusicItem = commonMusicById[id]
+                        if (scannedMusicItem != null) {
+                            musicDao.insert(
+                                scannedMusicItem.copy(isDeleted = false)
+                            )
+                        }
+
+                        val scannedExtraItem = commonExtraById[id]
+                        if (scannedExtraItem != null) {
+                            val existingExtra = musicExtraDao.getExtraFieldsById(id)
+                            val mergedExtra = if (existingExtra != null) {
+                                existingExtra.copy(
+                                    lyrics = scannedExtraItem.lyrics ?: existingExtra.lyrics,
+                                    bitRate = scannedExtraItem.bitRate ?: existingExtra.bitRate,
+                                    sampleRate = scannedExtraItem.sampleRate ?: existingExtra.sampleRate,
+                                    fileSize = scannedExtraItem.fileSize ?: existingExtra.fileSize,
+                                    format = scannedExtraItem.format ?: existingExtra.format,
+                                    isDeleted = false
+                                )
+                            } else {
+                                scannedExtraItem.copy(isDeleted = false)
+                            }
+                            musicExtraDao.insert(mergedExtra)
+                        }
+
+                        val existingUserInfo = userInfoDao.getUserInfoById(id)
+                        if (existingUserInfo == null) {
+                            userInfoDao.insert(UserInfo(id = id))
+                        } else if (existingUserInfo.isDeleted) {
+                            userInfoDao.insert(existingUserInfo.copy(isDeleted = false))
+                        }
+                    }
+                }
+            }
+
+            if (missingIds.isNotEmpty()) {
+                musicDao.markDeletedByIds(missingIds.toList())
+                musicExtraDao.markDeletedByIds(missingIds.toList())
+                userInfoDao.markDeletedByIds(missingIds.toList())
+            }
+
+            kotlin.Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Incremental music scan failed", e)
+            kotlin.Result.failure(e)
+        } finally {
+            _isScanning.value = false
+        }
+    }
+
     private fun getLyrics(file: File): String? {
         return try {
             if (!file.exists() || !file.canRead()) {

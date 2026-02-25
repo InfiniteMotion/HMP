@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.LoadMusicFromDeviceUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val getAllMusicUseCase: GetAllMusicUseCase,
-    private val loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase
+    private val loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase,
+    private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase
 ) : ViewModel() {
 
     // 排序
@@ -58,12 +60,31 @@ class LibraryViewModel @Inject constructor(
     private val _scanErrorMessage = MutableStateFlow<String?>(null)
     val scanErrorMessage: StateFlow<String?> = _scanErrorMessage
     
+    /**
+     * 增量刷新音乐列表（推荐的日常操作）
+     */
     fun refreshMusicList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            syncMusicFromDeviceIncrementalUseCase()
+                .onSuccess {
+                    _scanErrorMessage.value = null
+                    // 扫描完成后刷新列表
+                    getAllMusic()
+                }
+                .onFailure { e ->
+                    _scanErrorMessage.value = e.message ?: "扫描失败"
+                }
+        }
+    }
+
+    /**
+     * 全量重建音乐库（清空并重新扫描）
+     */
+    fun fullRescan() {
         viewModelScope.launch(Dispatchers.IO) {
             loadMusicFromDeviceUseCase()
                 .onSuccess {
                     _scanErrorMessage.value = null
-                    // 扫描完成后刷新列表
                     getAllMusic()
                 }
                 .onFailure { e ->

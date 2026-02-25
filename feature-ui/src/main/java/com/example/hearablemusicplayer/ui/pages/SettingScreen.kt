@@ -80,7 +80,8 @@ fun SettingScreen(
         onBackClick = { navController.popBackStack() },
         onSaveAvatarUri = settingsViewModel::saveAvatarUri,
         onSaveUserName = settingsViewModel::saveUserName,
-        onRefreshMusicList = libraryViewModel::refreshMusicList,
+        onIncrementalScan = libraryViewModel::refreshMusicList,
+        onFullRescan = libraryViewModel::fullRescan,
         onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
         onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
         onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount
@@ -98,7 +99,8 @@ fun SettingScreenContent(
     onBackClick: () -> Unit,
     onSaveAvatarUri: (String) -> Unit,
     onSaveUserName: (String) -> Unit,
-    onRefreshMusicList: () -> Unit,
+    onIncrementalScan: () -> Unit,
+    onFullRescan: () -> Unit,
     onSaveDailyRefreshMode: (String) -> Unit,
     onSaveDailyRefreshHours: (Int) -> Unit,
     onSaveDailyRefreshStartupCount: (Int) -> Unit
@@ -132,7 +134,8 @@ fun SettingScreenContent(
             )
             ReloadMusic(
                 musicCount = musicCount,
-                refreshMusicList = onRefreshMusicList
+                onIncrementalScan = onIncrementalScan,
+                onFullRescan = onFullRescan
             )
             Spacer(modifier = Modifier.height(64.dp))
         }
@@ -298,7 +301,8 @@ fun UpdateUserName(
 @Composable
 fun ReloadMusic(
     musicCount: Int,
-    refreshMusicList: () -> Unit,
+    onIncrementalScan: () -> Unit,
+    onFullRescan: () -> Unit,
 ) {
     TitleWidget(
         title = stringResource(R.string.music_scan),
@@ -334,7 +338,7 @@ fun ReloadMusic(
                     modifier = Modifier.width(120.dp),
                     onClick = {
                         isLoading = true
-                        refreshMusicList()
+                        onIncrementalScan()
                     },
                     enabled = !isLoading
                 ) {
@@ -345,7 +349,7 @@ fun ReloadMusic(
                     modifier = Modifier.width(120.dp),
                     onClick = {
                         isLoading = true
-                        refreshMusicList()
+                        onFullRescan()
                     },
                     enabled = !isLoading
                 ) {

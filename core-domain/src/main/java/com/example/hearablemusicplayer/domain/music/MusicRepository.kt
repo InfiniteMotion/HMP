@@ -47,6 +47,9 @@ interface MusicRepository {
     suspend fun loadMusicFromDevice(): Result<Unit>
     val isScanning: Flow<Boolean>
 
+    // Device Scan - Incremental
+    suspend fun syncMusicFromDeviceIncremental(): Result<Unit>
+
     // AI / Extra Fetching
     suspend fun fetchMusicExtraInfoWithProvider(
         providerConfig: AiProviderConfig,

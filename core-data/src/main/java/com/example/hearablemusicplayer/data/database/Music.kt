@@ -23,6 +23,7 @@ data class Music(
     val duration: Long,
     val path: String,
     val albumArtUri: String,
+    val isDeleted: Boolean = false,
 )
 
 @Entity(tableName = "musicExtra")
@@ -43,7 +44,8 @@ data class MusicExtra(
     val singerIntroduce : String? = null,
     val backgroundIntroduce : String? = null,
     val description : String? = null,
-    val relevantMusic : String? = null
+    val relevantMusic : String? = null,
+    val isDeleted: Boolean = false,
 )
 
 @Entity(tableName = "userInfo")
@@ -56,6 +58,7 @@ data class UserInfo(
     val skippedCount: Int? = null,
     val userRating: Int? = null,
     val inCustomPlaylistCount: Int? = null,
+    val isDeleted: Boolean = false,
 )
 
 data class MusicInfo(
@@ -87,8 +90,17 @@ interface MusicDao {
     @Query("SELECT * FROM music WHERE id = :id")
     fun getMusicById(id: Long): Flow<Music?>
 
-    @Query("SELECT COUNT(*) FROM music")
+    @Query("SELECT COUNT(*) FROM music WHERE isDeleted = 0")
     fun getMusicCount(): Flow<Int>
+
+    @Query("SELECT id FROM music WHERE isDeleted = 0")
+    suspend fun getAllActiveIds(): List<Long>
+
+    @Query("UPDATE music SET isDeleted = 1 WHERE id IN (:ids)")
+    suspend fun markDeletedByIds(ids: List<Long>)
+
+    @Query("UPDATE music SET isDeleted = 0 WHERE id IN (:ids)")
+    suspend fun markActiveByIds(ids: List<Long>)
 
     // 删除
     @Query("DELETE FROM music WHERE id IN (:ids)")
@@ -162,9 +174,18 @@ interface MusicExtraDao {
 
     @Query("""
         SELECT COUNT(*) FROM musicExtra
-        WHERE  isGetExtraInfo = false
+        WHERE isGetExtraInfo = false AND isDeleted = 0
     """)
     fun getMusicWithoutExtraCount(): Flow<Int>
+
+    @Query("SELECT id FROM musicExtra WHERE isDeleted = 0")
+    suspend fun getAllActiveIds(): List<Long>
+
+    @Query("UPDATE musicExtra SET isDeleted = 1 WHERE id IN (:ids)")
+    suspend fun markDeletedByIds(ids: List<Long>)
+
+    @Query("UPDATE musicExtra SET isDeleted = 0 WHERE id IN (:ids)")
+    suspend fun markActiveByIds(ids: List<Long>)
 }
 
 @Dao
@@ -225,6 +246,15 @@ interface UserInfoDao {
     // 清空音乐表中所有数据
     @Query("DELETE FROM userInfo")
     suspend fun deleteAll()
+
+    @Query("SELECT id FROM userInfo WHERE isDeleted = 0")
+    suspend fun getAllActiveIds(): List<Long>
+
+    @Query("UPDATE userInfo SET isDeleted = 1 WHERE id IN (:ids)")
+    suspend fun markDeletedByIds(ids: List<Long>)
+
+    @Query("UPDATE userInfo SET isDeleted = 0 WHERE id IN (:ids)")
+    suspend fun markActiveByIds(ids: List<Long>)
 }
 
 @Dao
@@ -234,12 +264,12 @@ interface MusicAllDao {
     suspend fun getAllMusicInfoAsList(query: SupportSQLiteQuery): List<MusicInfo>
 
     @Transaction
-    @Query("SELECT * FROM music WHERE id = :id")
+    @Query("SELECT * FROM music WHERE id = :id AND isDeleted = 0")
     fun getMusicInfoById(id: Long): Flow<MusicInfo?>
 
     // 获取还未获得额外信息的音乐
     @Transaction
-    @Query("SELECT * FROM music WHERE id IN (SELECT id FROM musicExtra WHERE isGetExtraInfo = false)")
+    @Query("SELECT * FROM music WHERE isDeleted = 0 AND id IN (SELECT id FROM musicExtra WHERE isGetExtraInfo = false AND isDeleted = 0)")
     fun getMusicInfoWithMissingExtra(): Flow<List<MusicInfo>>
     
     // 获取还未获得额外信息的音乐数量
@@ -248,18 +278,18 @@ interface MusicAllDao {
 
     // 搜索音乐标题或艺术家名中包含关键词的记录
     @Transaction
-    @Query("SELECT * FROM music WHERE title LIKE :query OR artist LIKE :query")
+    @Query("SELECT * FROM music WHERE isDeleted = 0 AND (title LIKE :query OR artist LIKE :query)")
     suspend fun searchMusic(query: String): List<MusicInfo>
 
     @Transaction
-    @Query("SELECT * FROM music ORDER BY RANDOM() LIMIT 1")
+    @Query("SELECT * FROM music WHERE isDeleted = 0 ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomMusicInfo(): MusicInfo?
 
     @Transaction
     @Query("""
         SELECT * FROM music 
-        WHERE id IN (
-            SELECT id FROM musicExtra WHERE isGetExtraInfo = 0
+        WHERE isDeleted = 0 AND id IN (
+            SELECT id FROM musicExtra WHERE isGetExtraInfo = 0 AND isDeleted = 0
         ) 
         ORDER BY RANDOM() 
         LIMIT 1
@@ -269,8 +299,8 @@ interface MusicAllDao {
     @Transaction
     @Query("""
         SELECT * FROM music 
-        WHERE id IN (
-            SELECT id FROM musicExtra WHERE isGetExtraInfo = 1
+        WHERE isDeleted = 0 AND id IN (
+            SELECT id FROM musicExtra WHERE isGetExtraInfo = 1 AND isDeleted = 0
         ) 
         ORDER BY RANDOM() 
         LIMIT 1
@@ -278,7 +308,7 @@ interface MusicAllDao {
     suspend fun getRandomMusicInfoWithExtra(): MusicInfo?
 
     @Transaction
-    @Query("SELECT * FROM music WHERE id IN (:ids)")
+    @Query("SELECT * FROM music WHERE isDeleted = 0 AND id IN (:ids)")
     suspend fun getPlaylistByIdList(ids: List<Long>): List<MusicInfo>
 
     /**
@@ -289,6 +319,7 @@ interface MusicAllDao {
         SELECT * FROM music 
         LEFT JOIN musicExtra ON music.id = musicExtra.id
         LEFT JOIN userInfo ON music.id = userInfo.id
+        WHERE music.isDeleted = 0
         ORDER BY music.title ASC
     """)
     fun getAllMusicInfoPaged(): PagingSource<Int, MusicInfo>
@@ -301,6 +332,7 @@ interface MusicAllDao {
         SELECT * FROM music 
         LEFT JOIN musicExtra ON music.id = musicExtra.id
         LEFT JOIN userInfo ON music.id = userInfo.id
+        WHERE music.isDeleted = 0
         ORDER BY music.id ASC
     """)
     fun getAllMusicInfoPagedById(): PagingSource<Int, MusicInfo>
