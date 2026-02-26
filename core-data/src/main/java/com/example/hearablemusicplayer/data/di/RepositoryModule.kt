@@ -33,4 +33,10 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         settingsRepositoryImpl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBackupFileRepository(
+        backupFileRepositoryImpl: com.example.hearablemusicplayer.data.repository.BackupFileRepositoryImpl
+    ): com.example.hearablemusicplayer.domain.backup.BackupFileRepository
 }

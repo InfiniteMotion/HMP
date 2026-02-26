@@ -27,6 +27,11 @@ import com.example.hearablemusicplayer.data.mapper.toEntity
 import com.example.hearablemusicplayer.data.network.AiApiResult
 import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
 import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
+import com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot
+import com.example.hearablemusicplayer.domain.backup.MusicExtraUserSnapshot
+import com.example.hearablemusicplayer.domain.backup.MusicLabelSnapshot
+import com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot
+import com.example.hearablemusicplayer.domain.backup.UserInfoSnapshot
 import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
 import com.example.hearablemusicplayer.domain.music.MusicInfo
@@ -291,6 +296,81 @@ class MusicRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun syncMusicFromDeviceIncremental(): kotlin.Result<Unit> = withContext(Dispatchers.IO) {
+        _isScanning.value = true
+        try {
+            val (scannedMusic, scannedExtra, scannedUserInfo) = performMusicScan()
+
+            val existingIds = musicDao.getAllActiveIds().toSet()
+            val scannedIds = scannedMusic.map { it.id }.toSet()
+
+            val newIds = scannedIds - existingIds
+            val commonIds = scannedIds.intersect(existingIds)
+            val missingIds = existingIds - scannedIds
+
+            if (newIds.isNotEmpty()) {
+                val newMusic = scannedMusic.filter { it.id in newIds }
+                val newExtra = scannedExtra.filter { it.id in newIds }
+                val newUserInfo = scannedUserInfo.filter { it.id in newIds }
+
+                newMusic.chunked(BATCH_SIZE).forEach { batch -> musicDao.insertAll(batch) }
+                newExtra.chunked(BATCH_SIZE).forEach { batch -> musicExtraDao.insertAll(batch) }
+                newUserInfo.chunked(BATCH_SIZE).forEach { batch -> userInfoDao.insertAll(batch) }
+            }
+
+            if (commonIds.isNotEmpty()) {
+                val commonMusicById = scannedMusic.filter { it.id in commonIds }.associateBy { it.id }
+                val commonExtraById = scannedExtra.filter { it.id in commonIds }.associateBy { it.id }
+
+                commonIds.chunked(BATCH_SIZE).forEach { idBatch ->
+                    idBatch.forEach { id ->
+                        val scannedMusicItem = commonMusicById[id]
+                        if (scannedMusicItem != null) {
+                            musicDao.insert(
+                                scannedMusicItem.copy(isDeleted = false)
+                            )
+                        }
+
+                        val scannedExtraItem = commonExtraById[id]
+                        if (scannedExtraItem != null) {
+                            val existingExtra = musicExtraDao.getExtraFieldsById(id)
+                            val mergedExtra = existingExtra?.copy(
+                                lyrics = scannedExtraItem.lyrics ?: existingExtra.lyrics,
+                                bitRate = scannedExtraItem.bitRate ?: existingExtra.bitRate,
+                                sampleRate = scannedExtraItem.sampleRate ?: existingExtra.sampleRate,
+                                fileSize = scannedExtraItem.fileSize ?: existingExtra.fileSize,
+                                format = scannedExtraItem.format ?: existingExtra.format,
+                                isDeleted = false
+                            )
+                                ?: scannedExtraItem.copy(isDeleted = false)
+                            musicExtraDao.insert(mergedExtra)
+                        }
+
+                        val existingUserInfo = userInfoDao.getUserInfoById(id)
+                        if (existingUserInfo == null) {
+                            userInfoDao.insert(UserInfo(id = id))
+                        } else if (existingUserInfo.isDeleted) {
+                            userInfoDao.insert(existingUserInfo.copy(isDeleted = false))
+                        }
+                    }
+                }
+            }
+
+            if (missingIds.isNotEmpty()) {
+                musicDao.markDeletedByIds(missingIds.toList())
+                musicExtraDao.markDeletedByIds(missingIds.toList())
+                userInfoDao.markDeletedByIds(missingIds.toList())
+            }
+
+            kotlin.Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("MusicRepository", "Incremental music scan failed", e)
+            kotlin.Result.failure(e)
+        } finally {
+            _isScanning.value = false
+        }
+    }
+
     private fun getLyrics(file: File): String? {
         return try {
             if (!file.exists() || !file.canRead()) {
@@ -465,10 +545,14 @@ class MusicRepositoryImpl @Inject constructor(
     // ------------------- 用户播放记录相关操作 -------------------
 
     // 插入一条播放记录
-    override suspend fun insertPlayback(history: PlaybackHistoryDomain) {
-        playbackHistoryDao.insert(history.toEntity())
+    override suspend fun insertPlayback(history: PlaybackHistoryDomain): Long {
+        return playbackHistoryDao.insert(history.toEntity())
     }
-    
+
+    override suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean) {
+        playbackHistoryDao.updatePlaybackRecord(id, duration, isCompleted)
+    }
+
     // 记录收听时长
     override suspend fun recordListeningDuration(duration: Long) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -492,5 +576,162 @@ class MusicRepositoryImpl @Inject constructor(
     
     override fun getRecentListeningDurations(limit: Int): Flow<List<ListeningDurationDomain>> {
         return listeningDurationDao.getRecentDurations(limit).map { list -> list.map { it.toDomain() } }
+    }
+
+    override fun getPlaybackHistory(musicId: Long, limit: Int): Flow<List<PlaybackHistoryDomain>> {
+        return playbackHistoryDao.getHistoryForMusic(musicId, limit).map { list -> list.map { it.toDomain() } }
+    }
+
+    override suspend fun incrementPlayCount(musicId: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.incrementPlayCount(musicId)
+    }
+
+    override suspend fun incrementSkippedCount(musicId: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.incrementSkippedCount(musicId)
+    }
+
+    override suspend fun updateLastPlayed(musicId: Long, timestamp: Long) = withContext(Dispatchers.IO) {
+        userInfoDao.updateLastPlayed(musicId, timestamp)
+    }
+
+    // ==================== Snapshot Export/Import ====================
+    override suspend fun exportMusicUserStateSnapshot(): MusicUserStateSnapshot {
+        val userInfos = userInfoDao.getAllUserInfos().map {
+            UserInfoSnapshot(
+                id = it.id,
+                liked = it.liked,
+                disLiked = it.disLiked,
+                lastPlayed = it.lastPlayed,
+                playCount = it.playCount,
+                skippedCount = it.skippedCount,
+                userRating = it.userRating,
+                inCustomPlaylistCount = it.inCustomPlaylistCount
+            )
+        }
+        
+        val extras = musicExtraDao.getAllExtras().map {
+            MusicExtraUserSnapshot(
+                id = it.id,
+                isGetExtraInfo = it.isGetExtraInfo,
+                rewards = it.rewards,
+                popLyric = it.popLyric,
+                singerIntroduce = it.singerIntroduce,
+                backgroundIntroduce = it.backgroundIntroduce,
+                description = it.description,
+                relevantMusic = it.relevantMusic
+            )
+        }
+        
+        val labels = musicLabelDao.getAllLabels().map {
+            MusicLabelSnapshot(
+                musicId = it.musicId,
+                label = LabelName.valueOf(it.label.name),
+                category = LabelCategory.valueOf(it.type.name)
+            )
+        }
+
+        return MusicUserStateSnapshot(
+            userInfos = userInfos,
+            extras = extras,
+            labels = labels
+        )
+    }
+
+    override suspend fun restoreMusicUserState(snapshot: MusicUserStateSnapshot) {
+        val userInfos = snapshot.userInfos.map {
+            UserInfo(
+                id = it.id,
+                liked = it.liked,
+                disLiked = it.disLiked,
+                lastPlayed = it.lastPlayed,
+                playCount = it.playCount,
+                skippedCount = it.skippedCount,
+                userRating = it.userRating,
+                inCustomPlaylistCount = it.inCustomPlaylistCount,
+                isDeleted = false
+            )
+        }
+        userInfoDao.insertAll(userInfos)
+        
+        val existingExtrasMap = musicExtraDao.getAllExtras().associateBy { it.id }
+        
+        val mergedExtras = snapshot.extras.map { snapshotExtra ->
+            val existing = existingExtrasMap[snapshotExtra.id]
+            existing?.copy(
+                isGetExtraInfo = snapshotExtra.isGetExtraInfo,
+                rewards = snapshotExtra.rewards,
+                popLyric = snapshotExtra.popLyric,
+                singerIntroduce = snapshotExtra.singerIntroduce,
+                backgroundIntroduce = snapshotExtra.backgroundIntroduce,
+                description = snapshotExtra.description,
+                relevantMusic = snapshotExtra.relevantMusic
+            )
+                ?: MusicExtra(
+                    id = snapshotExtra.id,
+                    isGetExtraInfo = snapshotExtra.isGetExtraInfo,
+                    rewards = snapshotExtra.rewards,
+                    popLyric = snapshotExtra.popLyric,
+                    singerIntroduce = snapshotExtra.singerIntroduce,
+                    backgroundIntroduce = snapshotExtra.backgroundIntroduce,
+                    description = snapshotExtra.description,
+                    relevantMusic = snapshotExtra.relevantMusic,
+                    isDeleted = false
+                )
+        }
+        musicExtraDao.insertAll(mergedExtras)
+
+        val musicLabels = snapshot.labels.map {
+            com.example.hearablemusicplayer.data.database.MusicLabel(
+                musicId = it.musicId,
+                label = DataLabelName.valueOf(it.label.name),
+                type = DataLabelCategory.valueOf(it.category.name)
+            )
+        }
+        musicLabelDao.insertAll(musicLabels)
+    }
+    
+    override suspend fun exportListeningStatsSnapshot(): ListeningStatsSnapshot {
+        val durations = listeningDurationDao.getAllDurations().map {
+            ListeningDurationDomain(
+                date = it.date,
+                duration = it.duration
+            )
+        }
+        
+        val history = playbackHistoryDao.getAllHistory().map {
+            PlaybackHistoryDomain(
+                musicId = it.musicId,
+                playedAt = it.playedAt,
+                playDuration = it.playDuration,
+                isCompleted = it.isCompleted,
+                source = it.source
+            )
+        }
+        
+        return ListeningStatsSnapshot(
+            listeningDurations = durations,
+            playbackHistories = history
+        )
+    }
+
+    override suspend fun restoreListeningStats(snapshot: ListeningStatsSnapshot) {
+        val durations = snapshot.listeningDurations.map {
+            ListeningDuration(
+                date = it.date,
+                duration = it.duration
+            )
+        }
+        listeningDurationDao.insertAll(durations)
+        
+        val history = snapshot.playbackHistories.map {
+            com.example.hearablemusicplayer.data.database.PlaybackHistory(
+                musicId = it.musicId,
+                playedAt = it.playedAt,
+                playDuration = it.playDuration,
+                isCompleted = it.isCompleted,
+                source = it.source
+            )
+        }
+        playbackHistoryDao.insertAll(history)
     }
 }

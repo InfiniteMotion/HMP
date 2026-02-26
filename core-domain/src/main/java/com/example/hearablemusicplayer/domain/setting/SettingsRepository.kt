@@ -31,6 +31,9 @@ interface SettingsRepository {
     // Playback State
     val currentMusicId: Flow<Long?>
     suspend fun saveCurrentMusicId(id: Long)
+    
+    val currentPosition: Flow<Long>
+    suspend fun saveCurrentPosition(position: Long)
 
     val currentPlaylistId: Flow<Long?>
     suspend fun saveCurrentPlaylistId(playlistId: Long)
@@ -144,6 +147,13 @@ interface SettingsRepository {
     suspend fun saveDefaultExtensionConfig(configJson: String)
     suspend fun getDefaultExtensionConfig(): String
     
+    // Snapshot Export/Import
+    suspend fun exportAppSettingsSnapshot(): com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot
+    suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot)
+    
+    suspend fun exportDailyRecommendationSnapshot(): com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot?
+    suspend fun restoreDailyRecommendationSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot)
+
     suspend fun backupSettings(): Result<File>
     suspend fun restoreSettings(backupFile: File): Result<Unit>
     suspend fun cleanOldBackups(keepCount: Int = 3): Result<Unit>

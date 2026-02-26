@@ -49,7 +49,7 @@ data class UserInfo(
     val id: Long,
     val liked: Boolean = false,
     val disLiked: Boolean = false,
-    val lastPlayed: Int? = null,
+    val lastPlayed: Long? = null,
     val playCount: Int? = null,
     val skippedCount: Int? = null,
     val userRating: Int? = null,

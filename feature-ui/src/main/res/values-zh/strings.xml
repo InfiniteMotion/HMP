@@ -68,12 +68,21 @@
     <string name="user_name">用户名</string>
     <string name="enter_new_user_name">请输入新的用户名</string>
     <string name="change_user_name">更改用户名</string>
-    <string name="music_scan">音乐扫描</string>
-    <string name="current_music_count">当前音乐数量：%1$d 首</string>
-    <string name="scan_method_desc">可选择方式从设备中读取音乐信息</string>
-    <string name="scan_method_warning">增量加载只会增加音乐信息，重载会删除所有相关信息（建议仅在应用首次启动时使用）</string>
-    <string name="incremental_load">增量加载</string>
-    <string name="reload">重新加载</string>
+    <string name="library_management">音乐库管理</string>
+    <string name="scanned_folders">已扫描文件夹</string>
+    <string name="folder_songs_count">%1$d 首歌曲</string>
+    <string name="no_scanned_folders">暂无已扫描的文件夹</string>
+    <string name="total_songs">总歌曲数</string>
+    <string name="analyzed_songs">已分析</string>
+    <string name="scan_options">扫描选项</string>
+    <string name="full_rescan">全量重建</string>
+    <string name="incremental_scan_desc">仅扫描新增文件，保留现有数据。适合日常更新。</string>
+    <string name="full_rescan_desc">清空所有数据并重新扫描。仅用于修复严重问题。</string>
+    <string name="confirm_full_rescan">确认全量重建？</string>
+    <string name="full_rescan_warning">此操作将清空所有音乐数据（包括播放历史和分析结果）并重新扫描。此过程不可撤销。</string>
+    <string name="confirm">确认</string>
+    <string name="scanning">扫描中...</string>
+    <string name="scan_error">扫描失败: %1$s</string>
     <string name="daily_recommendation_strategy">每日推荐刷新策略</string>
     <string name="select_refresh_strategy">选择每日推荐的刷新方式</string>
     <string name="refresh_mode_label">刷新模式</string>
@@ -86,6 +95,21 @@
     <string name="startup_count_label">启动次数</string>
     <string name="current_setting_startup">当前设置：每启动 %1$d 次后刷新</string>
     <string name="smart_refresh_desc">智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。</string>
+    <string name="backup">备份与恢复</string>
+    <string name="export_backup">生成备份</string>
+    <string name="restore_backup">恢复备份</string>
+    <string name="export_backup_desc">生成包含所有设置、歌单和收听历史的 JSON 备份文件</string>
+    <string name="restore_backup_desc">导入之前导出的备份文件以恢复数据</string>
+    <string name="local_backup_desc">管理存储在本地设备上的备份文件</string>
+    <string name="backup_desc">备份设置、播放列表等数据</string>
+    <string name="dismiss">隐藏</string>
+    <string name="local_backup">本地备份管理</string>
+    <string name="no_local_backups">暂无本地备份文件</string>
+    <string name="profile_settings">个人资料</string>
+    <string name="backup_settings">备份与恢复</string>
+    <string name="library_settings">音乐库</string>
+    <string name="profile_desc">更改头像和用户名</string>
+    <string name="library_desc">扫描和管理音乐文件</string>
 
     <!-- Home Screen -->
     <string name="go_to_ai_config">前往 AI 配置页面</string>
@@ -95,23 +119,42 @@
     <string name="relaunch_or_config_ai">请重新启动应用或进行 AI 配置</string>
     <string name="today_recommendation">今日推荐</string>
     <string name="today_heartbeat_playlist">今日心动歌单</string>
-    <string name="generating_heartbeat_playlist">正在生成心动歌单...</string>
+    <string name="generating_heartbeat_playlist">正在生成心动歌单…</string>
     <string name="play_heartbeat_playlist">播放心动歌单</string>
 
     <!-- Song Detail Screen -->
-    <string name="loading">加载中...</string>
+    <string name="loading">加载中…</string>
     <string name="title_song_detail">歌曲详情</string>
     <string name="song_detail_tab_intro">介绍</string>
     <string name="song_detail_tab_lyrics">歌词</string>
-    <string name="song_detail_tab_more">更多</string>
+    <string name="song_detail_tab_user">用户</string>
     <string name="song_detail_empty">暂无内容</string>
     <string name="song_description">歌曲介绍</string>
     <string name="artist_introduction">歌手介绍</string>
     <string name="creative_background">创作背景</string>
     <string name="popular_lyrics">热门歌词</string>
     <string name="lyrics">歌词</string>
+    <string name="labels">标签</string>
     <string name="song_achievements">歌曲成就</string>
     <string name="similar_music">类似音乐</string>
+    <string name="style_mood">风格与情绪</string>
+    <string name="technical_details">音频参数</string>
+    <string name="personal_stats">个人偏好</string>
+    <string name="bitrate">比特率</string>
+    <string name="samplerate">采样率</string>
+    <string name="format">格式</string>
+    <string name="liked_status">收藏状态</string>
+    <string name="last_played">上次播放</string>
+    <string name="liked_yes">是</string>
+    <string name="liked_no">否</string>
+    <string name="skipped_count">跳过次数</string>
+    <string name="user_rating">用户评分</string>
+    <string name="playlist_count">播放列表数</string>
+    <string name="recent_history">最近历史</string>
+    <string name="played_at">播放时间</string>
+    <string name="play_source">播放源</string>
+    <string name="completed">Completed</string>
+    <string name="incomplete">Incomplete</string>
 
     <!-- Gallery Screen -->
     <string name="title_gallery">音乐库</string>
@@ -147,8 +190,12 @@
     <string name="scan_complete_desc">扫描完成！已加载本地音乐%1$d首。</string>
     <string name="ok">确定</string>
     <string name="sleep_timer">定时关闭</string>
-    <string name="timer_off">关闭定时</string>
+    <string name="timer_off">关闭</string>
     <string name="timer_minutes">%1$d 分钟</string>
+    <string name="label_hours">小时</string>
+    <string name="label_minutes">分钟</string>
+    <string name="timer_desc_format">将在 %1$d 小时 %2$d 分钟后停止播放</string>
+    <string name="timer_desc_off">不开启定时</string>
     <string name="or_label">或</string>
     <string name="custom_minutes">自定义分钟</string>
 
@@ -205,4 +252,6 @@
     <string name="banner_heart">红心列表</string>
     <string name="banner_history">最近播放</string>
     <string name="share">分享</string>
+    <string name="library_stats">音乐库数据</string>
+    <string name="incremental_load">增量加载</string>
 </resources>

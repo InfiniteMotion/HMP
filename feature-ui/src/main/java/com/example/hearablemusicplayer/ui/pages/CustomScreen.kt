@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -138,7 +139,7 @@ fun ThemeModeButton(
         onClick = onClick,
         shape = RoundedCornerShape(80.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = Transparent,
         ),
         border = if(isSelected) BorderStroke(2.dp, color = MaterialTheme.colorScheme.primary) else null,
         modifier = Modifier
@@ -214,7 +215,7 @@ fun BackgroundStyleOption(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Transparent
         ),
         border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
     ) {

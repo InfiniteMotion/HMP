@@ -41,6 +41,9 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun IntroScreen(
@@ -52,6 +55,8 @@ fun IntroScreen(
     val isPermissionGiven = remember { mutableStateOf(false) }
     val showScanDialog = remember { mutableStateOf(false) }
     val isScanCompleted = remember { mutableStateOf(false) }
+    
+    val hazeState = rememberHazeState()
     
     // 权限授予后自动进入下一步
     LaunchedEffect(isPermissionGiven.value) {
@@ -71,6 +76,7 @@ fun IntroScreen(
     Column(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.background)
+            .hazeSource(state = hazeState)
             .padding(16.dp)
             .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -178,7 +184,7 @@ fun IntroScreen(
                     1 -> ScanMusicStep(
                         isScanCompleted = isScanCompleted.value,
                         onStartScan = {
-                            libraryViewModel?.refreshMusicList()
+                            libraryViewModel.refreshMusicList()
                             showScanDialog.value = true
                         },
                         onScanComplete = {
@@ -187,7 +193,8 @@ fun IntroScreen(
                             currentStep.intValue = 2
                         },
                         showScanDialog = showScanDialog.value,
-                        libraryViewModel = libraryViewModel
+                        libraryViewModel = libraryViewModel,
+                        hazeState = hazeState
                     )
                     2 -> StartExperienceStep(
                         onFinished = onFinished
@@ -251,7 +258,8 @@ fun ScanMusicStep(
     showScanDialog: Boolean,
     onStartScan: () -> Unit,
     onScanComplete: () -> Unit,
-    libraryViewModel: LibraryViewModel?
+    libraryViewModel: LibraryViewModel?,
+    hazeState: HazeState
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -296,7 +304,8 @@ fun ScanMusicStep(
         if (showScanDialog && libraryViewModel != null) {
             MusicScanDialog(
                 libraryViewModel = libraryViewModel,
-                onDismiss = onScanComplete
+                onDismiss = onScanComplete,
+                hazeState = hazeState
             )
         }
     }

@@ -10,6 +10,11 @@ import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
 import com.example.hearablemusicplayer.domain.setting.usecase.LyricsSettingsUseCase
 import com.example.hearablemusicplayer.domain.setting.usecase.UserSettingsUseCase
+import com.example.hearablemusicplayer.domain.backup.usecase.ExportUserDataBackupUseCase
+import com.example.hearablemusicplayer.domain.backup.usecase.ImportUserDataBackupUseCase
+import com.example.hearablemusicplayer.domain.backup.usecase.GetBackupsUseCase
+import com.example.hearablemusicplayer.domain.backup.usecase.DeleteBackupUseCase
+import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,11 +27,16 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val userSettingsUseCase: UserSettingsUseCase,
     private val lyricsSettingsUseCase: LyricsSettingsUseCase,
-    private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase
+    private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
+    private val exportUserDataBackupUseCase: ExportUserDataBackupUseCase,
+    private val importUserDataBackupUseCase: ImportUserDataBackupUseCase,
+    private val getBackupsUseCase: GetBackupsUseCase,
+    private val deleteBackupUseCase: DeleteBackupUseCase
 ) : ViewModel() {
     
     // User Info
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
+    val isLoadMusic = userSettingsUseCase.isLoadMusic
     val userName = userSettingsUseCase.userName
     val customMode = userSettingsUseCase.customMode
     val backgroundStyle = userSettingsUseCase.backgroundStyle
@@ -286,7 +296,63 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { userSettingsUseCase.saveDailyRefreshStartupCount(count) }
     }
     
+    // Backup & Restore
+    private val _backupResult = MutableStateFlow<String?>(null)
+    val backupResult: StateFlow<String?> = _backupResult
+
+    private val _localBackups = MutableStateFlow<List<File>>(emptyList())
+    val localBackups: StateFlow<List<File>> = _localBackups
+
+    fun loadLocalBackups() {
+        viewModelScope.launch {
+            getBackupsUseCase()
+                .onSuccess { _localBackups.value = it }
+        }
+    }
+
+    fun deleteLocalBackup(file: File) {
+        viewModelScope.launch {
+            deleteBackupUseCase(file)
+                .onSuccess { loadLocalBackups() }
+        }
+    }
+
+    fun clearBackupResult() {
+        _backupResult.value = null
+    }
+
+    fun exportBackup(onSuccess: (File) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            exportUserDataBackupUseCase()
+                .onSuccess { file ->
+                    _backupResult.value = "Backup success: ${file.absolutePath}"
+                    loadLocalBackups()
+                    onSuccess(file)
+                }
+                .onFailure { e ->
+                    _backupResult.value = "Backup failed: ${e.message}"
+                    onError(e.message ?: "Unknown error")
+                }
+        }
+    }
+
+    fun restoreBackup(file: File, onSuccess: () -> Unit, onError: (String) -> Unit) {
+            viewModelScope.launch {
+            importUserDataBackupUseCase(file)
+                .onSuccess {
+                    _backupResult.value = "Restore success"
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _backupResult.value = "Restore failed: ${e.message}"
+                    onError(e.message ?: "Unknown error")
+                }
+            }
+    }
+    
     init {
         loadCurrentProviderConfig()
+        loadLocalBackups()
+        getAvatarUri()
     }
 }

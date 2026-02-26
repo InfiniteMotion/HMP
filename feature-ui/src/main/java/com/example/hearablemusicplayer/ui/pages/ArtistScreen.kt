@@ -47,7 +47,6 @@ fun ArtistScreen(
         },
         onNavigate = navController::navigate,
         playWith = playControlViewModel::playWith,
-        recordPlayback = playControlViewModel::recordPlayback,
         addToPlaylist = playControlViewModel::addToPlaylist
     )
 }
@@ -63,7 +62,6 @@ fun ArtistScreenContent(
     onOrderPlay: () -> Unit,
     onNavigate: (Any) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    recordPlayback: (Long, String) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {
     val haptic = rememberHapticFeedback()

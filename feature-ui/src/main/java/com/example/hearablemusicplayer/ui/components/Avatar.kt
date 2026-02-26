@@ -1,4 +1,4 @@
-﻿package com.example.hearablemusicplayer.ui.components
+package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
@@ -16,7 +16,7 @@ fun Avatar(
     aSize: Int,
     imageUri: String?,
 ){
-    if (imageUri != "") {
+    if (!imageUri.isNullOrEmpty()) {
         AsyncImage(
             model = imageUri,
             contentDescription = "User Avatar",

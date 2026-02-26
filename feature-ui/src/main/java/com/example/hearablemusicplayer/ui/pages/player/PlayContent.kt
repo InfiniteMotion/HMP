@@ -53,6 +53,8 @@ import com.example.hearablemusicplayer.ui.components.GeneratePlaylistComboButton
 import com.example.hearablemusicplayer.ui.components.PlaylistArea
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 
 // 格式化时间为 mm:ss
 fun formatTime(millis: Long): String {
@@ -99,7 +101,8 @@ fun PlayContent(
     onClearPlaylist: () -> Unit,
     onPlayItem: suspend (MusicInfo) -> Unit,
     onMoveToTop: (MusicInfo) -> Unit,
-    onRemoveFromPlaylist: (MusicInfo) -> Unit
+    onRemoveFromPlaylist: (MusicInfo) -> Unit,
+    hazeState: HazeState? = null
 ){
     val haptic = rememberHapticFeedback()
 
@@ -112,112 +115,118 @@ fun PlayContent(
         val screenHeight = maxHeight
         val scrollState = rememberScrollState()
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
+                .then(if (hazeState != null) Modifier.hazeSource(state = hazeState) else Modifier)
         ) {
-            // 播放器主界面容器：强制填满一屏高度
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(screenHeight)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
             ) {
+                // 播放器主界面容器：强制填满一屏高度
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .weight(1f) // 使顶部区域占据剩余空间
+                        .height(screenHeight)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .weight(1f) // 使顶部区域占据剩余空间
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        PlayerHeader(onBackClick)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        MusicInfo(musicInfo?.music, onArtistClick)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // 封面区域：使用 weight(1f) 实现弹性缩放
+                        MusicInfoExtra(
+                            musicInfo = musicInfo,
+                            lyrics = lyrics,
+                            currentPosition = currentPosition,
+                            defaultAlgorithmType = defaultAlgorithmType,
+                            defaultTemplate = defaultTemplate,
+                            originalTextSize = lyricsOriginalTextSize,
+                            translatedTextSize = lyricsTranslatedTextSize,
+                            currentTimeTextSize = lyricsCurrentTimeTextSize,
+                            lineSpacing = lyricsLineSpacing,
+                            displayMode = lyricsDisplayMode,
+                            alignment = lyricsAlignment,
+                            onSeek = onSeek,
+                            onGeneratePlaylist = onGeneratePlaylist,
+                            onSaveDefaultConfig = onSaveDefaultConfig,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    PlayerHeader(onBackClick)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    MusicInfo(musicInfo?.music, onArtistClick)
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SeekBar(
+                            currentPosition = currentPosition,
+                            duration = duration,
+                            onSeek = onSeek
+                        )
+                        // 播放控制按钮区
+                        PlaybackControlsButtons(
+                            isPlaying = isPlaying,
+                            playbackMode = playbackMode,
+                            isLike = isLiked,
+                            remainingTime = remainingTime,
+                            playlistExpanded = playlistExpanded,
+                            onPlayPause = {
+                                haptic.performClick()
+                                onPlayPause()
+                            },
+                            onNext = {
+                                haptic.performClick()
+                                onNext()
+                            },
+                            onPrevious = {
+                                haptic.performClick()
+                                onPrevious()
+                            },
+                            onPlaybackModeChange = {
+                                haptic.performContextClick()
+                                onPlaybackModeChange()
+                            },
+                            onFavorite = {
+                                haptic.performConfirm()
+                                onFavorite()
+                            },
+                            onTimerClick = {
+                                haptic.performClick()
+                                showTimerDialog = true
+                            },
+                            onHeartMode = {
+                                haptic.performConfirm()
+                                onHeartMode()
+                            },
+                            onPlaylistToggle = {
+                                playlistExpanded = !playlistExpanded
+                            }
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
-                    // 封面区域：使用 weight(1f) 实现弹性缩放
-                    MusicInfoExtra(
-                        musicInfo = musicInfo,
-                        lyrics = lyrics,
-                        currentPosition = currentPosition,
-                        defaultAlgorithmType = defaultAlgorithmType,
-                        defaultTemplate = defaultTemplate,
-                        originalTextSize = lyricsOriginalTextSize,
-                        translatedTextSize = lyricsTranslatedTextSize,
-                        currentTimeTextSize = lyricsCurrentTimeTextSize,
-                        lineSpacing = lyricsLineSpacing,
-                        displayMode = lyricsDisplayMode,
-                        alignment = lyricsAlignment,
-                        onSeek = onSeek,
-                        onGeneratePlaylist = onGeneratePlaylist,
-                        onSaveDefaultConfig = onSaveDefaultConfig,
-                        modifier = Modifier.weight(1f)
-                    )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    SeekBar(
-                        currentPosition = currentPosition,
-                        duration = duration,
-                        onSeek = onSeek
-                    )
-                    // 播放控制按钮区
-                    PlaybackControlsButtons(
-                        isPlaying = isPlaying,
-                        playbackMode = playbackMode,
-                        isLike = isLiked,
-                        remainingTime = remainingTime,
-                        playlistExpanded = playlistExpanded,
-                        onPlayPause = {
-                            haptic.performClick()
-                            onPlayPause()
-                        },
-                        onNext = {
-                            haptic.performClick()
-                            onNext()
-                        },
-                        onPrevious = {
-                            haptic.performClick()
-                            onPrevious()
-                        },
-                        onPlaybackModeChange = {
-                            haptic.performContextClick()
-                            onPlaybackModeChange()
-                        },
-                        onFavorite = {
-                            haptic.performConfirm()
-                            onFavorite()
-                        },
-                        onTimerClick = {
-                            haptic.performClick()
-                            showTimerDialog = true
-                        },
-                        onHeartMode = {
-                            haptic.performConfirm()
-                            onHeartMode()
-                        },
-                        onPlaylistToggle = {
-                            playlistExpanded = !playlistExpanded
-                        }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                // 播放列表区域：位于主界面下方
+                PlaylistArea(
+                    expanded = playlistExpanded,
+                    playlist = playlist,
+                    currentIndex = currentIndex,
+                    scrollState = scrollState,
+                    onClearPlaylist = onClearPlaylist,
+                    onPlayItem = onPlayItem,
+                    onMoveToTop = onMoveToTop,
+                    onRemoveFromPlaylist = onRemoveFromPlaylist
+                )
             }
-
-            // 播放列表区域：位于主界面下方
-            PlaylistArea(
-                expanded = playlistExpanded,
-                playlist = playlist,
-                currentIndex = currentIndex,
-                scrollState = scrollState,
-                onClearPlaylist = onClearPlaylist,
-                onPlayItem = onPlayItem,
-                onMoveToTop = onMoveToTop,
-                onRemoveFromPlaylist = onRemoveFromPlaylist
-            )
         }
         if (showTimerDialog) {
             TimerDialog(
@@ -229,7 +238,8 @@ fun PlayContent(
                         onTimerClick(minutes)
                     }
                     showTimerDialog = false
-                }
+                },
+                hazeState = hazeState
             )
         }
     }
@@ -323,7 +333,7 @@ fun MusicInfoExtra(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 if (musicInfo?.extra != null) {
-                    TechnicalInfoCard(musicInfo.extra)
+                    TechnicalInfoCard(musicInfo.extra, modifier = Modifier.padding(16.dp))
                 }
                 if (musicInfo?.extra?.isGetExtraInfo == true) {
                     GeneratePlaylistComboButtons(

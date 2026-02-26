@@ -82,4 +82,10 @@ interface PlaylistItemDao {
         }
         insertPlaylist(items)
     }
+
+    @Query("SELECT * FROM playlist_item")
+    suspend fun getAllPlaylistItems(): List<PlaylistItem>
+
+    @Query("DELETE FROM playlist_item")
+    suspend fun deleteAll()
 }

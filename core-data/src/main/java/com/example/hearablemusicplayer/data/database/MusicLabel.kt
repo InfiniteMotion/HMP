@@ -43,4 +43,10 @@ interface MusicLabelDao {
     WHERE label = :label
 """)
     suspend fun getMusicIdListByType(label: LabelName): List<Long>
+
+    @Query("SELECT * FROM musicLabel")
+    suspend fun getAllLabels(): List<MusicLabel>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(labels: List<MusicLabel>)
 }

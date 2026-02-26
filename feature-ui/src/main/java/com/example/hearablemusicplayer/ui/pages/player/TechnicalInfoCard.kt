@@ -28,9 +28,8 @@ fun TechnicalInfoCard(
     Surface (
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
             .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(0.5f), RoundedCornerShape(16.dp)),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(0.5f), RoundedCornerShape(16.dp)),
         color = Transparent
     ) {
         Column(

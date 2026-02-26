@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer.data.database
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 
@@ -23,4 +24,10 @@ interface PlaylistDao {
 
     @Query("Delete FROM playlist")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM playlist")
+    suspend fun getAllPlaylists(): List<Playlist>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(playlists: List<Playlist>)
 }

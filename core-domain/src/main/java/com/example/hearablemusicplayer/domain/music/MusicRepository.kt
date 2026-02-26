@@ -47,6 +47,9 @@ interface MusicRepository {
     suspend fun loadMusicFromDevice(): Result<Unit>
     val isScanning: Flow<Boolean>
 
+    // Device Scan - Incremental
+    suspend fun syncMusicFromDeviceIncremental(): Result<Unit>
+
     // AI / Extra Fetching
     suspend fun fetchMusicExtraInfoWithProvider(
         providerConfig: AiProviderConfig,
@@ -57,6 +60,20 @@ interface MusicRepository {
     suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean>
 
     // Listening Duration
-    suspend fun insertPlayback(history: PlaybackHistory)
+    suspend fun insertPlayback(history: PlaybackHistory): Long
+    suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean)
     suspend fun recordListeningDuration(duration: Long)
+    fun getPlaybackHistory(musicId: Long, limit: Int = 5): Flow<List<PlaybackHistory>>
+
+    // User Stats
+    suspend fun incrementPlayCount(musicId: Long)
+    suspend fun incrementSkippedCount(musicId: Long)
+    suspend fun updateLastPlayed(musicId: Long, timestamp: Long)
+
+    // Snapshot Export/Import
+    suspend fun exportMusicUserStateSnapshot(): com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot
+    suspend fun restoreMusicUserState(snapshot: com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot)
+    
+    suspend fun exportListeningStatsSnapshot(): com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot
+    suspend fun restoreListeningStats(snapshot: com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot)
 }

@@ -65,7 +65,6 @@ fun SearchScreen(
         onBackClick = { navController.popBackStack() },
         onNavigate = navController::navigate,
         playWith = playControlViewModel::playWith,
-        recordPlayback = playControlViewModel::recordPlayback,
         addToPlaylist = playControlViewModel::addToPlaylist
     )
 }
@@ -80,7 +79,6 @@ fun SearchScreenContent(
     onBackClick: () -> Unit,
     onNavigate: (Any) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    recordPlayback: (Long, String?) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
