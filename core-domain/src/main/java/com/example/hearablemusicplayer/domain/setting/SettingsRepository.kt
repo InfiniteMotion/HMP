@@ -31,6 +31,9 @@ interface SettingsRepository {
     // Playback State
     val currentMusicId: Flow<Long?>
     suspend fun saveCurrentMusicId(id: Long)
+    
+    val currentPosition: Flow<Long>
+    suspend fun saveCurrentPosition(position: Long)
 
     val currentPlaylistId: Flow<Long?>
     suspend fun saveCurrentPlaylistId(playlistId: Long)

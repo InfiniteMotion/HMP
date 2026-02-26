@@ -68,12 +68,26 @@
     <string name="user_name">Username</string>
     <string name="enter_new_user_name">Please enter new username</string>
     <string name="change_user_name">Change Username</string>
-    <string name="music_scan">Music Scan</string>
-    <string name="current_music_count">Current Music: %1$d songs</string>
-    <string name="scan_method_desc">Choose a method to read music info from device</string>
-    <string name="scan_method_warning">Incremental load only adds new info; reload clears everything (recommended for first launch only)</string>
-    <string name="incremental_load">Incremental Load</string>
-    <string name="reload">Reload</string>
+    <string name="library_management">Library Management</string>
+    <string name="scanned_folders">Scanned Foldgers</string>
+    <string name="folder_songs_count">%1$d songs</string>
+    <string name="no_scanned_folders">No scanned folders found</string>
+    <string name="total_songs">Total Songs</string>
+    <string name="analyzed_songs">Analyzed</string>
+    <string name="scan_options">Scan Options</string>
+    <string name="full_rescan">Full Rescan</string>
+    <string name="incremental_scan_desc">Scan new files only, keeping existing data. Good for daily updates.</string>
+    <string name="full_rescan_desc">Clear all data and rescan everything. Only for fixing serious issues.</string>
+    <string name="confirm_full_rescan">Confirm Full Rescan?</string>
+    <string name="full_rescan_warning">This will clear ALL music data (including history and analysis) and rescan from scratch. This cannot be undone.</string>
+    <string name="confirm">Confirm</string>
+    <string name="scanning">Scanning...</string>
+    <string name="scan_error">Scan failed: %1$s</string>
+    <string name="profile_settings">Profile</string>
+    <string name="backup_settings">Backup &amp; Restore</string>
+    <string name="library_settings">Music Library</string>
+    <string name="profile_desc">Change avatar and username</string>
+    <string name="library_desc">Scan and manage music files</string>
     <string name="daily_recommendation_strategy">Daily Recommendation Strategy</string>
     <string name="select_refresh_strategy">Select daily recommendation refresh method</string>
     <string name="refresh_mode_label">Refresh Mode</string>
@@ -90,9 +104,13 @@
     <string name="share_backup">Share Backup</string>
     <string name="export_backup">Export Backup</string>
     <string name="restore_backup">Restore Backup</string>
-    <string name="backup_desc">Backup includes: app settings, playlists, listening stats, and AI labels.</string>
+    <string name="export_backup_desc">Generate a JSON file containing all your settings, playlists, and listening history.</string>
+    <string name="restore_backup_desc">Import a previously exported backup file to restore your data.</string>
+    <string name="local_backup_desc">Manage backup files stored locally on your device.</string>
+    <string name="backup_desc">Backup settings, playlists etc.</string>
     <string name="dismiss">Dismiss</string>
     <string name="local_backup">Local Backups</string>
+    <string name="no_local_backups">No local backups found</string>
 
 
     <!-- Home Screen -->
@@ -236,4 +254,6 @@
     <string name="banner_heart">Heart</string>
     <string name="banner_history">History</string>
     <string name="share">Share</string>
+    <string name="library_stats">Library Stats</string>
+    <string name="incremental_load">Incremental Load</string>
 </resources>

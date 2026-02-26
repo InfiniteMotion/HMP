@@ -39,6 +39,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
         val IS_LOAD_MUSIC = booleanPreferencesKey("is_load_music")
         val CURRENT_MUSIC_ID = longPreferencesKey("current_music_id")
+        val CURRENT_POSITION = longPreferencesKey("current_position")
         val CURRENT_PLAYLIST_ID = longPreferencesKey("current_playlist_id")
         val LIKED_PLAYLIST_ID = longPreferencesKey("liked_playlist_id")
         val RECENT_PLAYLIST_ID = longPreferencesKey("recent_playlist_id")
@@ -225,6 +226,17 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveCurrentMusicId(id: Long) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.CURRENT_MUSIC_ID] = id
+        }
+    }
+    
+    // 当前播放进度
+    override val currentPosition: Flow<Long> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.CURRENT_POSITION] ?: 0L }
+
+    // 保存当前播放进度
+    override suspend fun saveCurrentPosition(position: Long) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CURRENT_POSITION] = position
         }
     }
 

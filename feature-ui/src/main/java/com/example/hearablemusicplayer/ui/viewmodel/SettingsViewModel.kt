@@ -36,6 +36,7 @@ class SettingsViewModel @Inject constructor(
     
     // User Info
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
+    val isLoadMusic = userSettingsUseCase.isLoadMusic
     val userName = userSettingsUseCase.userName
     val customMode = userSettingsUseCase.customMode
     val backgroundStyle = userSettingsUseCase.backgroundStyle
@@ -352,5 +353,6 @@ class SettingsViewModel @Inject constructor(
     init {
         loadCurrentProviderConfig()
         loadLocalBackups()
+        getAvatarUri()
     }
 }

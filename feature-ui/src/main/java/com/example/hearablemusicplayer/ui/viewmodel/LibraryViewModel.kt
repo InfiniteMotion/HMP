@@ -7,13 +7,20 @@ import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.LoadMusicFromDeviceUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import java.io.File
+
+data class FolderInfo(
+    val path: String,
+    val songCount: Int
+)
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
@@ -56,6 +63,19 @@ class LibraryViewModel @Inject constructor(
         
     // 扫描
     val isScanning = loadMusicFromDeviceUseCase.isScanning()
+    
+    // 文件夹统计
+    val scannedFolders: StateFlow<List<FolderInfo>> = _allMusic.map { list ->
+        list.groupBy { music ->
+            try {
+                File(music.music.path).parent ?: "Unknown"
+            } catch (e: Exception) {
+                "Unknown"
+            }
+        }.map { (path, songs) ->
+            FolderInfo(path, songs.size)
+        }.sortedByDescending { it.songCount }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     private val _scanErrorMessage = MutableStateFlow<String?>(null)
     val scanErrorMessage: StateFlow<String?> = _scanErrorMessage

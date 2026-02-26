@@ -28,6 +28,15 @@ object Routes {
     /** 设置页路由 */
     @Serializable object Setting
     
+    /** 个人资料设置路由 */
+    @Serializable object ProfileSettings
+    
+    /** 备份设置路由 */
+    @Serializable object BackupSettings
+    
+    /** 音乐库设置路由 */
+    @Serializable object LibrarySettings
+    
     /** 搜索页路由 */
     @Serializable object Search
     

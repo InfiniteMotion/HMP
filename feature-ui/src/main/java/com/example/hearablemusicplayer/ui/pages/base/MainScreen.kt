@@ -43,7 +43,10 @@ import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
 import com.example.hearablemusicplayer.ui.pages.CustomScreen
 import com.example.hearablemusicplayer.ui.pages.PlaylistScreen
 import com.example.hearablemusicplayer.ui.pages.SearchScreen
-import com.example.hearablemusicplayer.ui.pages.SettingScreen
+import com.example.hearablemusicplayer.ui.pages.settings.BackupSettingsScreen
+import com.example.hearablemusicplayer.ui.pages.settings.LibrarySettingsScreen
+import com.example.hearablemusicplayer.ui.pages.settings.ProfileSettingsScreen
+import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
 import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
 import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
 import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen
@@ -229,7 +232,25 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            SettingScreen(settingsViewModel, libraryViewModel, navController)
+                            SettingScreen(navController)
+                        }
+                        composable<Routes.ProfileSettings>(
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            ProfileSettingsScreen(navController = navController)
+                        }
+                        composable<Routes.BackupSettings>(
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            BackupSettingsScreen(navController = navController)
+                        }
+                        composable<Routes.LibrarySettings>(
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            LibrarySettingsScreen(navController = navController)
                         }
                         composable<Routes.Search>(
                             enterTransition = { pageEnterTransition },

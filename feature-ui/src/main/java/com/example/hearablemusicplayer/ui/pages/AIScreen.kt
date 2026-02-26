@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.ui.pages
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +29,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -81,6 +87,11 @@ fun AIScreen(
     val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
     val progress by recommendationViewModel.processingProgress.collectAsState()
     val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
+    
+    // Daily Refresh Settings State
+    val refreshMode by settingsViewModel.dailyRefreshMode.collectAsState()
+    val refreshHours by settingsViewModel.dailyRefreshHours.collectAsState()
+    val startupCount by settingsViewModel.dailyRefreshStartupCount.collectAsState()
 
     AIScreenContent(
         musicWithExtraCount = musicWithExtraCount,
@@ -91,6 +102,9 @@ fun AIScreen(
         apiTestResult = apiTestResult,
         progress = progress,
         autoBatchProcess = autoBatchProcess,
+        refreshMode = refreshMode,
+        refreshHours = refreshHours,
+        startupCount = startupCount,
         onProviderChange = settingsViewModel::switchAiProvider,
         onTestConnection = settingsViewModel::testAiProviderConnection,
         onSaveConfig = settingsViewModel::saveAiProviderConfig,
@@ -100,6 +114,9 @@ fun AIScreen(
         pauseProcess = recommendationViewModel::pauseProcessing,
         resumeProcess = recommendationViewModel::resumeProcessing,
         cancelProcess = recommendationViewModel::cancelProcessing,
+        onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
+        onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
+        onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount,
         onBackClick = { navController.popBackStack() }
     )
 }
@@ -114,6 +131,9 @@ fun AIScreenContent(
     apiTestResult: SettingsViewModel.ApiTestResult?,
     progress: RecommendationViewModel.BatchProcessingProgress,
     autoBatchProcess: Boolean,
+    refreshMode: String,
+    refreshHours: Int,
+    startupCount: Int,
     onProviderChange: (AiProviderType) -> Unit,
     onTestConnection: (AiProviderType, String, String) -> Unit,
     onSaveConfig: (AiProviderType, String, String) -> Unit,
@@ -123,6 +143,9 @@ fun AIScreenContent(
     pauseProcess: () -> Unit,
     resumeProcess: () -> Unit,
     cancelProcess: () -> Unit,
+    onSaveDailyRefreshMode: (String) -> Unit,
+    onSaveDailyRefreshHours: (Int) -> Unit,
+    onSaveDailyRefreshStartupCount: (Int) -> Unit,
     onBackClick: () -> Unit
 ) {
     SubScreen(
@@ -160,14 +183,173 @@ fun AIScreenContent(
                 cancelProcess = cancelProcess
             )
 
+            // 每日推荐刷新策略
+            DailyRefreshSettings(
+                refreshMode = refreshMode,
+                refreshHours = refreshHours,
+                startupCount = startupCount,
+                onSaveRefreshMode = onSaveDailyRefreshMode,
+                onSaveRefreshHours = onSaveDailyRefreshHours,
+                onSaveStartupCount = onSaveDailyRefreshStartupCount
+            )
+
             Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }
 
 /**
- * AI 服务商配置组件
+ * 每日推荐刷新策略设置
  */
+@SuppressLint("LocalContextGetResourceValueCall")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DailyRefreshSettings(
+    refreshMode: String,
+    refreshHours: Int,
+    startupCount: Int,
+    onSaveRefreshMode: (String) -> Unit,
+    onSaveRefreshHours: (Int) -> Unit,
+    onSaveStartupCount: (Int) -> Unit
+) {
+    val context = LocalContext.current
+    
+    TitleWidget(
+        title = stringResource(R.string.daily_recommendation_strategy),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.select_refresh_strategy),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            // 刷新模式选择
+            var expanded by remember { mutableStateOf(false) }
+            val refreshModes = listOf(
+                "time" to stringResource(R.string.refresh_by_time),
+                "startup" to stringResource(R.string.refresh_by_startup),
+                "smart" to stringResource(R.string.refresh_smart)
+            )
+            val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: stringResource(R.string.refresh_by_time)
+            
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                TextField(
+                    value = currentModeLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.refresh_mode_label)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryEditable, // 核心参数
+                        enabled = true // 可选参数，控制菜单是否可用
+                    ),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Transparent,
+                        unfocusedIndicatorColor = Transparent,
+                        disabledIndicatorColor = Transparent
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    refreshModes.forEach { (mode, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onSaveRefreshMode(mode)
+                                expanded = false
+                                Toast.makeText(context, context.getString(R.string.switched_to, label), Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // 根据选择的模式显示不同的配置项
+            when (refreshMode) {
+                "time" -> {
+                    var hoursText by remember(refreshHours) { mutableStateOf(refreshHours.toString()) }
+                    
+                    OutlinedTextField(
+                        value = hoursText,
+                        onValueChange = { 
+                            hoursText = it
+                            it.toIntOrNull()?.let { hours ->
+                                if (hours > 0) {
+                                    onSaveRefreshHours(hours)
+                                }
+                            }
+                        },
+                        label = { Text(stringResource(R.string.refresh_interval_hours)) },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    Text(
+                        text = stringResource(R.string.current_setting_time, refreshHours),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                "startup" -> {
+                    var countText by remember(startupCount) { mutableStateOf(startupCount.toString()) }
+                    
+                    OutlinedTextField(
+                        value = countText,
+                        onValueChange = { 
+                            countText = it
+                            it.toIntOrNull()?.let { count ->
+                                if (count > 0) {
+                                    onSaveStartupCount(count)
+                                }
+                            }
+                        },
+                        label = { Text(stringResource(R.string.startup_count_label)) },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    Text(
+                        text = stringResource(R.string.current_setting_startup, startupCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                "smart" -> {
+                    Text(
+                        text = stringResource(R.string.smart_refresh_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun AiProviderConfig(
     currentProvider: AiProviderType,
@@ -422,6 +604,7 @@ fun AiProviderConfig(
 }
 
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun LoadMusicExtraInfo(
     pendingCount: Int,
