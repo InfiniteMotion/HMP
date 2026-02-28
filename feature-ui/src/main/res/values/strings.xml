@@ -101,7 +101,6 @@
     <string name="current_setting_startup">Current setting: Refresh every %1$d startups</string>
     <string name="smart_refresh_desc">Smart refresh will automatically determine the best time to refresh based on your listening habits and time of day. Currently defaults to 24-hour refresh.</string>
     <string name="backup">Backup &amp; Restore</string>
-    <string name="share_backup">Share Backup</string>
     <string name="export_backup">Export Backup</string>
     <string name="restore_backup">Restore Backup</string>
     <string name="export_backup_desc">Generate a JSON file containing all your settings, playlists, and listening history.</string>
@@ -256,4 +255,26 @@
     <string name="share">Share</string>
     <string name="library_stats">Library Stats</string>
     <string name="incremental_load">Incremental Load</string>
+
+    <!-- User Usage Data Screen -->
+    <string name="title_user_usage_data">Usage Data</string>
+    <string name="listening_insights">Listening Insights</string>
+    <string name="completion_rate">Completion Rate</string>
+    <string name="skip_rate">Skip Rate</string>
+    <string name="total_listening_minutes">Total Listening (min)</string>
+    <string name="this_week_minutes">This Week (min)</string>
+    <string name="last_week_minutes">Last Week (min)</string>
+    <string name="top_played">Most Played</string>
+    <string name="play_source_breakdown">Play Source</string>
+    <string name="top_genres">Top Genres</string>
+    <string name="top_moods">Top Moods</string>
+    <string name="top_scenarios">Top Scenarios</string>
+    <string name="top_artists">Top Artists</string>
+    <string name="custom_playlist_count">Custom Playlists</string>
+    <string name="top_songs_in_playlists">Most in Playlists</string>
+    <string name="usage_data_empty">No usage data yet</string>
+    <string name="refresh">Refresh</string>
+    <string name="taste_card">Listening Taste</string>
+    <string name="ranking_and_history">Ranking &amp; History</string>
+    <string name="tab_playlists">Playlists</string>
 </resources>

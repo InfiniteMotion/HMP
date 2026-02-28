@@ -60,4 +60,7 @@ object Routes {
 
     /** 歌词页路由 */
     @Serializable object Lyrics
+
+    /** 用户使用数据页路由 */
+    @Serializable object UserUsageData
 }

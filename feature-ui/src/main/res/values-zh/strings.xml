@@ -254,4 +254,26 @@
     <string name="share">分享</string>
     <string name="library_stats">音乐库数据</string>
     <string name="incremental_load">增量加载</string>
+
+    <!-- User Usage Data Screen -->
+    <string name="title_user_usage_data">收听数据</string>
+    <string name="listening_insights">播放数据</string>
+    <string name="completion_rate">完整播放率</string>
+    <string name="skip_rate">跳过率</string>
+    <string name="total_listening_minutes">总收听（min）</string>
+    <string name="this_week_minutes">本周（min）</string>
+    <string name="last_week_minutes">上周（min）</string>
+    <string name="top_played">最常播放</string>
+    <string name="play_source_breakdown">播放来源</string>
+    <string name="top_genres">最常听曲风</string>
+    <string name="top_moods">最常听情绪</string>
+    <string name="top_scenarios">最常听场景</string>
+    <string name="top_artists">最常听艺术家</string>
+    <string name="custom_playlist_count">自定义歌单数</string>
+    <string name="top_songs_in_playlists">最常被加入歌单</string>
+    <string name="usage_data_empty">暂无使用数据</string>
+    <string name="refresh">刷新</string>
+    <string name="taste_card">风格偏好</string>
+    <string name="ranking_and_history">排行</string>
+    <string name="tab_playlists">歌单</string>
 </resources>
