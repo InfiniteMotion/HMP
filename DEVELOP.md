@@ -1,6 +1,6 @@
 # Hearable Music Player 开发文档
 
-本文档详细记录了Hearable Music Player的技术架构、实现细节、开发流程和关键决策，旨在帮助我自己和其他贡献者快速理解项目并参与开发。
+本文档详细记录了 Hearable Music Player 的技术架构、实现细节、开发流程和关键决策，旨在帮助开发者快速理解项目并参与开发。项目文档索引与职责说明见 [docs/README.md](docs/README.md)。
 
 ## 🏗️ 技术架构
 
@@ -276,11 +276,11 @@ cd hearable-music-player
 
 项目使用Git进行版本控制，采用Git Flow工作流。
 
-**分支策略**：
-- `main`: 主分支，包含稳定版本
-- `develop`: 开发分支，包含最新开发代码
-- `feature/*`: 功能分支，用于开发新功能
-- `bugfix/*`: 修复分支，用于修复bug
+**分支策略**（与版本规范一致，详见 [docs/VERSIONING.md](docs/VERSIONING.md) 分支与发版）：
+- `main`: 已发布版本；MINOR/MAJOR 通过从 develop 合并更新，PATCH 可在 main 上直接改并打 tag
+- `develop`: 下一版本的集成分支，MINOR 功能开发在此进行
+- `feature/*`: 功能分支，从 develop 拉出，开发完毕后合并回 develop
+- `bugfix/*`: 修复分支，合并回 develop 或（若仅 PATCH 热修）合并回 main
 
 ### 构建与发布
 
@@ -291,10 +291,13 @@ cd hearable-music-player
 
 #### 发布流程
 
-1. 更新版本号和变更日志
-2. 构建发布包：`./gradlew assembleRelease`
-3. 签名APK文件
-4. 上传到应用商店或分发渠道
+版本号与发布步骤详见 **[docs/VERSIONING.md](docs/VERSIONING.md)**，摘要如下：
+
+1. **确定版本类型**：按变更内容决定升级 MAJOR / MINOR / PATCH，得到新版本号（如 5.7.0）
+2. **更新构建配置**：在 `app/build.gradle.kts` 中更新 `versionCode` 和 `versionName`
+3. **更新 ROADMAP**：在 [ROADMAP.md](ROADMAP.md) 中新增该版本条目与「当前版本」
+4. 构建发布包：`./gradlew assembleRelease`
+5. 签名 APK 并上传或分发
 
 ## 🎯 关键实现细节
 
