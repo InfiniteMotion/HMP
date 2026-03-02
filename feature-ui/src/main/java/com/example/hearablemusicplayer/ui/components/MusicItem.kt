@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,8 +22,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +56,12 @@ fun MusicItem(
     showAddButton: Boolean,
     showMenuButton: Boolean,
     isPlaying: Boolean,
-    modifier: Modifier
+    modifier: Modifier,
+    extraMenuItems: List<Pair<String, () -> Unit>> = emptyList(),
+    showMoveUp: Boolean = false,
+    showMoveDown: Boolean = false,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val haptic = rememberHapticFeedback()
@@ -104,6 +116,26 @@ fun MusicItem(
                 )
             }
             Row {
+                if (showMoveUp) {
+                    IconButton(onClick = { haptic.performLightClick(); onMoveUp() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.chevron_up),
+                            contentDescription = "Move up",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                if (showMoveDown) {
+                    IconButton(onClick = { haptic.performLightClick(); onMoveDown() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.chevron_down),
+                            contentDescription = "Move down",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
                 if (showAddButton) {
                     IconButton(
                         onClick = {
@@ -122,18 +154,58 @@ fun MusicItem(
                     }
                 }
                 if (showMenuButton) {
-                    IconButton(
-                        onClick = {
-                            haptic.performLightClick()
-                            onMenuClick()
+                    if (extraMenuItems.isEmpty()) {
+                        IconButton(
+                            onClick = {
+                                haptic.performLightClick()
+                                onMenuClick()
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.more),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                contentDescription = "Menu Button",
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.more),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            contentDescription = "Menu Button",
-                            modifier = Modifier.size(24.dp)
-                        )
+                    } else {
+                        var expanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    haptic.performLightClick()
+                                    expanded = true
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    contentDescription = "Menu Button",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.title_song_detail)) },
+                                    onClick = {
+                                        expanded = false
+                                        onMenuClick()
+                                    }
+                                )
+                                extraMenuItems.forEach { (label, onClick) ->
+                                    DropdownMenuItem(
+                                        text = { Text(label) },
+                                        onClick = {
+                                            expanded = false
+                                            onClick()
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

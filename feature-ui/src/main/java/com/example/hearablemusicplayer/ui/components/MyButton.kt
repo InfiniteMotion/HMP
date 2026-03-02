@@ -335,6 +335,28 @@ fun SearchButton(
     }
 }
 
+@Composable
+fun NewPlaylistButton(onClick: () -> Unit) {
+    val haptic = rememberHapticFeedback()
+    FilledIconButton(
+        onClick = {
+            haptic.performClick()
+            onClick()
+        },
+        modifier = Modifier.size(32.dp),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.plus),
+            contentDescription = "New Playlist",
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
 /**
  * 播放列表生成组合按钮组件
  * 提供智能播放列表生成功能入口，采用两排组合按钮布局

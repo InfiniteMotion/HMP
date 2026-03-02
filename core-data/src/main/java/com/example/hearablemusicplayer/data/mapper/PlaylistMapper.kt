@@ -8,12 +8,30 @@ import com.example.hearablemusicplayer.domain.playlist.PlaylistItem
 // Playlist
 fun PlaylistEntity.toDomain(): Playlist = Playlist(
     id = id,
-    name = name
+    name = name,
+    coverUri = coverUri,
+    playCount = playCount,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    lastPlayedAt = lastPlayedAt,
+    description = description,
+    songCount = songCount,
+    totalDurationMs = totalDurationMs,
+    isPinned = isPinned
 )
 
 fun Playlist.toEntity(): PlaylistEntity = PlaylistEntity(
     id = id,
-    name = name
+    name = name,
+    coverUri = coverUri,
+    playCount = playCount,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    lastPlayedAt = lastPlayedAt,
+    description = description,
+    songCount = songCount,
+    totalDurationMs = totalDurationMs,
+    isPinned = isPinned
 )
 
 // PlaylistItem

@@ -8,11 +8,20 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 
 
-//Playlist 表:存储播放列表的基本信息(如播放列表名称、ID 等)
+//Playlist 表:存储播放列表的基本信息(如播放列表名称、ID、封面、统计等)
 @Entity(tableName = "playlist")
 data class Playlist(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String
+    val name: String,
+    val coverUri: String? = null,
+    val playCount: Int = 0,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    val lastPlayedAt: Long? = null,
+    val description: String? = null,
+    val songCount: Int = 0,
+    val totalDurationMs: Long = 0L,
+    val isPinned: Boolean = false
 )
 @Dao
 interface PlaylistDao {
@@ -22,11 +31,38 @@ interface PlaylistDao {
     @Query("DELETE FROM playlist WHERE name = :name")
     suspend fun deletePlaylist(name: String)
 
-    @Query("Delete FROM playlist")
+    @Query("DELETE FROM playlist")
     suspend fun deleteAll()
 
     @Query("SELECT * FROM playlist")
     suspend fun getAllPlaylists(): List<Playlist>
+
+    @Query("SELECT * FROM playlist WHERE id = :id")
+    suspend fun getPlaylistById(id: Long): Playlist?
+
+    @Query("DELETE FROM playlist WHERE id = :id")
+    suspend fun deletePlaylistById(id: Long)
+
+    @Query("UPDATE playlist SET name = :newName, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun renamePlaylist(id: Long, newName: String, updatedAt: Long)
+
+    @Query("UPDATE playlist SET coverUri = :coverUri, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateCover(id: Long, coverUri: String?, updatedAt: Long)
+
+    @Query("UPDATE playlist SET description = :description, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateDescription(id: Long, description: String?, updatedAt: Long)
+
+    @Query("UPDATE playlist SET isPinned = :isPinned, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setPinned(id: Long, isPinned: Boolean, updatedAt: Long)
+
+    @Query("UPDATE playlist SET playCount = playCount + 1 WHERE id = :id")
+    suspend fun incrementPlayCount(id: Long)
+
+    @Query("UPDATE playlist SET lastPlayedAt = :timestamp WHERE id = :id")
+    suspend fun setLastPlayedAt(id: Long, timestamp: Long)
+
+    @Query("UPDATE playlist SET songCount = :songCount, totalDurationMs = :totalDurationMs, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateStats(id: Long, songCount: Int, totalDurationMs: Long, updatedAt: Long)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(playlists: List<Playlist>)

@@ -54,6 +54,11 @@ fun MusicList(
     showAddButton: Boolean,
     showMenuButton: Boolean,
     isPlaying: Boolean,
+    playlistId: Long? = null,
+    onRemoveFromPlaylist: (MusicInfo) -> Unit = {},
+    showReorderButtons: Boolean = false,
+    onMoveUp: (Int) -> Unit = {},
+    onMoveDown: (Int) -> Unit = {}
 ) {
     val haptic = rememberHapticFeedback()
     val coroutineScope = rememberCoroutineScope()
@@ -64,6 +69,11 @@ fun MusicList(
             items = musicInfoList,
             key = { index, musicInfo -> "${musicInfo.music.id}_$index" }
         ) { index, musicInfo ->
+            val itemExtraMenuItems = if (playlistId != null) {
+                listOf(
+                    stringResource(R.string.remove_from_playlist) to { onRemoveFromPlaylist(musicInfo) }
+                )
+            } else emptyList()
             MusicItem(
                 musicInfo = musicInfo,
                 onItemClick = {
@@ -77,7 +87,12 @@ fun MusicList(
                 showAddButton = showAddButton,
                 showMenuButton = showMenuButton,
                 isPlaying = isPlaying,
-                modifier = Modifier
+                modifier = Modifier,
+                extraMenuItems = itemExtraMenuItems,
+                showMoveUp = showReorderButtons && index > 0,
+                showMoveDown = showReorderButtons && index < musicInfoList.size - 1,
+                onMoveUp = { onMoveUp(index) },
+                onMoveDown = { onMoveDown(index) }
             )
         }
         item {

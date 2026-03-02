@@ -124,7 +124,7 @@ private fun ExportBackupSection(
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_backup)))
+                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_backup)))
                     }, { error ->
                         Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                     })

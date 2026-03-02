@@ -69,6 +69,9 @@ interface PlaylistItemDao {
     @Query("DELETE FROM playlist_item WHERE songId = :musicId AND playlistId = :playlistId")
     suspend fun deleteItemByIds(musicId: Long, playlistId: Long)
 
+    @Query("UPDATE playlist_item SET itemOrder = :itemOrder WHERE songId = :songId AND playlistId = :playlistId")
+    suspend fun updateItemOrder(playlistId: Long, songId: Long, itemOrder: Int)
+
     @Transaction
     suspend fun resetPlaylistItems(playlistId: Long, musicList: List<MusicInfo>) {
         deletePlaylistItem(playlistId)

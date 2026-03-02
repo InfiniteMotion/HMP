@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.ui.pages
 
+import android.annotation.SuppressLint
 import androidx.activity.ComponentActivity
 import androidx.annotation.ColorRes
 import androidx.compose.foundation.background
@@ -28,13 +29,19 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -44,21 +51,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.enum.LabelName
+import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
+import com.example.hearablemusicplayer.ui.components.NewPlaylistButton
+import com.example.hearablemusicplayer.ui.components.UserListCard
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
+@SuppressLint("ContextCastToActivity")
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
@@ -69,6 +81,7 @@ fun ListScreen(
     val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
     val languageList by playlistViewModel.languagePlaylistName.collectAsState()
     val eraList by playlistViewModel.eraPlaylistName.collectAsState()
+    val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()
 
     ListScreenContent(
         genreList = genreList,
@@ -76,6 +89,8 @@ fun ListScreen(
         scenarioList = scenarioList,
         languageList = languageList,
         eraList = eraList,
+        userCustomPlaylists = userCustomPlaylists,
+        playlistViewModel = playlistViewModel,
         navController = navController
     )
 }
@@ -88,13 +103,57 @@ fun ListScreenContent(
     scenarioList: List<LabelName>,
     languageList: List<LabelName>,
     eraList: List<LabelName>,
+    userCustomPlaylists: List<Playlist>,
+    playlistViewModel: PlaylistViewModel,
     navController: NavController
 ) {
     val haptic = rememberHapticFeedback()
+    var showNewPlaylistDialog by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
+
+    if (showNewPlaylistDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewPlaylistDialog = false; newPlaylistName = "" },
+            title = { Text(stringResource(R.string.new_playlist_dialog_title)) },
+            text = {
+                OutlinedTextField(
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    label = { Text(stringResource(R.string.playlist_name_hint)) },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val name = newPlaylistName.trim()
+                        if (name.isNotEmpty()) {
+                            playlistViewModel.createPlaylistAsync(name) { id ->
+                                showNewPlaylistDialog = false
+                                newPlaylistName = ""
+                                navController.navigate(Routes.CustomPlaylist(id))
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewPlaylistDialog = false; newPlaylistName = "" }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     TabScreen(
         title = stringResource(R.string.title_playlist),
-        hasSearchBotton = true,
-        navController = navController
+        hasSearchBotton = false,
+        navController = navController,
+        trailing = {
+            NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
+        }
     ) {
         Column(
             modifier = Modifier
@@ -103,6 +162,79 @@ fun ListScreenContent(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 用户自定义播放列表
+            Column {
+                ListGroupName(
+                    bannerNameF = stringResource(R.string.user_custom_playlists),
+                    bannerNameS = stringResource(R.string.banner_daily_GG),
+                    themeColorResId = R.color.HDPurple
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LazyRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(end = 12.dp)
+                    ) {
+                        items(userCustomPlaylists) { playlist ->
+                            UserListCard(
+                                playlist = playlist,
+                                onClick = {
+                                    haptic.performClick()
+                                    navController.navigate(Routes.CustomPlaylist(playlist.id))
+                                }
+                            )
+                        }
+                    }
+                    TextButton(
+                        onClick = {
+                            haptic.performClick()
+                            navController.navigate(Routes.UserPlaylistManage)
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.manage_playlists),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // 常用列表 (Common Playlists) - 保留原有样式
+            Column {
+                ListGroupName(
+                    bannerNameF = stringResource(R.string.banner_daily_A),
+                    bannerNameS = stringResource(R.string.banner_daily_AA),
+                    themeColorResId = R.color.HDRed
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    ListBanner(
+                        listName = stringResource(R.string.banner_default),
+                        listCoverUri = R.drawable.defaultlist,
+                        navController = navController
+                    )
+                    ListBanner(
+                        listName = stringResource(R.string.banner_heart),
+                        listCoverUri = R.drawable.heartlist,
+                        navController = navController
+                    )
+                    ListBanner(
+                        listName = stringResource(R.string.banner_history),
+                        listCoverUri = R.drawable.historylist,
+                        navController = navController
+                    )
+                }
+            }
+
             // 适用场景 (Scenario) - 沉浸推荐
             LabelListGroup(
                 data = scenarioList,
@@ -156,36 +288,6 @@ fun ListScreenContent(
                             }
                         )
                     }
-                }
-            }
-
-            // 常用列表 (Common Playlists) - 保留原有样式
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(R.string.banner_daily_A),
-                    bannerNameS = stringResource(R.string.banner_daily_AA),
-                    themeColorResId = R.color.HDRed
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    ListBanner(
-                        listName = stringResource(R.string.banner_default),
-                        listCoverUri = R.drawable.defaultlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(R.string.banner_heart),
-                        listCoverUri = R.drawable.heartlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(R.string.banner_history),
-                        listCoverUri = R.drawable.historylist,
-                        navController = navController
-                    )
                 }
             }
 
