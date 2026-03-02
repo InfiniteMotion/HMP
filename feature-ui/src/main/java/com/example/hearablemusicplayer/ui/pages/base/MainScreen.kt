@@ -48,6 +48,7 @@ import com.example.hearablemusicplayer.ui.pages.settings.LibrarySettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.ProfileSettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
 import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
+import com.example.hearablemusicplayer.ui.pages.UserUsageDataScreen
 import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
 import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
@@ -312,6 +313,12 @@ fun MainScreen(
                             }
                         ) {
                             LyricsScreen()
+                        }
+                        composable<Routes.UserUsageData>(
+                            enterTransition = { pageEnterTransition },
+                            exitTransition = { pageExitTransition }
+                        ) {
+                            UserUsageDataScreen(navController = navController)
                         }
                     }
                     

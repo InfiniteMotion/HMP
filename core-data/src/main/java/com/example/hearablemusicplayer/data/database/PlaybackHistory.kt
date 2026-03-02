@@ -35,10 +35,10 @@ interface PlaybackHistoryDao {
     @Query("UPDATE PlaybackHistory SET playDuration = :duration, isCompleted = :isCompleted WHERE id = :id")
     suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean)
 
-//    //获取最近播放的记录(按播放时间倒序排列)
-//    @Query("SELECT * FROM PlaybackHistory ORDER BY playedAt DESC LIMIT :limit")
-//    fun getRecentHistory(limit: Int): Flow<List<PlaybackHistory>>
-//
+    // 获取最近播放记录（全局，按播放时间倒序）
+    @Query("SELECT * FROM PlaybackHistory ORDER BY playedAt DESC LIMIT :limit")
+    suspend fun getRecentHistory(limit: Int): List<PlaybackHistory>
+
     //获取某首音乐的播放历史(按播放时间倒序)
     @Query("SELECT * FROM PlaybackHistory WHERE musicId = :musicId ORDER BY playedAt DESC LIMIT :limit")
     fun getHistoryForMusic(musicId: Long, limit: Int): Flow<List<PlaybackHistory>>

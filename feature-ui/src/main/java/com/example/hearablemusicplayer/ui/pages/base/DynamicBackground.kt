@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.ui.pages.base
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -105,7 +106,7 @@ fun DynamicBackground(
              Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.3f))
+                    .background(Color.White.copy(alpha = 0.1f))
             )
         }
     }
@@ -280,6 +281,7 @@ fun FluidBackground(
  * 2. 沉浸光斑背景 (Immersion Spots)
  * 原有的光斑实现，适合极简风格
  */
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun SpotsBackground(
     paletteColors: PaletteColors,

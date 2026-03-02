@@ -4,6 +4,7 @@ import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
 import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
+import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.domain.enum.LabelCategory
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +65,10 @@ interface MusicRepository {
     suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean)
     suspend fun recordListeningDuration(duration: Long)
     fun getPlaybackHistory(musicId: Long, limit: Int = 5): Flow<List<PlaybackHistory>>
+    suspend fun getRecentPlaybackHistoryGlobal(limit: Int): List<PlaybackHistory>
+
+    // User Usage Analytics
+    suspend fun getUserUsageAnalytics(): UserUsageAnalytics
 
     // User Stats
     suspend fun incrementPlayCount(musicId: Long)
