@@ -262,6 +262,9 @@
     <string name="delete_playlist">删除歌单</string>
     <string name="delete_playlist_confirm">确定删除该歌单？此操作不可恢复。</string>
     <string name="title_manage_user_playlists">管理歌单</string>
+    <string name="edit_list">编辑列表</string>
+    <string name="edit">编辑</string>
+    <string name="done">完成</string>
     <string name="manage_playlists">管理</string>
     <string name="songs_count">%1$d 首</string>
     <string name="minutes_format">%1$d 分钟</string>

@@ -262,6 +262,9 @@
     <string name="delete_playlist">Delete list</string>
     <string name="delete_playlist_confirm">Delete this playlist? This cannot be undone.</string>
     <string name="title_manage_user_playlists">Manage Playlists</string>
+    <string name="edit_list">Edit list</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
     <string name="manage_playlists">Manage</string>
     <string name="songs_count">%1$d songs</string>
     <string name="minutes_format">%1$d min</string>

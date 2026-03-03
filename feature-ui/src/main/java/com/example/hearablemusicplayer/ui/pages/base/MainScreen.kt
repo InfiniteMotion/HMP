@@ -41,14 +41,14 @@ import com.example.hearablemusicplayer.ui.pages.AIScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
 import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
 import com.example.hearablemusicplayer.ui.pages.CustomScreen
-import com.example.hearablemusicplayer.ui.pages.PlaylistScreen
+import com.example.hearablemusicplayer.ui.pages.playlist.PlaylistScreen
 import com.example.hearablemusicplayer.ui.pages.SearchScreen
 import com.example.hearablemusicplayer.ui.pages.settings.BackupSettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.LibrarySettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.ProfileSettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
 import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
-import com.example.hearablemusicplayer.ui.pages.UserPlaylistManageScreen
+import com.example.hearablemusicplayer.ui.pages.playlist.UserPlaylistManageScreen
 import com.example.hearablemusicplayer.ui.pages.UserUsageDataScreen
 import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
 import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen

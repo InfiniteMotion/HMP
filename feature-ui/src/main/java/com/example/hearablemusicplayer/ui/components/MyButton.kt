@@ -330,7 +330,7 @@ fun SearchButton(
         Icon(
             painter = painterResource(id = R.drawable.magnifyingglass),
             contentDescription = "Search Button",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(16.dp)
         )
     }
 }
@@ -352,7 +352,7 @@ fun NewPlaylistButton(onClick: () -> Unit) {
         Icon(
             painter = painterResource(R.drawable.plus),
             contentDescription = "New Playlist",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(16.dp)
         )
     }
 }

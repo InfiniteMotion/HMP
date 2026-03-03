@@ -32,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,7 +65,6 @@ import com.example.hearablemusicplayer.ui.components.Capsule
 import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
 import com.example.hearablemusicplayer.ui.components.NewPlaylistButton
-import com.example.hearablemusicplayer.ui.components.UserListCard
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
@@ -110,6 +111,15 @@ fun ListScreenContent(
     val haptic = rememberHapticFeedback()
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
     var newPlaylistName by remember { mutableStateOf("") }
+
+    // 与列表管理页一致：置顶优先，再按最近播放、更新时间
+    val sortedUserPlaylists = remember(userCustomPlaylists) {
+        userCustomPlaylists.sortedWith(
+            compareByDescending<Playlist> { it.isPinned }
+                .thenByDescending { it.lastPlayedAt ?: 0L }
+                .thenByDescending { it.updatedAt }
+        )
+    }
 
     if (showNewPlaylistDialog) {
         AlertDialog(
@@ -167,39 +177,33 @@ fun ListScreenContent(
                 ListGroupName(
                     bannerNameF = stringResource(R.string.user_custom_playlists),
                     bannerNameS = stringResource(R.string.banner_daily_GG),
-                    themeColorResId = R.color.HDPurple
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    LazyRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(end = 12.dp)
-                    ) {
-                        items(userCustomPlaylists) { playlist ->
-                            UserListCard(
-                                playlist = playlist,
-                                onClick = {
-                                    haptic.performClick()
-                                    navController.navigate(Routes.CustomPlaylist(playlist.id))
-                                }
+                    themeColorResId = R.color.HDPurple,
+                    trailing = {
+                        TextButton(
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.UserPlaylistManage)
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.manage_playlists),
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
-                    TextButton(
-                        onClick = {
-                            haptic.performClick()
-                            navController.navigate(Routes.UserPlaylistManage)
-                        }
-                    ) {
-                        Text(
-                            text = stringResource(R.string.manage_playlists),
-                            color = MaterialTheme.colorScheme.primary
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(sortedUserPlaylists) { playlist ->
+                        UserListCard(
+                            playlist = playlist,
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.CustomPlaylist(playlist.id))
+                            }
                         )
                     }
                 }
@@ -498,6 +502,112 @@ private fun ScenarioCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )
+            }
+        }
+    }
+}
+
+private const val CARD_WIDTH_DP = 280
+private const val CARD_HEIGHT_DP = 360
+private const val CORNER_RADIUS_DP = 20
+
+@Composable
+fun UserListCard(
+    playlist: Playlist,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .width(CARD_WIDTH_DP.dp)
+            .height(CARD_HEIGHT_DP.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(CORNER_RADIUS_DP.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (playlist.coverUri != null && playlist.coverUri!!.isNotBlank()) {
+                AsyncImage(
+                    model = playlist.coverUri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.music_note_list),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .width(72.dp)
+                            .height(72.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Transparent,
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = playlist.name,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (playlist.songCount > 0 || playlist.playCount > 0 || playlist.totalDurationMs > 0) {
+                    val parts = mutableListOf<String>()
+                    if (playlist.songCount > 0) {
+                        parts.add(stringResource(R.string.songs_count, playlist.songCount))
+                    }
+                    if (playlist.totalDurationMs > 0) {
+                        val minutes = (playlist.totalDurationMs / 1000 / 60).toInt()
+                        parts.add(stringResource(R.string.minutes_format, minutes))
+                    }
+                    if (playlist.playCount > 0 && parts.size < 2) {
+                        parts.add(stringResource(R.string.play_count_display, playlist.playCount))
+                    }
+                    if (parts.isNotEmpty()) {
+                        Text(
+                            text = parts.take(2).joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }

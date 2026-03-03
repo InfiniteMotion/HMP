@@ -32,6 +32,7 @@ import com.example.hearablemusicplayer.ui.components.BackButton
 fun SubScreen(
     onBackClick: () -> Unit,
     title: String? = null,
+    trailingContent: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ){
     var visible by rememberSaveable { mutableStateOf(false) }
@@ -61,8 +62,10 @@ fun SubScreen(
                     .padding(horizontal = 16.dp)
                     .fillMaxWidth(),
             ) {
-                // 返回按钮
-                BackButton(onClick = onBackClick)
+                // 返回按钮（与右侧按钮垂直居中对齐）
+                Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                    BackButton(onClick = onBackClick)
+                }
                 
                 // 标题（如果提供）
                 currentTitle?.let {
@@ -75,6 +78,10 @@ fun SubScreen(
                         modifier = Modifier.sizeIn(maxWidth = 280.dp)
                             .align(Alignment.Center)
                     )
+                }
+                // 右侧与返回按钮对称的操作按钮（可选）
+                trailingContent?.let { content ->
+                    Box(modifier = Modifier.align(Alignment.CenterEnd)) { content() }
                 }
             }
             
