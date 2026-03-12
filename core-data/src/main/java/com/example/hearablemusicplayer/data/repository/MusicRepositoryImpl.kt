@@ -26,6 +26,7 @@ import com.example.hearablemusicplayer.domain.enum.LabelCategory
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
+import com.example.hearablemusicplayer.data.util.stringToPinyinSortKey
 import com.example.hearablemusicplayer.data.network.AiApiResult
 import com.example.hearablemusicplayer.domain.setting.model.ArtistCountEntry
 import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
@@ -86,20 +87,37 @@ class MusicRepositoryImpl @Inject constructor(
 
     override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
         val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
+        // 按标题/按歌手：用拼音首字母中英混排，在内存中排序；其它字段仍用 SQL 排序
+        if (orderBy == "title" || orderBy == "artist") {
+            val byIdQuery = """
+                SELECT * FROM music 
+                LEFT JOIN musicExtra ON music.id = musicExtra.id
+                LEFT JOIN userInfo ON music.id = userInfo.id
+                ORDER BY music.id ASC
+            """.trimIndent()
+            val list = musicAllDao.getAllMusicInfoAsList(SimpleSQLiteQuery(byIdQuery)).map { it.toDomain() }
+            val keyFn: (MusicInfo) -> String = when (orderBy) {
+                "title" -> { info -> stringToPinyinSortKey(info.music.title) }
+                else -> { info -> stringToPinyinSortKey(info.music.artist) }
+            }
+            return if (safeOrderType == "DESC") {
+                list.sortedWith(compareByDescending(keyFn).thenByDescending { if (orderBy == "title") it.music.title else it.music.artist })
+            } else {
+                list.sortedWith(compareBy(keyFn).thenBy { if (orderBy == "title") it.music.title else it.music.artist })
+            }
+        }
         val tablePrefix = when {
             musicFields.contains(orderBy) -> "music"
             extraFields.contains(orderBy) -> "musicExtra"
             userInfoFields.contains(orderBy) -> "userInfo"
             else -> "music"
         }
-
         val queryString = """
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
             ORDER BY $tablePrefix.$orderBy $safeOrderType
         """.trimIndent()
-
         val query = SimpleSQLiteQuery(queryString)
         return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
     }
@@ -134,11 +152,13 @@ class MusicRepositoryImpl @Inject constructor(
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
             WHERE music.artist = ?
-            ORDER BY music.title ASC
+            ORDER BY music.id ASC
         """.trimIndent()
-        
         val query = SimpleSQLiteQuery(queryString, arrayOf(artistName))
-        return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
+        val list = musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
+        return list.sortedWith(
+            compareBy<MusicInfo> { stringToPinyinSortKey(it.music.title) }.thenBy { it.music.title }
+        )
     }
 
     override suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%").map { it.toDomain() }

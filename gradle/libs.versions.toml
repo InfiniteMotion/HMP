@@ -41,6 +41,7 @@ robolectric = "4.14.1"
 animation = "1.10.0"
 haze = "1.7.2"
 uiGraphics = "1.10.2"
+animationCore = "1.10.4"
 
 [libraries]
 androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
@@ -107,6 +108,7 @@ androidx-compose-animation = { group = "androidx.compose.animation", name = "ani
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

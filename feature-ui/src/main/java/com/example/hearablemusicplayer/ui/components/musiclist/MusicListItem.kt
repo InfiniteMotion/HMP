@@ -1,0 +1,613 @@
+package com.example.hearablemusicplayer.ui.components.musiclist
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+
+private val DefaultFullHeight = 80.dp
+private val DefaultCompactHeight = 64.dp
+private val DefaultGalleryHeight = 80.dp
+
+/** 圆环形自定义复选框尺寸 */
+private val RingCheckboxSize = 14.dp
+/** 序号/复选框位固定宽度，保证三位数完整显示；序号与复选框共用此宽度避免切换时错位 */
+private val IndexSlotWidth = 28.dp
+/** 有序号或复选框时的左侧 padding（进一步缩小） */
+private val RowStartPaddingWithSlot = 4.dp
+/** 无序号且无复选框时的左侧 padding */
+private val RowStartPaddingDefault = 10.dp
+/** 更多按钮缩小左右占位（固定宽度，小于默认 48.dp） */
+private val MoreButtonWidth = 32.dp
+private val RingCheckboxStrokeWidth = 1.5.dp
+
+/**
+ * 圆环形复选框：未选为空心圆环，选中为圆环+实心圆心。
+ */
+@Composable
+private fun RingCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = RingCheckboxSize,
+) {
+    val density = LocalDensity.current
+    val sizePx = with(density) { size.toPx() }
+    val strokeWidthPx = with(density) { RingCheckboxStrokeWidth.toPx() }
+    val center = Offset(sizePx / 2f, sizePx / 2f)
+    val radius = (sizePx - strokeWidthPx) / 2f
+    val ringColor = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .clickable {
+                onCheckedChange(!checked)
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawCircle(
+                color = ringColor,
+                radius = radius,
+                center = center,
+                style = Stroke(width = strokeWidthPx),
+            )
+            if (checked) {
+                drawCircle(
+                    color = ringColor,
+                    radius = radius * 0.4f,
+                    center = center,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 单行音乐项：可选序号、可选选择框、按 [ItemConfig.variant] 渲染 Full/Compact/Gallery/Custom 内容。
+ */
+@Composable
+internal fun MusicListItem(
+    musicInfo: MusicInfo,
+    index: Int,
+    itemConfig: ItemConfig,
+    isCurrentPlaying: Boolean,
+    selected: Boolean,
+    onSelectedChange: (Boolean) -> Unit,
+    callbacks: MusicListCallbacks,
+    enableLongPressToEnterEdit: Boolean,
+    editEnabled: Boolean,
+    isEditMode: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val haptic = rememberHapticFeedback()
+    val height = itemConfig.itemHeight ?: when (itemConfig.variant) {
+        ItemVariant.Full -> DefaultFullHeight
+        ItemVariant.Compact -> DefaultCompactHeight
+        ItemVariant.Gallery -> DefaultGalleryHeight
+        ItemVariant.Custom -> DefaultFullHeight
+    }
+    val backgroundColor = when {
+        isCurrentPlaying -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        else -> Color.Transparent
+    }
+
+    val onItemClick = {
+        haptic.performClick()
+        callbacks.onItemClick(musicInfo, index)
+    }
+    val onLongClick = if (enableLongPressToEnterEdit && editEnabled) {
+        {
+            haptic.performClick()
+            callbacks.onEnterEditMode()
+        }
+    } else null
+
+    // 编辑模式下点击整行切换选中状态，否则播放
+    val onRowClick = if (isEditMode && itemConfig.showCheckbox) {
+        {
+            haptic.performClick()
+            onSelectedChange(!selected)
+        }
+    } else {
+        onItemClick
+    }
+
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .height(height)
+        .clip(RoundedCornerShape(12.dp))
+        .then(
+            if (onLongClick != null) {
+                Modifier.combinedClickable(
+                    onClick = onRowClick,
+                    onLongClick = onLongClick,
+                )
+            } else {
+                Modifier.clickable(onClick = onRowClick)
+            }
+        )
+        .background(backgroundColor, RoundedCornerShape(12.dp))
+        .padding(vertical = 4.dp)
+
+    // 编辑模式且启用复选框时，复选框取代序号位；否则有序号则显示序号
+    val showIndexSlot = itemConfig.showIndex || (itemConfig.showCheckbox && isEditMode)
+    val showIndexAsCheckbox = itemConfig.showCheckbox && isEditMode
+
+    Row(
+        modifier = modifier.then(rowModifier).padding(
+            start = if (showIndexSlot) RowStartPaddingWithSlot else RowStartPaddingDefault,
+            end = 6.dp,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (showIndexSlot) {
+            Box(
+                modifier = Modifier.size(width = IndexSlotWidth, height = 24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (showIndexAsCheckbox) {
+                    RingCheckbox(
+                        checked = selected,
+                        onCheckedChange = { onSelectedChange(it) },
+                    )
+                } else {
+                    Text(
+                        text = itemConfig.indexFormat(index),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+        }
+        when (itemConfig.variant) {
+            ItemVariant.Full -> FullRow(
+                musicInfo = musicInfo,
+                index = index,
+                options = itemConfig.fullOptions,
+                callbacks = callbacks,
+                modifier = Modifier.weight(1f),
+            )
+            ItemVariant.Compact -> CompactRow(
+                musicInfo = musicInfo,
+                options = itemConfig.compactOptions,
+                isCurrentPlaying = isCurrentPlaying,
+                callbacks = callbacks,
+                modifier = Modifier.weight(1f),
+            )
+            ItemVariant.Gallery -> GalleryRow(
+                musicInfo = musicInfo,
+                options = itemConfig.galleryOptions,
+                callbacks = callbacks,
+                modifier = Modifier.weight(1f),
+            )
+            ItemVariant.Custom -> Box(modifier = Modifier.weight(1f)) {
+                itemConfig.customContent?.invoke(musicInfo, index, selected)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullRow(
+    musicInfo: MusicInfo,
+    index: Int,
+    options: FullItemOptions?,
+    callbacks: MusicListCallbacks,
+    modifier: Modifier = Modifier,
+) {
+    val opts = options ?: FullItemOptions()
+    var menuExpanded by remember { mutableStateOf(false) }
+    val haptic = rememberHapticFeedback()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        AlbumCover(
+            uri = musicInfo.music.albumArtUri,
+            size = 56.dp,
+            corner = 10.dp,
+            shadow = 3.dp
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = musicInfo.music.title,
+                style = MaterialTheme.typography.headlineSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = musicInfo.music.artist,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = musicInfo.music.album,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+            if (opts.showPinButton) {
+                IconButton(
+                    onClick = { haptic.performConfirm(); callbacks.onPinToTop(musicInfo) },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.chevron_up_circle),
+                        contentDescription = stringResource(R.string.pin_to_top),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showRemoveButton) {
+                IconButton(
+                    onClick = { haptic.performLightClick(); callbacks.onRemove(musicInfo) },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.trash),
+                        contentDescription = stringResource(R.string.remove),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showMenuButton) {
+                if (opts.extraMenuItems.isEmpty()) {
+                    IconButton(
+                        onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
+                        modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.dot_grid_1x2),
+                            contentDescription = stringResource(R.string.more),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    Box {
+                        IconButton(
+                            onClick = { haptic.performLightClick(); menuExpanded = true },
+                            modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.dot_grid_1x2),
+                                contentDescription = stringResource(R.string.more),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.title_song_detail)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    callbacks.onMenuClick(musicInfo)
+                                },
+                            )
+                            opts.extraMenuItems.forEach { (label, onClick) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onClick()
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactRow(
+    musicInfo: MusicInfo,
+    options: CompactItemOptions?,
+    isCurrentPlaying: Boolean,
+    callbacks: MusicListCallbacks,
+    modifier: Modifier = Modifier,
+) {
+    val opts = options ?: CompactItemOptions()
+    val haptic = rememberHapticFeedback()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AsyncImage(
+            model = musicInfo.music.albumArtUri,
+            contentDescription = stringResource(R.string.album_art),
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.none),
+            error = painterResource(R.drawable.none),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = musicInfo.music.title,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = musicInfo.music.artist,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+        Row {
+            if (opts.showPinButton) {
+                IconButton(
+                    onClick = { haptic.performConfirm(); callbacks.onPinToTop(musicInfo) },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.chevron_up_circle),
+                        contentDescription = stringResource(R.string.pin_to_top),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showRemoveButton) {
+                IconButton(
+                    onClick = { haptic.performLightClick(); callbacks.onRemove(musicInfo) },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.trash),
+                        contentDescription = stringResource(R.string.remove),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showMenuButton) {
+                if (opts.extraMenuItems.isEmpty()) {
+                    IconButton(
+                        onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
+                        modifier = Modifier.size(width = MoreButtonWidth, height = 40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.dot_grid_1x2),
+                            contentDescription = stringResource(R.string.more),
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(
+                            onClick = { haptic.performLightClick(); menuExpanded = true },
+                            modifier = Modifier.size(width = MoreButtonWidth, height = 40.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.dot_grid_1x2),
+                                contentDescription = stringResource(R.string.more),
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.title_song_detail)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    callbacks.onMenuClick(musicInfo)
+                                },
+                            )
+                            opts.extraMenuItems.forEach { (label, onClick) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onClick()
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GalleryRow(
+    musicInfo: MusicInfo,
+    options: GalleryItemOptions?,
+    callbacks: MusicListCallbacks,
+    modifier: Modifier = Modifier,
+) {
+    val opts = options ?: GalleryItemOptions()
+    val haptic = rememberHapticFeedback()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        AlbumCover(
+            uri = musicInfo.music.albumArtUri,
+            size = 56.dp,
+            corner = 10.dp,
+            shadow = 3.dp,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = musicInfo.music.title,
+                style = MaterialTheme.typography.headlineSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = musicInfo.music.artist,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = musicInfo.music.album,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Row {
+            if (opts.showPinButton) {
+                IconButton(
+                    onClick = { haptic.performConfirm(); callbacks.onPinToTop(musicInfo) },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.chevron_up_circle),
+                        contentDescription = stringResource(R.string.pin_to_top),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showRemoveButton) {
+                IconButton(
+                    onClick = { haptic.performLightClick(); callbacks.onRemove(musicInfo) },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.trash),
+                        contentDescription = stringResource(R.string.remove),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            if (opts.showMenuButton) {
+                if (opts.extraMenuItems.isEmpty()) {
+                    IconButton(
+                        onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
+                        modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.dot_grid_1x2),
+                            contentDescription = stringResource(R.string.more),
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(
+                            onClick = { haptic.performLightClick(); menuExpanded = true },
+                            modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.dot_grid_1x2),
+                                contentDescription = stringResource(R.string.more),
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.title_song_detail)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    callbacks.onMenuClick(musicInfo)
+                                },
+                            )
+                            opts.extraMenuItems.forEach { (label, onClick) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onClick()
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -72,6 +72,9 @@ dependencies {
     // Gson - for JSON parsing (TODO: move to domain layer)
     implementation(libs.gson)
     
+    // 汉字转拼音（索引条 A-Z 对中文按首字拼音分组）
+    implementation("com.belerweb:pinyin4j:2.5.1")
+
     // UI utilities
     implementation(libs.coil.compose)
     implementation(libs.androidx.palette.ktx)
@@ -81,6 +84,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.animation.core)
     ksp(libs.hilt.compiler)
 
     // Haze (Blur)

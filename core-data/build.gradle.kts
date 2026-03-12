@@ -73,7 +73,10 @@ dependencies {
     
     // Jaudiotagger for ID3 parsing
     implementation(libs.jaudiotagger)
-    
+
+    // 汉字转拼音（按标题/按歌手排序时中英混排：中文取每字拼音首字母）
+    implementation("com.belerweb:pinyin4j:2.5.1")
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

@@ -3,7 +3,6 @@ package com.example.hearablemusicplayer.ui.pages
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -22,8 +21,18 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.GalleryList
-import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
+import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.GalleryItemOptions
+import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ListConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
+import com.example.hearablemusicplayer.ui.components.musiclist.defaultLetterToIndex
+import com.example.hearablemusicplayer.ui.components.musiclist.galleryPresetMusicListConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.IndexJumpConfig
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
@@ -43,8 +52,10 @@ fun GalleryScreen(
     val context = LocalContext.current
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
+    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
+    val currentPlayingIndex = musicInfoList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
 
     LaunchedEffect(Unit) {
         libraryViewModel.getAllMusic()
@@ -56,6 +67,7 @@ fun GalleryScreen(
     GalleryScreenContent(
         isPlaying = isPlaying,
         musicInfoList = musicInfoList,
+        currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
         onNavigate = navController::navigate,
@@ -92,6 +104,7 @@ fun GalleryScreen(
 fun GalleryScreenContent(
     isPlaying: Boolean,
     musicInfoList: List<MusicInfo>,
+    currentPlayingIndex: Int?,
     selectedGenre: String,
     selectedOrder: String,
     onNavigate: (Any) -> Unit,
@@ -111,7 +124,45 @@ fun GalleryScreenContent(
     var showDetailDialog by remember { mutableStateOf(false) }
     var selectedMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
     val hazeState = rememberHazeState()
-    
+
+    val callbacks = object : MusicListCallbacksAdapter() {
+        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+            haptic.performClick()
+            playWith(musicInfo)
+        }
+        override fun onMenuClick(musicInfo: MusicInfo) {
+            selectedMusicInfo = musicInfo
+            showDetailDialog = true
+        }
+    }
+    val config = galleryPresetMusicListConfig(callbacks).copy(
+        header = HeaderConfig.Full(
+            selectedGenre = selectedGenre,
+            selectedOrder = selectedOrder,
+            onFilterGenreChange = onFilterGenreChange,
+            onFilterOrderChange = onFilterOrderChange,
+            onOrderPlay = onOrderPlay,
+            onShufflePlay = onShufflePlay,
+        ),
+        item = ItemConfig(
+            showIndex = true,
+            showCheckbox = true,
+            variant = ItemVariant.Gallery,
+            galleryOptions = GalleryItemOptions(
+                showPinButton = false,
+                showRemoveButton = false,
+                showMenuButton = true,
+            ),
+        ),
+        list = ListConfig(enableLongPressToEnterEdit = true),
+        edit = EditConfig(enabled = true),
+        indexJump = IndexJumpConfig(enabled = true, letterToIndex = ::defaultLetterToIndex),
+        currentPlaying = CurrentPlayingConfig(
+            index = currentPlayingIndex,
+            autoScrollToCurrent = false,
+        ),
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(state = hazeState)) {
             TabScreen(
@@ -119,36 +170,12 @@ fun GalleryScreenContent(
                 hasSearchBotton = true,
                 navController = navController
             ) {
-                Row(
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ){
-                    PlayControlButtonOne(
-                        selectedGenre = selectedGenre,
-                        selectedOrder = selectedOrder,
-                        onFilterGenreChange = onFilterGenreChange,
-                        onFilterOrderChange = onFilterOrderChange,
-                        onOrderPlay = onOrderPlay,
-                        onShufflePlay = onShufflePlay
-                    )
-                }
-        
-                // 使用 GalleryList 组件
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                ){
-                    GalleryList(
-                        musicInfoList = musicInfoList,
-                        onItemClick = { musicInfo ->
-                            haptic.performClick()
-                            playWith(musicInfo)
-                        },
-                        onMenuClick = { musicInfo ->
-                            selectedMusicInfo = musicInfo
-                            showDetailDialog = true
-                        },
-                        isPlaying = isPlaying,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                MusicList(
+                    musicInfoList = musicInfoList,
+                    config = config,
+                    modifier = Modifier.fillMaxSize(),
+                    isPlaying = isPlaying,
+                )
             }
         }
     }
@@ -204,6 +231,6 @@ fun GalleryScreenContent(
                 }
             },
             hazeState = hazeState
-        )}
+        )
     }
 }
