@@ -267,6 +267,7 @@
     <string name="done">完成</string>
     <string name="manage_playlists">管理</string>
     <string name="songs_count">%1$d 首</string>
+    <string name="counts">首</string>
     <string name="minutes_format">%1$d 分钟</string>
     <string name="play_count_display">播放 %1$d 次</string>
     <string name="playlist_description_hint">歌单介绍</string>

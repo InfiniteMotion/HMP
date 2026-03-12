@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -48,11 +49,10 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @SuppressLint("ContextCastToActivity")
 @Composable
-fun UserPlaylistManageScreen(
+fun PlaylistManageScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     navController: NavController
 ) {
@@ -175,7 +175,7 @@ fun UserPlaylistManageScreen(
             FilledIconButton(
                 onClick = {
                     haptic.performClick()
-                    showNewPlaylistDialog = true
+                    isEditMode = !isEditMode
                 },
                 modifier = Modifier.size(32.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
@@ -184,34 +184,18 @@ fun UserPlaylistManageScreen(
                 )
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.plus),
+                    painter = painterResource(if (isEditMode) R.drawable.ic_gallery_material_select_checkbox else R.drawable.gearshape),
                     contentDescription = stringResource(R.string.edit_list),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                if (isEditMode) {
-                    TextButton(onClick = { isEditMode = false }) {
-                        Text(stringResource(R.string.done))
-                    }
-                } else {
-                    TextButton(onClick = { isEditMode = true }) {
-                        Text(stringResource(R.string.edit))
-                    }
-                }
-            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 8.dp),
@@ -236,6 +220,27 @@ fun UserPlaylistManageScreen(
                         }
                     )
                 }
+            }
+
+            FilledIconButton(
+                onClick = {
+                    haptic.performClick()
+                    showNewPlaylistDialog = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 32.dp, end = 32.dp)
+                    .size(48.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.plus),
+                    contentDescription = stringResource(R.string.edit_list),
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }

@@ -267,6 +267,7 @@
     <string name="done">Done</string>
     <string name="manage_playlists">Manage</string>
     <string name="songs_count">%1$d songs</string>
+    <string name="counts">songs</string>
     <string name="minutes_format">%1$d min</string>
     <string name="play_count_display">Played %1$d times</string>
     <string name="playlist_description_hint">Playlist description</string>

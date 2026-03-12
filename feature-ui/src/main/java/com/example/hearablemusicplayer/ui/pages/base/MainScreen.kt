@@ -48,7 +48,7 @@ import com.example.hearablemusicplayer.ui.pages.settings.LibrarySettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.ProfileSettingsScreen
 import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
 import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
-import com.example.hearablemusicplayer.ui.pages.playlist.UserPlaylistManageScreen
+import com.example.hearablemusicplayer.ui.pages.playlist.PlaylistManageScreen
 import com.example.hearablemusicplayer.ui.pages.UserUsageDataScreen
 import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
 import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen
@@ -276,7 +276,7 @@ fun MainScreen(
                             enterTransition = { pageEnterTransition },
                             exitTransition = { pageExitTransition }
                         ) {
-                            UserPlaylistManageScreen(navController = navController)
+                            PlaylistManageScreen(navController = navController)
                         }
                         composable<Routes.Artist>(
                             enterTransition = { pageEnterTransition },

@@ -2,21 +2,37 @@ package com.example.hearablemusicplayer.ui.pages.playlist
 
 import android.widget.Toast
 import androidx.annotation.OptIn
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,26 +43,30 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.MusicList
-import com.example.hearablemusicplayer.ui.components.PlayControlButtonTwo
+import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.components.musiclist.FixedMusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
+import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -127,8 +147,8 @@ fun PlaylistScreen(
     )
 }
 
-private const val HEADER_COVER_SIZE_DP = 160
-private const val HEADER_CORNER_RADIUS_DP = 16
+private const val HEADER_COVER_SIZE_DP = 280
+private const val HEADER_CORNER_RADIUS_DP = 25
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -165,6 +185,7 @@ fun PlaylistScreenContent(
             playlistMeta?.description ?: ""
         )
     }
+    var isListEditMode by remember { mutableStateOf(false) }
 
     if (showRenameDialog && selectedPlaylistId != null) {
         AlertDialog(
@@ -261,194 +282,276 @@ fun PlaylistScreenContent(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .verticalScroll(rememberScrollState())
+                .fillMaxWidth(),
         ) {
             if (playlistMeta != null) {
-                PlaylistHeader(meta = playlistMeta)
+                PlaylistHeader(
+                    meta = playlistMeta
+                )
             }
             if (isCustomPlaylist && selectedPlaylistId != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.End
+                AnimatedVisibility(
+                    visible = isListEditMode,
+                    enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
+                    exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)),
                 ) {
-                    if (playlistMeta != null) {
-                        TextButton(
-                            onClick = { onSetPinned(selectedPlaylistId, !playlistMeta.isPinned) }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
                         ) {
-                            Text(
-                                stringResource(
-                                    if (playlistMeta.isPinned) R.string.unpin_playlist else R.string.pin_playlist
-                                )
-                            )
-                        }
-                        TextButton(
-                            onClick = {
-                                descriptionValue = playlistMeta.description ?: ""
-                                showDescriptionDialog = true
-                            }
-                        ) {
-                            Text(stringResource(R.string.edit_playlist_description))
-                        }
-                        TextButton(
-                            onClick = {
-                                playlist.firstOrNull()?.music?.albumArtUri?.let { uri ->
-                                    if (uri.isNotBlank()) onUpdateCover(selectedPlaylistId, uri)
+                            if (playlistMeta != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    TextButton(
+                                        onClick = { onSetPinned(selectedPlaylistId, !playlistMeta.isPinned) }
+                                    ) {
+                                        Text(
+                                            stringResource(
+                                                if (playlistMeta.isPinned) R.string.unpin_playlist else R.string.pin_playlist
+                                            )
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            descriptionValue = playlistMeta.description ?: ""
+                                            showDescriptionDialog = true
+                                        }
+                                    ) {
+                                        Text(stringResource(R.string.edit_playlist_description))
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            playlist.firstOrNull()?.music?.albumArtUri?.let { uri ->
+                                                if (uri.isNotBlank()) onUpdateCover(selectedPlaylistId, uri)
+                                            }
+                                        }
+                                    ) {
+                                        Text(stringResource(R.string.set_cover_from_first_song))
+                                    }
                                 }
                             }
-                        ) {
-                            Text(stringResource(R.string.set_cover_from_first_song))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                TextButton(
+                                    onClick = { renameValue = playlistName; showRenameDialog = true }
+                                ) {
+                                    Text(stringResource(R.string.rename_playlist))
+                                }
+                                TextButton(
+                                    onClick = { showDeleteConfirm = true }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.delete_playlist),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
                         }
                     }
-                    TextButton(
-                        onClick = { renameValue = playlistName; showRenameDialog = true }
-                    ) {
-                        Text(stringResource(R.string.rename_playlist))
-                    }
-                    TextButton(
-                        onClick = { showDeleteConfirm = true }
-                    ) {
-                        Text(
-                            stringResource(R.string.delete_playlist),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             }
-            if (onAddSongsClick != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onAddSongsClick) {
-                        Text(stringResource(R.string.add_songs_to_playlist))
-                    }
+            val coroutineScope = rememberCoroutineScope()
+            val callbacks = object : MusicListCallbacksAdapter() {
+                override fun onEnterEditMode() {
+                    isListEditMode = true
                 }
-            }
-            PlayControlButtonTwo(
-                onShufflePlay = onShufflePlay,
-                onOrderPlay = onOrderPlay
-            )
-            MusicList(
-                musicInfoList = playlist,
-                onItemClick = { music ->
+                override fun onExitEditMode() {
+                    isListEditMode = false
+                }
+                override fun onItemClick(musicInfo: MusicInfo, index: Int) {
                     haptic.performClick()
-                    onNavigate(Routes.SongDetail(music.music.id))
-                },
-                onAddToPlaylist = { _ -> },
-                onMenuClick = { music -> onNavigate(Routes.SongDetail(music.music.id)) },
-                showAddButton = false,
-                showMenuButton = true,
-                isPlaying = isPlaying,
-                playlistId = selectedPlaylistId,
-                onRemoveFromPlaylist = { music ->
-                    selectedPlaylistId?.let { pid ->
-                        onRemoveFromPlaylist(music.music.id, pid)
-                    }
-                },
-                showReorderButtons = isCustomPlaylist && selectedPlaylistId != null,
-                onMoveUp = { index ->
-                    val ids = playlist.map { it.music.id }.toMutableList()
-                    if (index > 0) {
-                        ids[index] = ids[index - 1].also { ids[index - 1] = ids[index] }
-                        onReorder(ids)
-                    }
-                },
-                onMoveDown = { index ->
-                    val ids = playlist.map { it.music.id }.toMutableList()
-                    if (index < ids.size - 1) {
-                        ids[index] = ids[index + 1].also { ids[index + 1] = ids[index] }
-                        onReorder(ids)
-                    }
+                    coroutineScope.launch { playWith(musicInfo) }
                 }
+                override fun onMenuClick(musicInfo: MusicInfo) {
+                    onNavigate(Routes.SongDetail(musicInfo.music.id))
+                }
+                override fun onRemoveFromPlaylist(musicInfo: MusicInfo) {
+                    selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
+                }
+                override fun onMoveUp(index: Int) {
+                    if (index <= 0 || index >= playlist.size) return
+                    val ids = playlist.map { it.music.id }.toMutableList()
+                    ids[index] = ids[index - 1].also { ids[index - 1] = ids[index] }
+                    onReorder(ids)
+                }
+                override fun onMoveDown(index: Int) {
+                    if (index < 0 || index >= playlist.size - 1) return
+                    val ids = playlist.map { it.music.id }.toMutableList()
+                    ids[index] = ids[index + 1].also { ids[index + 1] = ids[index] }
+                    onReorder(ids)
+                }
+                override fun onPinToTop(musicInfo: MusicInfo) {
+                    val ids = listOf(musicInfo.music.id) + playlist.map { it.music.id }.filter { it != musicInfo.music.id }
+                    onReorder(ids)
+                }
+            }
+            val addSongsClick = onAddSongsClick
+            val config = playlistPresetMusicListConfig(
+                onOrderPlay = onOrderPlay,
+                onShufflePlay = onShufflePlay,
+                callbacks = callbacks,
+                headerTrailing = if (addSongsClick != null) {
+                    {
+                        IconButton(
+                            onClick = {
+                                haptic.performClick()
+                                addSongsClick()
+                            },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.plus),
+                                contentDescription = stringResource(R.string.add_songs_to_playlist),
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                } else null,
+            )
+            FixedMusicList(
+                musicInfoList = playlist,
+                config = config,
+                modifier = Modifier.fillMaxWidth(),
+                isPlaying = isPlaying,
             )
         }
     }
 }
 
 @Composable
-private fun PlaylistHeader(meta: Playlist) {
+private fun PlaylistStatItem(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
     ) {
-        Box(
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.ExtraBold,
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun PlaylistHeader(
+    meta: Playlist
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Transparent
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
             modifier = Modifier
-                .size(HEADER_COVER_SIZE_DP.dp)
-                .clip(RoundedCornerShape(HEADER_CORNER_RADIUS_DP.dp))
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val coverUri = meta.coverUri
-            if (!coverUri.isNullOrBlank()) {
-                AsyncImage(
-                    model = coverUri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(HEADER_COVER_SIZE_DP.dp)
+            // Cover Image
+            Box(
+                modifier = Modifier
+                    .size(HEADER_COVER_SIZE_DP.dp)
+                    .clip(RoundedCornerShape(HEADER_CORNER_RADIUS_DP.dp))
+            ) {
+                AlbumCover(
+                    uri = meta.coverUri,
+                    size = HEADER_COVER_SIZE_DP.dp,
+                    corner = 25.dp,
+                    shadow = 15.dp,
                 )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(HEADER_COVER_SIZE_DP.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Stats Row
+            val lastPlayedAt = meta.lastPlayedAt
+            if (meta.songCount > 0 || meta.playCount > 0 || meta.totalDurationMs > 0 || lastPlayedAt != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.music_note_list),
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (meta.songCount > 0) {
+                        PlaylistStatItem(
+                            label = stringResource(R.string.counts),
+                            value = meta.songCount.toString()
+                        )
+                    }
+                    if (meta.totalDurationMs > 0) {
+                        val minutes = (meta.totalDurationMs / 1000 / 60).toInt()
+                        PlaylistStatItem(
+                            label = stringResource(R.string.duration),
+                            value = stringResource(R.string.minutes_format, minutes)
+                        )
+                    }
+                    if (meta.playCount > 0) {
+                        PlaylistStatItem(
+                            label = stringResource(R.string.play),
+                            value = meta.playCount.toString()
+                        )
+                    }
                 }
             }
-        }
-        val description = meta.description
-        if (!description.isNullOrBlank()) {
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-        }
-        val lastPlayedAt = meta.lastPlayedAt
-        if (meta.songCount > 0 || meta.playCount > 0 || meta.totalDurationMs > 0 || lastPlayedAt != null) {
-            val parts = mutableListOf<String>()
-            if (meta.songCount > 0) {
-                parts.add(stringResource(R.string.songs_count, meta.songCount))
-            }
-            if (meta.totalDurationMs > 0) {
-                val minutes = (meta.totalDurationMs / 1000 / 60).toInt()
-                parts.add(stringResource(R.string.minutes_format, minutes))
-            }
-            if (meta.playCount > 0) {
-                parts.add(stringResource(R.string.play_count_display, meta.playCount))
-            }
-            if (parts.isNotEmpty()) {
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Description
+            val description = meta.description
+            if (!description.isNullOrBlank()) {
                 Text(
-                    text = parts.joinToString(" · "),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            if (lastPlayedAt != null && lastPlayedAt > 0L) {
-                Text(
-                    text = stringResource(R.string.last_played),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 2.dp)
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AddSongToPlaylistDialog(
     allMusic: List<MusicInfo>,
@@ -458,62 +561,104 @@ private fun AddSongToPlaylistDialog(
 ) {
     val toShow = allMusic.filter { it.music.id !in currentInPlaylistIds }
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-                )
-                .padding(16.dp)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Text(
-                text = stringResource(R.string.add_songs_to_playlist),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp)
+                    .padding(20.dp)
             ) {
-                items(
-                    items = toShow,
-                    key = { it.music.id }
-                ) { musicInfo ->
-                    Row(
+                Text(
+                    text = stringResource(R.string.add_songs_to_playlist),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                if (toShow.isEmpty()) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                onAdd(musicInfo.music.id, musicInfo.music.path)
-                            }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = musicInfo.music.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = musicInfo.music.artist,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        Text(
+                            text = "No songs available to add",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                    ) {
+                        items(
+                            items = toShow,
+                            key = { it.music.id }
+                        ) { musicInfo ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable { onAdd(musicInfo.music.id, musicInfo.music.path) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = musicInfo.music.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = musicInfo.music.artist,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Icon(
+                                         painter = painterResource(R.drawable.plus),
+                                         contentDescription = null,
+                                         modifier = Modifier.size(20.dp),
+                                         tint = MaterialTheme.colorScheme.primary
+                                     )
+                                }
+                            }
                         }
                     }
                 }
-            }
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text(stringResource(R.string.cancel))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
             }
         }
     }

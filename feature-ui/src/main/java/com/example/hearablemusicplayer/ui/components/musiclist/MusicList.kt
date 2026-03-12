@@ -74,7 +74,10 @@ fun MusicList(
                     state = state,
                     allIds = musicInfoList.map { it.music.id }.toSet(),
                     callbacks = config.callbacks,
-                    onExitEditMode = state::exitEditMode,
+                    onExitEditMode = {
+                        state.exitEditMode()
+                        config.callbacks.onExitEditMode()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             } else {
@@ -131,6 +134,74 @@ fun MusicList(
                         .fillMaxHeight(),
                 )
             }
+        }
+    }
+}
+
+/**
+ * 非懒加载版音乐列表。与 [MusicList] 共用同一套 [MusicListConfig]，但使用 Column 逐项 compose，
+ * 不依赖 [LazyListState]，适用于嵌入已有滚动容器（如外层 LazyColumn/Column+verticalScroll）的场景。
+ * 不展示滚动条与索引条（无列表滚动状态）。
+ *
+ * @param musicInfoList 数据源
+ * @param config 统一配置（与 [MusicList] 相同）
+ * @param modifier 根 Modifier
+ * @param isPlaying 是否正在播放
+ */
+@Composable
+fun FixedMusicList(
+    musicInfoList: List<MusicInfo>,
+    config: MusicListConfig,
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean = false,
+) {
+    val state = rememberMusicListState()
+    val currentIndex = config.currentPlaying.index
+    val isCurrentPlaying: (Int) -> Boolean = { index -> currentIndex == index }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        val showEditToolbar = config.edit.enabled && state.isEditMode && config.edit.showToolbar
+        AnimatedContent(
+            targetState = showEditToolbar,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(200))
+            },
+            label = "editMode",
+        ) { isEdit ->
+            if (isEdit) {
+                MusicListEditToolbar(
+                    config = config.edit,
+                    state = state,
+                    allIds = musicInfoList.map { it.music.id }.toSet(),
+                    callbacks = config.callbacks,
+                    onExitEditMode = {
+                        state.exitEditMode()
+                        config.callbacks.onExitEditMode()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                MusicListHeader(
+                    config = config.header,
+                    modifier = Modifier.fillMaxWidth(),
+                    showEditButton = config.edit.enabled,
+                    onEditClick = {
+                        state.enterEditMode()
+                        config.callbacks.onEnterEditMode()
+                    },
+                    listCount = musicInfoList.size.takeIf { config.header !is HeaderConfig.None },
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(modifier = Modifier.fillMaxWidth()) {
+            MusicListContentColumn(
+                musicInfoList = musicInfoList,
+                config = config,
+                state = state,
+                isCurrentPlaying = isCurrentPlaying,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

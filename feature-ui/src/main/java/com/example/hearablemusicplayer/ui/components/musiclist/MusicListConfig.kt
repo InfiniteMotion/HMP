@@ -31,12 +31,14 @@ data class MusicListConfig(
 /**
  * 头部区域配置：不显示 / 简单顺序+随机 / 完整排序筛选+播放 / 自定义内容。
  * 典型场景：None 用于内嵌列表；Simple 用于播放列表页；Full 用于曲库/列表页；Custom 由调用方完全自定义。
+ * [Simple.trailing] 在歌曲数量右侧渲染，与其它图标按钮式样一致（如添加歌曲按钮）。
  */
 sealed class HeaderConfig {
     data object None : HeaderConfig()
     data class Simple(
         val onOrderPlay: () -> Unit,
         val onShufflePlay: () -> Unit,
+        val trailing: (@Composable () -> Unit)? = null,
     ) : HeaderConfig()
     data class Full(
         val selectedGenre: String,
@@ -270,15 +272,17 @@ fun defaultMusicListConfig(
 
 /**
  * 播放列表场景预设：Simple 头部、Full 单项、可编辑、可显示序号与选择框、支持长按进入编辑。
+ * [headerTrailing] 可选，在头部歌曲数量右侧渲染（如添加歌曲图标按钮）。
  */
 fun playlistPresetMusicListConfig(
     onOrderPlay: () -> Unit,
     onShufflePlay: () -> Unit,
     callbacks: MusicListCallbacks,
+    headerTrailing: (@Composable () -> Unit)? = null,
 ): MusicListConfig = defaultMusicListConfig(callbacks).copy(
-    header = HeaderConfig.Simple(onOrderPlay = onOrderPlay, onShufflePlay = onShufflePlay),
+    header = HeaderConfig.Simple(onOrderPlay = onOrderPlay, onShufflePlay = onShufflePlay, trailing = headerTrailing),
     item = ItemConfig(
-        showIndex = false,
+        showIndex = true,
         showCheckbox = true,
         variant = ItemVariant.Full,
         fullOptions = FullItemOptions(showPinButton = true, showRemoveButton = true, showMenuButton = true),

@@ -68,6 +68,7 @@ internal fun MusicListHeader(
             showEditButton = showEditButton,
             onEditClick = onEditClick,
             listCount = listCount,
+            trailing = config.trailing,
             modifier = modifier,
         )
         is HeaderConfig.Full -> FullHeader(
@@ -93,6 +94,7 @@ private fun SimpleHeader(
     showEditButton: Boolean,
     onEditClick: () -> Unit,
     listCount: Int?,
+    trailing: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val haptic = rememberHapticFeedback()
@@ -113,6 +115,7 @@ private fun SimpleHeader(
                 modifier = Modifier.width(CountLabelWidth),
             )
         }
+        if (trailing != null) trailing()
         IconButton(
             onClick = {
                 haptic.performClick()
