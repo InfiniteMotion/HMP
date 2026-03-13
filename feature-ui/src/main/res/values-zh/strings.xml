@@ -72,6 +72,10 @@
     <string name="scanned_folders">已扫描文件夹</string>
     <string name="folder_songs_count">%1$d 首歌曲</string>
     <string name="no_scanned_folders">暂无已扫描的文件夹</string>
+    <string name="hide_folder">隐藏文件夹</string>
+    <string name="hidden_folders">已隐藏的文件夹</string>
+    <string name="unhide_folder">取消隐藏</string>
+    <string name="confirm_hide_folder">从曲库中隐藏该文件夹？设备上的文件不会被删除。</string>
     <string name="total_songs">总歌曲数</string>
     <string name="analyzed_songs">已分析</string>
     <string name="scan_options">扫描选项</string>
@@ -168,6 +172,10 @@
     <string name="sort_add_time">添加时间</string>
     <string name="order_asc">升序</string>
     <string name="order_desc">降序</string>
+    <string name="batch_add_to_playlist_done">已添加 %1$d 首到播放列表</string>
+    <string name="gallery_batch_delete_unsupported">曲库暂不支持批量删除</string>
+    <string name="confirm_remove_from_library">确定从曲库中移除该歌曲？</string>
+    <string name="confirm_batch_remove_from_library">确定从曲库中移除选中的 %1$d 首歌曲？</string>
 
     <!-- Intro Screen -->
     <string name="grant_permission">授予</string>

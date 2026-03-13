@@ -562,10 +562,10 @@ fun UserListCard(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Transparent,
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Black.copy(alpha = 0.8f)
+                            colorStops = arrayOf(
+                                0.0f to Color.Transparent,
+                                0.5f to Color.Transparent,
+                                1.0f to Color.Black.copy(alpha = 0.8f)
                             )
                         )
                     )

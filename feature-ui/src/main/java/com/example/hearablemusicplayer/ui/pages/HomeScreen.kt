@@ -46,7 +46,15 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.FixedMusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.FixedMusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
+import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
+import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -63,6 +71,7 @@ fun HomeScreen(
 ) {
     val scope = rememberCoroutineScope()
     val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
+    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
     val haptic = rememberHapticFeedback()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
 
@@ -191,17 +200,31 @@ fun HomeScreen(
                         )
                     }
                 } else {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    val currentPlayingIndex = heartbeatList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
+                    val callbacks = object : MusicListCallbacksAdapter() {
+                        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                            haptic.performClick()
+                            scope.launch { playControlViewModel.playWith(musicInfo) }
+                        }
+                        override fun onMenuClick(musicInfo: MusicInfo) {
+                            navController.navigate(Routes.SongDetail(musicInfo.music.id))
+                        }
+                    }
+                    val config = defaultMusicListConfig(callbacks).copy(
+                        header = HeaderConfig.None,
+                        item = ItemConfig(
+                            variant = ItemVariant.Full,
+                            showIndex = true,
+                            fullOptions = FullItemOptions(showPinButton = false, showRemoveButton = false, showMenuButton = true),
+                        ),
+                        edit = EditConfig(enabled = false),
+                        currentPlaying = CurrentPlayingConfig(index = currentPlayingIndex, autoScrollToCurrent = false),
+                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         FixedMusicList(
                             musicInfoList = heartbeatList,
-                            onItemClick = {
-                                haptic.performClick()
-                                playControlViewModel.playWith(it)
-                                },
-                            onAddToPlaylist = { _ -> },
-                            onMenuClick = {navController.navigate(Routes.SongDetail(it.music.id))},
-                            showAddButton = false,
-                            showMenuButton = true,
+                            config = config,
+                            modifier = Modifier.fillMaxWidth(),
                             isPlaying = isPlaying,
                         )
                     }

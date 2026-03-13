@@ -93,7 +93,9 @@ fun MusicList(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        if (config.header !is HeaderConfig.None) {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         // 索引条宽度，与 MusicListIndexStrip 一致，用于为列表预留右侧空间
         val indexStripWidth = 24.dp
         val showIndexStrip = config.indexJump.enabled && musicInfoList.isNotEmpty()

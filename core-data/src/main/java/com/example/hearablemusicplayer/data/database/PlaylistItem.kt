@@ -43,7 +43,7 @@ interface PlaylistItemDao {
     @Query("""
         SELECT music.* FROM music 
         INNER JOIN playlist_item ON music.id = playlist_item.songId 
-        WHERE playlist_item.playlistId = :playlistId
+        WHERE playlist_item.playlistId = :playlistId AND music.isDeleted = 0
         ORDER BY playlist_item.itemOrder ASC
     """)
     fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>>
@@ -52,7 +52,7 @@ interface PlaylistItemDao {
     @Query("""
     SELECT music.* FROM music 
     INNER JOIN playlist_item ON music.id = playlist_item.songId 
-    WHERE playlist_item.playlistId = :playlistId
+    WHERE playlist_item.playlistId = :playlistId AND music.isDeleted = 0
     ORDER BY playlist_item.itemOrder ASC
 """)
     suspend fun getPlaylistById(playlistId: Long): List<MusicInfo>

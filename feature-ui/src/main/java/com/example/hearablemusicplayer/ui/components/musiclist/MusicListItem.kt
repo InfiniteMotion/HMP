@@ -3,6 +3,7 @@ package com.example.hearablemusicplayer.ui.components.musiclist
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
@@ -157,22 +159,21 @@ internal fun MusicListItem(
         onItemClick
     }
 
-    val rowModifier = Modifier
+    val rowClickModifier = if (onLongClick != null) {
+        Modifier.combinedClickable(
+            onClick = onRowClick,
+            onLongClick = onLongClick,
+        )
+    } else {
+        Modifier.clickable(onClick = onRowClick)
+    }
+    val rowVisualModifier = Modifier
         .fillMaxWidth()
         .height(height)
         .clip(RoundedCornerShape(12.dp))
-        .then(
-            if (onLongClick != null) {
-                Modifier.combinedClickable(
-                    onClick = onRowClick,
-                    onLongClick = onLongClick,
-                )
-            } else {
-                Modifier.clickable(onClick = onRowClick)
-            }
-        )
         .background(backgroundColor, RoundedCornerShape(12.dp))
         .padding(vertical = 4.dp)
+    val rowModifier = rowVisualModifier.then(rowClickModifier)
 
     // 编辑模式且启用复选框时，复选框取代序号位；否则有序号则显示序号
     val showIndexSlot = itemConfig.showIndex || (itemConfig.showCheckbox && isEditMode)
@@ -233,6 +234,7 @@ internal fun MusicListItem(
         }
     }
 }
+
 
 @Composable
 private fun FullRow(
@@ -306,7 +308,7 @@ private fun FullRow(
                 }
             }
             if (opts.showMenuButton) {
-                if (opts.extraMenuItems.isEmpty()) {
+                if (opts.extraMenuItems.isEmpty() && !opts.showAddToPlaylistInMenu) {
                     IconButton(
                         onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
                         modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
@@ -340,6 +342,15 @@ private fun FullRow(
                                     callbacks.onMenuClick(musicInfo)
                                 },
                             )
+                            if (opts.showAddToPlaylistInMenu) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.add_to_playlist)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        callbacks.onAddToPlaylist(musicInfo)
+                                    },
+                                )
+                            }
                             opts.extraMenuItems.forEach { (label, onClick) ->
                                 DropdownMenuItem(
                                     text = { Text(label) },
@@ -430,7 +441,7 @@ private fun CompactRow(
                 }
             }
             if (opts.showMenuButton) {
-                if (opts.extraMenuItems.isEmpty()) {
+                if (opts.extraMenuItems.isEmpty() && !opts.showAddToPlaylistInMenu) {
                     IconButton(
                         onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
                         modifier = Modifier.size(width = MoreButtonWidth, height = 40.dp),
@@ -467,6 +478,15 @@ private fun CompactRow(
                                     callbacks.onMenuClick(musicInfo)
                                 },
                             )
+                            if (opts.showAddToPlaylistInMenu) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.add_to_playlist)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        callbacks.onAddToPlaylist(musicInfo)
+                                    },
+                                )
+                            }
                             opts.extraMenuItems.forEach { (label, onClick) ->
                                 DropdownMenuItem(
                                     text = { Text(label) },
@@ -501,6 +521,11 @@ private fun GalleryRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
         AlbumCover(
             uri = musicInfo.music.albumArtUri,
             size = 56.dp,
@@ -530,7 +555,8 @@ private fun GalleryRow(
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        Row {
+        }
+        Row(modifier = Modifier.zIndex(1f)) {
             if (opts.showPinButton) {
                 IconButton(
                     onClick = { haptic.performConfirm(); callbacks.onPinToTop(musicInfo) },
@@ -558,7 +584,7 @@ private fun GalleryRow(
                 }
             }
             if (opts.showMenuButton) {
-                if (opts.extraMenuItems.isEmpty()) {
+                if (opts.extraMenuItems.isEmpty() && !opts.showAddToPlaylistInMenu) {
                     IconButton(
                         onClick = { haptic.performLightClick(); callbacks.onMenuClick(musicInfo) },
                         modifier = Modifier.size(width = MoreButtonWidth, height = 48.dp),
@@ -595,6 +621,15 @@ private fun GalleryRow(
                                     callbacks.onMenuClick(musicInfo)
                                 },
                             )
+                            if (opts.showAddToPlaylistInMenu) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.add_to_playlist)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        callbacks.onAddToPlaylist(musicInfo)
+                                    },
+                                )
+                            }
                             opts.extraMenuItems.forEach { (label, onClick) ->
                                 DropdownMenuItem(
                                     text = { Text(label) },

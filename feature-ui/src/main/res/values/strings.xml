@@ -72,6 +72,10 @@
     <string name="scanned_folders">Scanned Foldgers</string>
     <string name="folder_songs_count">%1$d songs</string>
     <string name="no_scanned_folders">No scanned folders found</string>
+    <string name="hide_folder">Hide folder</string>
+    <string name="hidden_folders">Hidden folders</string>
+    <string name="unhide_folder">Unhide</string>
+    <string name="confirm_hide_folder">Hide this folder from library? Songs will not be deleted from device.</string>
     <string name="total_songs">Total Songs</string>
     <string name="analyzed_songs">Analyzed</string>
     <string name="scan_options">Scan Options</string>
@@ -168,6 +172,10 @@
     <string name="sort_add_time">Add Time</string>
     <string name="order_asc">Ascending</string>
     <string name="order_desc">Descending</string>
+    <string name="batch_add_to_playlist_done">Added %1$d song(s) to playlist</string>
+    <string name="gallery_batch_delete_unsupported">Batch delete is not supported in library</string>
+    <string name="confirm_remove_from_library">Remove this song from library?</string>
+    <string name="confirm_batch_remove_from_library">Remove %1$d song(s) from library?</string>
 
     <!-- Intro Screen -->
     <string name="grant_permission">Grant</string>

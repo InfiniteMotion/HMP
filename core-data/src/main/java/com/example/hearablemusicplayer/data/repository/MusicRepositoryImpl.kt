@@ -93,6 +93,7 @@ class MusicRepositoryImpl @Inject constructor(
                 SELECT * FROM music 
                 LEFT JOIN musicExtra ON music.id = musicExtra.id
                 LEFT JOIN userInfo ON music.id = userInfo.id
+                WHERE music.isDeleted = 0
                 ORDER BY music.id ASC
             """.trimIndent()
             val list = musicAllDao.getAllMusicInfoAsList(SimpleSQLiteQuery(byIdQuery)).map { it.toDomain() }
@@ -116,6 +117,7 @@ class MusicRepositoryImpl @Inject constructor(
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
+            WHERE music.isDeleted = 0
             ORDER BY $tablePrefix.$orderBy $safeOrderType
         """.trimIndent()
         val query = SimpleSQLiteQuery(queryString)
@@ -145,13 +147,41 @@ class MusicRepositoryImpl @Inject constructor(
     override suspend fun getLikedStatus(id: Long): Boolean {
         return userInfoDao.getLikedStatus(id)
     }
+
+    override suspend fun removeFromLibrary(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        musicDao.markDeletedByIds(ids)
+        musicExtraDao.markDeletedByIds(ids)
+        userInfoDao.markDeletedByIds(ids)
+    }
+
+    override suspend fun restoreToLibrary(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        musicDao.markActiveByIds(ids)
+        musicExtraDao.markActiveByIds(ids)
+        userInfoDao.markActiveByIds(ids)
+    }
+
+    override suspend fun getDeletedMusicIdsGroupedByFolder(): List<Pair<String, List<Long>>> {
+        val list = musicDao.getDeletedMusicIdAndPath()
+        return list
+            .groupBy { (_, path) ->
+                try {
+                    File(path).parent ?: "Unknown"
+                } catch (e: Exception) {
+                    "Unknown"
+                }
+            }
+            .map { (path, entries) -> path to entries.map { it.id } }
+            .sortedByDescending { it.second.size }
+    }
     
     override suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
         val queryString = """
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
-            WHERE music.artist = ?
+            WHERE music.artist = ? AND music.isDeleted = 0
             ORDER BY music.id ASC
         """.trimIndent()
         val query = SimpleSQLiteQuery(queryString, arrayOf(artistName))

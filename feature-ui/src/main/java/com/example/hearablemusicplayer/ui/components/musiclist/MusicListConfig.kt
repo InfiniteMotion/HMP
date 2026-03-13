@@ -80,11 +80,12 @@ sealed class ItemVariant {
     data object Custom : ItemVariant()
 }
 
-/** Item 仅支持三种按钮：置顶、移除、更多。 */
+/** Item 仅支持三种按钮：置顶、移除、更多。showAddToPlaylistInMenu 为 true 时在「更多」下拉中增加「加入播放列表」项。 */
 data class FullItemOptions(
     val showPinButton: Boolean = true,
     val showRemoveButton: Boolean = true,
     val showMenuButton: Boolean = true,
+    val showAddToPlaylistInMenu: Boolean = false,
     val extraMenuItems: List<Pair<String, () -> Unit>> = emptyList(),
 )
 
@@ -92,6 +93,7 @@ data class CompactItemOptions(
     val showPinButton: Boolean = true,
     val showRemoveButton: Boolean = true,
     val showMenuButton: Boolean = true,
+    val showAddToPlaylistInMenu: Boolean = false,
     val extraMenuItems: List<Pair<String, () -> Unit>> = emptyList(),
 )
 
@@ -99,6 +101,7 @@ data class GalleryItemOptions(
     val showPinButton: Boolean = true,
     val showRemoveButton: Boolean = true,
     val showMenuButton: Boolean = true,
+    val showAddToPlaylistInMenu: Boolean = false,
     val extraMenuItems: List<Pair<String, () -> Unit>> = emptyList(),
 )
 

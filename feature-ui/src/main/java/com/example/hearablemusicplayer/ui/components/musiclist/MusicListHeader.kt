@@ -111,7 +111,7 @@ private fun SimpleHeader(
             Text(
                 text = "$listCount",
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.width(CountLabelWidth),
             )
         }
@@ -194,7 +194,7 @@ private fun FullHeader(
                 Text(
                     text = "$listCount",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.width(CountLabelWidth),
                 )
             }

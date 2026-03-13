@@ -56,16 +56,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.dialogs.ScrimDialog
 import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.FixedMusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
+import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
+import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
@@ -126,12 +133,6 @@ fun PlaylistScreen(
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
-        onDeletePlaylist = { id ->
-            try {
-                playlistViewModel.deletePlaylist(id)
-                navController.popBackStack()
-            } catch (_: IllegalArgumentException) { }
-        },
         onUpdateDescription = { id, desc -> playlistViewModel.updatePlaylistDescription(id, desc) },
         onSetPinned = { id, pinned -> playlistViewModel.setPlaylistPinned(id, pinned) },
         onUpdateCover = { id, uri -> playlistViewModel.updatePlaylistCover(id, uri) },
@@ -167,7 +168,6 @@ fun PlaylistScreenContent(
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,
-    onDeletePlaylist: (Long) -> Unit,
     onUpdateDescription: (Long, String?) -> Unit,
     onSetPinned: (Long, Boolean) -> Unit,
     onUpdateCover: (Long, String?) -> Unit,
@@ -178,7 +178,6 @@ fun PlaylistScreenContent(
     val haptic = rememberHapticFeedback()
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameValue by remember { mutableStateOf(playlistName) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDescriptionDialog by remember { mutableStateOf(false) }
     var descriptionValue by remember(playlistMeta?.description) {
         mutableStateOf(
@@ -214,29 +213,6 @@ fun PlaylistScreenContent(
             },
             dismissButton = {
                 TextButton(onClick = { showRenameDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
-    if (showDeleteConfirm && selectedPlaylistId != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(stringResource(R.string.delete_playlist)) },
-            text = { Text(stringResource(R.string.delete_playlist_confirm)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeletePlaylist(selectedPlaylistId)
-                        showDeleteConfirm = false
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -355,14 +331,6 @@ fun PlaylistScreenContent(
                                 ) {
                                     Text(stringResource(R.string.rename_playlist))
                                 }
-                                TextButton(
-                                    onClick = { showDeleteConfirm = true }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.delete_playlist),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
                             }
                         }
                     }
@@ -404,7 +372,7 @@ fun PlaylistScreenContent(
                 }
             }
             val addSongsClick = onAddSongsClick
-            val config = playlistPresetMusicListConfig(
+            val baseConfig = playlistPresetMusicListConfig(
                 onOrderPlay = onOrderPlay,
                 onShufflePlay = onShufflePlay,
                 callbacks = callbacks,
@@ -426,6 +394,12 @@ fun PlaylistScreenContent(
                         }
                     }
                 } else null,
+            )
+            val config = baseConfig.copy(
+                item = baseConfig.item.copy(
+                    fullOptions = baseConfig.item.fullOptions?.copy(showRemoveButton = false)
+                        ?: FullItemOptions(showPinButton = true, showRemoveButton = false, showMenuButton = true),
+                ),
             )
             FixedMusicList(
                 musicInfoList = playlist,
@@ -560,7 +534,7 @@ private fun AddSongToPlaylistDialog(
     onDismiss: () -> Unit
 ) {
     val toShow = allMusic.filter { it.music.id !in currentInPlaylistIds }
-    Dialog(onDismissRequest = onDismiss) {
+    ScrimDialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -595,58 +569,29 @@ private fun AddSongToPlaylistDialog(
                         )
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 400.dp)
-                    ) {
-                        items(
-                            items = toShow,
-                            key = { it.music.id }
-                        ) { musicInfo ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                                    .clickable { onAdd(musicInfo.music.id, musicInfo.music.path) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = musicInfo.music.title,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = musicInfo.music.artist,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Icon(
-                                         painter = painterResource(R.drawable.plus),
-                                         contentDescription = null,
-                                         modifier = Modifier.size(20.dp),
-                                         tint = MaterialTheme.colorScheme.primary
-                                     )
-                                }
-                            }
+                    val callbacks = object : MusicListCallbacksAdapter() {
+                        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                            onAdd(musicInfo.music.id, musicInfo.music.path)
                         }
                     }
+                    val config = defaultMusicListConfig(callbacks).copy(
+                        header = HeaderConfig.None,
+                        item = ItemConfig(
+                            variant = ItemVariant.Full,
+                            fullOptions = FullItemOptions(
+                                showPinButton = false,
+                                showRemoveButton = false,
+                                showMenuButton = false,
+                            ),
+                        ),
+                        edit = EditConfig(enabled = false),
+                    )
+                    MusicList(
+                        musicInfoList = toShow,
+                        config = config,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                        isPlaying = false,
+                    )
                 }
                 
                 Row(

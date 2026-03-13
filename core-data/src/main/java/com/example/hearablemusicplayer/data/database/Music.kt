@@ -61,6 +61,9 @@ data class UserInfo(
     val isDeleted: Boolean = false,
 )
 
+/** 仅用于 DAO 查询结果：id 与 path。 */
+data class MusicIdPath(val id: Long, val path: String)
+
 data class MusicInfo(
     @Embedded val music: Music,
 
@@ -87,7 +90,7 @@ interface MusicDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(music: Music)
 
-    @Query("SELECT * FROM music WHERE id = :id")
+    @Query("SELECT * FROM music WHERE id = :id AND isDeleted = 0")
     fun getMusicById(id: Long): Flow<Music?>
 
     @Query("SELECT COUNT(*) FROM music WHERE isDeleted = 0")
@@ -109,6 +112,10 @@ interface MusicDao {
     // 清空音乐表中所有数据
     @Query("DELETE FROM music")
     suspend fun deleteAll()
+
+    /** 已软删除的歌曲的 id 与 path，用于按文件夹分组。 */
+    @Query("SELECT id, path FROM music WHERE isDeleted = 1")
+    suspend fun getDeletedMusicIdAndPath(): List<MusicIdPath>
 
 //    // 根据 ID 获取音乐文件的路径
 //    @Query("SELECT path FROM music WHERE id = :musicId")

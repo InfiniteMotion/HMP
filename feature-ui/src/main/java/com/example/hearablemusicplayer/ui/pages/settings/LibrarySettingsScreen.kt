@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.FolderInfo
+import com.example.hearablemusicplayer.ui.viewmodel.HiddenFolderInfo
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 
 @Composable
@@ -53,7 +55,12 @@ fun LibrarySettingsScreen(
     val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
     val analyzedCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
     val scannedFolders by libraryViewModel.scannedFolders.collectAsState()
+    val hiddenFolders by libraryViewModel.hiddenFolders.collectAsState()
     val isScanning by libraryViewModel.isScanning.collectAsState(initial = false)
+
+    LaunchedEffect(Unit) {
+        libraryViewModel.loadHiddenFolders()
+    }
 
     SubScreen(
         onBackClick = { navController.popBackStack() },
@@ -81,7 +88,10 @@ fun LibrarySettingsScreen(
             
             // 3. 音乐库管理
             LibraryManagementSection(
-                folders = scannedFolders
+                folders = scannedFolders,
+                hiddenFolders = hiddenFolders,
+                onHideFolder = libraryViewModel::hideFolder,
+                onUnhideFolder = libraryViewModel::restoreToLibrary
             )
         }
     }
@@ -89,19 +99,22 @@ fun LibrarySettingsScreen(
 
 @Composable
 private fun LibraryManagementSection(
-    folders: List<FolderInfo>
+    folders: List<FolderInfo>,
+    hiddenFolders: List<HiddenFolderInfo>,
+    onHideFolder: (String) -> Unit,
+    onUnhideFolder: (List<Long>) -> Unit
 ) {
+    var folderToHide by remember { mutableStateOf<String?>(null) }
     TitleWidget(title = stringResource(R.string.library_management)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = stringResource(R.string.scanned_folders),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
             if (folders.isEmpty()) {
                 Text(
                     text = stringResource(R.string.no_scanned_folders),
@@ -111,15 +124,57 @@ private fun LibraryManagementSection(
                 )
             } else {
                 folders.forEach { folder ->
-                    FolderItem(folder)
+                    FolderItem(
+                        folder = folder,
+                        onHideClick = { folderToHide = folder.path }
+                    )
+                }
+            }
+            if (hiddenFolders.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.hidden_folders),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                hiddenFolders.forEach { hidden ->
+                    HiddenFolderItem(
+                        hidden = hidden,
+                        onUnhideClick = { onUnhideFolder(hidden.musicIds) }
+                    )
                 }
             }
         }
     }
+    if (folderToHide != null) {
+        AlertDialog(
+            onDismissRequest = { folderToHide = null },
+            title = { Text(stringResource(R.string.confirm_hide_folder)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        folderToHide?.let { onHideFolder(it) }
+                        folderToHide = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToHide = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun FolderItem(folder: FolderInfo) {
+private fun FolderItem(
+    folder: FolderInfo,
+    onHideClick: () -> Unit
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         shape = RoundedCornerShape(12.dp),
@@ -149,6 +204,51 @@ private fun FolderItem(folder: FolderInfo) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            TextButton(onClick = onHideClick) {
+                Text(stringResource(R.string.hide_folder), style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HiddenFolderItem(
+    hidden: HiddenFolderInfo,
+    onUnhideClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.rectangle_on_rectangle),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.size(24.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = hidden.path,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.folder_songs_count, hidden.songCount),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+            }
+            TextButton(onClick = onUnhideClick) {
+                Text(stringResource(R.string.unhide_folder), style = MaterialTheme.typography.labelMedium)
             }
         }
     }

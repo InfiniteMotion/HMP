@@ -5,6 +5,10 @@ import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,7 +82,7 @@ fun GalleryScreen(
         onDetail = {
             navController.navigate(Routes.SongDetail(it.music.id))
         },
-        onRemove = {  },
+        onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
             navController.navigate(Routes.Player)
@@ -95,7 +99,7 @@ fun GalleryScreen(
             libraryViewModel.updateOrderType(it)
             libraryViewModel.getAllMusic()
         },
-        navController = navController
+        navController = navController,
     )
 }
 
@@ -113,16 +117,22 @@ fun GalleryScreenContent(
     onFavorite: (MusicInfo, Boolean) -> Unit,
     onShare: (MusicInfo) -> Unit,
     onDetail: (MusicInfo) -> Unit,
-    onRemove: (MusicInfo) -> Unit,
+    onRemoveFromLibrary: (List<Long>) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
     navController: NavController
 ) {
+    val context = LocalContext.current
     val haptic = rememberHapticFeedback()
     var showDetailDialog by remember { mutableStateOf(false) }
     var selectedMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
+    var showRemoveConfirmDialog by remember { mutableStateOf(false) }
+    var pendingRemoveMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
+    var showBatchRemoveConfirmDialog by remember { mutableStateOf(false) }
+    var pendingBatchIds by remember { mutableStateOf<Set<Long>?>(null) }
+    var deleteCounter by remember { mutableStateOf(0) }
     val hazeState = rememberHazeState()
 
     val callbacks = object : MusicListCallbacksAdapter() {
@@ -133,6 +143,23 @@ fun GalleryScreenContent(
         override fun onMenuClick(musicInfo: MusicInfo) {
             selectedMusicInfo = musicInfo
             showDetailDialog = true
+        }
+        override fun onBatchAddToPlaylist(selectedIds: Set<Long>) {
+            musicInfoList
+                .filter { it.music.id in selectedIds }
+                .forEach { addToPlaylist(it) }
+            if (selectedIds.isNotEmpty()) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.batch_add_to_playlist_done, selectedIds.size),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        override fun onBatchDelete(selectedIds: Set<Long>) {
+            if (selectedIds.isEmpty()) return
+            pendingBatchIds = selectedIds
+            showBatchRemoveConfirmDialog = true
         }
     }
     val config = galleryPresetMusicListConfig(callbacks).copy(
@@ -170,17 +197,19 @@ fun GalleryScreenContent(
                 hasSearchBotton = true,
                 navController = navController
             ) {
-                MusicList(
-                    musicInfoList = musicInfoList,
-                    config = config,
-                    modifier = Modifier.fillMaxSize(),
-                    isPlaying = isPlaying,
-                )
+                androidx.compose.runtime.key(deleteCounter) {
+                    MusicList(
+                        musicInfoList = musicInfoList,
+                        config = config,
+                        modifier = Modifier.fillMaxSize(),
+                        isPlaying = isPlaying,
+                    )
+                }
             }
         }
     }
 
-    // 音乐详情弹窗
+    // 音乐详情弹窗（ScrimDialog 在 MusicDetailDialog 内部）
     if (showDetailDialog) {
         MusicDetailDialog(
             musicInfo = selectedMusicInfo,
@@ -224,13 +253,78 @@ fun GalleryScreenContent(
                 }
             },
             onRemove = {
-                selectedMusicInfo?.let { musicInfo ->
-                    onRemove(musicInfo)
-                    showDetailDialog = false
-                    selectedMusicInfo = null
+                selectedMusicInfo?.let { music ->
+                    pendingRemoveMusicInfo = music
+                    showRemoveConfirmDialog = true
                 }
+                showDetailDialog = false
+                selectedMusicInfo = null
             },
             hazeState = hazeState
+        )
+    }
+
+    // 单项移除确认
+    if (showRemoveConfirmDialog && pendingRemoveMusicInfo != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showRemoveConfirmDialog = false
+                pendingRemoveMusicInfo = null
+            },
+            title = { Text(stringResource(R.string.confirm_remove_from_library)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingRemoveMusicInfo?.let { info ->
+                            onRemoveFromLibrary(listOf(info.music.id))
+                        }
+                        showRemoveConfirmDialog = false
+                        pendingRemoveMusicInfo = null
+                    }
+                ) {
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRemoveConfirmDialog = false
+                    pendingRemoveMusicInfo = null
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // 批量移除确认
+    if (showBatchRemoveConfirmDialog && pendingBatchIds != null) {
+        val count = pendingBatchIds!!.size
+        AlertDialog(
+            onDismissRequest = {
+                showBatchRemoveConfirmDialog = false
+                pendingBatchIds = null
+            },
+            title = { Text(stringResource(R.string.confirm_batch_remove_from_library, count)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRemoveFromLibrary(pendingBatchIds!!.toList())
+                        deleteCounter++
+                        showBatchRemoveConfirmDialog = false
+                        pendingBatchIds = null
+                    }
+                ) {
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showBatchRemoveConfirmDialog = false
+                    pendingBatchIds = null
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         )
     }
 }
