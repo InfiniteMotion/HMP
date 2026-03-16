@@ -34,9 +34,8 @@ import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.ListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
-import com.example.hearablemusicplayer.ui.components.musiclist.defaultLetterToIndex
 import com.example.hearablemusicplayer.ui.components.musiclist.galleryPresetMusicListConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.IndexJumpConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.indexJumpConfigForOrderBy
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
@@ -183,7 +182,7 @@ fun GalleryScreenContent(
         ),
         list = ListConfig(enableLongPressToEnterEdit = true),
         edit = EditConfig(enabled = true),
-        indexJump = IndexJumpConfig(enabled = true, letterToIndex = ::defaultLetterToIndex),
+        indexJump = indexJumpConfigForOrderBy(selectedGenre, selectedOrder),
         currentPlaying = CurrentPlayingConfig(
             index = currentPlayingIndex,
             autoScrollToCurrent = false,

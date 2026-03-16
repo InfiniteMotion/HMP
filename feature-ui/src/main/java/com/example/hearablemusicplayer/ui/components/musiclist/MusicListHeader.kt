@@ -276,7 +276,7 @@ private fun FullHeader(
                     stringResource(R.string.sort_duration) to "duration",
                     stringResource(R.string.sort_size) to "fileSize",
                     stringResource(R.string.sort_play_count) to "playCount",
-                    stringResource(R.string.sort_add_time) to "id",
+                    stringResource(R.string.sort_add_time) to "date",
                 )
                 val orders = listOf(
                     stringResource(R.string.order_asc) to "ASC",

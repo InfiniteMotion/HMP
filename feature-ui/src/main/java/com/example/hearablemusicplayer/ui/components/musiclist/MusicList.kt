@@ -98,7 +98,7 @@ fun MusicList(
         }
         // 索引条宽度，与 MusicListIndexStrip 一致，用于为列表预留右侧空间
         val indexStripWidth = 24.dp
-        val showIndexStrip = config.indexJump.enabled && musicInfoList.isNotEmpty()
+        val showIndexStrip = config.indexJump.enabled && musicInfoList.size > 10
         val showScrollbar = config.scrollbar.enabled && !showIndexStrip
 
         Box(modifier = Modifier.fillMaxSize()) {

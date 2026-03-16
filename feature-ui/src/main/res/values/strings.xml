@@ -169,6 +169,7 @@
     <string name="sort_duration">Duration</string>
     <string name="sort_size">Size</string>
     <string name="sort_play_count">Play Count</string>
+    <string name="sort_year">Year</string>
     <string name="sort_add_time">Add Time</string>
     <string name="order_asc">Ascending</string>
     <string name="order_desc">Descending</string>

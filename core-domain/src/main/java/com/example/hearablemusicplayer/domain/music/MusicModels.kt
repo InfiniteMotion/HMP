@@ -21,7 +21,8 @@ data class MusicExtra(
     val fileSize: Long? = null,         // 文件大小 Byte
     val format: String? = null,         // 文件格式 mp3/flac
     val language: String? = null,       // 语言
-    val year: Int? = null,              // 年份
+    /**  app 首次读取该歌曲的时间（毫秒时间戳），用于排序与年月索引 */
+    val date: Long? = null,
     val recommendationIds: String? = null,  // 推荐关联的音乐ID列表
     // 其他额外信息
     val isGetExtraInfo : Boolean,

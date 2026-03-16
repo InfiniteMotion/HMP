@@ -169,6 +169,7 @@
     <string name="sort_duration">时长</string>
     <string name="sort_size">大小</string>
     <string name="sort_play_count">播放次数</string>
+    <string name="sort_year">年份</string>
     <string name="sort_add_time">添加时间</string>
     <string name="order_asc">升序</string>
     <string name="order_desc">降序</string>

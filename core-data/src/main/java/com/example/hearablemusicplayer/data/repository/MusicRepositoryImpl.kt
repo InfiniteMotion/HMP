@@ -82,7 +82,7 @@ class MusicRepositoryImpl @Inject constructor(
     // ------------------- 音乐相关操作 -------------------
 
     private val musicFields = listOf("id", "title", "artist", "album", "duration")
-    private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "year")
+    private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "date")
     private val userInfoFields = listOf("liked", "disLiked", "lastPlayed", "playCount", "skippedCount", "userRating")
 
     override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
@@ -551,8 +551,11 @@ class MusicRepositoryImpl @Inject constructor(
                 // ignore
             }
         }
-        
-        Triple(musicList, musicExtraList, userInfoList)
+        val existingDates = musicExtraDao.getAllIdAndDate().associate { it.id to it.date }
+        val extrasWithDate = musicExtraList.map { e ->
+            e.copy(date = existingDates[e.id] ?: System.currentTimeMillis())
+        }
+        Triple(musicList, extrasWithDate, userInfoList)
     }
 
     val labelCategoryWeight = mapOf(

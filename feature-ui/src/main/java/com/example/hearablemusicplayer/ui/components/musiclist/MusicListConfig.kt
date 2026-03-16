@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.ui.components.musiclist
 
+import java.util.Calendar
 import net.sourceforge.pinyin4j.PinyinHelper
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -151,17 +152,20 @@ fun defaultEditToolbarActions(): List<EditToolbarAction> = listOf(
 // ---------- IndexJump ----------
 
 /**
- * 索引跳转配置：是否启用、[mode] 预留拼音等、[letters] 为右侧显示的字符、[letterToIndex] 由调用方或 [defaultLetterToIndex] 提供。
- *
- * **列表排序时**：索引条和单项序号均基于**当前传入的 [musicInfoList] 顺序**。排序后调用方应传入重新排序后的列表；
- * 组件会通过 [remember(musicInfoList)] 重新计算字母→首项下标，索引条与 1、2、3… 序号会自然跟随新顺序。
+ * 索引跳转配置：支持 Letter 模式（A–Z #）与 Anchor 模式（智能锚点）。
+ * - Letter 模式：[letters] + [letterToIndex]，降序时 letters 为 Z–A #。
+ * - Anchor 模式：[smartAnchor] + [orderType]，降序时锚点条从上到下反转（与列表首项对应）。
  */
 data class IndexJumpConfig(
     val enabled: Boolean = false,
     val mode: IndexJumpMode = IndexJumpMode.FirstLetter,
     val letters: List<Char> = ('A'..'Z').toList() + listOf('#'),
     val letterToIndex: (List<MusicInfo>) -> Map<Char, Int>,
-)
+    val smartAnchor: ((List<MusicInfo>) -> Pair<List<String>, Map<Int, Int>>)? = null,
+    val orderType: String = "ASC",
+) {
+    val isAnchorMode: Boolean get() = smartAnchor != null
+}
 
 enum class IndexJumpMode {
     FirstLetter,
@@ -190,16 +194,315 @@ private fun titleToIndexLetter(title: String): Char {
  * 按标题首字母/首字分组，返回「字母 -> 该组第一项在列表中的 index」映射。
  * 英文取首字母；中文取首字默认拼音首字母；数字及其他归为 #。依赖传入 [list] 的当前顺序。
  */
-fun defaultLetterToIndex(list: List<MusicInfo>): Map<Char, Int> {
+fun defaultLetterToIndex(list: List<MusicInfo>): Map<Char, Int> =
+    letterToIndexByString(list) { it.music.title }
+
+/**
+ * 按 [getKey] 返回的字符串首字母分组，返回「字母 -> 该组第一项在列表中的 index」映射。
+ */
+fun letterToIndexByString(list: List<MusicInfo>, getKey: (MusicInfo) -> String): Map<Char, Int> {
     val map = mutableMapOf<Char, Int>()
     list.forEachIndexed { index, info ->
-        val char = titleToIndexLetter(info.music.title)
+        val char = titleToIndexLetter(getKey(info))
         if (!map.containsKey(char)) map[char] = index
     }
     return map
 }
 
-// ---------- Scrollbar ----------
+/** 智能锚点：数量范围 */
+private const val SMART_ANCHOR_MIN = 8
+private const val SMART_ANCHOR_MAX = 16
+
+/** 升序时字母条从上到下 A–Z #，降序时 Z–A # */
+private fun lettersForOrderType(orderType: String): List<Char> =
+    if (orderType.uppercase() == "DESC") ('Z' downTo 'A').toList() + listOf('#')
+    else ('A'..'Z').toList() + listOf('#')
+
+/**
+ * 根据 [orderBy] 与 [orderType] 返回对应的索引配置。
+ * title/artist/album 使用字母索引，降序时字母条为 Z–A #；duration/fileSize/playCount/id 使用锚点索引。
+ */
+fun indexJumpConfigForOrderBy(orderBy: String, orderType: String = "ASC"): IndexJumpConfig {
+    val letters = lettersForOrderType(orderType)
+    return when (orderBy) {
+        "title" -> IndexJumpConfig(
+            enabled = true,
+            letters = letters,
+            letterToIndex = ::defaultLetterToIndex,
+            orderType = orderType,
+        )
+        "artist" -> IndexJumpConfig(
+            enabled = true,
+            letters = letters,
+            letterToIndex = { list -> letterToIndexByString(list) { it.music.artist } },
+            orderType = orderType,
+        )
+        "album" -> IndexJumpConfig(
+            enabled = true,
+            letters = letters,
+            letterToIndex = { list -> letterToIndexByString(list) { it.music.album } },
+            orderType = orderType,
+        )
+        "duration" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list ->
+                computeSmartAnchors(list, { it.music.duration }, ::formatDurationMs)
+            },
+            orderType = orderType,
+        )
+        "fileSize" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list ->
+                computeSmartAnchors(
+                    list,
+                    { it.extra?.fileSize ?: 0L },
+                    ::formatFileSize,
+                )
+            },
+            orderType = orderType,
+        )
+        "playCount" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list ->
+                computeSmartAnchors(
+                    list,
+                    { (it.userInfo?.playCount ?: 0).toLong() },
+                    { it.toString() },
+                )
+            },
+            orderType = orderType,
+        )
+        "id" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list ->
+                val dateResult = computeDateSmartAnchors(list, orderType)
+                val (labels, _) = dateResult
+                if (labels.size <= 1 && labels.getOrNull(0) == "未知") computeDateStylePositionAnchors(list, orderType)
+                else dateResult
+            },
+            orderType = orderType,
+        )
+        "date" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list -> computeDateSmartAnchors(list, orderType) },
+            orderType = orderType,
+        )
+        "year" -> IndexJumpConfig(
+            enabled = true,
+            letterToIndex = { emptyMap() },
+            smartAnchor = { list -> computeDateSmartAnchors(list, orderType) },
+            orderType = orderType,
+        )
+        else -> IndexJumpConfig(
+            enabled = true,
+            letters = letters,
+            letterToIndex = ::defaultLetterToIndex,
+            orderType = orderType,
+        )
+    }
+}
+
+private fun formatDurationMs(ms: Long): String {
+    val totalSeconds = (ms / 1000).toInt()
+    val m = totalSeconds / 60
+    val s = totalSeconds % 60
+    return "%d:%02d".format(m, s)
+}
+
+/** 按列表顺序扫描，记录每个锚点桶首次出现的 list index。桶 i 为 [anchorValues[i], anchorValues[i+1])，最后一桶为 [last, ∞)。 */
+private fun buildAnchorToIndex(
+    list: List<MusicInfo>,
+    anchorValues: List<Long>,
+    getValue: (MusicInfo) -> Long,
+): Map<Int, Int> {
+    if (anchorValues.isEmpty()) return emptyMap()
+    val result = mutableMapOf<Int, Int>()
+    for ((listIndex, info) in list.withIndex()) {
+        val v = getValue(info)
+        val bucket = when {
+            v < anchorValues.first() -> 0
+            v >= anchorValues.last() -> anchorValues.lastIndex
+            else -> {
+                val i = anchorValues.indexOfFirst { it > v }
+                if (i <= 0) 0 else i - 1
+            }
+        }
+        if (bucket !in result) result[bucket] = listIndex
+    }
+    return result
+}
+
+/**
+ * 智能锚点：根据列表数据分布生成锚点数量与取值，返回 (文案列表, 锚点下标→列表index)。
+ * 数值类（duration/fileSize/playCount）使用分位数，使每桶数量大致均匀。
+ */
+private fun computeSmartAnchors(
+    list: List<MusicInfo>,
+    getValue: (MusicInfo) -> Long,
+    formatLabel: (Long) -> String,
+    minAnchors: Int = SMART_ANCHOR_MIN,
+    maxAnchors: Int = SMART_ANCHOR_MAX,
+): Pair<List<String>, Map<Int, Int>> {
+    if (list.isEmpty()) return Pair(emptyList(), emptyMap())
+    val values = list.map(getValue).filter { it >= 0 }
+    if (values.isEmpty()) return Pair(emptyList(), emptyMap())
+    val sorted = values.sorted()
+    val n = sorted.size
+    if (n == 0) return Pair(emptyList(), emptyMap())
+    val anchorCount = if (list.size > 100) maxAnchors else (minAnchors + (list.size / 200).coerceAtMost(maxAnchors - minAnchors)).coerceIn(minAnchors, maxAnchors)
+    val anchorValues = if (n == 1) {
+        listOf(sorted[0])
+    } else {
+        (0 until anchorCount).map { i ->
+            val idx = (i.toLong() * (n - 1) / (anchorCount - 1).coerceAtLeast(1)).toInt().coerceIn(0, n - 1)
+            sorted[idx]
+        }.distinct()
+    }
+    if (anchorValues.isEmpty()) return Pair(emptyList(), emptyMap())
+    val labels = anchorValues.map(formatLabel)
+    val map = buildAnchorToIndex(list, anchorValues, getValue)
+    return Pair(labels, map)
+}
+
+/** 文件大小格式化（字节 → 展示文案） */
+private fun formatFileSize(bytes: Long): String = when {
+    bytes < 1024 -> "${bytes}B"
+    bytes < 1024 * 1024 -> "${bytes / 1024}KB"
+    else -> "${bytes / (1024 * 1024)}MB"
+}
+
+/**
+ * 智能锚点：id（添加顺序）按位置分位，锚点数量随列表长度调整。
+ * [orderType] 为 DESC 时列表为「新→旧」，锚点「早」应对应列表末尾、「末」对应列表头，故反转映射。
+ */
+private fun computeIdSmartAnchors(list: List<MusicInfo>, orderType: String = "ASC"): Pair<List<String>, Map<Int, Int>> {
+    if (list.isEmpty()) return Pair(emptyList(), emptyMap())
+    val n = list.size
+    if (n <= 1) return Pair(listOf("早"), mapOf(0 to 0))
+    val anchorCount = if (n > 100) SMART_ANCHOR_MAX else when {
+        n < 20 -> 8
+        n < 40 -> 10
+        n < 60 -> 12
+        else -> SMART_ANCHOR_MAX
+    }.coerceIn(SMART_ANCHOR_MIN, SMART_ANCHOR_MAX)
+    val positionLabels = listOf("早", "1/4", "1/2", "3/4", "末")
+    val labels = (0 until anchorCount).map { i ->
+        positionLabels.getOrElse(i) { "${i + 1}/${anchorCount}" }
+    }
+    val desc = orderType.uppercase() == "DESC"
+    val map = (0 until anchorCount).associate { i ->
+        val pos = (i.toLong() * (n - 1) / (anchorCount - 1).coerceAtLeast(1)).toInt().coerceIn(0, n - 1)
+        val listIndex = if (desc) n - 1 - pos else pos
+        i to listIndex
+    }
+    return Pair(labels, map)
+}
+
+/**
+ * 年月混合索引：单一信息源 [MusicExtra.date]（app 首次读取歌曲的时间戳）。
+ * 从时间戳解析 (年, 月)；有有效日期时按年月分档；仅「未知」时用 [computeDateStylePositionAnchors]。
+ */
+private fun computeDateSmartAnchors(
+    list: List<MusicInfo>,
+    orderType: String,
+): Pair<List<String>, Map<Int, Int>> {
+    if (list.isEmpty()) return Pair(emptyList(), emptyMap())
+    val cal = Calendar.getInstance()
+    fun getYearMonth(info: MusicInfo): Pair<Int, Int> {
+        val ts = info.extra?.date ?: return -1 to 1
+        cal.timeInMillis = ts
+        return cal.get(Calendar.YEAR) to (cal.get(Calendar.MONTH) + 1)
+    }
+    val pairs = list.map(::getYearMonth).distinct()
+    if (pairs.isEmpty()) return Pair(emptyList(), emptyMap())
+    val sorted = if (orderType.uppercase() == "DESC") {
+        pairs.sortedWith(compareBy({ -it.first }, { -it.second }))
+    } else {
+        pairs.sortedWith(compareBy({ it.first }, { it.second }))
+    }
+    val ordered = sorted.filter { it.first >= 0 }.let { known ->
+        if (sorted.any { it.first == -1 }) known + (-1 to 1) else known
+    }
+    if (ordered.isEmpty()) return Pair(emptyList(), emptyMap())
+    val labels = ordered.map { (y, m) ->
+        if (m == 1) (if (y == -1) "未知" else y.toString()) else "%02d".format(m)
+    }
+    if (labels.size <= 1 && labels.getOrNull(0) == "未知") {
+        return computeDateStylePositionAnchors(list, orderType)
+    }
+    val map = ordered.mapIndexed { index, pair ->
+        index to list.indexOfFirst { getYearMonth(it) == pair }
+    }.filter { it.second >= 0 }.toMap()
+    return Pair(labels, map)
+}
+
+/**
+ * 按添加时间排序所用的顺序，将列表位置映射到一条时间线（从过去到当前），再按虚拟年月做索引。
+ * 列表已按 id 排好：ASC = 早→新，DESC = 新→早。将 [0..n-1] 线性映射到 [startTime..endTime]，
+ * 得到每个位置对应的 (年, 月)，去重后生成 11、12、2026、01、02、03 风格锚点。
+ */
+private fun computeAddOrderYearMonthAnchors(
+    list: List<MusicInfo>,
+    orderType: String,
+): Pair<List<String>, Map<Int, Int>> {
+    if (list.isEmpty()) return Pair(emptyList(), emptyMap())
+    val n = list.size
+    val cal = Calendar.getInstance()
+    val endMs = cal.timeInMillis
+    cal.add(Calendar.YEAR, -2)
+    val startMs = cal.timeInMillis
+    val spanMs = (endMs - startMs).toDouble().coerceAtLeast(1.0)
+    val desc = orderType.uppercase() == "DESC"
+    fun virtualYearMonth(listIndex: Int): Pair<Int, Int> {
+        val ratio = if (n <= 1) 1.0 else {
+            val r = listIndex.toDouble() / (n - 1).coerceAtLeast(1)
+            if (desc) 1.0 - r else r
+        }
+        val ts = (startMs + ratio * spanMs).toLong()
+        cal.timeInMillis = ts
+        return cal.get(Calendar.YEAR) to (cal.get(Calendar.MONTH) + 1)
+    }
+    val indexToYm = (0 until n).map { i -> i to virtualYearMonth(i) }
+    val ordered = indexToYm.map { it.second }.distinct().let { distinct ->
+        if (desc) distinct.sortedWith(compareBy({ -it.first }, { -it.second }))
+        else distinct.sortedWith(compareBy({ it.first }, { it.second }))
+    }
+    if (ordered.isEmpty()) return Pair(emptyList(), emptyMap())
+    val labels = ordered.map { (y, m) -> if (m == 1) y.toString() else "%02d".format(m) }
+    val map = ordered.mapIndexed { anchorIndex, pair ->
+        anchorIndex to indexToYm.indexOfFirst { it.second == pair }
+    }.filter { it.second >= 0 }.toMap()
+    return Pair(labels, map)
+}
+
+/**
+ * 年月风格的位置索引：分段算法与 [computeIdSmartAnchors] 一致，但标签为「当年 + 01～12」。
+ * 仅在 [computeDateSmartAnchors] 仅得「未知」时作为 fallback 使用。
+ */
+private fun computeDateStylePositionAnchors(
+    list: List<MusicInfo>,
+    orderType: String,
+): Pair<List<String>, Map<Int, Int>> {
+    if (list.isEmpty()) return Pair(emptyList(), emptyMap())
+    val n = list.size
+    if (n <= 1) return Pair(listOf(Calendar.getInstance().get(Calendar.YEAR).toString()), mapOf(0 to 0))
+    val anchorCount = 13
+    val cal = Calendar.getInstance()
+    val currentYear = cal.get(Calendar.YEAR)
+    val labels = listOf(currentYear.toString()) + (1..12).map { "%02d".format(it) }
+    val desc = orderType.uppercase() == "DESC"
+    val map = (0 until anchorCount).associate { i ->
+        val pos = (i.toLong() * (n - 1) / (anchorCount - 1).coerceAtLeast(1)).toInt().coerceIn(0, n - 1)
+        val listIndex = if (desc) n - 1 - pos else pos
+        i to listIndex
+    }
+    return Pair(labels, map)
+}
 
 /**
  * 垂直滚动条样式与显隐；颜色为 null 时使用主题或半透明默认色。

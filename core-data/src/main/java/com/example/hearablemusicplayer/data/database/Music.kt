@@ -35,7 +35,8 @@ data class MusicExtra(
     val fileSize: Long? = null,         // 文件大小 Byte
     val format: String? = null,         // 文件格式 mp3/flac
     val language: String? = null,       // 语言
-    val year: Int? = null,              // 年份
+    /** app 首次读取该歌曲的时间（毫秒时间戳） */
+    val date: Long? = null,
     val recommendationIds: String? = null,  // 推荐关联的音乐ID列表
     // 其他额外信息
     val isGetExtraInfo : Boolean,
@@ -63,6 +64,9 @@ data class UserInfo(
 
 /** 仅用于 DAO 查询结果：id 与 path。 */
 data class MusicIdPath(val id: Long, val path: String)
+
+/** 仅用于 DAO 查询：musicExtra 的 id 与 date（首次读取时间）。 */
+data class MusicExtraIdDate(val id: Long, val date: Long?)
 
 data class MusicInfo(
     @Embedded val music: Music,
@@ -151,6 +155,9 @@ interface MusicExtraDao {
 
     @Query("DELETE FROM musicExtra")
     suspend fun deleteAll()
+
+    @Query("SELECT id, date FROM musicExtra")
+    suspend fun getAllIdAndDate(): List<MusicExtraIdDate>
 
     @Query("SELECT * FROM musicExtra WHERE id=:id")
     suspend fun getExtraFieldsById(id: Long): MusicExtra?
