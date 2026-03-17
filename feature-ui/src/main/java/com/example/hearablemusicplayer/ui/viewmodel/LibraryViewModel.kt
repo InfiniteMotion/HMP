@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.GetDeletedMusicIdsGroupedByFolderUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.LoadMusicFromDeviceUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.RemoveFromLibraryUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.RestoreToLibraryUseCase
 import com.example.hearablemusicplayer.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -22,11 +25,21 @@ data class FolderInfo(
     val songCount: Int
 )
 
+/** 已隐藏的文件夹：路径、歌曲数、用于恢复的 music id 列表。 */
+data class HiddenFolderInfo(
+    val path: String,
+    val songCount: Int,
+    val musicIds: List<Long>
+)
+
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase,
-    private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase
+    private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase,
+    private val removeFromLibraryUseCase: RemoveFromLibraryUseCase,
+    private val restoreToLibraryUseCase: RestoreToLibraryUseCase,
+    private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase
 ) : ViewModel() {
 
     // 排序
@@ -49,6 +62,52 @@ class LibraryViewModel @Inject constructor(
     fun getAllMusic() {
         viewModelScope.launch {
             _allMusic.value = getAllMusicUseCase(_orderBy.value, _orderType.value)
+        }
+    }
+
+    /** 从曲库软删除指定 id 的歌曲，并刷新列表。 */
+    fun removeFromLibrary(ids: List<Long>) {
+        viewModelScope.launch {
+            removeFromLibraryUseCase(ids)
+            getAllMusic()
+            loadHiddenFolders()
+        }
+    }
+
+    /** 恢复已移除的歌曲到曲库，并刷新列表与已隐藏文件夹。 */
+    fun restoreToLibrary(ids: List<Long>) {
+        viewModelScope.launch {
+            restoreToLibraryUseCase(ids)
+            getAllMusic()
+            loadHiddenFolders()
+        }
+    }
+
+    /** 隐藏文件夹：将该路径下当前曲库中的歌曲批量软删除。 */
+    fun hideFolder(folderPath: String) {
+        viewModelScope.launch {
+            val ids = _allMusic.value
+                .filter { try { File(it.music.path).parent == folderPath } catch (e: Exception) { false } }
+                .map { it.music.id }
+            if (ids.isNotEmpty()) {
+                removeFromLibraryUseCase(ids)
+                getAllMusic()
+                loadHiddenFolders()
+            }
+        }
+    }
+
+    /** 已隐藏的文件夹（含路径、歌曲数、id 列表，用于恢复）。 */
+    private val _hiddenFolders = MutableStateFlow<List<HiddenFolderInfo>>(emptyList())
+    val hiddenFolders: StateFlow<List<HiddenFolderInfo>> = _hiddenFolders
+
+    /** 刷新已隐藏文件夹列表，设置页进入时或隐藏/恢复后调用。 */
+    fun loadHiddenFolders() {
+        viewModelScope.launch {
+            val grouped = getDeletedMusicIdsGroupedByFolderUseCase()
+            _hiddenFolders.value = grouped.map { (path, ids) ->
+                HiddenFolderInfo(path = path, songCount = ids.size, musicIds = ids)
+            }
         }
     }
     

@@ -150,7 +150,7 @@ fun PlayControlButtonOne(
                     stringResource(R.string.sort_duration) to "duration",
                     stringResource(R.string.sort_size) to "fileSize",
                     stringResource(R.string.sort_play_count) to "playCount",
-                    stringResource(R.string.sort_add_time) to "id"
+                    stringResource(R.string.sort_add_time) to "date"
                 )
                 val orders = listOf(
                     stringResource(R.string.order_asc) to "ASC",
@@ -330,7 +330,29 @@ fun SearchButton(
         Icon(
             painter = painterResource(id = R.drawable.magnifyingglass),
             contentDescription = "Search Button",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
+fun NewPlaylistButton(onClick: () -> Unit) {
+    val haptic = rememberHapticFeedback()
+    FilledIconButton(
+        onClick = {
+            haptic.performClick()
+            onClick()
+        },
+        modifier = Modifier.size(32.dp),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.plus),
+            contentDescription = "New Playlist",
+            modifier = Modifier.size(16.dp)
         )
     }
 }

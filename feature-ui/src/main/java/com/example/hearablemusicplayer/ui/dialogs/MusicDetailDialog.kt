@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -56,26 +55,12 @@ fun MusicDetailDialog(
 ) {
     if (musicInfo == null) return
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(enabled = false) {}, // Intercept clicks
-        contentAlignment = Alignment.Center
-    ) {
-        // Scrim
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(onClick = onDismiss)
-        )
-
-        // Dialog Content
+    ScrimDialog(onDismissRequest = onDismiss) {
         val dialogShape = RoundedCornerShape(28.dp)
-        
         Card(
-            modifier = Modifier
-                .padding(24.dp)
-                .clip(dialogShape)
+        modifier = Modifier
+            .padding(24.dp)
+            .clip(dialogShape)
                 .then(
                     if (hazeState != null) {
                         Modifier.hazeEffect(

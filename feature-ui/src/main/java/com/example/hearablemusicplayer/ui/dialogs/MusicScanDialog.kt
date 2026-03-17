@@ -1,13 +1,9 @@
 package com.example.hearablemusicplayer.ui.dialogs
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,23 +41,12 @@ fun MusicScanDialog(
 ) {
     val isLoading by libraryViewModel.isScanning.collectAsState(initial = false)
     val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(enabled = false) {}, // Intercept clicks
-        contentAlignment = Alignment.Center
+
+    ScrimDialog(
+        onDismissRequest = onDismiss,
+        enableScrimDismiss = !isLoading,
     ) {
-        // Scrim
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable(enabled = !isLoading, onClick = onDismiss) // 扫描期间禁止点击外部关闭
-        )
-
         val dialogShape = RoundedCornerShape(28.dp)
-
         Card(
             modifier = Modifier
                 .padding(24.dp)

@@ -23,11 +23,60 @@ class PlaylistRepositoryImpl @Inject constructor(
 ) : PlaylistRepository {
 
     override suspend fun createPlaylist(name: String): Long {
-        return playlistDao.insert(Playlist(name = name).toEntity())
+        val now = System.currentTimeMillis()
+        val entity = Playlist(
+            name = name,
+            createdAt = now,
+            updatedAt = now
+        ).toEntity()
+        return playlistDao.insert(entity)
     }
 
     override suspend fun removePlaylist(name: String) {
         playlistDao.deletePlaylist(name = name)
+    }
+
+    override suspend fun removePlaylistById(id: Long) {
+        playlistDao.deletePlaylistById(id)
+    }
+
+    override suspend fun getAllPlaylists(): List<Playlist> {
+        return playlistDao.getAllPlaylists().map { it.toDomain() }
+    }
+
+    override suspend fun getPlaylistMeta(id: Long): Playlist? {
+        return playlistDao.getPlaylistById(id)?.toDomain()
+    }
+
+    override suspend fun renamePlaylist(id: Long, newName: String) {
+        playlistDao.renamePlaylist(id, newName, System.currentTimeMillis())
+    }
+
+    override suspend fun updatePlaylistCover(id: Long, coverUri: String?) {
+        playlistDao.updateCover(id, coverUri, System.currentTimeMillis())
+    }
+
+    override suspend fun updatePlaylistDescription(id: Long, description: String?) {
+        playlistDao.updateDescription(id, description, System.currentTimeMillis())
+    }
+
+    override suspend fun setPlaylistPinned(id: Long, isPinned: Boolean) {
+        playlistDao.setPinned(id, isPinned, System.currentTimeMillis())
+    }
+
+    override suspend fun incrementPlaylistPlayCount(id: Long) {
+        playlistDao.incrementPlayCount(id)
+    }
+
+    override suspend fun setPlaylistLastPlayedAt(id: Long, timestamp: Long) {
+        playlistDao.setLastPlayedAt(id, timestamp)
+    }
+
+    private suspend fun refreshPlaylistStats(playlistId: Long) {
+        val list = playlistItemDao.getPlaylistById(playlistId)
+        val songCount = list.size
+        val totalDurationMs = list.sumOf { it.music.duration }
+        playlistDao.updateStats(playlistId, songCount, totalDurationMs, System.currentTimeMillis())
     }
 
     override suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {
@@ -38,14 +87,24 @@ class PlaylistRepositoryImpl @Inject constructor(
             playlistId = playlistId
         )
         playlistItemDao.insert(item.toEntity(itemOrder = maxOrder + 1))
+        refreshPlaylistStats(playlistId)
     }
 
     override suspend fun removeItemFromPlaylist(musicId: Long, playlistId: Long) {
         playlistItemDao.deleteItemByIds(musicId, playlistId)
+        refreshPlaylistStats(playlistId)
     }
 
     override suspend fun resetPlaylistItems(playlistId: Long, musicList: List<MusicInfo>) {
         playlistItemDao.resetPlaylistItems(playlistId, musicList.map { it.toEntity() })
+        refreshPlaylistStats(playlistId)
+    }
+
+    override suspend fun reorderPlaylistItems(playlistId: Long, orderedMusicIds: List<Long>) {
+        orderedMusicIds.forEachIndexed { index, songId ->
+            playlistItemDao.updateItemOrder(playlistId, songId, index)
+        }
+        refreshPlaylistStats(playlistId)
     }
 
     override fun getMusicInfoInPlaylist(playlistId: Long): Flow<List<MusicInfo>> {
@@ -62,13 +121,7 @@ class PlaylistRepositoryImpl @Inject constructor(
 
     // ==================== Snapshot Export/Import ====================
     override suspend fun exportPlaylistsSnapshot(): PlaylistsSnapshot {
-        val playlists = playlistDao.getAllPlaylists().map {
-            Playlist(
-                id = it.id,
-                name = it.name
-            )
-        }
-        
+        val playlists = playlistDao.getAllPlaylists().map { it.toDomain() }
         val items = playlistItemDao.getAllPlaylistItems().map {
             PlaylistItem(
                 songUrl = it.songUrl,
@@ -76,7 +129,6 @@ class PlaylistRepositoryImpl @Inject constructor(
                 playlistId = it.playlistId
             )
         }
-        
         return PlaylistsSnapshot(
             playlists = playlists,
             playlistItems = items
@@ -84,17 +136,9 @@ class PlaylistRepositoryImpl @Inject constructor(
     }
 
     override suspend fun restoreFromSnapshot(snapshot: PlaylistsSnapshot) {
-        // Clear existing
         playlistDao.deleteAll()
         playlistItemDao.deleteAll()
-        
-        // Restore playlists
-        val playlists = snapshot.playlists.map {
-            com.example.hearablemusicplayer.data.database.Playlist(
-                id = it.id,
-                name = it.name
-            )
-        }
+        val playlists = snapshot.playlists.map { it.toEntity() }
         playlistDao.insertAll(playlists)
         
         // Restore items

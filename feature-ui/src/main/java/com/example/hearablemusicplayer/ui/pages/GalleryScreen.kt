@@ -3,9 +3,12 @@ package com.example.hearablemusicplayer.ui.pages
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,8 +25,17 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.GalleryList
-import com.example.hearablemusicplayer.ui.components.PlayControlButtonOne
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
+import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
+import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.GalleryItemOptions
+import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ListConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
+import com.example.hearablemusicplayer.ui.components.musiclist.galleryPresetMusicListConfig
+import com.example.hearablemusicplayer.ui.components.musiclist.indexJumpConfigForOrderBy
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
@@ -43,8 +55,10 @@ fun GalleryScreen(
     val context = LocalContext.current
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
+    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
+    val currentPlayingIndex = musicInfoList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
 
     LaunchedEffect(Unit) {
         libraryViewModel.getAllMusic()
@@ -56,6 +70,7 @@ fun GalleryScreen(
     GalleryScreenContent(
         isPlaying = isPlaying,
         musicInfoList = musicInfoList,
+        currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
         onNavigate = navController::navigate,
@@ -66,7 +81,7 @@ fun GalleryScreen(
         onDetail = {
             navController.navigate(Routes.SongDetail(it.music.id))
         },
-        onRemove = {  },
+        onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
             navController.navigate(Routes.Player)
@@ -83,7 +98,7 @@ fun GalleryScreen(
             libraryViewModel.updateOrderType(it)
             libraryViewModel.getAllMusic()
         },
-        navController = navController
+        navController = navController,
     )
 }
 
@@ -92,6 +107,7 @@ fun GalleryScreen(
 fun GalleryScreenContent(
     isPlaying: Boolean,
     musicInfoList: List<MusicInfo>,
+    currentPlayingIndex: Int?,
     selectedGenre: String,
     selectedOrder: String,
     onNavigate: (Any) -> Unit,
@@ -100,18 +116,79 @@ fun GalleryScreenContent(
     onFavorite: (MusicInfo, Boolean) -> Unit,
     onShare: (MusicInfo) -> Unit,
     onDetail: (MusicInfo) -> Unit,
-    onRemove: (MusicInfo) -> Unit,
+    onRemoveFromLibrary: (List<Long>) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
     navController: NavController
 ) {
+    val context = LocalContext.current
     val haptic = rememberHapticFeedback()
     var showDetailDialog by remember { mutableStateOf(false) }
     var selectedMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
+    var showRemoveConfirmDialog by remember { mutableStateOf(false) }
+    var pendingRemoveMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
+    var showBatchRemoveConfirmDialog by remember { mutableStateOf(false) }
+    var pendingBatchIds by remember { mutableStateOf<Set<Long>?>(null) }
+    var deleteCounter by remember { mutableStateOf(0) }
     val hazeState = rememberHazeState()
-    
+
+    val callbacks = object : MusicListCallbacksAdapter() {
+        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+            haptic.performClick()
+            playWith(musicInfo)
+        }
+        override fun onMenuClick(musicInfo: MusicInfo) {
+            selectedMusicInfo = musicInfo
+            showDetailDialog = true
+        }
+        override fun onBatchAddToPlaylist(selectedIds: Set<Long>) {
+            musicInfoList
+                .filter { it.music.id in selectedIds }
+                .forEach { addToPlaylist(it) }
+            if (selectedIds.isNotEmpty()) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.batch_add_to_playlist_done, selectedIds.size),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        override fun onBatchDelete(selectedIds: Set<Long>) {
+            if (selectedIds.isEmpty()) return
+            pendingBatchIds = selectedIds
+            showBatchRemoveConfirmDialog = true
+        }
+    }
+    val config = galleryPresetMusicListConfig(callbacks).copy(
+        header = HeaderConfig.Full(
+            selectedGenre = selectedGenre,
+            selectedOrder = selectedOrder,
+            onFilterGenreChange = onFilterGenreChange,
+            onFilterOrderChange = onFilterOrderChange,
+            onOrderPlay = onOrderPlay,
+            onShufflePlay = onShufflePlay,
+        ),
+        item = ItemConfig(
+            showIndex = true,
+            showCheckbox = true,
+            variant = ItemVariant.Gallery,
+            galleryOptions = GalleryItemOptions(
+                showPinButton = false,
+                showRemoveButton = false,
+                showMenuButton = true,
+            ),
+        ),
+        list = ListConfig(enableLongPressToEnterEdit = true),
+        edit = EditConfig(enabled = true),
+        indexJump = indexJumpConfigForOrderBy(selectedGenre, selectedOrder),
+        currentPlaying = CurrentPlayingConfig(
+            index = currentPlayingIndex,
+            autoScrollToCurrent = false,
+        ),
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(state = hazeState)) {
             TabScreen(
@@ -119,41 +196,19 @@ fun GalleryScreenContent(
                 hasSearchBotton = true,
                 navController = navController
             ) {
-                Row(
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ){
-                    PlayControlButtonOne(
-                        selectedGenre = selectedGenre,
-                        selectedOrder = selectedOrder,
-                        onFilterGenreChange = onFilterGenreChange,
-                        onFilterOrderChange = onFilterOrderChange,
-                        onOrderPlay = onOrderPlay,
-                        onShufflePlay = onShufflePlay
+                androidx.compose.runtime.key(deleteCounter) {
+                    MusicList(
+                        musicInfoList = musicInfoList,
+                        config = config,
+                        modifier = Modifier.fillMaxSize(),
+                        isPlaying = isPlaying,
                     )
                 }
-        
-                // 使用 GalleryList 组件
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                ){
-                    GalleryList(
-                        musicInfoList = musicInfoList,
-                        onItemClick = { musicInfo ->
-                            haptic.performClick()
-                            playWith(musicInfo)
-                        },
-                        onMenuClick = { musicInfo ->
-                            selectedMusicInfo = musicInfo
-                            showDetailDialog = true
-                        },
-                        isPlaying = isPlaying,
-                        modifier = Modifier.fillMaxSize()
-                    )
             }
         }
     }
 
-    // 音乐详情弹窗
+    // 音乐详情弹窗（ScrimDialog 在 MusicDetailDialog 内部）
     if (showDetailDialog) {
         MusicDetailDialog(
             musicInfo = selectedMusicInfo,
@@ -197,13 +252,78 @@ fun GalleryScreenContent(
                 }
             },
             onRemove = {
-                selectedMusicInfo?.let { musicInfo ->
-                    onRemove(musicInfo)
-                    showDetailDialog = false
-                    selectedMusicInfo = null
+                selectedMusicInfo?.let { music ->
+                    pendingRemoveMusicInfo = music
+                    showRemoveConfirmDialog = true
                 }
+                showDetailDialog = false
+                selectedMusicInfo = null
             },
             hazeState = hazeState
-        )}
+        )
+    }
+
+    // 单项移除确认
+    if (showRemoveConfirmDialog && pendingRemoveMusicInfo != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showRemoveConfirmDialog = false
+                pendingRemoveMusicInfo = null
+            },
+            title = { Text(stringResource(R.string.confirm_remove_from_library)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingRemoveMusicInfo?.let { info ->
+                            onRemoveFromLibrary(listOf(info.music.id))
+                        }
+                        showRemoveConfirmDialog = false
+                        pendingRemoveMusicInfo = null
+                    }
+                ) {
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRemoveConfirmDialog = false
+                    pendingRemoveMusicInfo = null
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // 批量移除确认
+    if (showBatchRemoveConfirmDialog && pendingBatchIds != null) {
+        val count = pendingBatchIds!!.size
+        AlertDialog(
+            onDismissRequest = {
+                showBatchRemoveConfirmDialog = false
+                pendingBatchIds = null
+            },
+            title = { Text(stringResource(R.string.confirm_batch_remove_from_library, count)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRemoveFromLibrary(pendingBatchIds!!.toList())
+                        deleteCounter++
+                        showBatchRemoveConfirmDialog = false
+                        pendingBatchIds = null
+                    }
+                ) {
+                    Text(stringResource(R.string.confirm), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showBatchRemoveConfirmDialog = false
+                    pendingBatchIds = null
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

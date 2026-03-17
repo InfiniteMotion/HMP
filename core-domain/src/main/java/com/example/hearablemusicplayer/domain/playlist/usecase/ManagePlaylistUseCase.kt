@@ -1,7 +1,9 @@
 package com.example.hearablemusicplayer.domain.playlist.usecase
 
 import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.domain.playlist.PlaylistRepository
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -9,7 +11,8 @@ import javax.inject.Inject
  * 播放列表管理Use Case
  */
 class ManagePlaylistUseCase @Inject constructor(
-    private val playlistRepository: PlaylistRepository
+    private val playlistRepository: PlaylistRepository,
+    private val settingsRepository: SettingsRepository
 ) {
     /**
      * 创建播放列表
@@ -19,14 +22,68 @@ class ManagePlaylistUseCase @Inject constructor(
     }
 
     /**
-     * 删除播放列表
+     * 删除播放列表（按名称）
      */
     suspend fun removePlaylist(name: String) {
         playlistRepository.removePlaylist(name)
     }
 
     /**
-     * 根据ID获取播放列表
+     * 按 ID 删除播放列表，仅允许删除用户自定义列表；系统列表（默认/红心/最近）不可删
+     */
+    suspend fun removePlaylistById(id: Long) {
+        val currentId = settingsRepository.getCurrentPlaylistId()
+        val likedId = settingsRepository.getLikedPlaylistId()
+        val recentId = settingsRepository.getRecentPlaylistId()
+        if (id == currentId || id == likedId || id == recentId) {
+            throw IllegalArgumentException("Cannot delete system playlist")
+        }
+        playlistRepository.removePlaylistById(id)
+    }
+
+    /**
+     * 获取所有播放列表
+     */
+    suspend fun getAllPlaylists(): List<Playlist> {
+        return playlistRepository.getAllPlaylists()
+    }
+
+    /**
+     * 根据 ID 获取播放列表元数据（名称等）
+     */
+    suspend fun getPlaylistMeta(id: Long): Playlist? {
+        return playlistRepository.getPlaylistMeta(id)
+    }
+
+    /**
+     * 重命名播放列表
+     */
+    suspend fun renamePlaylist(id: Long, newName: String) {
+        playlistRepository.renamePlaylist(id, newName)
+    }
+
+    suspend fun updatePlaylistCover(id: Long, coverUri: String?) {
+        playlistRepository.updatePlaylistCover(id, coverUri)
+    }
+
+    suspend fun updatePlaylistDescription(id: Long, description: String?) {
+        playlistRepository.updatePlaylistDescription(id, description)
+    }
+
+    suspend fun setPlaylistPinned(id: Long, isPinned: Boolean) {
+        playlistRepository.setPlaylistPinned(id, isPinned)
+    }
+
+    suspend fun incrementPlaylistPlayCount(id: Long) {
+        playlistRepository.incrementPlaylistPlayCount(id)
+    }
+
+    suspend fun setPlaylistLastPlayedAt(id: Long, timestamp: Long) {
+        playlistRepository.setPlaylistLastPlayedAt(id, timestamp)
+    }
+
+    /**
+     * 根据ID获取播放列表中的歌曲列表
      */
     suspend fun getPlaylistById(playlistId: Long): List<MusicInfo> {
         return playlistRepository.getPlaylistById(playlistId)
@@ -58,5 +115,12 @@ class ManagePlaylistUseCase @Inject constructor(
      */
     suspend fun resetPlaylistItems(playlistId: Long, playlist: List<MusicInfo>) {
         playlistRepository.resetPlaylistItems(playlistId, playlist)
+    }
+
+    /**
+     * 调整播放列表内歌曲顺序
+     */
+    suspend fun reorderPlaylistItems(playlistId: Long, orderedMusicIds: List<Long>) {
+        playlistRepository.reorderPlaylistItems(playlistId, orderedMusicIds)
     }
 }

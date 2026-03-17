@@ -45,7 +45,7 @@ object TestDataFactory {
         fileSize: Long? = 3145728L, // 3MB
         format: String? = "mp3",
         language: String? = null,
-        year: Int? = 2024,
+        date: Long? = null,
         recommendationIds: String? = null,
         isGetExtraInfo: Boolean = false,
         rewards: String? = null,
@@ -63,7 +63,7 @@ object TestDataFactory {
             fileSize = fileSize,
             format = format,
             language = language,
-            year = year,
+            date = date,
             recommendationIds = recommendationIds,
             isGetExtraInfo = isGetExtraInfo,
             rewards = rewards,

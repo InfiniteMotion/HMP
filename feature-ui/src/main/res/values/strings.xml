@@ -72,6 +72,10 @@
     <string name="scanned_folders">Scanned Foldgers</string>
     <string name="folder_songs_count">%1$d songs</string>
     <string name="no_scanned_folders">No scanned folders found</string>
+    <string name="hide_folder">Hide folder</string>
+    <string name="hidden_folders">Hidden folders</string>
+    <string name="unhide_folder">Unhide</string>
+    <string name="confirm_hide_folder">Hide this folder from library? Songs will not be deleted from device.</string>
     <string name="total_songs">Total Songs</string>
     <string name="analyzed_songs">Analyzed</string>
     <string name="scan_options">Scan Options</string>
@@ -150,7 +154,6 @@
     <string name="skipped_count">Skipped</string>
     <string name="user_rating">Rating</string>
     <string name="playlist_count">In Playlists</string>
-    <string name="last_played">Last Played</string>
     <string name="recent_history">Recent History</string>
     <string name="played_at">Played at</string>
     <string name="play_source">Source</string>
@@ -166,9 +169,14 @@
     <string name="sort_duration">Duration</string>
     <string name="sort_size">Size</string>
     <string name="sort_play_count">Play Count</string>
+    <string name="sort_year">Year</string>
     <string name="sort_add_time">Add Time</string>
     <string name="order_asc">Ascending</string>
     <string name="order_desc">Descending</string>
+    <string name="batch_add_to_playlist_done">Added %1$d song(s) to playlist</string>
+    <string name="gallery_batch_delete_unsupported">Batch delete is not supported in library</string>
+    <string name="confirm_remove_from_library">Remove this song from library?</string>
+    <string name="confirm_batch_remove_from_library">Remove %1$d song(s) from library?</string>
 
     <!-- Intro Screen -->
     <string name="grant_permission">Grant</string>
@@ -238,6 +246,8 @@
     <string name="duration_format">%1$d:%2$02d</string>
     <string name="play">Play</string>
     <string name="add_to_playlist">Add to Playlist</string>
+    <string name="add_songs_to_playlist">Add songs</string>
+    <string name="song_added">Added</string>
     <string name="artist">Artist</string>
     <string name="album">Album</string>
     <string name="duration">Duration</string>
@@ -252,6 +262,29 @@
     <string name="banner_default">Default</string>
     <string name="banner_heart">Heart</string>
     <string name="banner_history">History</string>
+    <string name="user_custom_playlists">My Playlists</string>
+    <string name="new_playlist">New Playlist</string>
+    <string name="new_playlist_dialog_title">New Playlist</string>
+    <string name="playlist_name_hint">Playlist name</string>
+    <string name="remove_from_playlist">Remove from list</string>
+    <string name="rename_playlist">Rename</string>
+    <string name="delete_playlist">Delete list</string>
+    <string name="delete_playlist_confirm">Delete this playlist? This cannot be undone.</string>
+    <string name="title_manage_user_playlists">Manage Playlists</string>
+    <string name="edit_list">Edit list</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+    <string name="manage_playlists">Manage</string>
+    <string name="songs_count">%1$d songs</string>
+    <string name="counts">songs</string>
+    <string name="minutes_format">%1$d min</string>
+    <string name="play_count_display">Played %1$d times</string>
+    <string name="playlist_description_hint">Playlist description</string>
+    <string name="edit_playlist_description">Edit description</string>
+    <string name="pin_playlist">Pin playlist</string>
+    <string name="unpin_playlist">Unpin playlist</string>
+    <string name="last_played">Last played</string>
+    <string name="set_cover_from_first_song">Use first song cover</string>
     <string name="share">Share</string>
     <string name="library_stats">Library Stats</string>
     <string name="incremental_load">Incremental Load</string>

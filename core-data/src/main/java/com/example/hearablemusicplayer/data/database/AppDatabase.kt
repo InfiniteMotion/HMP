@@ -18,7 +18,7 @@ import com.example.hearablemusicplayer.data.database.myenum.LabelConverters
         PlaybackHistory::class,
         ListeningDuration::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(LabelConverters::class)
@@ -47,6 +47,53 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE music ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE musicExtra ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE userInfo ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE playlist ADD COLUMN coverUri TEXT")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN playCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN lastPlayedAt INTEGER")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN description TEXT")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN songCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN totalDurationMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE playlist ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS musicExtra_new (
+                        id INTEGER PRIMARY KEY NOT NULL,
+                        lyrics TEXT,
+                        bitRate INTEGER,
+                        sampleRate INTEGER,
+                        fileSize INTEGER,
+                        format TEXT,
+                        language TEXT,
+                        date INTEGER,
+                        recommendationIds TEXT,
+                        isGetExtraInfo INTEGER NOT NULL,
+                        rewards TEXT,
+                        popLyric TEXT,
+                        singerIntroduce TEXT,
+                        backgroundIntroduce TEXT,
+                        description TEXT,
+                        relevantMusic TEXT,
+                        isDeleted INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO musicExtra_new (id, lyrics, bitRate, sampleRate, fileSize, format, language, date, recommendationIds, isGetExtraInfo, rewards, popLyric, singerIntroduce, backgroundIntroduce, description, relevantMusic, isDeleted)
+                    SELECT id, lyrics, bitRate, sampleRate, fileSize, format, language, NULL, recommendationIds, isGetExtraInfo, rewards, popLyric, singerIntroduce, backgroundIntroduce, description, relevantMusic, isDeleted
+                    FROM musicExtra
+                """.trimIndent())
+                db.execSQL("DROP TABLE musicExtra")
+                db.execSQL("ALTER TABLE musicExtra_new RENAME TO musicExtra")
             }
         }
     }

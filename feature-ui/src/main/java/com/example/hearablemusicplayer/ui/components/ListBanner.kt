@@ -2,6 +2,7 @@ package com.example.hearablemusicplayer.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ fun ListGroupName(
     bannerNameF: String,
     bannerNameS: String,
     themeColorResId: Int,
+    trailing: @Composable (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -43,28 +45,33 @@ fun ListGroupName(
     ) {
         // 标题部分
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(start = 20.dp, top = 16.dp, bottom = 8.dp)
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = bannerNameF,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(colorResource(themeColorResId))
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = bannerNameS,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = bannerNameF,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(colorResource(themeColorResId))
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = bannerNameS,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+            if (trailing != null) trailing()
         }
     }
 }

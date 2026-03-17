@@ -26,6 +26,7 @@ import com.example.hearablemusicplayer.domain.enum.LabelCategory
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
+import com.example.hearablemusicplayer.data.util.stringToPinyinSortKey
 import com.example.hearablemusicplayer.data.network.AiApiResult
 import com.example.hearablemusicplayer.domain.setting.model.ArtistCountEntry
 import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
@@ -81,25 +82,44 @@ class MusicRepositoryImpl @Inject constructor(
     // ------------------- 音乐相关操作 -------------------
 
     private val musicFields = listOf("id", "title", "artist", "album", "duration")
-    private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "year")
+    private val extraFields = listOf("bitRate", "sampleRate", "fileSize", "format", "language", "date")
     private val userInfoFields = listOf("liked", "disLiked", "lastPlayed", "playCount", "skippedCount", "userRating")
 
     override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
         val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
+        // 按标题/按歌手：用拼音首字母中英混排，在内存中排序；其它字段仍用 SQL 排序
+        if (orderBy == "title" || orderBy == "artist") {
+            val byIdQuery = """
+                SELECT * FROM music 
+                LEFT JOIN musicExtra ON music.id = musicExtra.id
+                LEFT JOIN userInfo ON music.id = userInfo.id
+                WHERE music.isDeleted = 0
+                ORDER BY music.id ASC
+            """.trimIndent()
+            val list = musicAllDao.getAllMusicInfoAsList(SimpleSQLiteQuery(byIdQuery)).map { it.toDomain() }
+            val keyFn: (MusicInfo) -> String = when (orderBy) {
+                "title" -> { info -> stringToPinyinSortKey(info.music.title) }
+                else -> { info -> stringToPinyinSortKey(info.music.artist) }
+            }
+            return if (safeOrderType == "DESC") {
+                list.sortedWith(compareByDescending(keyFn).thenByDescending { if (orderBy == "title") it.music.title else it.music.artist })
+            } else {
+                list.sortedWith(compareBy(keyFn).thenBy { if (orderBy == "title") it.music.title else it.music.artist })
+            }
+        }
         val tablePrefix = when {
             musicFields.contains(orderBy) -> "music"
             extraFields.contains(orderBy) -> "musicExtra"
             userInfoFields.contains(orderBy) -> "userInfo"
             else -> "music"
         }
-
         val queryString = """
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
+            WHERE music.isDeleted = 0
             ORDER BY $tablePrefix.$orderBy $safeOrderType
         """.trimIndent()
-
         val query = SimpleSQLiteQuery(queryString)
         return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
     }
@@ -127,18 +147,48 @@ class MusicRepositoryImpl @Inject constructor(
     override suspend fun getLikedStatus(id: Long): Boolean {
         return userInfoDao.getLikedStatus(id)
     }
+
+    override suspend fun removeFromLibrary(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        musicDao.markDeletedByIds(ids)
+        musicExtraDao.markDeletedByIds(ids)
+        userInfoDao.markDeletedByIds(ids)
+    }
+
+    override suspend fun restoreToLibrary(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        musicDao.markActiveByIds(ids)
+        musicExtraDao.markActiveByIds(ids)
+        userInfoDao.markActiveByIds(ids)
+    }
+
+    override suspend fun getDeletedMusicIdsGroupedByFolder(): List<Pair<String, List<Long>>> {
+        val list = musicDao.getDeletedMusicIdAndPath()
+        return list
+            .groupBy { (_, path) ->
+                try {
+                    File(path).parent ?: "Unknown"
+                } catch (e: Exception) {
+                    "Unknown"
+                }
+            }
+            .map { (path, entries) -> path to entries.map { it.id } }
+            .sortedByDescending { it.second.size }
+    }
     
     override suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> {
         val queryString = """
             SELECT * FROM music 
             LEFT JOIN musicExtra ON music.id = musicExtra.id
             LEFT JOIN userInfo ON music.id = userInfo.id
-            WHERE music.artist = ?
-            ORDER BY music.title ASC
+            WHERE music.artist = ? AND music.isDeleted = 0
+            ORDER BY music.id ASC
         """.trimIndent()
-        
         val query = SimpleSQLiteQuery(queryString, arrayOf(artistName))
-        return musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
+        val list = musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
+        return list.sortedWith(
+            compareBy<MusicInfo> { stringToPinyinSortKey(it.music.title) }.thenBy { it.music.title }
+        )
     }
 
     override suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%").map { it.toDomain() }
@@ -501,8 +551,11 @@ class MusicRepositoryImpl @Inject constructor(
                 // ignore
             }
         }
-        
-        Triple(musicList, musicExtraList, userInfoList)
+        val existingDates = musicExtraDao.getAllIdAndDate().associate { it.id to it.date }
+        val extrasWithDate = musicExtraList.map { e ->
+            e.copy(date = existingDates[e.id] ?: System.currentTimeMillis())
+        }
+        Triple(musicList, extrasWithDate, userInfoList)
     }
 
     val labelCategoryWeight = mapOf(

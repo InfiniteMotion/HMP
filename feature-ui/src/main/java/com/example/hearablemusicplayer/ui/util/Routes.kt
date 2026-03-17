@@ -40,8 +40,14 @@ object Routes {
     /** 搜索页路由 */
     @Serializable object Search
     
-    /** 播放列表页路由 */
+    /** 播放列表页路由（按名称，用于标签列表与默认/红心/最近） */
     @Serializable data class Playlist(val name: String)
+
+    /** 用户自定义播放列表详情页路由（按 ID） */
+    @Serializable data class CustomPlaylist(val playlistId: Long)
+
+    /** 用户歌单管理页路由 */
+    @Serializable object UserPlaylistManage
     
     /** 艺术家页路由 */
     @Serializable data class Artist(val name: String)

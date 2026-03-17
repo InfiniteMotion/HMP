@@ -27,6 +27,15 @@ interface MusicRepository {
     suspend fun updateLikedStatus(id: Long, liked: Boolean)
     suspend fun getLikedStatus(id: Long): Boolean
 
+    /** 从曲库软删除：标记指定 id 的 music / musicExtra / userInfo 为已删除，列表查询将不再返回。 */
+    suspend fun removeFromLibrary(ids: List<Long>)
+
+    /** 恢复：将指定 id 的 music / musicExtra / userInfo 标记为未删除，列表查询将重新返回。 */
+    suspend fun restoreToLibrary(ids: List<Long>)
+
+    /** 已软删除的歌曲按父文件夹路径分组，用于「隐藏文件夹」的恢复。返回 (文件夹路径, 该文件夹下已删除歌曲的 id 列表)。 */
+    suspend fun getDeletedMusicIdsGroupedByFolder(): List<Pair<String, List<Long>>>
+
     // Labels
     suspend fun addMusicLabel(label: MusicLabel)
     fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>>

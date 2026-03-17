@@ -72,6 +72,10 @@
     <string name="scanned_folders">已扫描文件夹</string>
     <string name="folder_songs_count">%1$d 首歌曲</string>
     <string name="no_scanned_folders">暂无已扫描的文件夹</string>
+    <string name="hide_folder">隐藏文件夹</string>
+    <string name="hidden_folders">已隐藏的文件夹</string>
+    <string name="unhide_folder">取消隐藏</string>
+    <string name="confirm_hide_folder">从曲库中隐藏该文件夹？设备上的文件不会被删除。</string>
     <string name="total_songs">总歌曲数</string>
     <string name="analyzed_songs">已分析</string>
     <string name="scan_options">扫描选项</string>
@@ -96,7 +100,7 @@
     <string name="current_setting_startup">当前设置：每启动 %1$d 次后刷新</string>
     <string name="smart_refresh_desc">智能刷新模式将根据您的听歌习惯、时间段等因素自动判断刷新时机。目前默认使用每 24 小时刷新一次的策略，后续将根据 AI 分析进行智能优化。</string>
     <string name="backup">备份与恢复</string>
-    <string name="export_backup">生成备份</string>
+    <string name="export_backup">导出备份</string>
     <string name="restore_backup">恢复备份</string>
     <string name="export_backup_desc">生成包含所有设置、歌单和收听历史的 JSON 备份文件</string>
     <string name="restore_backup_desc">导入之前导出的备份文件以恢复数据</string>
@@ -165,9 +169,14 @@
     <string name="sort_duration">时长</string>
     <string name="sort_size">大小</string>
     <string name="sort_play_count">播放次数</string>
+    <string name="sort_year">年份</string>
     <string name="sort_add_time">添加时间</string>
     <string name="order_asc">升序</string>
     <string name="order_desc">降序</string>
+    <string name="batch_add_to_playlist_done">已添加 %1$d 首到播放列表</string>
+    <string name="gallery_batch_delete_unsupported">曲库暂不支持批量删除</string>
+    <string name="confirm_remove_from_library">确定从曲库中移除该歌曲？</string>
+    <string name="confirm_batch_remove_from_library">确定从曲库中移除选中的 %1$d 首歌曲？</string>
 
     <!-- Intro Screen -->
     <string name="grant_permission">授予</string>
@@ -237,6 +246,8 @@
     <string name="duration_format">%1$d:%2$02d</string>
     <string name="play">播放</string>
     <string name="add_to_playlist">添加到播放列表</string>
+    <string name="add_songs_to_playlist">添加歌曲</string>
+    <string name="song_added">已添加</string>
     <string name="artist">艺术家</string>
     <string name="album">专辑</string>
     <string name="duration">时长</string>
@@ -251,6 +262,28 @@
     <string name="banner_default">默认列表</string>
     <string name="banner_heart">红心列表</string>
     <string name="banner_history">最近播放</string>
+    <string name="user_custom_playlists">我的歌单</string>
+    <string name="new_playlist">新建歌单</string>
+    <string name="new_playlist_dialog_title">新建歌单</string>
+    <string name="playlist_name_hint">歌单名称</string>
+    <string name="remove_from_playlist">从列表移除</string>
+    <string name="rename_playlist">重命名</string>
+    <string name="delete_playlist">删除歌单</string>
+    <string name="delete_playlist_confirm">确定删除该歌单？此操作不可恢复。</string>
+    <string name="title_manage_user_playlists">管理歌单</string>
+    <string name="edit_list">编辑列表</string>
+    <string name="edit">编辑</string>
+    <string name="done">完成</string>
+    <string name="manage_playlists">管理</string>
+    <string name="songs_count">%1$d 首</string>
+    <string name="counts">首</string>
+    <string name="minutes_format">%1$d 分钟</string>
+    <string name="play_count_display">播放 %1$d 次</string>
+    <string name="playlist_description_hint">歌单介绍</string>
+    <string name="edit_playlist_description">编辑介绍</string>
+    <string name="pin_playlist">置顶</string>
+    <string name="unpin_playlist">取消置顶</string>
+    <string name="set_cover_from_first_song">使用第一首歌曲封面</string>
     <string name="share">分享</string>
     <string name="library_stats">音乐库数据</string>
     <string name="incremental_load">增量加载</string>

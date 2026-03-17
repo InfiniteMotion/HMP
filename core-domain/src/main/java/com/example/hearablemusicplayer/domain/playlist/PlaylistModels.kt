@@ -171,7 +171,16 @@ data class QualityMetrics(
 
 data class Playlist(
     val id: Long = 0,
-    val name: String
+    val name: String,
+    val coverUri: String? = null,
+    val playCount: Int = 0,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    val lastPlayedAt: Long? = null,
+    val description: String? = null,
+    val songCount: Int = 0,
+    val totalDurationMs: Long = 0L,
+    val isPinned: Boolean = false
 )
 
 data class PlaylistItem(
