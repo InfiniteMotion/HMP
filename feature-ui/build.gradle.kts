@@ -62,10 +62,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation3.core)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.navigation3.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.runtime.livedata)
     
