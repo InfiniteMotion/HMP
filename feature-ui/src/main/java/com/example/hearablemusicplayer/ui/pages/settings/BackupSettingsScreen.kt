@@ -39,7 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
@@ -52,13 +53,13 @@ import java.util.Locale
 
 @Composable
 fun BackupSettingsScreen(
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val localBackups by settingsViewModel.localBackups.collectAsState()
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.backup_settings)
     ) {
         Column(

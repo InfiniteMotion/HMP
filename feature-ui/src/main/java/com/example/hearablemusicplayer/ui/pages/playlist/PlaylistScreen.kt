@@ -58,7 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
@@ -85,7 +86,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 fun PlaylistScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
 ) {
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
@@ -117,19 +118,19 @@ fun PlaylistScreen(
         playlistMeta = uiState.playlistMeta,
         selectedPlaylistId = uiState.selectedPlaylistId,
         isCustomPlaylist = uiState.isCustomPlaylist,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         onRecordPlaylistPlay = { playlistViewModel.recordPlaylistPlay(it) },
         onShufflePlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playControlViewModel.addAllToPlaylistByShuffle(uiState.playlist)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onOrderPlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playControlViewModel.addAllToPlaylistInOrder(uiState.playlist)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
-        onNavigate = navController::navigate,
+        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
@@ -164,7 +165,7 @@ fun PlaylistScreenContent(
     onRecordPlaylistPlay: (Long) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,

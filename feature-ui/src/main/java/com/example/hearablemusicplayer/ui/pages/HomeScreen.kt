@@ -42,7 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
@@ -67,7 +68,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
     val scope = rememberCoroutineScope()
     val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
@@ -111,7 +112,7 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { navController.navigate(Routes.AI) },
+                    onClick = { backStack.add(Routes.AI) },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(stringResource(R.string.go_to_ai_config))
@@ -137,12 +138,12 @@ fun HomeScreen(
                         haptic.performClick()
                         scope.launch {
                             playControlViewModel.playWith(dailyMusic!!)
-                            navController.navigate(Routes.Player)
+                            backStack.add(Routes.Player)
                         }
                     },
                     onDetail = {
                         haptic.performClick()
-                        navController.navigate(Routes.SongDetail(dailyMusic!!.music.id))
+                        backStack.add(Routes.SongDetail(dailyMusic!!.music.id))
                     }
                 )
 
@@ -168,7 +169,7 @@ fun HomeScreen(
                                 playControlViewModel.clearPlaylist()
                                 playControlViewModel.addAllToPlaylistInOrder(heartbeatList)
                                 playControlViewModel.playWith(heartbeatList.first())
-                                navController.navigate(Routes.Player)
+                                backStack.add(Routes.Player)
                             },
                             modifier = Modifier
                                 .size(24.dp),
@@ -207,7 +208,7 @@ fun HomeScreen(
                             scope.launch { playControlViewModel.playWith(musicInfo) }
                         }
                         override fun onMenuClick(musicInfo: MusicInfo) {
-                            navController.navigate(Routes.SongDetail(musicInfo.music.id))
+                            backStack.add(Routes.SongDetail(musicInfo.music.id))
                         }
                     }
                     val config = defaultMusicListConfig(callbacks).copy(

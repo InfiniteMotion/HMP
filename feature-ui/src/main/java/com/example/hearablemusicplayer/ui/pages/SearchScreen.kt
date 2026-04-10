@@ -28,7 +28,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
@@ -55,7 +56,7 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 fun SearchScreen(
     searchViewModel: SearchViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ){
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -75,8 +76,8 @@ fun SearchScreen(
             searchQuery = it
             searchViewModel.searchMusic(it)
         },
-        onBackClick = { navController.popBackStack() },
-        onNavigate = navController::navigate,
+        onBackClick = { navController.removeLastOrNull() },
+        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist
     )
@@ -91,7 +92,7 @@ fun SearchScreenContent(
     currentPlayingMusic: MusicInfo?,
     onSearchQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {

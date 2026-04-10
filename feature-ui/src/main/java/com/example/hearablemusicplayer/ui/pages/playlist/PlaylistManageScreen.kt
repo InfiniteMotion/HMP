@@ -41,7 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
@@ -54,7 +55,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @Composable
 fun PlaylistManageScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()
     val haptic = rememberHapticFeedback()
@@ -93,7 +94,7 @@ fun PlaylistManageScreen(
                             playlistViewModel.createPlaylistAsync(name) { id ->
                                 showNewPlaylistDialog = false
                                 newPlaylistName = ""
-                                navController.navigate(Routes.CustomPlaylist(id))
+                                navController.add(Routes.CustomPlaylist(id))
                             }
                         }
                     }
@@ -169,7 +170,7 @@ fun PlaylistManageScreen(
     }
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.title_manage_user_playlists),
         trailingContent = {
             FilledIconButton(
@@ -207,7 +208,7 @@ fun PlaylistManageScreen(
                         isEditMode = isEditMode,
                         onClick = {
                             haptic.performClick()
-                            navController.navigate(Routes.CustomPlaylist(playlist.id))
+                            navController.add(Routes.CustomPlaylist(playlist.id))
                         },
                         onDelete = { playlistToDelete = playlist },
                         onRename = {

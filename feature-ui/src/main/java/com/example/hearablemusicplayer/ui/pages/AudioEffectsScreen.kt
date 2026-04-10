@@ -40,7 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
@@ -51,7 +52,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 @Composable
 fun AudioEffectsScreen(
     viewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val audioEffectSettings by viewModel.audioEffectSettings.collectAsState()
     val equalizerPresets by viewModel.equalizerPresets.collectAsState()
@@ -70,7 +71,7 @@ fun AudioEffectsScreen(
         equalizerBandCount = equalizerBandCount,
         equalizerBandLevelRange = equalizerBandLevelRange,
         currentEqualizerBandLevels = currentEqualizerBandLevels,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         onSetEqualizerPreset = viewModel::setEqualizerPreset,
         onSetBassBoost = viewModel::setBassBoost,
         onSetSurroundSound = viewModel::setSurroundSound,

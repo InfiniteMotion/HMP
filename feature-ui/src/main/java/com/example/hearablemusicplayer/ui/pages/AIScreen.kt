@@ -57,7 +57,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.ui.R
@@ -72,7 +73,7 @@ fun AIScreen(
     settingsViewModel: SettingsViewModel,
     recommendationViewModel: RecommendationViewModel,
     libraryViewModel: LibraryViewModel,
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     // 加载当前服务商配置
     LaunchedEffect(Unit) {
@@ -117,7 +118,7 @@ fun AIScreen(
         onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
         onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
         onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount,
-        onBackClick = { navController.popBackStack() }
+        onBackClick = { navController.removeLastOrNull() }
     )
 }
 

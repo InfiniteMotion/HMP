@@ -39,7 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
@@ -49,7 +50,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 
 @Composable
 fun LibrarySettingsScreen(
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     libraryViewModel: LibraryViewModel = hiltViewModel()
 ) {
     val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
@@ -63,7 +64,7 @@ fun LibrarySettingsScreen(
     }
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.library_settings)
     ) {
         Column(

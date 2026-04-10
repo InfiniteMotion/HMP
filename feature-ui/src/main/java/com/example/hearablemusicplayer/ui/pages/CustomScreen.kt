@@ -28,7 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
@@ -38,7 +39,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 @Composable
 fun CustomScreen(
     settingsViewModel: SettingsViewModel,
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val customMode by settingsViewModel.customMode.collectAsState("default")
     val backgroundStyle by settingsViewModel.backgroundStyle.collectAsState("FLUID")
@@ -46,7 +47,7 @@ fun CustomScreen(
     CustomScreenContent(
         customMode = customMode,
         backgroundStyle = backgroundStyle,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         setCustomMode = settingsViewModel::saveCustomMode,
         setBackgroundStyle = settingsViewModel::saveBackgroundStyle
     )

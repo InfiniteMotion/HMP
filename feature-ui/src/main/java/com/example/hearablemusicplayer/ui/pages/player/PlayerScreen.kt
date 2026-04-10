@@ -32,7 +32,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
@@ -47,7 +48,7 @@ fun PlayerScreen(
     viewModel: PlayControlViewModel = hiltViewModel(),
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current
     val dismissThreshold = with(density) { 220.dp.toPx() }
@@ -148,7 +149,7 @@ fun PlayerScreen(
                 if (offsetY.value > 0f) {
                     if (offsetY.value > dismissThreshold) {
                         // 达到阈值，执行退出
-                        navController.popBackStack()
+                        navController.removeLastOrNull()
                         haptic.performGestureEnd()
                         offsetY.animateTo(
                             targetValue = with(density) { 1000.dp.toPx() },
@@ -201,7 +202,7 @@ fun PlayerScreen(
             lyricsLineSpacing = lyricsLineSpacing,
             lyricsDisplayMode = lyricsDisplayMode,
             lyricsAlignment = lyricsAlignment,
-            onBackClick = { navController.popBackStack() },
+            onBackClick = { navController.removeLastOrNull() },
             onSeek = viewModel::seekTo,
             onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
             onNext = viewModel::playNext,
@@ -212,12 +213,12 @@ fun PlayerScreen(
             },
             onTimerClick = viewModel::startTimer,
             onCancelTimer = viewModel::cancelTimer,
-            onHeartMode = { navController.navigate(Routes.Lyrics) },
+            onHeartMode = { navController.add(Routes.Lyrics) },
             onGeneratePlaylist = viewModel::generatePlaylist,
             onSaveDefaultConfig = viewModel::saveAlgorithmConfig,
             onArtistClick = { artistName ->
                 playlistViewModel.getSelectedArtistMusicList(artistName)
-                navController.navigate(Routes.Artist(artistName))
+                navController.add(Routes.Artist(artistName))
             },
             onClearPlaylist = viewModel::clearPlaylist,
             onPlayItem = viewModel::playAt,

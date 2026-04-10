@@ -56,7 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.domain.playlist.Playlist
@@ -75,7 +76,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
     val moodList by playlistViewModel.moodPlaylistName.collectAsState()
@@ -92,7 +93,7 @@ fun ListScreen(
         eraList = eraList,
         userCustomPlaylists = userCustomPlaylists,
         playlistViewModel = playlistViewModel,
-        navController = navController
+        backStack = backStack
     )
 }
 
@@ -106,7 +107,7 @@ fun ListScreenContent(
     eraList: List<LabelName>,
     userCustomPlaylists: List<Playlist>,
     playlistViewModel: PlaylistViewModel,
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
@@ -141,7 +142,7 @@ fun ListScreenContent(
                             playlistViewModel.createPlaylistAsync(name) { id ->
                                 showNewPlaylistDialog = false
                                 newPlaylistName = ""
-                                navController.navigate(Routes.CustomPlaylist(id))
+                                backStack.add(Routes.CustomPlaylist(id))
                             }
                         }
                     }
@@ -160,7 +161,7 @@ fun ListScreenContent(
     TabScreen(
         title = stringResource(R.string.title_playlist),
         hasSearchBotton = false,
-        navController = navController,
+        backStack = backStack,
         trailing = {
             NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
         }
@@ -182,7 +183,7 @@ fun ListScreenContent(
                         TextButton(
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.UserPlaylistManage)
+                                backStack.add(Routes.UserPlaylistManage)
                             }
                         ) {
                             Text(
@@ -202,7 +203,7 @@ fun ListScreenContent(
                             playlist = playlist,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.CustomPlaylist(playlist.id))
+                                backStack.add(Routes.CustomPlaylist(playlist.id))
                             }
                         )
                     }
@@ -224,17 +225,17 @@ fun ListScreenContent(
                     ListBanner(
                         listName = stringResource(R.string.banner_default),
                         listCoverUri = R.drawable.defaultlist,
-                        navController = navController
+                        backStack = backStack
                     )
                     ListBanner(
                         listName = stringResource(R.string.banner_heart),
                         listCoverUri = R.drawable.heartlist,
-                        navController = navController
+                        backStack = backStack
                     )
                     ListBanner(
                         listName = stringResource(R.string.banner_history),
                         listCoverUri = R.drawable.historylist,
-                        navController = navController
+                        backStack = backStack
                     )
                 }
             }
@@ -260,7 +261,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                backStack.add(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -288,7 +289,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                backStack.add(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -315,7 +316,7 @@ fun ListScreenContent(
                                 label = label,
                                 onClick = {
                                     haptic.performClick()
-                                    navController.navigate(Routes.Playlist(label.name))
+                                    backStack.add(Routes.Playlist(label.name))
                                 }
                             )
                         }
@@ -340,7 +341,7 @@ fun ListScreenContent(
                         Box(
                             modifier = Modifier.clickable {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                backStack.add(Routes.Playlist(label.name))
                             }
                         ) {
                             Capsule(

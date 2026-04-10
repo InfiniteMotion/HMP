@@ -13,7 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
@@ -37,7 +38,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 fun ArtistScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
 ) {
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val artistName by playlistViewModel.selectedArtistName.collectAsState()
@@ -48,16 +49,16 @@ fun ArtistScreen(
         artistName = artistName,
         artistMusicList = artistMusicList,
         currentPlayingMusic = currentPlayingMusic,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(artistMusicList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(artistMusicList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
-        onNavigate = navController::navigate,
+        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist
     )
@@ -73,7 +74,7 @@ fun ArtistScreenContent(
     onBackClick: () -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit
 ) {

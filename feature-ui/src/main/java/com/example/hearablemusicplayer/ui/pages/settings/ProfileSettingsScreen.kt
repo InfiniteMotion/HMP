@@ -40,7 +40,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
@@ -53,14 +54,14 @@ import java.io.IOException
 
 @Composable
 fun ProfileSettingsScreen(
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val avatarUri by settingsViewModel.avatarUri.collectAsState("")
     val userName by settingsViewModel.userName.collectAsState("")
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.profile_settings)
     ) {
         Column(

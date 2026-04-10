@@ -22,7 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
@@ -50,7 +51,7 @@ import dev.chrisbanes.haze.rememberHazeState
 fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
     val context = LocalContext.current
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
@@ -73,22 +74,22 @@ fun GalleryScreen(
         currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
-        onNavigate = navController::navigate,
+        onNavigate = backStack::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
         onFavorite = playControlViewModel::updateMusicLikedStatus,
         onShare =  {  },
         onDetail = {
-            navController.navigate(Routes.SongDetail(it.music.id))
+            backStack.add(Routes.SongDetail(it.music.id))
         },
         onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
-            navController.navigate(Routes.Player)
+            backStack.add(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
-            navController.navigate(Routes.Player)
+            backStack.add(Routes.Player)
         },
         onFilterGenreChange = {
             libraryViewModel.updateOrderBy(it)
@@ -98,7 +99,7 @@ fun GalleryScreen(
             libraryViewModel.updateOrderType(it)
             libraryViewModel.getAllMusic()
         },
-        navController = navController,
+        backStack = backStack,
     )
 }
 
@@ -110,7 +111,7 @@ fun GalleryScreenContent(
     currentPlayingIndex: Int?,
     selectedGenre: String,
     selectedOrder: String,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavKey) -> Unit,
     playWith: (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
     onFavorite: (MusicInfo, Boolean) -> Unit,
@@ -121,7 +122,7 @@ fun GalleryScreenContent(
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
     val context = LocalContext.current
     val haptic = rememberHapticFeedback()
@@ -194,7 +195,7 @@ fun GalleryScreenContent(
             TabScreen(
                 title = stringResource(R.string.title_gallery),
                 hasSearchBotton = true,
-                navController = navController
+                backStack = backStack
             ) {
                 androidx.compose.runtime.key(deleteCounter) {
                     MusicList(

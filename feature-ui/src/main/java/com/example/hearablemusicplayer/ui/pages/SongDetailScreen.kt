@@ -39,7 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicExtra
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.MusicLabel
@@ -62,7 +63,7 @@ import java.util.Locale
 
 @Composable
 fun SongDetailScreen(
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     viewModel: SongDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -74,7 +75,7 @@ fun SongDetailScreen(
     }
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = title,
     ) {
         Column(
@@ -97,7 +98,7 @@ fun SongDetailScreen(
                         musicExtra = data.musicInfo.extra,
                         onOpenPlayer = {
                             haptic.performClick()
-                            navController.navigate(Routes.Player)
+                            navController.add(Routes.Player)
                         }
                     )
                     SongDetailInfo(
