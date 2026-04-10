@@ -43,7 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.NavManager
 import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
 import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
@@ -312,7 +312,7 @@ fun BackButton(
 
 @Composable
 fun SearchButton(
-    navController: NavController
+    navController: NavManager
 ){
     val haptic = rememberHapticFeedback()
     FilledIconButton(
