@@ -31,11 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.NavDestination.Companion.hasRoute
+import androidx.navigation3.compose.NavDisplay
+import androidx.navigation3.compose.rememberNavManager
+import androidx.navigation3.compose.rememberNavState
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
 import com.example.hearablemusicplayer.ui.pages.AIScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
@@ -99,8 +98,11 @@ fun MainScreen(
     }
 
     val defaultScreen = Routes.Tabs
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val navState = rememberNavState {
+        initialDestination = defaultScreen
+    }
+    val navManager = rememberNavManager(navState)
+    val navBackStackEntry = navState.backStack.lastOrNull()
 
     val tabCount = 4
     val savedTabIndex = rememberSaveable { mutableIntStateOf(0) }
@@ -169,169 +171,77 @@ fun MainScreen(
                 Box(
                     modifier = contentModifier
                 ) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = defaultScreen,
+                    NavDisplay(
+                        navState = navState,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // 为所有页面添加统一的过渡动画
-                        val pageEnterTransition = scaleIn(
-                            initialScale = 0.95f,
-                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                        ) + fadeIn(
-                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                        )
-
-                        val pageExitTransition = scaleOut(
-                            targetScale = 0.95f,
-                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                        ) + fadeOut(
-                            animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                        )
-
-                        composable<Routes.Tabs>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            TabsHost(
-                                navController = navController,
-                                pagerState = pagerState,
-                                // 不再传递 tabHeader，因为已经在外部显示
-                                tabHeader = {},
-                                recommendationViewModel = recommendationViewModel,
-                                settingsViewModel = settingsViewModel
-                            )
-                        }
-                        composable<Routes.SongDetail>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            SongDetailScreen(
-                                navController = navController
-                            )
-                        }
-                        composable<Routes.Player>(
-                            enterTransition = {
-                                slideInVertically(
-                                    initialOffsetY = { it }, // 从底部滑入
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                ) + fadeIn(
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                )
-                            },
-                            exitTransition = {
-                                slideOutVertically(
-                                    targetOffsetY = { it }, // 向底部滑出
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                ) + fadeOut(
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                        // 渲染当前目的地
+                        when (val destination = it.lastOrNull()?.destination) {
+                            is Routes.Tabs -> {
+                                TabsHost(
+                                    navController = navManager,
+                                    pagerState = pagerState,
+                                    // 不再传递 tabHeader，因为已经在外部显示
+                                    tabHeader = {},
+                                    recommendationViewModel = recommendationViewModel,
+                                    settingsViewModel = settingsViewModel
                                 )
                             }
-                        ) {
-                            PlayerScreen(navController = navController)
-                        }
-                        composable<Routes.Setting>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            SettingScreen(navController)
-                        }
-                        composable<Routes.ProfileSettings>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            ProfileSettingsScreen(navController = navController)
-                        }
-                        composable<Routes.BackupSettings>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            BackupSettingsScreen(navController = navController)
-                        }
-                        composable<Routes.LibrarySettings>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            LibrarySettingsScreen(navController = navController)
-                        }
-                        composable<Routes.Search>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            SearchScreen(navController = navController)
-                        }
-                        composable<Routes.Playlist>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            PlaylistScreen(navController = navController)
-                        }
-                        composable<Routes.CustomPlaylist>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            PlaylistScreen(navController = navController)
-                        }
-                        composable<Routes.UserPlaylistManage>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            PlaylistManageScreen(navController = navController)
-                        }
-                        composable<Routes.Artist>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            ArtistScreen(navController = navController)
-                        }
-                        composable<Routes.AudioEffects>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            AudioEffectsScreen(navController = navController)
-                        }
-                        composable<Routes.AI>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            AIScreen(
-                                settingsViewModel,
-                                recommendationViewModel,
-                                libraryViewModel,
-                                navController
-                            )
-                        }
-                        composable<Routes.Custom>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            CustomScreen(settingsViewModel, navController)
-                        }
-                        composable<Routes.Lyrics>(
-                            enterTransition = {
-                                slideInVertically(
-                                    initialOffsetY = { it },
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                ) + fadeIn(
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                )
-                            },
-                            exitTransition = {
-                                slideOutVertically(
-                                    targetOffsetY = { it },
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
-                                ) + fadeOut(
-                                    animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
+                            is Routes.SongDetail -> {
+                                SongDetailScreen(
+                                    navController = navManager
                                 )
                             }
-                        ) {
-                            LyricsScreen()
-                        }
-                        composable<Routes.UserUsageData>(
-                            enterTransition = { pageEnterTransition },
-                            exitTransition = { pageExitTransition }
-                        ) {
-                            UserUsageDataScreen(navController = navController)
+                            is Routes.Player -> {
+                                PlayerScreen(navController = navManager)
+                            }
+                            is Routes.Setting -> {
+                                SettingScreen(navManager)
+                            }
+                            is Routes.ProfileSettings -> {
+                                ProfileSettingsScreen(navController = navManager)
+                            }
+                            is Routes.BackupSettings -> {
+                                BackupSettingsScreen(navController = navManager)
+                            }
+                            is Routes.LibrarySettings -> {
+                                LibrarySettingsScreen(navController = navManager)
+                            }
+                            is Routes.Search -> {
+                                SearchScreen(navController = navManager)
+                            }
+                            is Routes.Playlist -> {
+                                PlaylistScreen(navController = navManager)
+                            }
+                            is Routes.CustomPlaylist -> {
+                                PlaylistScreen(navController = navManager)
+                            }
+                            is Routes.UserPlaylistManage -> {
+                                PlaylistManageScreen(navController = navManager)
+                            }
+                            is Routes.Artist -> {
+                                ArtistScreen(navController = navManager)
+                            }
+                            is Routes.AudioEffects -> {
+                                AudioEffectsScreen(navController = navManager)
+                            }
+                            is Routes.AI -> {
+                                AIScreen(
+                                    settingsViewModel,
+                                    recommendationViewModel,
+                                    libraryViewModel,
+                                    navManager
+                                )
+                            }
+                            is Routes.Custom -> {
+                                CustomScreen(settingsViewModel, navManager)
+                            }
+                            is Routes.Lyrics -> {
+                                LyricsScreen()
+                            }
+                            is Routes.UserUsageData -> {
+                                UserUsageDataScreen(navController = navManager)
+                            }
                         }
                     }
                     
@@ -417,7 +327,7 @@ fun MainScreen(
                             },
                             onNext = { playControlViewModel.playNext() },
                             onPrev = { playControlViewModel.playPrevious() },
-                            onOpenPlayer = { navController.navigate(Routes.Player) }
+                            onOpenPlayer = { navManager.navigate(Routes.Player) }
                         )
                     }
                 }

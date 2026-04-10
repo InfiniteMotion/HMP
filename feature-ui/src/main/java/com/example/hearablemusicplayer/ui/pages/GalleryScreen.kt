@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.NavManager
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
@@ -50,7 +50,7 @@ import dev.chrisbanes.haze.rememberHazeState
 fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavManager
 ) {
     val context = LocalContext.current
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
@@ -121,7 +121,7 @@ fun GalleryScreenContent(
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
-    navController: NavController
+    navController: NavManager
 ) {
     val context = LocalContext.current
     val haptic = rememberHapticFeedback()

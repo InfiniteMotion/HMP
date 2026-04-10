@@ -32,7 +32,7 @@ import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.NavManager
 import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
@@ -48,7 +48,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 fun UserScreen(
     settingsViewModel: SettingsViewModel,
     recommendationViewModel: RecommendationViewModel,
-    navController: NavController
+    navController: NavManager
 ) {
 
     val userName by settingsViewModel.userName.collectAsState("")
@@ -72,7 +72,7 @@ fun UserScreenContent(
     userName: String?,
     avatarUri: String,
     listeningData: List<ListeningDuration>,
-    navController: NavController
+    navController: NavManager
 ) {
     TabScreen{
         val sortedData = listeningData.sortedBy { it.date }.takeLast(35) // 取最近35天

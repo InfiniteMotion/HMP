@@ -16,7 +16,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.NavManager
 import com.example.hearablemusicplayer.ui.components.SearchButton
 
 
@@ -26,7 +26,7 @@ val LocalTabHeaderContent = staticCompositionLocalOf<(@Composable () -> Unit)?> 
 fun TabScreen(
     title: String? = null,
     hasSearchBotton: Boolean = false,
-    navController: NavController? = null,
+    navController: NavManager? = null,
     trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {

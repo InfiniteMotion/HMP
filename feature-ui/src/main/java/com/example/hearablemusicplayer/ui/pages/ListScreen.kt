@@ -56,7 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation3.NavManager
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.domain.playlist.Playlist
@@ -75,7 +75,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    navController: NavController
+    navController: NavManager
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
     val moodList by playlistViewModel.moodPlaylistName.collectAsState()
@@ -106,7 +106,7 @@ fun ListScreenContent(
     eraList: List<LabelName>,
     userCustomPlaylists: List<Playlist>,
     playlistViewModel: PlaylistViewModel,
-    navController: NavController
+    navController: NavManager
 ) {
     val haptic = rememberHapticFeedback()
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
