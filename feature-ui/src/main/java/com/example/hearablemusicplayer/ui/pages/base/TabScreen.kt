@@ -27,7 +27,7 @@ val LocalTabHeaderContent = staticCompositionLocalOf<(@Composable () -> Unit)?> 
 fun TabScreen(
     title: String? = null,
     hasSearchBotton: Boolean = false,
-    backStack: NavBackStack<NavKey>? = null,
+    navController: NavBackStack<NavKey>? = null,
     trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -65,9 +65,9 @@ fun TabScreen(
                             trailing()
                         }
 
-                        if (hasSearchBotton && backStack != null) {
+                        if (hasSearchBotton && navController != null) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            SearchButton(backStack)
+                            SearchButton(navController)
                         }
                     }
                 }

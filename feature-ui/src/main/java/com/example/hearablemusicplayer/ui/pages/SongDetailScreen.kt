@@ -26,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicExtra
@@ -64,8 +65,13 @@ import java.util.Locale
 @Composable
 fun SongDetailScreen(
     navController: NavBackStack<NavKey>,
+    musicId: Long,
     viewModel: SongDetailViewModel = hiltViewModel()
 ) {
+    // 手动调用 loadSongDetail 方法，传入 musicId
+    LaunchedEffect(musicId) {
+        viewModel.loadSongDetail(musicId)
+    }
     val uiState by viewModel.uiState.collectAsState()
     val haptic = rememberHapticFeedback()
 

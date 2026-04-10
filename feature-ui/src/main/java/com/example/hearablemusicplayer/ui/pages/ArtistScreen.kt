@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -36,17 +37,22 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun ArtistScreen(
+    navController: NavBackStack<NavKey>,
+    artistName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavBackStack<NavKey>,
 ) {
+    // 手动调用 getSelectedArtistMusicList 方法，传入 artistName
+    LaunchedEffect(artistName) {
+        playlistViewModel.getSelectedArtistMusicList(artistName)
+    }
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
-    val artistName by playlistViewModel.selectedArtistName.collectAsState()
+    val displayArtistName by playlistViewModel.selectedArtistName.collectAsState()
     val artistMusicList by playlistViewModel.selectedArtistMusicList.collectAsState(initial = emptyList())
     val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
     ArtistScreenContent(
         isPlaying = isPlaying,
-        artistName = artistName,
+        artistName = displayArtistName,
         artistMusicList = artistMusicList,
         currentPlayingMusic = currentPlayingMusic,
         onBackClick = { navController.removeLastOrNull() },

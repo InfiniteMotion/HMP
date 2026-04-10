@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
 import com.example.hearablemusicplayer.ui.util.Routes
 
 /** 播放列表详情页 UI 状态 */
@@ -135,23 +134,36 @@ class PlaylistViewModel @Inject constructor(
     init {
         initializeDefaultPlaylists()
         loadUserCustomPlaylists()
+        loadRouteData()
+    }
 
-        // 尝试从路由参数加载播放列表、自定义播放列表或艺术家
+    private fun loadRouteData() {
         try {
-            val customArg = savedStateHandle.toRoute<Routes.CustomPlaylist>()
-            loadPlaylistById(customArg.playlistId)
-        } catch (e: Exception) {
-            try {
-                val playlistArg = savedStateHandle.toRoute<Routes.Playlist>()
-                getSelectedPlaylist(playlistArg.name)
-            } catch (e2: Exception) {
-                try {
-                    val artistArg = savedStateHandle.toRoute<Routes.Artist>()
-                    getSelectedArtistMusicList(artistArg.name)
-                } catch (e3: Exception) {
-                    // 不是从 Artist 路由进入
+            // 检查是否为 CustomPlaylist 路由
+            if (savedStateHandle.contains("playlistId")) {
+                val playlistId = savedStateHandle.get<Long>("playlistId")
+                if (playlistId != null) {
+                    loadPlaylistById(playlistId)
+                    return
                 }
             }
+            
+            // 检查是否为 Playlist 或 Artist 路由
+            if (savedStateHandle.contains("name")) {
+                val name = savedStateHandle.get<String>("name")
+                if (name != null) {
+                    // 尝试判断是 Playlist 还是 Artist
+                    val route = savedStateHandle.get<String>("nav3_route")
+                    if (route?.contains("Artist") == true) {
+                        getSelectedArtistMusicList(name)
+                    } else {
+                        getSelectedPlaylist(name)
+                    }
+                    return
+                }
+            }
+        } catch (e: Exception) {
+            // 忽略错误，不加载特定播放列表
         }
     }
 

@@ -56,7 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -84,10 +84,27 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun PlaylistScreen(
+    navController: NavBackStack<NavKey>,
+    playlistId: Long? = null,
+    playlistName: String? = null,
+    artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavBackStack<NavKey>,
 ) {
+    // 手动调用相应的加载方法，传入参数
+    LaunchedEffect(playlistId, playlistName, artistName) {
+        when {
+            playlistId != null -> {
+                playlistViewModel.loadPlaylistById(playlistId)
+            }
+            playlistName != null -> {
+                playlistViewModel.getSelectedPlaylist(playlistName)
+            }
+            artistName != null -> {
+                playlistViewModel.getSelectedArtistMusicList(artistName)
+            }
+        }
+    }
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
     val allMusicForAdd by playlistViewModel.allMusicForAddPicker.collectAsState()

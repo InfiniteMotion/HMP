@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -29,9 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
@@ -97,7 +99,7 @@ fun MainScreen(
     }
 
     val defaultScreen = Routes.Tabs
-    val backStack = rememberNavBackStack(defaultScreen)
+    val navController = rememberNavBackStack(defaultScreen)
 
     val tabCount = 4
     val savedTabIndex = rememberSaveable { mutableIntStateOf(0) }
@@ -161,13 +163,88 @@ fun MainScreen(
                     modifier = contentModifier
                 ) {
                     NavDisplay(
-                        backStack = backStack,
-                        onBack = { backStack.removeLastOrNull() },
+                        backStack = navController,
+                        onBack = { navController.removeLastOrNull() },
                         modifier = Modifier.fillMaxSize(),
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleIn(
+                                initialScale = 0.95f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleOut(
+                                targetScale = 1.05f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            )
+                        },
+                        popTransitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleIn(
+                                initialScale = 0.95f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleOut(
+                                targetScale = 1.05f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            )
+                        },
+                        predictivePopTransitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleIn(
+                                initialScale = 0.95f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            ) + scaleOut(
+                                targetScale = 1.05f,
+                                animationSpec = tween(
+                                    durationMillis = AnimationConfig.TRANSITION,
+                                    easing = AnimationConfig.EASE_IN_OUT
+                                )
+                            )
+                        },
                         entryProvider = entryProvider {
                             entry<Routes.Tabs> {
                                 TabsHost(
-                                    backStack = backStack,
+                                    navController = navController,
                                     pagerState = pagerState,
                                     // 不再传递 tabHeader，因为已经在外部显示
                                     tabHeader = {},
@@ -175,66 +252,121 @@ fun MainScreen(
                                     settingsViewModel = settingsViewModel
                                 )
                             }
-                            entry<Routes.SongDetail> {
+                            entry<Routes.SongDetail> { route ->
                                 SongDetailScreen(
-                                    navController = backStack,
+                                    navController = navController,
+                                    musicId = route.musicId,
                                 )
                             }
-                            entry<Routes.Player> {
-                                PlayerScreen(navController = backStack)
+                            entry<Routes.Player>(
+                                metadata = metadata {
+                                    put(NavDisplay.TransitionKey) {
+                                        slideInVertically(
+                                            initialOffsetY = { it },
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        ) togetherWith fadeOut(
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        )
+                                    }
+                                    put(NavDisplay.PopTransitionKey) {
+                                        fadeIn(
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        ) togetherWith slideOutVertically(
+                                            targetOffsetY = { it },
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        )
+                                    }
+                                    put(NavDisplay.PredictivePopTransitionKey) {
+                                        fadeIn(
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        ) togetherWith slideOutVertically(
+                                            targetOffsetY = { it },
+                                            animationSpec = tween(
+                                                durationMillis = AnimationConfig.TRANSITION,
+                                                easing = AnimationConfig.EASE_IN_OUT
+                                            )
+                                        )
+                                    }
+                                }
+                            ) {
+                                PlayerScreen(navController = navController)
                             }
                             entry<Routes.Setting> {
-                                SettingScreen(backStack)
+                                SettingScreen(navController)
                             }
                             entry<Routes.ProfileSettings> {
-                                ProfileSettingsScreen(navController = backStack)
+                                ProfileSettingsScreen(navController = navController)
                             }
                             entry<Routes.BackupSettings> {
-                                BackupSettingsScreen(navController = backStack)
+                                BackupSettingsScreen(navController = navController)
                             }
                             entry<Routes.LibrarySettings> {
-                                LibrarySettingsScreen(navController = backStack)
+                                LibrarySettingsScreen(navController = navController)
                             }
                             entry<Routes.Search> {
-                                SearchScreen(navController = backStack)
+                                SearchScreen(navController = navController)
                             }
-                            entry<Routes.Playlist> {
-                                PlaylistScreen(navController = backStack)
+                            entry<Routes.Playlist> { route ->
+                                PlaylistScreen(
+                                    navController = navController,
+                                    playlistName = route.name
+                                )
                             }
-                            entry<Routes.CustomPlaylist> {
-                                PlaylistScreen(navController = backStack)
+                            entry<Routes.CustomPlaylist> { route ->
+                                PlaylistScreen(
+                                    navController = navController,
+                                    playlistId = route.playlistId
+                                )
                             }
                             entry<Routes.UserPlaylistManage> {
-                                PlaylistManageScreen(navController = backStack)
+                                PlaylistManageScreen(navController = navController)
                             }
-                            entry<Routes.Artist> {
-                                ArtistScreen(navController = backStack)
+                            entry<Routes.Artist> { route ->
+                                ArtistScreen(
+                                    navController = navController,
+                                    artistName = route.name
+                                )
                             }
                             entry<Routes.AudioEffects> {
-                                AudioEffectsScreen(navController = backStack)
+                                AudioEffectsScreen(navController = navController)
                             }
                             entry<Routes.AI> {
                                 AIScreen(
                                     settingsViewModel,
                                     recommendationViewModel,
                                     libraryViewModel,
-                                    backStack
+                                    navController
                                 )
                             }
                             entry<Routes.Custom> {
-                                CustomScreen(settingsViewModel, backStack)
+                                CustomScreen(settingsViewModel, navController)
                             }
                             entry<Routes.Lyrics> {
                                 LyricsScreen()
                             }
                             entry<Routes.UserUsageData> {
-                                UserUsageDataScreen(navController = backStack)
+                                UserUsageDataScreen(navController = navController)
                             }
                         }
                     )
                     
                     // 在导航宿主之上显示固定的 TabPageIndicator
-                    val isInTabs = backStack.any { it is Routes.Tabs }
+                    val isInTabs = navController.size == 1 && navController.lastOrNull() is Routes.Tabs
                     AnimatedVisibility(
                         visible = isInTabs,
                         enter = fadeIn(
@@ -286,7 +418,7 @@ fun MainScreen(
                 // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
                 val isMiniPlayerVisible by playControlViewModel.isMiniPlayerVisible.collectAsState()
                 AnimatedVisibility(
-                    visible = backStack.none { it is Routes.Player } && isMiniPlayerVisible,
+                    visible = navController.none { it is Routes.Player } && isMiniPlayerVisible,
                     enter = slideInVertically(
                         initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                         animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
@@ -315,7 +447,7 @@ fun MainScreen(
                             },
                             onNext = { playControlViewModel.playNext() },
                             onPrev = { playControlViewModel.playPrevious() },
-                            onOpenPlayer = { backStack.add(Routes.Player) }
+                            onOpenPlayer = { navController.add(Routes.Player) }
                         )
                     }
                 }

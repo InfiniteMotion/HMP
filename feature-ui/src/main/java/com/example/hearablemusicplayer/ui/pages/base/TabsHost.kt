@@ -11,7 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.pages.GalleryScreen
@@ -30,7 +30,7 @@ fun rememberTabsPagerState(
 
 @Composable
 fun TabsHost(
-    backStack: NavBackStack<NavKey>,
+    navController: NavBackStack<NavKey>,
     pagerState: PagerState,
     tabHeader: @Composable () -> Unit,
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
@@ -71,14 +71,14 @@ fun TabsHost(
             when (page) {
                 0 -> HomeScreen(
                     recommendationViewModel = recommendationViewModel,
-                    backStack = backStack
+                    navController = navController
                 )
-                1 -> GalleryScreen(backStack = backStack)
-                2 -> ListScreen(backStack = backStack)
+                1 -> GalleryScreen(navController = navController)
+                2 -> ListScreen(navController = navController)
                 3 -> UserScreen(
                     settingsViewModel = settingsViewModel,
                     recommendationViewModel = recommendationViewModel,
-                    backStack = backStack
+                    navController = navController
                 )
             }
         }

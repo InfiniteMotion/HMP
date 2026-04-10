@@ -81,7 +81,7 @@ fun ListGroupName(
 fun ListBanner(
     listName: String = "",
     listCoverUri: Int,
-    backStack: NavBackStack<NavKey>
+    navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
     val imageModifier = Modifier
@@ -95,7 +95,7 @@ fun ListBanner(
             .width(110.dp)
             .clickable {
                 haptic.performClick()
-                backStack.add(Routes.Playlist(listName))
+                navController.add(Routes.Playlist(listName))
             }
     ) {
         AsyncImage(
