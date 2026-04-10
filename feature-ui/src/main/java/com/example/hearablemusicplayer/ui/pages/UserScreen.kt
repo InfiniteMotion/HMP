@@ -32,7 +32,7 @@ import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.NavManager
+import androidx.navigation3.NavBackStack
 import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
@@ -48,7 +48,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 fun UserScreen(
     settingsViewModel: SettingsViewModel,
     recommendationViewModel: RecommendationViewModel,
-    navController: NavManager
+    navController: NavBackStack
 ) {
 
     val userName by settingsViewModel.userName.collectAsState("")
@@ -72,7 +72,7 @@ fun UserScreenContent(
     userName: String?,
     avatarUri: String,
     listeningData: List<ListeningDuration>,
-    navController: NavManager
+    navController: NavBackStack
 ) {
     TabScreen{
         val sortedData = listeningData.sortedBy { it.date }.takeLast(35) // 取最近35天
@@ -103,7 +103,7 @@ fun UserScreenContent(
                     modifier = Modifier.clip(RoundedCornerShape(20.dp))
                         .clickable {
                             haptic.performClick()
-                            navController.navigate(Routes.ProfileSettings)
+                            navController.add(Routes.ProfileSettings)
                         }
                 ) {
                     Row(
@@ -145,7 +145,7 @@ fun UserScreenContent(
                         .clip(RoundedCornerShape(20.dp))
                         .clickable {
                             haptic.performClick()
-                            navController.navigate(Routes.UserUsageData)
+                            navController.add(Routes.UserUsageData)
                         }
                 ) {
                     Column(
@@ -187,7 +187,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Custom)
+                                navController.add(Routes.Custom)
                             }
                         )
                     }
@@ -198,7 +198,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.AudioEffects)
+                                navController.add(Routes.AudioEffects)
                             }
                         )
                     }
@@ -216,7 +216,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.AI)
+                                navController.add(Routes.AI)
                             }
                         )
                     }
@@ -227,7 +227,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Setting)
+                                navController.add(Routes.Setting)
                             }
                         )
                     }

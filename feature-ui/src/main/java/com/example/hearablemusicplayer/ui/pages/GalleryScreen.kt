@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.NavManager
+import androidx.navigation3.NavBackStack
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
@@ -50,7 +50,7 @@ import dev.chrisbanes.haze.rememberHazeState
 fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavManager
+    navController: NavBackStack
 ) {
     val context = LocalContext.current
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
@@ -73,22 +73,22 @@ fun GalleryScreen(
         currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
-        onNavigate = navController::navigate,
+        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
         onFavorite = playControlViewModel::updateMusicLikedStatus,
         onShare =  {  },
         onDetail = {
-            navController.navigate(Routes.SongDetail(it.music.id))
+            navController.add(Routes.SongDetail(it.music.id))
         },
         onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onFilterGenreChange = {
             libraryViewModel.updateOrderBy(it)
@@ -121,7 +121,7 @@ fun GalleryScreenContent(
     onOrderPlay: () -> Unit,
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
-    navController: NavManager
+    navController: NavBackStack
 ) {
     val context = LocalContext.current
     val haptic = rememberHapticFeedback()

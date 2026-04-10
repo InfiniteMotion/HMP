@@ -31,10 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.NavDestination.Companion.hasRoute
-import androidx.navigation3.compose.NavDisplay
-import androidx.navigation3.compose.rememberNavManager
-import androidx.navigation3.compose.rememberNavState
+import androidx.navigation3.NavBackStack
+import androidx.navigation3.NavDisplay
+import androidx.navigation3.compose.rememberNavBackStack
+import androidx.navigation3.compose.entryProvider
+import androidx.navigation3.compose.entry
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
 import com.example.hearablemusicplayer.ui.pages.AIScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
@@ -98,11 +99,7 @@ fun MainScreen(
     }
 
     val defaultScreen = Routes.Tabs
-    val navState = rememberNavState {
-        initialDestination = defaultScreen
-    }
-    val navManager = rememberNavManager(navState)
-    val navBackStackEntry = navState.backStack.lastOrNull()
+    val backStack = rememberNavBackStack(defaultScreen)
 
     val tabCount = 4
     val savedTabIndex = rememberSaveable { mutableIntStateOf(0) }
@@ -159,27 +156,19 @@ fun MainScreen(
                 containerColor = Transparent,
                 bottomBar = {}
             ) {
-                val contentModifier = if (navBackStackEntry?.destination?.hasRoute<Routes.Player>() == true) {
-                    Modifier.padding(it)
-                } else if (navBackStackEntry?.destination?.hasRoute<Routes.Lyrics>() == true) {
-                    Modifier.padding(it)
-                } else {
-                    Modifier
-                        .padding(it)
-                        .statusBarsPadding()
-                }
+                val contentModifier = Modifier
+                    .padding(it)
+                    .statusBarsPadding()
                 Box(
                     modifier = contentModifier
                 ) {
                     NavDisplay(
-                        navState = navState,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // 渲染当前目的地
-                        when (val destination = it.lastOrNull()?.destination) {
-                            is Routes.Tabs -> {
+                        backStack = backStack,
+                        modifier = Modifier.fillMaxSize(),
+                        entryProvider = entryProvider {
+                            entry<Routes.Tabs> {
                                 TabsHost(
-                                    navController = navManager,
+                                    backStack = backStack,
                                     pagerState = pagerState,
                                     // 不再传递 tabHeader，因为已经在外部显示
                                     tabHeader = {},
@@ -187,66 +176,66 @@ fun MainScreen(
                                     settingsViewModel = settingsViewModel
                                 )
                             }
-                            is Routes.SongDetail -> {
+                            entry<Routes.SongDetail> {
                                 SongDetailScreen(
-                                    navController = navManager
+                                    backStack = backStack
                                 )
                             }
-                            is Routes.Player -> {
-                                PlayerScreen(navController = navManager)
+                            entry<Routes.Player> {
+                                PlayerScreen(backStack = backStack)
                             }
-                            is Routes.Setting -> {
-                                SettingScreen(navManager)
+                            entry<Routes.Setting> {
+                                SettingScreen(backStack)
                             }
-                            is Routes.ProfileSettings -> {
-                                ProfileSettingsScreen(navController = navManager)
+                            entry<Routes.ProfileSettings> {
+                                ProfileSettingsScreen(backStack = backStack)
                             }
-                            is Routes.BackupSettings -> {
-                                BackupSettingsScreen(navController = navManager)
+                            entry<Routes.BackupSettings> {
+                                BackupSettingsScreen(backStack = backStack)
                             }
-                            is Routes.LibrarySettings -> {
-                                LibrarySettingsScreen(navController = navManager)
+                            entry<Routes.LibrarySettings> {
+                                LibrarySettingsScreen(backStack = backStack)
                             }
-                            is Routes.Search -> {
-                                SearchScreen(navController = navManager)
+                            entry<Routes.Search> {
+                                SearchScreen(backStack = backStack)
                             }
-                            is Routes.Playlist -> {
-                                PlaylistScreen(navController = navManager)
+                            entry<Routes.Playlist> {
+                                PlaylistScreen(backStack = backStack)
                             }
-                            is Routes.CustomPlaylist -> {
-                                PlaylistScreen(navController = navManager)
+                            entry<Routes.CustomPlaylist> {
+                                PlaylistScreen(backStack = backStack)
                             }
-                            is Routes.UserPlaylistManage -> {
-                                PlaylistManageScreen(navController = navManager)
+                            entry<Routes.UserPlaylistManage> {
+                                PlaylistManageScreen(backStack = backStack)
                             }
-                            is Routes.Artist -> {
-                                ArtistScreen(navController = navManager)
+                            entry<Routes.Artist> {
+                                ArtistScreen(backStack = backStack)
                             }
-                            is Routes.AudioEffects -> {
-                                AudioEffectsScreen(navController = navManager)
+                            entry<Routes.AudioEffects> {
+                                AudioEffectsScreen(backStack = backStack)
                             }
-                            is Routes.AI -> {
+                            entry<Routes.AI> {
                                 AIScreen(
                                     settingsViewModel,
                                     recommendationViewModel,
                                     libraryViewModel,
-                                    navManager
+                                    backStack
                                 )
                             }
-                            is Routes.Custom -> {
-                                CustomScreen(settingsViewModel, navManager)
+                            entry<Routes.Custom> {
+                                CustomScreen(settingsViewModel, backStack)
                             }
-                            is Routes.Lyrics -> {
+                            entry<Routes.Lyrics> {
                                 LyricsScreen()
                             }
-                            is Routes.UserUsageData -> {
-                                UserUsageDataScreen(navController = navManager)
+                            entry<Routes.UserUsageData> {
+                                UserUsageDataScreen(backStack = backStack)
                             }
                         }
-                    }
+                    )
                     
                     // 在导航宿主之上显示固定的 TabPageIndicator
-                    val isInTabs = navBackStackEntry?.destination?.hasRoute<Routes.Tabs>() == true
+                    val isInTabs = backStack.any { it.key is Routes.Tabs }
                     AnimatedVisibility(
                         visible = isInTabs,
                         enter = fadeIn(
@@ -298,7 +287,7 @@ fun MainScreen(
                 // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
                 val isMiniPlayerVisible by playControlViewModel.isMiniPlayerVisible.collectAsState()
                 AnimatedVisibility(
-                    visible = navBackStackEntry?.destination?.hasRoute<Routes.Player>() == false && isMiniPlayerVisible,
+                    visible = backStack.none { it.key is Routes.Player } && isMiniPlayerVisible,
                     enter = slideInVertically(
                         initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                         animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
@@ -327,7 +316,7 @@ fun MainScreen(
                             },
                             onNext = { playControlViewModel.playNext() },
                             onPrev = { playControlViewModel.playPrevious() },
-                            onOpenPlayer = { navManager.navigate(Routes.Player) }
+                            onOpenPlayer = { backStack.add(Routes.Player) }
                         )
                     }
                 }
