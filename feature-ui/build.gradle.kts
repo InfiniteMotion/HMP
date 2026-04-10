@@ -11,6 +11,7 @@ plugins {
 android {
     namespace = "com.example.hearablemusicplayer.ui"
     compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         minSdk = 33

@@ -13,6 +13,7 @@ android {
     compileSdk {
         version = release(36)
     }
+    buildToolsVersion = "36.0.0"
 
     // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
     signingConfigs {
