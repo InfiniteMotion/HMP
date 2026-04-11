@@ -2,7 +2,6 @@ package com.example.hearablemusicplayer.ui.pages.settings
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +42,9 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import java.io.File
 import java.io.FileOutputStream
@@ -54,8 +55,10 @@ import java.util.Locale
 @Composable
 fun BackupSettingsScreen(
     navController: NavBackStack<NavKey>,
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel()
 ) {
+    val dialogManager = dialogManagerViewModel.dialogManager
     val localBackups by settingsViewModel.localBackups.collectAsState()
 
     SubScreen(
@@ -71,12 +74,14 @@ fun BackupSettingsScreen(
         ) {
             // 1. 生成备份
             ExportBackupSection(
-                onExportBackup = settingsViewModel::exportBackup
+                onExportBackup = settingsViewModel::exportBackup,
+                dialogManager = dialogManager
             )
             
             // 2. 导入备份
             ImportBackupSection(
-                onRestoreBackup = settingsViewModel::restoreBackup
+                onRestoreBackup = settingsViewModel::restoreBackup,
+                dialogManager = dialogManager
             )
             
             // 3. 备份管理
@@ -84,7 +89,8 @@ fun BackupSettingsScreen(
                 localBackups = localBackups,
                 onRestoreBackup = settingsViewModel::restoreBackup,
                 onDeleteBackup = settingsViewModel::deleteLocalBackup,
-                onRefreshBackups = settingsViewModel::loadLocalBackups
+                onRefreshBackups = settingsViewModel::loadLocalBackups,
+                dialogManager = dialogManager
             )
         }
     }
@@ -93,7 +99,8 @@ fun BackupSettingsScreen(
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 private fun ExportBackupSection(
-    onExportBackup: ((File) -> Unit, (String) -> Unit) -> Unit
+    onExportBackup: ((File) -> Unit, (String) -> Unit) -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     
@@ -127,7 +134,7 @@ private fun ExportBackupSection(
                         }
                         context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_backup)))
                     }, { error ->
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        dialogManager.showMessage(error)
                     })
                 }
             ) {
@@ -141,7 +148,8 @@ private fun ExportBackupSection(
 
 @Composable
 private fun ImportBackupSection(
-    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit
+    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     var showRestoreDialog by remember { mutableStateOf(false) }
@@ -161,7 +169,7 @@ private fun ImportBackupSection(
                 selectedBackupFile = tempFile
                 showRestoreDialog = true
             } catch (e: Exception) {
-                Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_SHORT).show()
+                dialogManager.showMessage("Error reading file: ${e.message}")
             }
         }
     }
@@ -197,9 +205,9 @@ private fun ImportBackupSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFile!!, {
-                    Toast.makeText(context, "Restore Successful", Toast.LENGTH_SHORT).show()
+                    dialogManager.showMessage("Restore Successful")
                 }, { error ->
-                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    dialogManager.showMessage(error)
                 })
                 showRestoreDialog = false
             },
@@ -213,7 +221,8 @@ private fun ManageBackupsSection(
     localBackups: List<File>,
     onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
     onDeleteBackup: (File) -> Unit,
-    onRefreshBackups: () -> Unit
+    onRefreshBackups: () -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     var showRestoreDialog by remember { mutableStateOf(false) }
@@ -271,9 +280,9 @@ private fun ManageBackupsSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFile!!, {
-                    Toast.makeText(context, "Restore Successful", Toast.LENGTH_SHORT).show()
+                    dialogManager.showMessage("Restore Successful")
                 }, { error ->
-                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    dialogManager.showMessage(error)
                 })
                 showRestoreDialog = false
             },

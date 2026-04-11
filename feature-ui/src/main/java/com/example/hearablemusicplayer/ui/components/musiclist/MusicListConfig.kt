@@ -443,7 +443,7 @@ private fun computeDateSmartAnchors(
 
 /**
  * 按添加时间排序所用的顺序，将列表位置映射到一条时间线（从过去到当前），再按虚拟年月做索引。
- * 列表已按 id 排好：ASC = 早→新，DESC = 新→早。将 [0..n-1] 线性映射到 [startTime..endTime]，
+ * 列表已按 id 排好：ASC = 早→新，DESC = 新→早。将 [0..n-1] 线性映射到 startTime..endTime，
  * 得到每个位置对应的 (年, 月)，去重后生成 11、12、2026、01、02、03 风格锚点。
  */
 private fun computeAddOrderYearMonthAnchors(

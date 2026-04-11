@@ -39,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import dev.chrisbanes.haze.HazeState
@@ -160,12 +161,28 @@ fun IntroScreen(
                 transitionSpec = {
                     slideInHorizontally(
                         initialOffsetX = { it },
-                        animationSpec = tween(300)
-                    ) + fadeIn(animationSpec = tween(300)) togetherWith
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = AnimationConfig.EASE_OUT
+                        )
+                    ) + fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = AnimationConfig.EASE_OUT
+                        )
+                    ) togetherWith
                     slideOutHorizontally(
                         targetOffsetX = { -it },
-                        animationSpec = tween(300)
-                    ) + fadeOut(animationSpec = tween(300))
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = AnimationConfig.EASE_IN
+                        )
+                    ) + fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = AnimationConfig.EASE_IN
+                        )
+                    )
                 },
                 label = "step_transition"
             ) { step ->

@@ -114,7 +114,9 @@
     <string name="dismiss">Dismiss</string>
     <string name="local_backup">Local Backups</string>
     <string name="no_local_backups">No local backups found</string>
-
+    <string name="no_playlists_available">No playlists available</string>
+    <string name="no_songs_available">No songs available</string>
+    <string name="song_count_format">%1$d songs</string>
 
     <!-- Home Screen -->
     <string name="go_to_ai_config">Go to AI Config</string>
@@ -246,6 +248,7 @@
     <string name="duration_format">%1$d:%2$02d</string>
     <string name="play">Play</string>
     <string name="add_to_playlist">Add to Playlist</string>
+    <string name="add_to_favorites">Add to Favorites</string>
     <string name="add_songs_to_playlist">Add songs</string>
     <string name="song_added">Added</string>
     <string name="artist">Artist</string>

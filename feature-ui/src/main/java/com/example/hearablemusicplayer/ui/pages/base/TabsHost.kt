@@ -1,5 +1,8 @@
 package com.example.hearablemusicplayer.ui.pages.base
 
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -11,6 +14,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.unit.Velocity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -18,6 +25,7 @@ import com.example.hearablemusicplayer.ui.pages.GalleryScreen
 import com.example.hearablemusicplayer.ui.pages.HomeScreen
 import com.example.hearablemusicplayer.ui.pages.ListScreen
 import com.example.hearablemusicplayer.ui.pages.UserScreen
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
@@ -34,7 +42,7 @@ fun TabsHost(
     pagerState: PagerState,
     tabHeader: @Composable () -> Unit,
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     CompositionLocalProvider(
         LocalTabHeaderContent provides tabHeader
@@ -64,9 +72,63 @@ fun TabsHost(
             }
         }
         
+        val defaultNestedScroll = PagerDefaults.pageNestedScrollConnection(
+            state = pagerState,
+            orientation = Orientation.Horizontal,
+        )
+        val filteredNestedScroll = remember(defaultNestedScroll) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    return defaultNestedScroll.onPreScroll(
+                        available = Offset(available.x, 0f),
+                        source = source,
+                    )
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    return defaultNestedScroll.onPostScroll(
+                        consumed = consumed,
+                        available = Offset(available.x, 0f),
+                        source = source,
+                    )
+                }
+
+                override suspend fun onPreFling(available: Velocity): Velocity {
+                    return defaultNestedScroll.onPreFling(
+                        available = Velocity(available.x, 0f),
+                    )
+                }
+
+                override suspend fun onPostFling(
+                    consumed: Velocity,
+                    available: Velocity
+                ): Velocity {
+                    return defaultNestedScroll.onPostFling(
+                        consumed = consumed,
+                        available = Velocity(available.x, 0f),
+                    )
+                }
+            }
+        }
+
         HorizontalPager(
             state = pagerState,
-            beyondViewportPageCount = 3
+            beyondViewportPageCount = 3,
+            pageNestedScrollConnection = filteredNestedScroll,
+            flingBehavior = PagerDefaults.flingBehavior(
+                state = pagerState,
+                snapAnimationSpec = tween(
+                    durationMillis = AnimationConfig.TRANSITION,
+                    easing = AnimationConfig.EASE_OUT
+                )
+            )
         ) { page ->
             when (page) {
                 0 -> HomeScreen(

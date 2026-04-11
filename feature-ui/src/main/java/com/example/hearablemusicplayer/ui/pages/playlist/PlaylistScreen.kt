@@ -1,6 +1,6 @@
+
 package com.example.hearablemusicplayer.ui.pages.playlist
 
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -28,13 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,6 +61,8 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.controller.DialogManager
+import com.example.hearablemusicplayer.ui.dialog.InputDialog
 import com.example.hearablemusicplayer.ui.dialogs.ScrimDialog
 import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
@@ -78,6 +78,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMus
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
@@ -90,7 +91,9 @@ fun PlaylistScreen(
     artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
 ) {
+    val dialogManager = dialogManagerViewModel.dialogManager
     // 手动调用相应的加载方法，传入参数
     LaunchedEffect(playlistId, playlistName, artistName) {
         when {
@@ -122,7 +125,7 @@ fun PlaylistScreen(
             currentInPlaylistIds = uiState.playlist.map { it.music.id }.toSet(),
             onAdd = { musicId, path ->
                 playlistViewModel.addItemToPlaylist(uiState.selectedPlaylistId!!, musicId, path)
-                Toast.makeText(context, addedMessage, Toast.LENGTH_SHORT).show()
+                dialogManager.showMessage(addedMessage)
             },
             onDismiss = { showAddSongDialog = false }
         )
@@ -204,71 +207,48 @@ fun PlaylistScreenContent(
     }
     var isListEditMode by remember { mutableStateOf(false) }
 
-    if (showRenameDialog && selectedPlaylistId != null) {
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            title = { Text(stringResource(R.string.rename_playlist)) },
-            text = {
-                OutlinedTextField(
-                    value = renameValue,
-                    onValueChange = { renameValue = it },
-                    label = { Text(stringResource(R.string.playlist_name_hint)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val name = renameValue.trim()
-                        if (name.isNotEmpty()) {
-                            onRenamePlaylist(selectedPlaylistId, name)
-                            showRenameDialog = false
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+    // 重命名歌单弹窗
+    InputDialog(
+        visible = showRenameDialog && selectedPlaylistId != null,
+        title = stringResource(R.string.rename_playlist),
+        hint = stringResource(R.string.playlist_name_hint),
+        initialValue = renameValue,
+        onConfirm = {
+            val name = it.trim()
+            if (name.isNotEmpty()) {
+                selectedPlaylistId?.let { id ->
+                    onRenamePlaylist(id, name)
                 }
             }
-        )
-    }
+            showRenameDialog = false
+        },
+        onDismiss = {
+            showRenameDialog = false
+        }
+    )
 
-    if (showDescriptionDialog && selectedPlaylistId != null) {
-        AlertDialog(
-            onDismissRequest = { showDescriptionDialog = false },
-            title = { Text(stringResource(R.string.edit_playlist_description)) },
-            text = {
-                OutlinedTextField(
-                    value = descriptionValue,
-                    onValueChange = { descriptionValue = it },
-                    label = { Text(stringResource(R.string.playlist_description_hint)) },
-                    minLines = 2,
-                    maxLines = 4
+    // 编辑歌单描述弹窗
+    InputDialog(
+        visible = showDescriptionDialog && selectedPlaylistId != null,
+        title = stringResource(R.string.edit_playlist_description),
+        hint = stringResource(R.string.playlist_description_hint),
+        initialValue = descriptionValue,
+        singleLine = false,
+        minLines = 2,
+        maxLines = 4,
+        onConfirm = { input ->
+            selectedPlaylistId?.let {
+                onUpdateDescription(
+                    it,
+                    input.trim().ifEmpty { null }
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onUpdateDescription(
-                            selectedPlaylistId,
-                            descriptionValue.trim().ifEmpty { null })
-                        showDescriptionDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDescriptionDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
-        )
-    }
+            showDescriptionDialog = false
+        },
+        onDismiss = {
+            showDescriptionDialog = false
+        }
+    )
 
     SubScreen(
         onBackClick = onBackClick,
@@ -626,3 +606,4 @@ private fun AddSongToPlaylistDialog(
         }
     }
 }
+

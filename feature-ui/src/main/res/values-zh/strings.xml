@@ -109,6 +109,9 @@
     <string name="dismiss">隐藏</string>
     <string name="local_backup">本地备份管理</string>
     <string name="no_local_backups">暂无本地备份文件</string>
+    <string name="no_playlists_available">暂无可用的播放列表</string>
+    <string name="no_songs_available">暂无可用的歌曲</string>
+    <string name="song_count_format">%1$d 首</string>
     <string name="profile_settings">个人资料</string>
     <string name="backup_settings">备份与恢复</string>
     <string name="library_settings">音乐库</string>

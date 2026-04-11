@@ -2,7 +2,6 @@
 
 package com.example.hearablemusicplayer.ui.pages.player
 
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.Animatable
@@ -34,7 +33,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
@@ -54,15 +55,8 @@ fun PlayerScreen(
     val dismissThreshold = with(density) { 220.dp.toPx() }
     val offsetY = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val haptic = rememberHapticFeedback()
     val hazeState = rememberHazeState()
-
-    LaunchedEffect(Unit) {
-        viewModel.toastEvent.collect { event ->
-            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-        }
-    }
 
     // 预加载当前播放音乐信息
     LaunchedEffect(Unit) {
@@ -153,7 +147,10 @@ fun PlayerScreen(
                         haptic.performGestureEnd()
                         offsetY.animateTo(
                             targetValue = with(density) { 1000.dp.toPx() },
-                            animationSpec = tween(durationMillis = 300)
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = AnimationConfig.EASE_IN
+                            )
                         )
                     } else {
                         // 未达到阈值，执行回弹

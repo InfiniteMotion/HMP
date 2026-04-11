@@ -367,14 +367,30 @@ class MusicController @Inject constructor(
                 if (currentPos > 0) {
                     _currentPosition.value = currentPos
                 }
+                // 显示播放状态提示
+                currentPlayingMusic.value?.let { musicInfo ->
+                    showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
+                }
             }
         } else {
             // 如果是初始状态（未加载），则尝试恢复上次进度播放
             val lastPos = _currentPosition.value
             if (lastPos > 0) {
-                 scope.launch { playCurrentTrack("AutoPlay", startPosition = lastPos) }
+                 scope.launch { 
+                     playCurrentTrack("AutoPlay", startPosition = lastPos)
+                     // 显示播放状态提示
+                     currentPlayingMusic.value?.let { musicInfo ->
+                         showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
+                     }
+                 }
             } else {
-                 scope.launch { playCurrentTrack("AutoPlay") }
+                 scope.launch { 
+                     playCurrentTrack("AutoPlay")
+                     // 显示播放状态提示
+                     currentPlayingMusic.value?.let { musicInfo ->
+                         showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
+                     }
+                 }
             }
         }
         startProgressTracking()
@@ -650,6 +666,10 @@ class MusicController @Inject constructor(
         scope.launch {
             likeStatus.value = currentPlaybackUseCase.getLikedStatus(musicId)
         }
+    }
+    
+    suspend fun getCurrentLikedStatus(musicId: Long): Boolean {
+        return currentPlaybackUseCase.getLikedStatus(musicId)
     }
 
     fun playHeartMode() {

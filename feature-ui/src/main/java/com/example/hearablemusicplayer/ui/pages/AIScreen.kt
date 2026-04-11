@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.ui.pages
 
 import android.annotation.SuppressLint
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +62,7 @@ import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
 import com.example.hearablemusicplayer.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
@@ -73,6 +73,7 @@ fun AIScreen(
     settingsViewModel: SettingsViewModel,
     recommendationViewModel: RecommendationViewModel,
     libraryViewModel: LibraryViewModel,
+    dialogManager: DialogManager,
     navController: NavBackStack<NavKey>
 ) {
     // 加载当前服务商配置
@@ -118,6 +119,7 @@ fun AIScreen(
         onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
         onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
         onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount,
+        dialogManager = dialogManager,
         onBackClick = { navController.removeLastOrNull() }
     )
 }
@@ -147,6 +149,7 @@ fun AIScreenContent(
     onSaveDailyRefreshMode: (String) -> Unit,
     onSaveDailyRefreshHours: (Int) -> Unit,
     onSaveDailyRefreshStartupCount: (Int) -> Unit,
+    dialogManager: DialogManager,
     onBackClick: () -> Unit
 ) {
     SubScreen(
@@ -168,7 +171,8 @@ fun AIScreenContent(
                 onProviderChange = onProviderChange,
                 onTestConnection = onTestConnection,
                 onSaveConfig = onSaveConfig,
-                onClearTestResult = onClearTestResult
+                onClearTestResult = onClearTestResult,
+                dialogManager = dialogManager
             )
 
             LoadMusicExtraInfo(
@@ -181,7 +185,8 @@ fun AIScreenContent(
                 startAutoProcessExtraInfo = startAutoProcessExtraInfo,
                 pauseProcess = pauseProcess,
                 resumeProcess = resumeProcess,
-                cancelProcess = cancelProcess
+                cancelProcess = cancelProcess,
+                dialogManager = dialogManager
             )
 
             // 每日推荐刷新策略
@@ -191,7 +196,8 @@ fun AIScreenContent(
                 startupCount = startupCount,
                 onSaveRefreshMode = onSaveDailyRefreshMode,
                 onSaveRefreshHours = onSaveDailyRefreshHours,
-                onSaveStartupCount = onSaveDailyRefreshStartupCount
+                onSaveStartupCount = onSaveDailyRefreshStartupCount,
+                dialogManager = dialogManager
             )
 
             Spacer(modifier = Modifier.height(64.dp))
@@ -211,7 +217,8 @@ fun DailyRefreshSettings(
     startupCount: Int,
     onSaveRefreshMode: (String) -> Unit,
     onSaveRefreshHours: (Int) -> Unit,
-    onSaveStartupCount: (Int) -> Unit
+    onSaveStartupCount: (Int) -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     
@@ -272,7 +279,7 @@ fun DailyRefreshSettings(
                             onClick = {
                                 onSaveRefreshMode(mode)
                                 expanded = false
-                                Toast.makeText(context, context.getString(R.string.switched_to, label), Toast.LENGTH_SHORT).show()
+                                dialogManager.showMessage(context.getString(R.string.switched_to, label))
                             }
                         )
                     }
@@ -360,7 +367,8 @@ fun AiProviderConfig(
     onProviderChange: (AiProviderType) -> Unit,
     onTestConnection: (AiProviderType, String, String) -> Unit,
     onSaveConfig: (AiProviderType, String, String) -> Unit,
-    onClearTestResult: () -> Unit
+    onClearTestResult: () -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     var selectedProvider by remember { mutableStateOf(currentProvider) }
@@ -391,7 +399,7 @@ fun AiProviderConfig(
                 is SettingsViewModel.ApiTestResult.Success -> result.message
                 is SettingsViewModel.ApiTestResult.Error -> result.message
             }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            dialogManager.showMessage(message)
             onClearTestResult()
         }
     }
@@ -557,7 +565,7 @@ fun AiProviderConfig(
                         if (apiKeyValue.isNotBlank()) {
                             onTestConnection(selectedProvider, apiKeyValue, modelValue)
                         } else {
-                            Toast.makeText(context, context.getString(R.string.please_enter_api_key), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.please_enter_api_key))
                         }
                     },
                     enabled = apiKeyValue.isNotBlank() && !isTestingApi
@@ -581,9 +589,9 @@ fun AiProviderConfig(
                     onClick = {
                         if (apiKeyValue.isNotBlank()) {
                             onSaveConfig(selectedProvider, apiKeyValue, modelValue)
-                            Toast.makeText(context, context.getString(R.string.config_saved), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.config_saved))
                         } else {
-                            Toast.makeText(context, context.getString(R.string.please_enter_api_key), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.please_enter_api_key))
                         }
                     },
                     enabled = apiKeyValue.isNotBlank()
@@ -617,7 +625,8 @@ fun LoadMusicExtraInfo(
     startAutoProcessExtraInfo: () -> Unit,
     pauseProcess: () -> Unit,
     resumeProcess: () -> Unit,
-    cancelProcess: () -> Unit
+    cancelProcess: () -> Unit,
+    dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     
@@ -761,11 +770,11 @@ fun LoadMusicExtraInfo(
                     modifier = Modifier.width(300.dp),
                     onClick = {
                         if (!isConfigured) {
-                            Toast.makeText(context, context.getString(R.string.please_config_provider), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.please_config_provider))
                             return@Button
                         }
                         if (pendingCount <= 0) {
-                            Toast.makeText(context, context.getString(R.string.no_pending_music), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.no_pending_music))
                             return@Button
                         }
                         startAutoProcessExtraInfo()

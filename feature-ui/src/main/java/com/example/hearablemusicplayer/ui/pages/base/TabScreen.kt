@@ -40,7 +40,6 @@ fun TabScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp)
         ) {
             Column(
                 modifier = Modifier

@@ -2,12 +2,14 @@ package com.example.hearablemusicplayer.ui.dialogs
 
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -18,9 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,10 +34,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -43,24 +52,22 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 @kotlin.OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun MusicDetailDialog(
-    musicInfo: MusicInfo?,
+    dialogViewModel: DialogViewModel,
     onDismiss: () -> Unit,
-    onPlay: () -> Unit,
-    onAddToPlaylist: () -> Unit,
-    onFavorite: () -> Unit,
-    onShare: () -> Unit,
-    onDetail: () -> Unit,
-    onRemove: () -> Unit,
+    navController: NavBackStack<NavKey>,
     hazeState: HazeState? = null
 ) {
-    if (musicInfo == null) return
+    val musicDetailState by dialogViewModel.musicDetailState.collectAsState()
+    val musicInfo = musicDetailState?.musicInfo
+    
+    if (musicInfo == null || !musicDetailState!!.isVisible) return
 
     ScrimDialog(onDismissRequest = onDismiss) {
         val dialogShape = RoundedCornerShape(28.dp)
         Card(
-        modifier = Modifier
-            .padding(24.dp)
-            .clip(dialogShape)
+            modifier = Modifier
+                .padding(24.dp)
+                .clip(dialogShape)
                 .then(
                     if (hazeState != null) {
                         Modifier.hazeEffect(
@@ -82,12 +89,33 @@ fun MusicDetailDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = musicInfo.music.title,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = musicInfo.music.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
+                    )
+                    // 收藏状态图标
+                    IconButton(
+                        onClick = { dialogViewModel.toggleFavorite() },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                if (musicInfo.userInfo?.liked == true) R.drawable.heart_fill else R.drawable.heart
+                            ),
+                            contentDescription = stringResource(
+                                if (musicInfo.userInfo?.liked == true) R.string.favorite else R.string.add_to_favorites
+                            ),
+                            tint = if (musicInfo.userInfo?.liked == true) Color.Red else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 
                 Row(
                     modifier = Modifier.fillMaxWidth()
@@ -99,7 +127,12 @@ fun MusicDetailDialog(
                         modifier = Modifier
                             .size(120.dp)
                             .clip(RoundedCornerShape(20.dp))
-                            .clickable { onPlay() }
+                            .clickable { 
+                                dialogViewModel.playMusic { 
+                                    dialogViewModel.dismissMusicDetailDialog()
+                                    onDismiss()
+                                }
+                            }
                     ) {
                         AlbumCover(
                             uri = musicInfo.music.albumArtUri,
@@ -147,11 +180,15 @@ fun MusicDetailDialog(
                     horizontalAlignment = Alignment.Start,
                 ) {
                     val menuOptions = listOf(
-                        Triple(R.drawable.plus_square, R.string.add_to_playlist, onAddToPlaylist),
-                        Triple(R.drawable.heart, R.string.favorite, onFavorite),
-                        Triple(R.drawable.share, R.string.share, onShare),
-                        Triple(R.drawable.music, R.string.title_song_detail, onDetail),
-                        Triple(R.drawable.trash, R.string.remove, onRemove)
+                        Triple(R.drawable.plus_square, R.string.add_to_playlist, {
+                            dialogViewModel.addToPlaylist { 
+                                dialogViewModel.dismissMusicDetailDialog()
+                                onDismiss()
+                            }
+                        }),
+                        Triple(R.drawable.share, R.string.share, { dialogViewModel.shareMusic() }),
+                        Triple(R.drawable.music, R.string.title_song_detail, { dialogViewModel.viewDetail(navController) }),
+                        Triple(R.drawable.trash, R.string.remove, { dialogViewModel.removeMusic() })
                     )
 
                     menuOptions.forEach { (icon, label, action) ->
