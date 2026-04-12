@@ -159,13 +159,13 @@ fun ListScreenContent(
     }
 
     TabScreen(
-                title = stringResource(R.string.title_playlist),
-                hasSearchBotton = false,
-                navController = navController,
-                trailing = {
-                    NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
-                }
-            ) {
+        title = stringResource(R.string.title_playlist),
+        hasSearchBotton = false,
+        navController = navController,
+        trailing = {
+            NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
+        }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -353,7 +353,7 @@ fun ListScreenContent(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }

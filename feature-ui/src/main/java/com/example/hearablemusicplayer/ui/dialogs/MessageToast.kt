@@ -7,16 +7,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,44 +27,58 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.util.MessageDuration
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun MessageToast(
     message: String,
     duration: MessageDuration,
+    id: Long,
+    hazeState: HazeState?,
     onDismiss: () -> Unit
 ) {
-    var visible by remember { mutableStateOf(false) }
+    // 每次消息变化时，重新创建可见性状态
+    var visible by remember(id) { mutableStateOf(false) }
+    var isExiting by remember(id) { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    // 每次消息变化时，重新启动 LaunchedEffect
+    LaunchedEffect(id) {
+        // 延迟一点时间再显示，确保动画能够正确触发
+        delay(50)
         visible = true
+        isExiting = false
+        
         val delayMs = when (duration) {
             MessageDuration.Short -> 2000L
             MessageDuration.Long -> 4000L
         }
+        
         delay(delayMs)
+        isExiting = true
         visible = false
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            onDismiss()
-        }
+        // 等待动画完成后再调用 onDismiss
+        delay(300)
+        onDismiss()
     }
 
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-            initialOffsetY = { -it },
-            animationSpec = tween(300)
+            initialOffsetY = { -100 }, // 固定的偏移量，使动画更明显
+            animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
         ),
         exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-            targetOffsetY = { -it },
-            animationSpec = tween(300)
+            targetOffsetY = { if (isExiting) -100 else 100 }, // 正常退出向上，被覆盖时向下
+            animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
         )
     ) {
         Box(
@@ -73,20 +89,41 @@ fun MessageToast(
         ) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .width(150.dp) // 宽度缩减一半
+                    .clip(RoundedCornerShape(30.dp)) // 扩大圆角成胶囊形状
+                    .then(
+                        if (hazeState != null) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = HazeMaterials.thin()
+                            )
+                        } else Modifier
+                    )
+                    .background(if (hazeState != null) Transparent else MaterialTheme.colorScheme.surface)
+                    .border(
+                        BorderStroke(
+                            width = 0.5.dp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
+                        ),
+                        shape = RoundedCornerShape(30.dp)
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    message.split("\n").forEach { line ->
-                        Text(
-                            text = line,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        message.split("\n").forEach { line ->
+                            Text(
+                                text = line,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }

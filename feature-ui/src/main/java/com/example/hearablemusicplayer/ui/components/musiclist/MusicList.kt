@@ -197,7 +197,7 @@ fun FixedMusicList(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Box(modifier = Modifier.fillMaxWidth()) {
-            MusicListContentColumn(
+            FixedMusicListContent(
                 musicInfoList = musicInfoList,
                 config = config,
                 state = state,

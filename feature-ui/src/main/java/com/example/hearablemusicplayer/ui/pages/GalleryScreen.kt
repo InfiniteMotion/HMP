@@ -3,16 +3,21 @@ package com.example.hearablemusicplayer.ui.pages
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -159,7 +164,10 @@ fun GalleryScreenContent(
                 showMenuButton = true,
             ),
         ),
-        list = ListConfig(enableLongPressToEnterEdit = true),
+        list = ListConfig(
+            enableLongPressToEnterEdit = true,
+            bottomSpacerHeight = 88.dp
+        ),
         edit = EditConfig(enabled = true),
         indexJump = indexJumpConfigForOrderBy(selectedGenre, selectedOrder),
         currentPlaying = CurrentPlayingConfig(
@@ -175,13 +183,15 @@ fun GalleryScreenContent(
                 hasSearchBotton = true,
                 navController = navController
             ) {
-                androidx.compose.runtime.key(deleteCounter) {
-                    MusicList(
-                    musicInfoList = musicInfoList,
-                    config = config,
-                    modifier = Modifier.fillMaxSize(),
-                    isPlaying = isPlaying,
-                )
+                Column {
+                    key(deleteCounter) {
+                        MusicList(
+                            musicInfoList = musicInfoList,
+                            config = config,
+                            modifier = Modifier.fillMaxSize(),
+                            isPlaying = isPlaying,
+                        )
+                    }
                 }
             }
         }

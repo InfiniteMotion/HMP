@@ -7,7 +7,8 @@ import com.example.hearablemusicplayer.domain.playlist.Playlist
 sealed class DialogEvent {
     data class Message(
         val message: String,
-        val duration: MessageDuration = MessageDuration.Short
+        val duration: MessageDuration = MessageDuration.Short,
+        val id: Long = System.currentTimeMillis() // 添加唯一标识符
     ) : DialogEvent()
 
     data class MusicDetail(

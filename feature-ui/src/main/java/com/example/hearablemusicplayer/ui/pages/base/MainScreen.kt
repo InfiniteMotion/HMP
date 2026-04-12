@@ -119,6 +119,7 @@ fun MainScreen(
 
     androidx.compose.runtime.LaunchedEffect(dialogEvent) {
         if (dialogEvent is DialogEvent.Message) {
+            // 直接替换为新消息，不等待旧消息处理完毕
             messageToShowState.value = dialogEvent as DialogEvent.Message
         }
     }
@@ -613,6 +614,8 @@ fun MainScreen(
                 MessageToast(
                     message = message.message,
                     duration = message.duration,
+                    id = message.id,
+                    hazeState = hazeState,
                     onDismiss = { messageToShowState.value = null }
                 )
             }

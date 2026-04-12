@@ -16,6 +16,7 @@ import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
 import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult
 import com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistUseCase
 import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.player.controller.MusicController
@@ -260,18 +261,18 @@ class PlayControlViewModel @Inject constructor(
                 )
 
                 when (result) {
-                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Success -> {
+                    is GeneratePlaylistResult.Success -> {
                         // 将生成的播放列表添加到当前播放队列
                         addAllToPlaylistInOrder(result.playlist)
-                        dialogManager.showMessage("已生成${result.actualLength}首歌曲的播放列表")
+                        dialogManager.showMessage("已生成")
                     }
 
-                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Error -> {
-                        dialogManager.showMessage("生成播放列表失败: ${result.message}")
+                    is GeneratePlaylistResult.Error -> {
+                        dialogManager.showMessage("生成失败: ${result.message}")
                     }
                 }
             } catch (e: Exception) {
-                dialogManager.showMessage("生成播放列表时发生错误: ${e.message}")
+                dialogManager.showMessage("生成错误: ${e.message}")
             }
         }
     }
@@ -305,11 +306,9 @@ class PlayControlViewModel @Inject constructor(
             try {
                 settingsRepository.saveDefaultAlgorithmType(algorithmType.name)
                 settingsRepository.saveDefaultWeightTemplate(weightTemplate.name)
-                // 使用ExtensionConfig的toJson方法进行序列化
                 settingsRepository.saveDefaultExtensionConfig(extensionConfig.toJson())
-                dialogManager.showMessage("已保存默认配置")
             } catch (e: Exception) {
-                dialogManager.showMessage("保存配置失败: ${e.message}")
+                dialogManager.showMessage("保存失败: ${e.message}")
             }
         }
     }

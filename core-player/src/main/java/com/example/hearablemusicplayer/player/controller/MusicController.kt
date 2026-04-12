@@ -360,16 +360,12 @@ class MusicController @Inject constructor(
         val path = currentMusicPath()
         if (path != null && isMusicLoaded(path) == true) {
             playControl?.proceedMusic()
-            
+            showToast("继续")
             // 如果是从暂停状态恢复，确保UI进度与Service同步
             scope.launch {
                 val currentPos = playControl?.getCurrentPosition() ?: 0L
                 if (currentPos > 0) {
                     _currentPosition.value = currentPos
-                }
-                // 显示播放状态提示
-                currentPlayingMusic.value?.let { musicInfo ->
-                    showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
                 }
             }
         } else {
@@ -377,19 +373,11 @@ class MusicController @Inject constructor(
             val lastPos = _currentPosition.value
             if (lastPos > 0) {
                  scope.launch { 
-                     playCurrentTrack("AutoPlay", startPosition = lastPos)
-                     // 显示播放状态提示
-                     currentPlayingMusic.value?.let { musicInfo ->
-                         showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
-                     }
+                     playCurrentTrack("Resume", startPosition = lastPos)
                  }
             } else {
                  scope.launch { 
-                     playCurrentTrack("AutoPlay")
-                     // 显示播放状态提示
-                     currentPlayingMusic.value?.let { musicInfo ->
-                         showToast("正在播放\n${musicInfo.music.title}\n${musicInfo.music.artist}")
-                     }
+                     playCurrentTrack("Resume")
                  }
             }
         }
@@ -411,6 +399,7 @@ class MusicController @Inject constructor(
             }
         }
         playControl?.pause()
+        showToast("暂停")
         playStartTime = 0L
         lastDurationRecordTime = 0L
     }
@@ -418,7 +407,7 @@ class MusicController @Inject constructor(
     fun seekTo(position: Long) {
         scope.launch {
             if (!_isPlaying.value) {
-                playCurrentTrack("Player")
+                playCurrentTrack("Resume")
             }
             playControl?.seekTo(position)
         }
@@ -459,7 +448,7 @@ class MusicController @Inject constructor(
             togglePlaybackMode(PlaybackMode.SEQUENTIAL)
             _currentPlaylist.value = _originalPlaylist
             _currentIndex.value = 0
-            playCurrentTrack("In Order")
+            playCurrentTrack("Order")
         }
         persistCurrentPlaylistToDatabase()
     }
@@ -470,7 +459,7 @@ class MusicController @Inject constructor(
             togglePlaybackMode(PlaybackMode.SHUFFLE)
             _currentPlaylist.value = _shuffledPlaylist!!
             _currentIndex.value = 0
-            playCurrentTrack("By Shuffle")
+            playCurrentTrack("Shuffle")
         }
         persistCurrentPlaylistToDatabase()
     }
@@ -480,6 +469,7 @@ class MusicController @Inject constructor(
         if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
             _currentIndex.value = (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
         }
+        showToast("下一曲")
         playCurrentTrack("Next")
     }
 
@@ -488,6 +478,7 @@ class MusicController @Inject constructor(
         if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
             _currentIndex.value = (_currentIndex.value - 1).mod(_currentPlaylist.value.size)
         }
+        showToast("上一曲")
         playCurrentTrack("Previous")
     }
 
@@ -590,9 +581,6 @@ class MusicController @Inject constructor(
             scope.launch {
                 saveToPlaylist(musicInfo)
             }
-            showToast("已添加:${musicInfo.music.title}")
-        } else {
-            showToast("已存在:${musicInfo.music.title}")
         }
     }
 
@@ -633,7 +621,7 @@ class MusicController @Inject constructor(
 
     fun playAt(musicInfo: MusicInfo) {
         switchToMusicInPlaylist(musicInfo)
-        playCurrentTrack("ManualPlay")
+        playCurrentTrack("Manual")
     }
 
     suspend fun playWith(musicInfo: MusicInfo) {

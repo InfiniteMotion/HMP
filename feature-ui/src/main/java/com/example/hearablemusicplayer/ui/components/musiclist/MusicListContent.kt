@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 
 /**
@@ -72,7 +71,7 @@ internal fun MusicListContent(
  * 用于 [FixedMusicList]，适用于嵌入已有滚动容器的场景，不依赖 [LazyListState]，不支持滚动条与索引条。
  */
 @Composable
-internal fun MusicListContentColumn(
+internal fun FixedMusicListContent(
     musicInfoList: List<MusicInfo>,
     config: MusicListConfig,
     state: MusicListState,
