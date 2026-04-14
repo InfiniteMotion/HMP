@@ -42,7 +42,9 @@ import com.example.hearablemusicplayer.ui.dialogs.CreatePlaylistDialog
 import com.example.hearablemusicplayer.ui.dialogs.MessageToast
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.dialogs.MusicPickerDialog
+import com.example.hearablemusicplayer.ui.dialogs.PlaylistPickerDialog
 import com.example.hearablemusicplayer.ui.pages.AIScreen
+import com.example.hearablemusicplayer.ui.pages.AlbumScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
 import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
 import com.example.hearablemusicplayer.ui.pages.CustomScreen
@@ -470,6 +472,13 @@ fun MainScreen(
                                     dialogViewModel = dialogViewModel
                                 )
                             }
+                            entry<Routes.Album> { route ->
+                                AlbumScreen(
+                                    navController = navController,
+                                    albumName = route.name,
+                                    dialogViewModel = dialogViewModel
+                                )
+                            }
                             entry<Routes.AudioEffects> {
                                 AudioEffectsScreen(navController = navController)
                             }
@@ -612,6 +621,16 @@ fun MainScreen(
                         title = state.state.title,
                         onConfirm = dialogViewModel::confirmMusicPickerDialog,
                         onDismiss = dialogViewModel::dismissMusicPickerDialog,
+                        hazeState = hazeState,
+                        hazeRenderSettings = hazeRenderSettings
+                    )
+                }
+                is DialogViewModel.DialogUiState.PlaylistPicker -> {
+                    PlaylistPickerDialog(
+                        playlists = state.state.playlists,
+                        title = state.state.title,
+                        onDismiss = dialogViewModel::dismissPlaylistPickerDialog,
+                        onSelectPlaylist = dialogViewModel::confirmPlaylistPickerDialog,
                         hazeState = hazeState,
                         hazeRenderSettings = hazeRenderSettings
                     )

@@ -19,8 +19,16 @@ import javax.inject.Singleton
 class PlaylistRepositoryImpl @Inject constructor(
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
-    private val musicAllDao: MusicAllDao
+    private val musicAllDao: MusicAllDao,
+    private val settingsRepository: com.example.hearablemusicplayer.domain.setting.SettingsRepository
 ) : PlaylistRepository {
+
+    private suspend fun isCustomPlaylist(playlistId: Long): Boolean {
+        val currentId = settingsRepository.getCurrentPlaylistId()
+        val likedId = settingsRepository.getLikedPlaylistId()
+        val recentId = settingsRepository.getRecentPlaylistId()
+        return playlistId != currentId && playlistId != likedId && playlistId != recentId
+    }
 
     override suspend fun createPlaylist(name: String): Long {
         val now = System.currentTimeMillis()
@@ -77,6 +85,11 @@ class PlaylistRepositoryImpl @Inject constructor(
         val songCount = list.size
         val totalDurationMs = list.sumOf { it.music.duration }
         playlistDao.updateStats(playlistId, songCount, totalDurationMs, System.currentTimeMillis())
+        
+        if (isCustomPlaylist(playlistId)) {
+            val firstSongCover = list.firstOrNull()?.music?.albumArtUri
+            playlistDao.updateCover(playlistId, firstSongCover, System.currentTimeMillis())
+        }
     }
 
     override suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {

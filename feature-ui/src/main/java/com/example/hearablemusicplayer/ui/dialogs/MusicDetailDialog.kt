@@ -44,6 +44,7 @@ import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
 import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -66,6 +67,9 @@ fun MusicDetailDialog(
     val musicDetailState by dialogViewModel.musicDetailState.collectAsState()
     val musicInfo = musicDetailState?.musicInfo
     val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
+    
+    // 设置导航控制器
+    dialogViewModel.setNavController(navController)
     
     if (musicInfo == null || !musicDetailState!!.isVisible) return
 
@@ -164,13 +168,23 @@ fun MusicDetailDialog(
                             InfoRow(
                                 iconRes = R.drawable.person,
                                 label = stringResource(R.string.artist),
-                                value = musicInfo.music.artist
+                                value = musicInfo.music.artist,
+                                onClick = {
+                                    navController.add(Routes.Artist(musicInfo.music.artist))
+                                    dialogViewModel.dismissMusicDetailDialog()
+                                    onDismiss()
+                                }
                             )
                             // 专辑信息
                             InfoRow(
                                 iconRes = R.drawable.music_note_list,
                                 label = stringResource(R.string.album),
-                                value = musicInfo.music.album
+                                value = musicInfo.music.album,
+                                onClick = {
+                                    navController.add(Routes.Album(musicInfo.music.album))
+                                    dialogViewModel.dismissMusicDetailDialog()
+                                    onDismiss()
+                                }
                             )
                             // 时长信息（如果可用）
                             musicInfo.music.duration.let { duration ->
@@ -191,17 +205,10 @@ fun MusicDetailDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.Start,
                     ) {
-                        val menuOptions = listOf(
-                            Triple(R.drawable.plus_square, R.string.add_to_playlist, {
-                                dialogViewModel.addToPlaylist { 
-                                    dialogViewModel.dismissMusicDetailDialog()
-                                    onDismiss()
-                                }
-                            }),
-                            Triple(R.drawable.share, R.string.share, { dialogViewModel.shareMusic() }),
-                            Triple(R.drawable.music, R.string.title_song_detail, { dialogViewModel.viewDetail(navController) }),
-                            Triple(R.drawable.trash, R.string.remove, { dialogViewModel.removeMusic() })
-                        )
+                        val menuOptions = dialogViewModel.getMenuOptions {
+                            dialogViewModel.dismissMusicDetailDialog()
+                            onDismiss()
+                        }
 
                         menuOptions.forEach { (icon, label, action) ->
                             MenuOption(iconRes = icon, labelRes = label, onClick = action)
@@ -218,10 +225,13 @@ fun MusicDetailDialog(
 private fun InfoRow(
     iconRes: Int,
     label: String,
-    value: String
+    value: String,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

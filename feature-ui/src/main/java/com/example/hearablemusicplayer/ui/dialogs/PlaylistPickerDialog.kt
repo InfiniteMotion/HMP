@@ -1,99 +1,110 @@
-
 package com.example.hearablemusicplayer.ui.dialogs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.components.AlbumCover
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
+
+@kotlin.OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun PlaylistPickerDialog(
     playlists: List<Playlist>,
     title: String,
-    onConfirm: (Playlist) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSelectPlaylist: (Playlist) -> Unit,
+    hazeState: HazeState? = null,
+    hazeRenderSettings: HazeRenderSettings? = null
 ) {
-    ScrimDialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
+    val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
+    
+    ProvideHazeRenderSettings(settings = resolvedHazeRenderSettings) {
+        ScrimDialog(onDismissRequest = onDismiss) {
+            val dialogShape = RoundedCornerShape(28.dp)
+            Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(24.dp)
+                    .clip(dialogShape)
+                    .then(
+                        if (hazeState != null) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity()
+                            )
+                        } else Modifier
+                    ),
+                shape = dialogShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (hazeState != null) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = com.example.hearablemusicplayer.ui.util.hazeTintAlpha())
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
 
-                if (playlists.isEmpty()) {
-                    Column(
+                    LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.no_playlists_available),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                            .height(300.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(playlists) { playlist ->
                             PlaylistItem(
                                 playlist = playlist,
-                                onClick = { onConfirm(playlist) }
+                                onClick = {
+                                    onSelectPlaylist(playlist)
+                                    onDismiss()
+                                }
                             )
                         }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
                     }
                 }
             }
@@ -102,7 +113,7 @@ fun PlaylistPickerDialog(
 }
 
 @Composable
-private fun PlaylistItem(
+fun PlaylistItem(
     playlist: Playlist,
     onClick: () -> Unit
 ) {
@@ -111,30 +122,76 @@ private fun PlaylistItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        AlbumCover(
-            uri = playlist.coverUri,
-            size = 48.dp,
-            corner = 8.dp,
-            shadow = 2.dp
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(8.dp))
         ) {
+            if (playlist.coverUri != null && playlist.coverUri!!.isNotBlank()) {
+                AsyncImage(
+                    model = playlist.coverUri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.music_note_list),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = playlist.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = stringResource(R.string.song_count_format, playlist.songCount),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (playlist.songCount > 0 || playlist.totalDurationMs > 0 || playlist.playCount > 0) {
+                val parts = mutableListOf<String>()
+                if (playlist.songCount > 0) {
+                    parts.add(stringResource(R.string.songs_count, playlist.songCount))
+                }
+                if (playlist.totalDurationMs > 0) {
+                    val minutes = (playlist.totalDurationMs / 1000 / 60).toInt()
+                    parts.add(stringResource(R.string.minutes_format, minutes))
+                }
+                if (playlist.playCount > 0 && parts.size < 2) {
+                    parts.add(stringResource(R.string.play_count_display, playlist.playCount))
+                }
+                if (parts.isNotEmpty()) {
+                    Text(
+                        text = parts.take(2).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
+        Icon(
+            painter = painterResource(R.drawable.chevron_right),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
+

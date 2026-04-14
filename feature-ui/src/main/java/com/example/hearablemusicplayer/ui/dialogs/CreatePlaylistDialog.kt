@@ -10,6 +10,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
@@ -80,13 +82,14 @@ fun CreatePlaylistDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.new_playlist_dialog_title),
+                        text = if (uiState.isEditing) stringResource(R.string.edit_playlist) else stringResource(R.string.new_playlist_dialog_title),
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
                     OutlinedTextField(
                         value = uiState.name,
@@ -102,7 +105,11 @@ fun CreatePlaylistDialog(
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
-                        }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            errorBorderColor = MaterialTheme.colorScheme.error
+                        )
                     )
                     OutlinedTextField(
                         value = uiState.description,
@@ -111,61 +118,83 @@ fun CreatePlaylistDialog(
                         singleLine = false,
                         minLines = 2,
                         maxLines = 3,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                        )
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(stringResource(R.string.pin_playlist))
+                        Text(
+                            text = stringResource(R.string.pin_playlist),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Switch(
                             checked = uiState.pinAfterCreate,
-                            onCheckedChange = dialogViewModel::setCreatePlaylistPinned
+                            onCheckedChange = dialogViewModel::setCreatePlaylistPinned,
+                            enabled = !uiState.isSubmitting
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        TextButton(
-                            enabled = !uiState.isSubmitting,
-                            onClick = dialogViewModel::onCreatePlaylistAddSongsClick
+                    if (!uiState.isEditing) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(stringResource(R.string.add_songs_to_playlist))
+                            Text(
+                                text = "已选择 ${uiState.selectedSongIds.size} 首",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(
+                                enabled = !uiState.isSubmitting,
+                                onClick = dialogViewModel::onCreatePlaylistAddSongsClick,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.add_songs_to_playlist),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
-                        Text(
-                            text = "已选择 ${uiState.selectedSongIds.size} 首",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                     uiState.submitError?.let {
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(
                             enabled = !uiState.isSubmitting,
-                            onClick = dialogViewModel::dismissCreatePlaylistDialog
+                            onClick = dialogViewModel::dismissCreatePlaylistDialog,
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
-                            Text(stringResource(R.string.cancel))
+                            Text(
+                                text = stringResource(R.string.cancel),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                         TextButton(
-                            enabled = uiState.canSubmit,
+                            enabled = uiState.canSubmit && !uiState.isSubmitting,
                             onClick = dialogViewModel::submitCreatePlaylist
                         ) {
                             Text(
-                                text = stringResource(R.string.new_playlist),
-                                color = MaterialTheme.colorScheme.primary
+                                text = if (uiState.isEditing) stringResource(R.string.ok) else stringResource(R.string.new_playlist),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }

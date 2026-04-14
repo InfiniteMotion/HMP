@@ -211,7 +211,16 @@ fun HomeScreen(
                                     scope.launch { playControlViewModel.playWith(musicInfo) }
                                 }
                                 override fun onMenuClick(musicInfo: MusicInfo) {
-                                    dialogViewModel.showMusicDetailDialog(musicInfo)
+                                    val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                                        showAddToPlaylist = true,
+                                        showAddToSpecificPlaylist = true,
+                                        showShare = true,
+                                        showViewDetail = true,
+                                        showPlayNext = false,
+                                        showRemoveFromCurrentPlaylist = false,
+                                        showDelete = false
+                                    )
+                                    dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
                                 }
                             }
                             val config = defaultMusicListConfig(callbacks).copy(

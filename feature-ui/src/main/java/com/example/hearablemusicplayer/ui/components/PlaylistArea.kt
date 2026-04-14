@@ -84,7 +84,7 @@ fun PlaylistArea(
             haptic.performConfirm()
             onMoveToTop(musicInfo)
         }
-        override fun onRemoveFromPlaylist(musicInfo: MusicInfo) {
+        override fun onRemove(musicInfo: MusicInfo) {
             haptic.performLightClick()
             onRemoveFromPlaylist(musicInfo)
         }

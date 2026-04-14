@@ -197,9 +197,9 @@ fun PlaylistManageScreen(
                     }
                 },
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 96.dp, end = 32.dp)
+                    .padding(bottom = 96.dp)
                     .size(48.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,

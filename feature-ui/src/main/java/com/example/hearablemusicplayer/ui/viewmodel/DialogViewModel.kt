@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
+import com.example.hearablemusicplayer.domain.music.usecase.RemoveFromLibraryUseCase
 import com.example.hearablemusicplayer.domain.music.UserInfo
 import com.example.hearablemusicplayer.domain.playlist.usecase.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.player.controller.MusicController
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.media3.common.util.UnstableApi
+import com.example.hearablemusicplayer.ui.R
 import javax.inject.Inject
 
 @OptIn(UnstableApi::class)
@@ -29,7 +31,8 @@ class DialogViewModel @Inject constructor(
     private val musicController: MusicController,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
-    private val dialogManager: DialogManager
+    private val dialogManager: DialogManager,
+    private val removeFromLibraryUseCase: RemoveFromLibraryUseCase
 ) : ViewModel() {
     
     // 统一弹窗状态
@@ -46,6 +49,9 @@ class DialogViewModel @Inject constructor(
     val musicPickerState: StateFlow<MusicPickerDialogState?> = activeDialog
         .map { (it as? DialogUiState.MusicPicker)?.state }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val playlistPickerState: StateFlow<PlaylistPickerDialogState?> = activeDialog
+        .map { (it as? DialogUiState.PlaylistPicker)?.state }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // 收藏状态
     private val _isLiked = MutableStateFlow(false)
@@ -54,6 +60,7 @@ class DialogViewModel @Inject constructor(
     private var onPlaylistCreated: ((Long) -> Unit)? = null
     private var existingPlaylistNames: Set<String> = emptySet()
     private var onMusicPickerConfirm: ((Set<Long>) -> Unit)? = null
+    private var onPlaylistPickerConfirm: ((com.example.hearablemusicplayer.domain.playlist.Playlist) -> Unit)? = null
     private var pendingCreatePlaylistStateForPicker: CreatePlaylistDialogState? = null
     private var createDialogMusicLookup: Map<Long, MusicInfo> = emptyMap()
 
@@ -64,7 +71,9 @@ class DialogViewModel @Inject constructor(
         val selectedSongIds: Set<Long> = emptySet(),
         val nameError: String? = null,
         val submitError: String? = null,
-        val isSubmitting: Boolean = false
+        val isSubmitting: Boolean = false,
+        val isEditing: Boolean = false,
+        val editingPlaylistId: Long? = null
     ) {
         val canSubmit: Boolean
             get() = !isSubmitting && nameError == null && name.trim().isNotEmpty()
@@ -75,15 +84,21 @@ class DialogViewModel @Inject constructor(
         val selectedIds: Set<Long>,
         val title: String
     )
+    
+    data class PlaylistPickerDialogState(
+        val playlists: List<com.example.hearablemusicplayer.domain.playlist.Playlist>,
+        val title: String
+    )
 
     sealed class DialogUiState {
         data class MusicDetail(val state: MusicDetailState) : DialogUiState()
         data class CreatePlaylist(val state: CreatePlaylistDialogState) : DialogUiState()
         data class MusicPicker(val state: MusicPickerDialogState) : DialogUiState()
+        data class PlaylistPicker(val state: PlaylistPickerDialogState) : DialogUiState()
     }
     
     // 显示音乐详情弹窗
-    fun showMusicDetailDialog(musicInfo: MusicInfo) {
+    fun showMusicDetailDialog(musicInfo: MusicInfo, menuConfig: MusicDetailMenuConfig = MusicDetailMenuConfig()) {
         // 获取最新的收藏状态
         viewModelScope.launch {
             val isLiked = musicController.getCurrentLikedStatus(musicInfo.music.id)
@@ -101,7 +116,8 @@ class DialogViewModel @Inject constructor(
             _activeDialog.value = DialogUiState.MusicDetail(
                 MusicDetailState(
                     musicInfo = updatedMusicInfo,
-                    isVisible = true
+                    isVisible = true,
+                    menuConfig = menuConfig
                 )
             )
         }
@@ -166,6 +182,8 @@ class DialogViewModel @Inject constructor(
         dismissMusicDetailDialog()
     }
     
+    private var navController: NavBackStack<NavKey>? = null
+    
     // 查看详情
     fun viewDetail(navController: NavBackStack<NavKey>) {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
@@ -180,6 +198,147 @@ class DialogViewModel @Inject constructor(
         // 这里可以添加移除逻辑
         dismissMusicDetailDialog()
     }
+    
+    // 设置导航控制器
+    fun setNavController(controller: NavBackStack<NavKey>) {
+        this.navController = controller
+    }
+    
+    // 获取菜单选项
+    fun getMenuOptions(onComplete: () -> Unit): List<Triple<Int, Int, () -> Unit>> {
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return emptyList()
+        val menuConfig = currentState.menuConfig
+        val menuOptions = mutableListOf<Triple<Int, Int, () -> Unit>>()
+        val navController = this.navController
+        
+        // 音乐详情
+        if (menuConfig.showViewDetail && navController != null) {
+            menuOptions.add(Triple(R.drawable.music, R.string.title_song_detail) {
+                viewDetail(
+                    navController
+                )
+            })
+        }
+        
+        // 分享
+        if (menuConfig.showShare) {
+            menuOptions.add(Triple(R.drawable.share, R.string.share) { shareMusic() })
+        }
+        
+        // 添加到指定音乐列表
+        if (menuConfig.showAddToSpecificPlaylist) {
+            menuOptions.add(Triple(R.drawable.plus_square, R.string.add_to_specific_playlist) {
+                addToSpecificPlaylist(
+                    onComplete
+                )
+            })
+        }
+        
+        // 添加到默认播放列表
+        if (menuConfig.showAddToPlaylist) {
+            menuOptions.add(Triple(R.drawable.plus_square, R.string.add_to_playlist) {
+                addToPlaylist(
+                    onComplete
+                )
+            })
+        }
+        
+        // 下一首播放
+        if (menuConfig.showPlayNext) {
+            menuOptions.add(Triple(R.drawable.forward_end_fill, R.string.play_next) { playNext() })
+        }
+        
+        // 从当前列表移除
+        if (menuConfig.showRemoveFromCurrentPlaylist) {
+            menuOptions.add(Triple(R.drawable.trash, R.string.remove_from_current_playlist) {
+                removeFromCurrentPlaylist(
+                    onComplete
+                )
+            })
+        }
+        
+        // 删除
+        if (menuConfig.showDelete) {
+            menuOptions.add(Triple(R.drawable.trash, R.string.delete) { deleteMusic(onComplete) })
+        }
+        
+        return menuOptions
+    }
+    
+    // 添加到指定音乐列表
+    fun addToSpecificPlaylist(onComplete: () -> Unit) {
+        // 显示播放列表选择弹窗
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+        
+        // 显示播放列表选择弹窗
+        showPlaylistPickerDialog(musicInfo, onComplete)
+    }
+    
+    // 显示播放列表选择弹窗
+    private fun showPlaylistPickerDialog(musicInfo: MusicInfo, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                // 获取所有用户自定义播放列表
+                val playlists = managePlaylistUseCase.getAllPlaylists()
+                
+                // 显示播放列表选择弹窗
+                showPlaylistPickerDialog(
+                    playlists = playlists,
+                    title = "选择播放列表",
+                    onConfirm = { playlist ->
+                        viewModelScope.launch {
+                            // 将歌曲添加到选择的播放列表
+                            managePlaylistUseCase.addToPlaylist(
+                                playlistId = playlist.id,
+                                musicId = musicInfo.music.id,
+                                musicPath = musicInfo.music.path
+                            )
+                            dialogManager.showMessage("已添加到播放列表")
+                            onComplete()
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                dialogManager.showMessage(e.message ?: "加载播放列表失败")
+            }
+        }
+    }
+    
+    // 下一首播放
+    fun playNext() {
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+        
+        musicController.addToNextPlay(musicInfo)
+        dialogManager.showMessage("已添加到下一首播放")
+        dismissMusicDetailDialog()
+    }
+    
+    // 从当前列表移除
+    fun removeFromCurrentPlaylist(onComplete: () -> Unit) {
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+        
+        musicController.removeFromPlaylist(musicInfo)
+        dialogManager.showMessage("已从当前列表移除")
+        onComplete()
+    }
+    
+    // 删除音乐
+    fun deleteMusic(onComplete: () -> Unit) {
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+        
+        viewModelScope.launch {
+            // 从当前播放列表中移除
+            musicController.removeFromPlaylist(musicInfo)
+            // 使用标记删除法从音乐库中删除
+            removeFromLibraryUseCase(listOf(musicInfo.music.id))
+            dialogManager.showMessage("已删除音乐")
+            onComplete()
+        }
+    }
 
     fun showCreatePlaylistDialog(onCreated: (Long) -> Unit) {
         onPlaylistCreated = onCreated
@@ -189,6 +348,30 @@ class DialogViewModel @Inject constructor(
                 .map { it.name.trim().lowercase() }
                 .toSet()
             updateCreatePlaylistName("")
+        }
+    }
+
+    fun showEditPlaylistDialog(
+        playlist: com.example.hearablemusicplayer.domain.playlist.Playlist,
+        onUpdated: (Long) -> Unit
+    ) {
+        onPlaylistCreated = onUpdated
+        viewModelScope.launch {
+            val allPlaylists = managePlaylistUseCase.getAllPlaylists()
+            existingPlaylistNames = allPlaylists
+                .filter { it.id != playlist.id }
+                .map { it.name.trim().lowercase() }
+                .toSet()
+            
+            _activeDialog.value = DialogUiState.CreatePlaylist(
+                CreatePlaylistDialogState(
+                    name = playlist.name,
+                    description = playlist.description ?: "",
+                    pinAfterCreate = playlist.isPinned,
+                    isEditing = true,
+                    editingPlaylistId = playlist.id
+                )
+            )
         }
     }
 
@@ -293,6 +476,35 @@ class DialogViewModel @Inject constructor(
         pendingCreatePlaylistStateForPicker = null
         onMusicPickerConfirm = null
     }
+    
+    // 显示播放列表选择弹窗
+    fun showPlaylistPickerDialog(
+        playlists: List<com.example.hearablemusicplayer.domain.playlist.Playlist>,
+        title: String,
+        onConfirm: (com.example.hearablemusicplayer.domain.playlist.Playlist) -> Unit
+    ) {
+        onPlaylistPickerConfirm = onConfirm
+        _activeDialog.value = DialogUiState.PlaylistPicker(
+            PlaylistPickerDialogState(
+                playlists = playlists,
+                title = title
+            )
+        )
+    }
+    
+    // 确认选择播放列表
+    fun confirmPlaylistPickerDialog(playlist: com.example.hearablemusicplayer.domain.playlist.Playlist) {
+        onPlaylistPickerConfirm?.invoke(playlist)
+        dismissPlaylistPickerDialog()
+    }
+    
+    // 关闭播放列表选择弹窗
+    fun dismissPlaylistPickerDialog() {
+        if (_activeDialog.value is DialogUiState.PlaylistPicker) {
+            _activeDialog.value = null
+        }
+        onPlaylistPickerConfirm = null
+    }
 
     fun submitCreatePlaylist() {
         val current = (_activeDialog.value as? DialogUiState.CreatePlaylist)?.state ?: return
@@ -305,26 +517,41 @@ class DialogViewModel @Inject constructor(
         updateCreatePlaylistState { it.copy(isSubmitting = true, submitError = null) }
         viewModelScope.launch {
             try {
-                val id = managePlaylistUseCase.createPlaylist(current.name.trim())
-                val desc = current.description.trim().takeIf { it.isNotEmpty() }
-                if (desc != null) {
+                if (current.isEditing && current.editingPlaylistId != null) {
+                    val id = current.editingPlaylistId
+                    val trimmedName = current.name.trim()
+                    managePlaylistUseCase.renamePlaylist(id, trimmedName)
+                    
+                    val desc = current.description.trim().takeIf { it.isNotEmpty() }
                     managePlaylistUseCase.updatePlaylistDescription(id, desc)
+                    
+                    managePlaylistUseCase.setPlaylistPinned(id, current.pinAfterCreate)
+                    
+                    onPlaylistCreated?.invoke(id)
+                    dialogManager.showMessage("歌单已更新")
+                    dismissCreatePlaylistDialog()
+                } else {
+                    val id = managePlaylistUseCase.createPlaylist(current.name.trim())
+                    val desc = current.description.trim().takeIf { it.isNotEmpty() }
+                    if (desc != null) {
+                        managePlaylistUseCase.updatePlaylistDescription(id, desc)
+                    }
+                    if (current.pinAfterCreate) {
+                        managePlaylistUseCase.setPlaylistPinned(id, true)
+                    }
+                    addSelectedSongsToPlaylist(
+                        playlistId = id,
+                        selectedSongIds = current.selectedSongIds
+                    )
+                    onPlaylistCreated?.invoke(id)
+                    dialogManager.showMessage("歌单已创建")
+                    dismissCreatePlaylistDialog()
                 }
-                if (current.pinAfterCreate) {
-                    managePlaylistUseCase.setPlaylistPinned(id, true)
-                }
-                addSelectedSongsToPlaylist(
-                    playlistId = id,
-                    selectedSongIds = current.selectedSongIds
-                )
-                onPlaylistCreated?.invoke(id)
-                dialogManager.showMessage("歌单已创建")
-                dismissCreatePlaylistDialog()
             } catch (e: Exception) {
                 updateCreatePlaylistState {
                     it.copy(
                         isSubmitting = false,
-                        submitError = e.message ?: "创建歌单失败"
+                        submitError = e.message ?: if (current.isEditing) "更新歌单失败" else "创建歌单失败"
                     )
                 }
             }
@@ -380,6 +607,18 @@ class DialogViewModel @Inject constructor(
     // 音乐详情弹窗状态
     data class MusicDetailState(
         val musicInfo: MusicInfo,
-        val isVisible: Boolean
+        val isVisible: Boolean,
+        val menuConfig: MusicDetailMenuConfig = MusicDetailMenuConfig()
+    )
+    
+    // 音乐详情弹窗菜单配置
+    data class MusicDetailMenuConfig(
+        val showAddToPlaylist: Boolean = true,
+        val showAddToSpecificPlaylist: Boolean = true,
+        val showShare: Boolean = true,
+        val showViewDetail: Boolean = true,
+        val showPlayNext: Boolean = false,
+        val showRemoveFromCurrentPlaylist: Boolean = false,
+        val showDelete: Boolean = false
     )
 }

@@ -140,11 +140,8 @@ class MusicController @Inject constructor(
     }
 
     // Playlist
-    private var _originalPlaylist: List<MusicInfo> = emptyList()
     private val _currentPlaylist = MutableStateFlow<List<MusicInfo>>(emptyList())
     val currentPlaylist: StateFlow<List<MusicInfo>> = _currentPlaylist.asStateFlow()
-
-    private var _shuffledPlaylist: List<MusicInfo>? = null
 
     // IDs
     private val currentPlayListId = settingsRepository.currentPlaylistId
@@ -217,37 +214,41 @@ class MusicController @Inject constructor(
     val currentEqualizerBandLevels: StateFlow<FloatArray> = _currentEqualizerBandLevels.asStateFlow()
 
     init {
-        // Init Playlist
+        // 初始化播放列表和进度
         scope.launch {
             loadPlaylistFromSettings()
-            // 恢复上次播放进度
             restoreLastPosition()
         }
 
-        // Watch Playlist ID
+        // 监听默认播放列表的变化
         scope.launch {
             currentPlayListId
                 .filterNotNull()
                 .collectLatest { playlistId ->
-                    if (_currentPlaylist.value.isEmpty()) {
-                        try {
-                            val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
-                            val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
-                            _originalPlaylist = list
-                            _currentPlaylist.value = list
-                            _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
-                        } catch (e: Exception) {
-                            // Ignore
+                    managePlaylistUseCase.getMusicInfoInPlaylist(playlistId)
+                        .collect { playlist ->
+                            _currentPlaylist.value = playlist
+                            // 更新索引
+                            updateCurrentIndex()
                         }
-                    }
                 }
         }
+
+        // 监听当前播放音乐的变化
         scope.launch {
             currentPlayingMusic
                 .filterNotNull()
                 .collectLatest { musicInfo ->
                     preloadCurrentMusicInfo(musicInfo)
                 }
+        }
+    }
+
+    private fun updateCurrentIndex() {
+        val current = currentPlayingMusic.value
+        if (current != null) {
+            _currentIndex.value = _currentPlaylist.value.indexOfFirst { it.music.id == current.music.id }
+                .takeIf { it >= 0 } ?: 0
         }
     }
 
@@ -267,11 +268,9 @@ class MusicController @Inject constructor(
             val playlistId = currentPlayListId.filterNotNull().first()
             val currentMusicId = currentPlaybackUseCase.getCurrentMusicId().first()
             val list = managePlaylistUseCase.getMusicInfoInPlaylist(playlistId).first()
-            _originalPlaylist = list
             _currentPlaylist.value = list
             _playbackMode.value = PlaybackMode.SEQUENTIAL
             _currentIndex.value = list.indexOfFirst { it.music.id == currentMusicId }.takeIf { it >= 0 } ?: 0
-            _shuffledPlaylist = null
         } catch (e: Exception) {
             // Ignore
         }
@@ -331,20 +330,12 @@ class MusicController @Inject constructor(
     }
 
     fun clearPlaylist() {
-        _originalPlaylist = emptyList()
         _currentPlaylist.value = emptyList()
         _currentIndex.value = 0
         persistCurrentPlaylistToDatabase()
     }
 
-    private suspend fun saveToPlaylist(musicInfo: MusicInfo) {
-        try {
-            val playlistId = currentPlayListId.filterNotNull().first()
-            managePlaylistUseCase.addToPlaylist(playlistId, musicInfo.music.id, musicInfo.music.path)
-        } catch (e: Exception) {
-            // Ignore
-        }
-    }
+
 
     fun isMusicLoaded(path: String): Boolean? {
         return playControl?.isMusicLoaded(path)
@@ -413,24 +404,8 @@ class MusicController @Inject constructor(
         }
     }
 
-    private fun updateCurrentPlaylist() {
-        val currentTrack = currentPlayingMusic.value
-        _currentPlaylist.value = when (_playbackMode.value) {
-            PlaybackMode.SHUFFLE -> {
-                _shuffledPlaylist = _originalPlaylist.shuffled()
-                _shuffledPlaylist!!
-            }
-            else -> _originalPlaylist
-        }
-        persistCurrentPlaylistToDatabase()
-        _currentIndex.value = currentTrack?.let { track ->
-            _currentPlaylist.value.indexOfFirst { it.music.id == track.music.id }
-        }?.takeIf { it >= 0 } ?: 0
-    }
-
     private fun togglePlaybackMode(newMode: PlaybackMode) {
         _playbackMode.value = newMode
-        updateCurrentPlaylist()
     }
 
     fun togglePlaybackModeByOrder() {
@@ -444,30 +419,45 @@ class MusicController @Inject constructor(
 
     fun addAllToPlaylistInOrder(playlist: List<MusicInfo>) {
         scope.launch {
-            _originalPlaylist = playlist
+            _currentPlaylist.value = playlist
             togglePlaybackMode(PlaybackMode.SEQUENTIAL)
-            _currentPlaylist.value = _originalPlaylist
             _currentIndex.value = 0
+            persistCurrentPlaylistToDatabase()
             playCurrentTrack("Order")
         }
-        persistCurrentPlaylistToDatabase()
     }
 
     fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) {
         scope.launch {
-            _originalPlaylist = playlist
+            _currentPlaylist.value = playlist
             togglePlaybackMode(PlaybackMode.SHUFFLE)
-            _currentPlaylist.value = _shuffledPlaylist!!
             _currentIndex.value = 0
+            persistCurrentPlaylistToDatabase()
             playCurrentTrack("Shuffle")
         }
-        persistCurrentPlaylistToDatabase()
+    }
+
+    private fun generateRandomIndex(currentIndex: Int, size: Int): Int {
+        if (size <= 1) return 0
+        var randomIndex: Int
+        do {
+            randomIndex = kotlin.random.Random.nextInt(size)
+        } while (randomIndex == currentIndex)
+        return randomIndex
     }
 
     fun playNext() = scope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
         if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
-            _currentIndex.value = (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
+            _currentIndex.value = when (_playbackMode.value) {
+                PlaybackMode.SHUFFLE -> {
+                    generateRandomIndex(_currentIndex.value, _currentPlaylist.value.size)
+                }
+                else -> {
+                    // 顺序播放
+                    (_currentIndex.value + 1).mod(_currentPlaylist.value.size)
+                }
+            }
         }
         showToast("下一曲")
         playCurrentTrack("Next")
@@ -476,7 +466,15 @@ class MusicController @Inject constructor(
     fun playPrevious() = scope.launch {
         if (_currentPlaylist.value.isEmpty()) return@launch
         if (_playbackMode.value != PlaybackMode.REPEAT_ONE) {
-            _currentIndex.value = (_currentIndex.value - 1).mod(_currentPlaylist.value.size)
+            _currentIndex.value = when (_playbackMode.value) {
+                PlaybackMode.SHUFFLE -> {
+                    generateRandomIndex(_currentIndex.value, _currentPlaylist.value.size)
+                }
+                else -> {
+                    // 顺序播放
+                    (_currentIndex.value - 1).mod(_currentPlaylist.value.size)
+                }
+            }
         }
         showToast("上一曲")
         playCurrentTrack("Previous")
@@ -575,12 +573,31 @@ class MusicController @Inject constructor(
     }
 
     fun addToPlaylist(musicInfo: MusicInfo) {
-        if (_originalPlaylist.none { it.music.id == musicInfo.music.id }) {
-            _originalPlaylist = _originalPlaylist + musicInfo
-            updateCurrentPlaylist()
-            scope.launch {
-                saveToPlaylist(musicInfo)
+        if (_currentPlaylist.value.none { it.music.id == musicInfo.music.id }) {
+            _currentPlaylist.value = _currentPlaylist.value + musicInfo
+            persistCurrentPlaylistToDatabase()
+        }
+    }
+    
+    fun addToNextPlay(musicInfo: MusicInfo) {
+        if (_currentPlaylist.value.none { it.music.id == musicInfo.music.id }) {
+            val currentIndex = _currentIndex.value
+            val newList = _currentPlaylist.value.toMutableList()
+            if (newList.isEmpty()) {
+                // 播放列表为空时，直接添加到列表中
+                newList.add(musicInfo)
+            } else {
+                // 播放列表不为空时，添加到当前索引的下一首
+                val insertIndex = currentIndex + 1
+                if (insertIndex <= newList.size) {
+                    newList.add(insertIndex, musicInfo)
+                } else {
+                    // 如果索引超出范围，添加到列表末尾
+                    newList.add(musicInfo)
+                }
             }
+            _currentPlaylist.value = newList
+            persistCurrentPlaylistToDatabase()
         }
     }
 
@@ -590,31 +607,22 @@ class MusicController @Inject constructor(
     }
 
     fun removeFromPlaylist(musicInfo: MusicInfo) {
-        _originalPlaylist = _originalPlaylist.filter { it.music.id != musicInfo.music.id }
-        updateCurrentPlaylist()
-        if (_currentPlaylist.value.isNotEmpty()) {
-            val current = currentPlayingMusic.value
-            val idx = _currentPlaylist.value.indexOfFirst { it.music.id == current?.music?.id }
-            _currentIndex.value = if (idx >= 0) idx else 0
-        } else {
-            _currentIndex.value = 0
-        }
+        _currentPlaylist.value = _currentPlaylist.value.filter { it.music.id != musicInfo.music.id }
         persistCurrentPlaylistToDatabase()
+        // 更新索引
+        updateCurrentIndex()
     }
     
     fun moveToTop(musicInfo: MusicInfo) {
-        val currentList = _originalPlaylist.toMutableList()
+        val currentList = _currentPlaylist.value.toMutableList()
         val index = currentList.indexOfFirst { it.music.id == musicInfo.music.id }
         if (index > 0) {
             val item = currentList.removeAt(index)
             currentList.add(0, item)
-            _originalPlaylist = currentList
-            updateCurrentPlaylist()
-            val current = currentPlayingMusic.value
-            if (current != null) {
-                _currentIndex.value = _currentPlaylist.value.indexOfFirst { it.music.id == current.music.id }
-            }
+            _currentPlaylist.value = currentList
             persistCurrentPlaylistToDatabase()
+            // 更新索引
+            updateCurrentIndex()
             showToast("已置顶：${musicInfo.music.title}")
         }
     }
@@ -666,7 +674,6 @@ class MusicController @Inject constructor(
             val similarSongs = currentPlaybackUseCase.getSimilarSongsByWeightedLabels(currentMusic.music.id, limit = 10)
             if (similarSongs.isNotEmpty()) {
                 val newList = listOf(currentMusic) + similarSongs
-                _originalPlaylist = newList
                 _currentPlaylist.value = newList
                 _currentIndex.value = 0
                 playCurrentTrack("HeartMode")

@@ -48,6 +48,15 @@ class GetAllMusicUseCase @Inject constructor(
     }
 
     /**
+     * 根据专辑名获取音乐列表
+     * @param albumName 专辑名称
+     * @return 该专辑的所有音乐列表
+     */
+    suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo> {
+        return musicRepository.getMusicListByAlbum(albumName)
+    }
+
+    /**
      * 根据ID获取音乐
      * @param musicId 音乐ID
      * @return 音乐信息，如果不存在则返回null

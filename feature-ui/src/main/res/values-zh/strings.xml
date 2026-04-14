@@ -267,7 +267,12 @@
     <string name="custom_equalizer">自定义均衡器</string>
     <string name="duration_format">%1$d:%2$02d</string>
     <string name="play">播放</string>
-    <string name="add_to_playlist">添加到播放列表</string>
+    <string name="add_to_specific_playlist">添加到指定音乐列表</string>
+    <string name="add_to_favorites">添加到喜爱</string>
+    <string name="play_next">添加到下一首播放</string>
+    <string name="remove_from_current_playlist">从当前列表移除</string>
+    <string name="delete">删除</string>
+    <string name="add_to_playlist">添加到默认播放列表</string>
     <string name="add_songs_to_playlist">添加歌曲</string>
     <string name="song_added">已添加</string>
     <string name="artist">艺术家</string>
@@ -303,6 +308,7 @@
     <string name="play_count_display">播放 %1$d 次</string>
     <string name="playlist_description_hint">歌单介绍</string>
     <string name="edit_playlist_description">编辑介绍</string>
+    <string name="edit_playlist">编辑歌单</string>
     <string name="pin_playlist">置顶</string>
     <string name="unpin_playlist">取消置顶</string>
     <string name="set_cover_from_first_song">使用第一首歌曲封面</string>

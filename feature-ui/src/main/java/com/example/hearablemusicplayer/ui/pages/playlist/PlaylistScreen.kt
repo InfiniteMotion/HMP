@@ -8,7 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,8 +23,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -127,7 +129,9 @@ fun PlaylistScreen(
         onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
-        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog,
+        dialogViewModel = dialogViewModel,
+        playlistViewModel = playlistViewModel,
+        dialogManager = dialogManager,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
         onUpdateDescription = { id, desc -> playlistViewModel.updatePlaylistDescription(id, desc) },
         onSetPinned = { id, pinned -> playlistViewModel.setPlaylistPinned(id, pinned) },
@@ -193,7 +197,9 @@ fun PlaylistScreenContent(
     onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
-    onShowMusicDetailDialog: (MusicInfo) -> Unit,
+    dialogViewModel: DialogViewModel,
+    playlistViewModel: PlaylistViewModel,
+    dialogManager: com.example.hearablemusicplayer.ui.controller.DialogManager,
     onRenamePlaylist: (Long, String) -> Unit,
     onUpdateDescription: (Long, String?) -> Unit,
     onSetPinned: (Long, Boolean) -> Unit,
@@ -313,7 +319,31 @@ fun PlaylistScreenContent(
 
     SubScreen(
         onBackClick = onBackClick,
-        title = playlistName
+        title = playlistName,
+        trailingContent = if (isCustomPlaylist && playlistMeta != null) {
+            {
+                FilledIconButton(
+                    onClick = {
+                        haptic.performClick()
+                        dialogViewModel.showEditPlaylistDialog(playlistMeta) { id ->
+                            playlistViewModel.loadPlaylistById(id)
+                            playlistViewModel.loadUserCustomPlaylists()
+                        }
+                    },
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.gearshape),
+                        contentDescription = stringResource(R.string.edit_list),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        } else null
     ) {
         Column(
             modifier = Modifier
@@ -332,76 +362,7 @@ fun PlaylistScreenContent(
                     )
                 }
             }
-            if (isCustomPlaylist && selectedPlaylistId != null) {
-                AnimatedVisibility(
-                    visible = isListEditMode && !shouldCollapseHeader,
-                    enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-                    exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)),
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
-                        ) {
-                            if (playlistMeta != null) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    TextButton(
-                                        onClick = { onSetPinned(selectedPlaylistId, !playlistMeta.isPinned) }
-                                    ) {
-                                        Text(
-                                            stringResource(
-                                                if (playlistMeta.isPinned) R.string.unpin_playlist else R.string.pin_playlist
-                                            )
-                                        )
-                                    }
-                                    TextButton(
-                                        onClick = {
-                                            descriptionValue = playlistMeta.description ?: ""
-                                            showDescriptionDialog = true
-                                        }
-                                    ) {
-                                        Text(stringResource(R.string.edit_playlist_description))
-                                    }
-                                    TextButton(
-                                        onClick = {
-                                            playlist.firstOrNull()?.music?.albumArtUri?.let { uri ->
-                                                if (uri.isNotBlank()) onUpdateCover(selectedPlaylistId, uri)
-                                            }
-                                        }
-                                    ) {
-                                        Text(stringResource(R.string.set_cover_from_first_song))
-                                    }
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                TextButton(
-                                    onClick = { renameValue = playlistName; showRenameDialog = true }
-                                ) {
-                                    Text(stringResource(R.string.rename_playlist))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+
             val coroutineScope = rememberCoroutineScope()
             val callbacks = object : MusicListCallbacksAdapter() {
                 override fun onEnterEditMode() {
@@ -415,10 +376,45 @@ fun PlaylistScreenContent(
                     coroutineScope.launch { playWith(musicInfo) }
                 }
                 override fun onMenuClick(musicInfo: MusicInfo) {
-                    onShowMusicDetailDialog(musicInfo)
+                    val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                        showAddToPlaylist = false,
+                        showAddToSpecificPlaylist = true,
+                        showShare = true,
+                        showViewDetail = true,
+                        showPlayNext = true,
+                        showRemoveFromCurrentPlaylist = false,
+                        showDelete = false
+                    )
+                    dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
                 }
                 override fun onRemoveFromPlaylist(musicInfo: MusicInfo) {
                     selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
+                }
+                override fun onRemove(musicInfo: MusicInfo) {
+                    selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
+                }
+                override fun onBatchAddToPlaylist(selectedIds: Set<Long>) {
+                    val selectedMusicList = playlist.filter { it.music.id in selectedIds }
+                    if (selectedMusicList.isNotEmpty()) {
+                        // 显示播放列表选择弹窗
+                        dialogViewModel.showPlaylistPickerDialog(
+                            playlists = playlistViewModel.userCustomPlaylists.value,
+                            title = "选择播放列表",
+                            onConfirm = { selectedPlaylist ->
+                                // 批量添加歌曲到选择的播放列表
+                                val itemsToAdd = selectedMusicList.map {
+                                    it.music.id to it.music.path
+                                }
+                                playlistViewModel.addItemsToPlaylist(
+                                    playlistId = selectedPlaylist.id,
+                                    items = itemsToAdd,
+                                    onComplete = {
+                                        dialogManager.showMessage("已添加 ${selectedMusicList.size} 首歌曲到播放列表")
+                                    }
+                                )
+                            }
+                        )
+                    }
                 }
                 override fun onMoveUp(index: Int) {
                     if (index <= 0 || index >= playlist.size) return
@@ -463,8 +459,8 @@ fun PlaylistScreenContent(
             )
             val config = baseConfig.copy(
                 item = baseConfig.item.copy(
-                    fullOptions = baseConfig.item.fullOptions?.copy(showRemoveButton = false)
-                        ?: FullItemOptions(showPinButton = true, showRemoveButton = false, showMenuButton = true),
+                    fullOptions = baseConfig.item.fullOptions?.copy(showRemoveButton = true)
+                        ?: FullItemOptions(showPinButton = true, showRemoveButton = true, showMenuButton = true),
                 ),
             )
             MusicList(

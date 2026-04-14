@@ -40,9 +40,11 @@ import com.example.hearablemusicplayer.ui.dialog.ConfirmDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -50,6 +52,8 @@ fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
@@ -58,6 +62,7 @@ fun GalleryScreen(
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
     val currentPlayingIndex = musicInfoList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
+    val dialogManager = dialogManagerViewModel.dialogManager
 
     LaunchedEffect(Unit) {
         libraryViewModel.getAllMusic()
@@ -94,6 +99,8 @@ fun GalleryScreen(
             libraryViewModel.getAllMusic()
         },
         dialogViewModel = dialogViewModel,
+        playlistViewModel = playlistViewModel,
+        dialogManager = dialogManager,
         navController = navController,
     )
 }
@@ -117,6 +124,8 @@ fun GalleryScreenContent(
     onFilterGenreChange: (String) -> Unit,
     onFilterOrderChange: (String) -> Unit,
     dialogViewModel: DialogViewModel,
+    playlistViewModel: PlaylistViewModel,
+    dialogManager: com.example.hearablemusicplayer.ui.controller.DialogManager,
     navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
@@ -132,12 +141,39 @@ fun GalleryScreenContent(
             playWith(musicInfo)
         }
         override fun onMenuClick(musicInfo: MusicInfo) {
-            dialogViewModel.showMusicDetailDialog(musicInfo)
+            val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                showAddToPlaylist = true,
+                showAddToSpecificPlaylist = true,
+                showShare = true,
+                showViewDetail = true,
+                showPlayNext = true,
+                showRemoveFromCurrentPlaylist = false,
+                showDelete = true
+            )
+            dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
         }
         override fun onBatchAddToPlaylist(selectedIds: Set<Long>) {
-            musicInfoList
-                .filter { it.music.id in selectedIds }
-                .forEach { addToPlaylist(it) }
+            val selectedMusicList = musicInfoList.filter { it.music.id in selectedIds }
+            if (selectedMusicList.isNotEmpty()) {
+                // 显示播放列表选择弹窗
+                dialogViewModel.showPlaylistPickerDialog(
+                    playlists = playlistViewModel.userCustomPlaylists.value,
+                    title = "选择播放列表",
+                    onConfirm = { selectedPlaylist ->
+                        // 批量添加歌曲到选择的播放列表
+                        val itemsToAdd = selectedMusicList.map {
+                            it.music.id to it.music.path
+                        }
+                        playlistViewModel.addItemsToPlaylist(
+                            playlistId = selectedPlaylist.id,
+                            items = itemsToAdd,
+                            onComplete = {
+                                dialogManager.showMessage("已添加 ${selectedMusicList.size} 首歌曲到播放列表")
+                            }
+                        )
+                    }
+                )
+            }
         }
         override fun onBatchDelete(selectedIds: Set<Long>) {
             if (selectedIds.isEmpty()) return

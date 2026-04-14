@@ -53,6 +53,9 @@ object Routes {
     /** 艺术家页路由 */
     @Serializable data class Artist(val name: String) : NavKey
     
+    /** 专辑页路由 */
+    @Serializable data class Album(val name: String) : NavKey
+    
     /** 音频效果页路由 */
     @Serializable object AudioEffects : NavKey
     

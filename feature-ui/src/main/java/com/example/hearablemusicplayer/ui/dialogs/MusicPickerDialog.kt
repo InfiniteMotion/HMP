@@ -155,6 +155,7 @@ fun MusicPickerDialog(
                                     Text(
                                         text = musicInfo.music.title,
                                         style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
