@@ -113,7 +113,7 @@ data class GalleryItemOptions(
  */
 data class ListConfig(
     val key: (Int, MusicInfo) -> Any = { i, m -> "${m.music.id}_$i" },
-    val bottomSpacerHeight: Dp = 72.dp,
+    val bottomSpacerHeight: Dp = 88.dp,
     val enableLongPressToEnterEdit: Boolean = false,
 )
 

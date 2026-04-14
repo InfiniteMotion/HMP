@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.viewmodel.FolderInfo
@@ -94,6 +95,7 @@ fun LibrarySettingsScreen(
                 onHideFolder = libraryViewModel::hideFolder,
                 onUnhideFolder = libraryViewModel::restoreToLibrary
             )
+            MiniPlayerSafeSpacer(height = 56.dp)
         }
     }
 }

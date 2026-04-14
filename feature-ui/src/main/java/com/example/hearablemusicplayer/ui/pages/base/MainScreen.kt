@@ -38,12 +38,10 @@ import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
-import com.example.hearablemusicplayer.ui.dialog.ConfirmDialog
-import com.example.hearablemusicplayer.ui.dialog.InputDialog
+import com.example.hearablemusicplayer.ui.dialogs.CreatePlaylistDialog
 import com.example.hearablemusicplayer.ui.dialogs.MessageToast
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.dialogs.MusicPickerDialog
-import com.example.hearablemusicplayer.ui.dialogs.PlaylistPickerDialog
 import com.example.hearablemusicplayer.ui.pages.AIScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
 import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
@@ -62,7 +60,15 @@ import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.example.hearablemusicplayer.ui.util.DialogEvent
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_INTENSITY
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MATERIAL_PRESET
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MODE
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_NOISE_FACTOR
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_TINT_ALPHA
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -93,6 +99,20 @@ fun MainScreen(
     // 根据customMode确定主题模式
     val customMode by settingsViewModel.customMode.collectAsState("default")
     val backgroundStyleString by settingsViewModel.backgroundStyle.collectAsState("FLUID")
+    val hazeMode by settingsViewModel.hazeMode.collectAsState(DEFAULT_HAZE_MODE)
+    val hazeMaterialPreset by settingsViewModel.hazeMaterialPreset.collectAsState(DEFAULT_HAZE_MATERIAL_PRESET)
+    val hazeBlurRadius by settingsViewModel.hazeBlurRadius.collectAsState(DEFAULT_HAZE_BLUR_RADIUS)
+    val hazeNoiseFactor by settingsViewModel.hazeNoiseFactor.collectAsState(DEFAULT_HAZE_NOISE_FACTOR)
+    val hazeTintAlpha by settingsViewModel.hazeTintAlpha.collectAsState(DEFAULT_HAZE_TINT_ALPHA)
+    val hazeIntensity by settingsViewModel.hazeIntensity.collectAsState(DEFAULT_HAZE_INTENSITY)
+    val hazeRenderSettings = HazeRenderSettings(
+        mode = hazeMode,
+        preset = hazeMaterialPreset,
+        intensity = hazeIntensity,
+        blurRadius = hazeBlurRadius,
+        noiseFactor = hazeNoiseFactor,
+        tintAlpha = hazeTintAlpha
+    )
     val backgroundStyle = try {
         BackgroundStyle.valueOf(backgroundStyleString)
     } catch (e: Exception) {
@@ -149,7 +169,10 @@ fun MainScreen(
     MaterialTheme(
         colorScheme = colorScheme
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        ProvideHazeRenderSettings(
+            settings = hazeRenderSettings
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -418,18 +441,23 @@ fun MainScreen(
                                 LibrarySettingsScreen(navController = navController)
                             }
                             entry<Routes.Search> {
-                                SearchScreen(navController = navController)
+                                SearchScreen(
+                                    navController = navController,
+                                    dialogViewModel = dialogViewModel
+                                )
                             }
                             entry<Routes.Playlist> { route ->
                                 PlaylistScreen(
                                     navController = navController,
                                     playlistName = route.name,
+                                    dialogViewModel = dialogViewModel,
                                 )
                             }
                             entry<Routes.CustomPlaylist> { route ->
                                 PlaylistScreen(
                                     navController = navController,
-                                    playlistId = route.playlistId
+                                    playlistId = route.playlistId,
+                                    dialogViewModel = dialogViewModel
                                 )
                             }
                             entry<Routes.UserPlaylistManage> {
@@ -438,7 +466,8 @@ fun MainScreen(
                             entry<Routes.Artist> { route ->
                                 ArtistScreen(
                                     navController = navController,
-                                    artistName = route.name
+                                    artistName = route.name,
+                                    dialogViewModel = dialogViewModel
                                 )
                             }
                             entry<Routes.AudioEffects> {
@@ -556,59 +585,39 @@ fun MainScreen(
                 }
             }
 
-            dialogEvent?.let { event ->
-                when (event) {
-                    is DialogEvent.Message -> {
-                    }
-                    is DialogEvent.MusicDetail -> Unit
-                    is DialogEvent.MusicPicker -> {
-                        MusicPickerDialog(
-                            allMusic = event.allMusic,
-                            selectedIds = event.selectedIds,
-                            title = event.title,
-                            onConfirm = { event.onConfirm(it); dialogManager.dismissDialog() },
-                            onDismiss = { dialogManager.dismissDialog() }
-                        )
-                    }
-                    is DialogEvent.PlaylistPicker -> {
-                        PlaylistPickerDialog(
-                            playlists = event.playlists,
-                            title = event.title,
-                            onConfirm = { event.onConfirm(it); dialogManager.dismissDialog() },
-                            onDismiss = { dialogManager.dismissDialog() }
-                        )
-                    }
-                    is DialogEvent.Confirm -> {
-                        ConfirmDialog(
-                            visible = true,
-                            title = event.title,
-                            message = event.message,
-                            onConfirm = { event.onConfirm(); dialogManager.dismissDialog() },
-                            onDismiss = { event.onDismiss(); dialogManager.dismissDialog() }
-                        )
-                    }
-                    is DialogEvent.Input -> {
-                        InputDialog(
-                            visible = true,
-                            title = event.title,
-                            hint = event.hint,
-                            initialValue = event.initialValue,
-                            singleLine = !event.isMultiline,
-                            onConfirm = { event.onConfirm(it); dialogManager.dismissDialog() },
-                            onDismiss = { event.onDismiss(); dialogManager.dismissDialog() }
-                        )
-                    }
+            val activeDialogState by dialogViewModel.activeDialog.collectAsState()
+            when (val state = activeDialogState) {
+                is DialogViewModel.DialogUiState.MusicDetail -> {
+                    MusicDetailDialog(
+                        dialogViewModel = dialogViewModel,
+                        onDismiss = {
+                            dialogViewModel.dismissMusicDetailDialog()
+                        },
+                        navController = navController,
+                        hazeState = hazeState,
+                        hazeRenderSettings = hazeRenderSettings
+                    )
                 }
+                is DialogViewModel.DialogUiState.CreatePlaylist -> {
+                    CreatePlaylistDialog(
+                        dialogViewModel = dialogViewModel,
+                        hazeState = hazeState,
+                        hazeRenderSettings = hazeRenderSettings
+                    )
+                }
+                is DialogViewModel.DialogUiState.MusicPicker -> {
+                    MusicPickerDialog(
+                        allMusic = state.state.allMusic,
+                        selectedIds = state.state.selectedIds,
+                        title = state.state.title,
+                        onConfirm = dialogViewModel::confirmMusicPickerDialog,
+                        onDismiss = dialogViewModel::dismissMusicPickerDialog,
+                        hazeState = hazeState,
+                        hazeRenderSettings = hazeRenderSettings
+                    )
+                }
+                null -> Unit
             }
-
-            MusicDetailDialog(
-                dialogViewModel = dialogViewModel,
-                onDismiss = {
-                    dialogViewModel.dismissMusicDetailDialog()
-                },
-                navController = navController,
-                hazeState = hazeState
-            )
 
             messageToShowState.value?.let { message ->
                 MessageToast(
@@ -616,11 +625,13 @@ fun MainScreen(
                     duration = message.duration,
                     id = message.id,
                     hazeState = hazeState,
+                    hazeRenderSettings = hazeRenderSettings,
                     onDismiss = { messageToShowState.value = null }
                 )
             }
         }
     }
+}
 }
 
 

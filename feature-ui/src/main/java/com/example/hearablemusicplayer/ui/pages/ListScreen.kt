@@ -29,12 +29,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,12 +68,14 @@ import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    dialogViewModel: DialogViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
@@ -93,6 +93,7 @@ fun ListScreen(
         eraList = eraList,
         userCustomPlaylists = userCustomPlaylists,
         playlistViewModel = playlistViewModel,
+        dialogViewModel = dialogViewModel,
         navController = navController
     )
 }
@@ -107,11 +108,10 @@ fun ListScreenContent(
     eraList: List<LabelName>,
     userCustomPlaylists: List<Playlist>,
     playlistViewModel: PlaylistViewModel,
+    dialogViewModel: DialogViewModel,
     navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
-    var showNewPlaylistDialog by remember { mutableStateOf(false) }
-    var newPlaylistName by remember { mutableStateOf("") }
 
     // 与列表管理页一致：置顶优先，再按最近播放、更新时间
     val sortedUserPlaylists = remember(userCustomPlaylists) {
@@ -122,48 +122,19 @@ fun ListScreenContent(
         )
     }
 
-    if (showNewPlaylistDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewPlaylistDialog = false; newPlaylistName = "" },
-            title = { Text(stringResource(R.string.new_playlist_dialog_title)) },
-            text = {
-                OutlinedTextField(
-                    value = newPlaylistName,
-                    onValueChange = { newPlaylistName = it },
-                    label = { Text(stringResource(R.string.playlist_name_hint)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val name = newPlaylistName.trim()
-                        if (name.isNotEmpty()) {
-                            playlistViewModel.createPlaylistAsync(name) { id ->
-                                showNewPlaylistDialog = false
-                                newPlaylistName = ""
-                                navController.add(Routes.CustomPlaylist(id))
-                            }
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewPlaylistDialog = false; newPlaylistName = "" }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
     TabScreen(
         title = stringResource(R.string.title_playlist),
         hasSearchBotton = false,
         navController = navController,
         trailing = {
-            NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
+            NewPlaylistButton(
+                onClick = {
+                    dialogViewModel.showCreatePlaylistDialog { id ->
+                        playlistViewModel.loadUserCustomPlaylists()
+                        navController.add(Routes.CustomPlaylist(id))
+                    }
+                }
+            )
         }
     ) {
         Column(

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -34,6 +35,15 @@ private val Context.dataStore by preferencesDataStore(name = "player_preferences
 class SettingsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : SettingsRepository {
+    private companion object {
+        const val HAZE_MODE_CUSTOM = "custom"
+        const val HAZE_MODE_PRESET = "preset"
+        const val HAZE_MATERIAL_PRESET_REGULAR = "regular"
+        const val DEFAULT_HAZE_BLUR_RADIUS = 20f
+        const val DEFAULT_HAZE_NOISE_FACTOR = 0.15f
+        const val DEFAULT_HAZE_TINT_ALPHA = 0.22f
+    }
+
     // 定义 DataStore 中的键
     private object PreferencesKeys {
         val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
@@ -48,6 +58,12 @@ class SettingsRepositoryImpl @Inject constructor(
         val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val BACKGROUND_STYLE = stringPreferencesKey("background_style")
+        val HAZE_MODE = stringPreferencesKey("haze_mode")
+        val HAZE_MATERIAL_PRESET = stringPreferencesKey("haze_material_preset")
+        val HAZE_BLUR_RADIUS = floatPreferencesKey("haze_blur_radius")
+        val HAZE_NOISE_FACTOR = floatPreferencesKey("haze_noise_factor")
+        val HAZE_TINT_ALPHA = floatPreferencesKey("haze_tint_alpha")
+        val HAZE_INTENSITY = floatPreferencesKey("haze_intensity")
         
         // 多 AI 服务商配置键
         val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider")
@@ -96,6 +112,17 @@ class SettingsRepositoryImpl @Inject constructor(
     // DataStore 访问实例
     private val dataStore = context.dataStore
 
+    private fun normalizeHazeMode(mode: String): String {
+        return if (mode == HAZE_MODE_PRESET) HAZE_MODE_PRESET else HAZE_MODE_CUSTOM
+    }
+
+    private fun normalizeHazeMaterialPreset(preset: String): String {
+        return when (preset) {
+            "ultra_thin", "thin", "regular", "thick", "ultra_thick" -> preset
+            else -> HAZE_MATERIAL_PRESET_REGULAR
+        }
+    }
+
     override val isFirstLaunch: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.IS_FIRST_LAUNCH] ?: true }
 
@@ -110,6 +137,28 @@ class SettingsRepositoryImpl @Inject constructor(
     // 动态背景风格
     override val backgroundStyle: Flow<String> = dataStore.data
         .map { prefs -> prefs[PreferencesKeys.BACKGROUND_STYLE] ?: "FLUID" }
+
+    override val hazeMode: Flow<String> = dataStore.data
+        .map { prefs -> normalizeHazeMode(prefs[PreferencesKeys.HAZE_MODE] ?: HAZE_MODE_CUSTOM) }
+
+    override val hazeMaterialPreset: Flow<String> = dataStore.data
+        .map { prefs ->
+            normalizeHazeMaterialPreset(
+                prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] ?: HAZE_MATERIAL_PRESET_REGULAR
+            )
+        }
+
+    override val hazeBlurRadius: Flow<Float> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.HAZE_BLUR_RADIUS] ?: DEFAULT_HAZE_BLUR_RADIUS }
+
+    override val hazeNoiseFactor: Flow<Float> = dataStore.data
+        .map { prefs -> (prefs[PreferencesKeys.HAZE_NOISE_FACTOR] ?: DEFAULT_HAZE_NOISE_FACTOR).coerceIn(0f, 1f) }
+
+    override val hazeTintAlpha: Flow<Float> = dataStore.data
+        .map { prefs -> (prefs[PreferencesKeys.HAZE_TINT_ALPHA] ?: DEFAULT_HAZE_TINT_ALPHA).coerceIn(0f, 1f) }
+
+    override val hazeIntensity: Flow<Float> = dataStore.data
+        .map { prefs -> prefs[PreferencesKeys.HAZE_INTENSITY] ?: 0.6f }
 
     // 应用是否已加载音乐,如果未设置则为 0
     override val isLoadMusic: Flow<Boolean> = dataStore.data
@@ -201,6 +250,42 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveBackgroundStyle(style: String) {
         dataStore.edit { prefs ->
             prefs[PreferencesKeys.BACKGROUND_STYLE] = style
+        }
+    }
+
+    override suspend fun saveHazeMode(mode: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(mode)
+        }
+    }
+
+    override suspend fun saveHazeMaterialPreset(preset: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] = normalizeHazeMaterialPreset(preset)
+        }
+    }
+
+    override suspend fun saveHazeBlurRadius(radius: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_BLUR_RADIUS] = radius.coerceAtLeast(0f)
+        }
+    }
+
+    override suspend fun saveHazeNoiseFactor(noiseFactor: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_NOISE_FACTOR] = noiseFactor.coerceIn(0f, 1f)
+        }
+    }
+
+    override suspend fun saveHazeTintAlpha(alpha: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_TINT_ALPHA] = alpha.coerceIn(0f, 1f)
+        }
+    }
+
+    override suspend fun saveHazeIntensity(intensity: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAZE_INTENSITY] = intensity.coerceIn(0f, 1f)
         }
     }
 
@@ -543,6 +628,7 @@ class SettingsRepositoryImpl @Inject constructor(
                         is Boolean -> append(value)
                         is Long -> append(value)
                         is Int -> append(value)
+                        is Float -> append(value)
                         else -> append("null")
                     }
                 }
@@ -608,6 +694,25 @@ class SettingsRepositoryImpl @Inject constructor(
                         }
                         PreferencesKeys.AVATAR_URI.name -> {
                             prefs[PreferencesKeys.AVATAR_URI] = value.trim('"')
+                        }
+                        PreferencesKeys.HAZE_INTENSITY.name -> {
+                            prefs[PreferencesKeys.HAZE_INTENSITY] = value.toFloat()
+                        }
+                        PreferencesKeys.HAZE_MODE.name -> {
+                            prefs[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(value.trim('"'))
+                        }
+                        PreferencesKeys.HAZE_MATERIAL_PRESET.name -> {
+                            prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] =
+                                normalizeHazeMaterialPreset(value.trim('"'))
+                        }
+                        PreferencesKeys.HAZE_BLUR_RADIUS.name -> {
+                            prefs[PreferencesKeys.HAZE_BLUR_RADIUS] = value.toFloat().coerceAtLeast(0f)
+                        }
+                        PreferencesKeys.HAZE_NOISE_FACTOR.name -> {
+                            prefs[PreferencesKeys.HAZE_NOISE_FACTOR] = value.toFloat().coerceIn(0f, 1f)
+                        }
+                        PreferencesKeys.HAZE_TINT_ALPHA.name -> {
+                            prefs[PreferencesKeys.HAZE_TINT_ALPHA] = value.toFloat().coerceIn(0f, 1f)
                         }
                         PreferencesKeys.DEEPSEEK_API_KEY.name -> {
                             prefs[PreferencesKeys.DEEPSEEK_API_KEY] = value.trim('"')
@@ -823,6 +928,16 @@ class SettingsRepositoryImpl @Inject constructor(
         val avatarUri = prefs[PreferencesKeys.AVATAR_URI]
         val themeMode = prefs[PreferencesKeys.THEME_MODE] ?: "default"
         val backgroundStyle = prefs[PreferencesKeys.BACKGROUND_STYLE] ?: "FLUID"
+        val hazeMode = normalizeHazeMode(prefs[PreferencesKeys.HAZE_MODE] ?: HAZE_MODE_CUSTOM)
+        val hazeMaterialPreset = normalizeHazeMaterialPreset(
+            prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] ?: HAZE_MATERIAL_PRESET_REGULAR
+        )
+        val hazeBlurRadius = prefs[PreferencesKeys.HAZE_BLUR_RADIUS] ?: DEFAULT_HAZE_BLUR_RADIUS
+        val hazeNoiseFactor = (prefs[PreferencesKeys.HAZE_NOISE_FACTOR] ?: DEFAULT_HAZE_NOISE_FACTOR)
+            .coerceIn(0f, 1f)
+        val hazeTintAlpha = (prefs[PreferencesKeys.HAZE_TINT_ALPHA] ?: DEFAULT_HAZE_TINT_ALPHA)
+            .coerceIn(0f, 1f)
+        val hazeIntensity = prefs[PreferencesKeys.HAZE_INTENSITY] ?: 0.6f
         val autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false
         val dailyRefreshMode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time"
         val dailyRefreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24
@@ -836,6 +951,12 @@ class SettingsRepositoryImpl @Inject constructor(
             avatarUri = avatarUri,
             themeMode = themeMode,
             backgroundStyle = backgroundStyle,
+            hazeMode = hazeMode,
+            hazeMaterialPreset = hazeMaterialPreset,
+            hazeBlurRadius = hazeBlurRadius,
+            hazeNoiseFactor = hazeNoiseFactor,
+            hazeTintAlpha = hazeTintAlpha,
+            hazeIntensity = hazeIntensity,
             autoBatchProcess = autoBatchProcess,
             dailyRefreshMode = dailyRefreshMode,
             dailyRefreshHours = dailyRefreshHours,
@@ -851,6 +972,13 @@ class SettingsRepositoryImpl @Inject constructor(
             snapshot.avatarUri?.let { prefs[PreferencesKeys.AVATAR_URI] = it }
             prefs[PreferencesKeys.THEME_MODE] = snapshot.themeMode
             prefs[PreferencesKeys.BACKGROUND_STYLE] = snapshot.backgroundStyle
+            prefs[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(snapshot.hazeMode)
+            prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] =
+                normalizeHazeMaterialPreset(snapshot.hazeMaterialPreset)
+            prefs[PreferencesKeys.HAZE_BLUR_RADIUS] = snapshot.hazeBlurRadius.coerceAtLeast(0f)
+            prefs[PreferencesKeys.HAZE_NOISE_FACTOR] = snapshot.hazeNoiseFactor.coerceIn(0f, 1f)
+            prefs[PreferencesKeys.HAZE_TINT_ALPHA] = snapshot.hazeTintAlpha.coerceIn(0f, 1f)
+            prefs[PreferencesKeys.HAZE_INTENSITY] = snapshot.hazeIntensity.coerceIn(0f, 1f)
             prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = snapshot.autoBatchProcess
             prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
             prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours

@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import androidx.lifecycle.SavedStateHandle
-import com.example.hearablemusicplayer.ui.util.Routes
 
 /** 播放列表详情页 UI 状态 */
 data class PlaylistUiState(
@@ -41,7 +40,6 @@ class PlaylistViewModel @Inject constructor(
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-
     // 标签分类列表名
     val genrePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.GENRE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -134,7 +132,6 @@ class PlaylistViewModel @Inject constructor(
     init {
         initializeDefaultPlaylists()
         loadUserCustomPlaylists()
-        loadRouteData()
     }
 
     private fun loadRouteData() {
@@ -252,14 +249,33 @@ class PlaylistViewModel @Inject constructor(
         }
     }
 
+    /** 向播放列表批量追加歌曲，完成后统一刷新一次 */
+    fun addItemsToPlaylist(
+        playlistId: Long,
+        items: List<Pair<Long, String>>,
+        onComplete: (() -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            items.forEach { (musicId, musicPath) ->
+                managePlaylistUseCase.addToPlaylist(playlistId, musicId, musicPath)
+            }
+            if (playlistId == _selectedPlaylistId.value) {
+                refreshSelectedPlaylistMeta()
+            }
+            onComplete?.invoke()
+        }
+    }
+
     /** 添加歌曲选择器用：全部音乐列表 */
     private val _allMusicForAddPicker = MutableStateFlow<List<MusicInfo>>(emptyList())
     val allMusicForAddPicker: StateFlow<List<MusicInfo>> = _allMusicForAddPicker.asStateFlow()
 
     /** 加载全部音乐供「添加歌曲」选择器使用 */
-    fun loadAllMusicForAddPicker() {
+    fun loadAllMusicForAddPicker(onLoaded: ((List<MusicInfo>) -> Unit)? = null) {
         viewModelScope.launch {
-            _allMusicForAddPicker.value = getAllMusicUseCase("title", "ASC")
+            val allMusic = getAllMusicUseCase("title", "ASC")
+            _allMusicForAddPicker.value = allMusic
+            onLoaded?.invoke(allMusic)
         }
     }
 

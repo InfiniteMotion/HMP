@@ -43,7 +43,8 @@ import androidx.compose.foundation.layout.height
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
+import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
+import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 
 /**
  * 悬浮迷你播放器组件
@@ -94,7 +95,7 @@ fun MiniPlayerBar(
                 if (hazeState != null) {
                     Modifier.hazeEffect(
                         state = hazeState,
-                        style = HazeMaterials.ultraThin()
+                        style = hazeStyleForIntensity()
                     )
                 } else Modifier
             )
@@ -111,7 +112,7 @@ fun MiniPlayerBar(
         shape = barShape,
         colors = CardDefaults.cardColors(
             containerColor = if (hazeState != null) {
-                Transparent
+                MaterialTheme.colorScheme.surface.copy(alpha = hazeTintAlpha())
             } else {
                 MaterialTheme.colorScheme.surface
             }

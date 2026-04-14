@@ -44,6 +44,7 @@ import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
+import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
@@ -84,6 +85,7 @@ fun ProfileSettingsScreen(
                 userName = userName,
                 updateUserName = settingsViewModel::saveUserName
             )
+            MiniPlayerSafeSpacer(height = 56.dp)
         }
     }
 }

@@ -30,11 +30,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
+import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.util.MessageDuration
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
@@ -44,8 +48,10 @@ fun MessageToast(
     duration: MessageDuration,
     id: Long,
     hazeState: HazeState?,
+    hazeRenderSettings: HazeRenderSettings? = null,
     onDismiss: () -> Unit
 ) {
+    val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
     // 每次消息变化时，重新创建可见性状态
     var visible by remember(id) { mutableStateOf(false) }
     var isExiting by remember(id) { mutableStateOf(false) }
@@ -70,59 +76,67 @@ fun MessageToast(
         onDismiss()
     }
 
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-            initialOffsetY = { -100 }, // 固定的偏移量，使动画更明显
-            animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-        ),
-        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-            targetOffsetY = { if (isExiting) -100 else 100 }, // 正常退出向上，被覆盖时向下
-            animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 48.dp),
-            contentAlignment = Alignment.TopCenter
+    ProvideHazeRenderSettings(settings = resolvedHazeRenderSettings) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                initialOffsetY = { -100 }, // 固定的偏移量，使动画更明显
+                animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+            ),
+            exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                targetOffsetY = { if (isExiting) -100 else 100 }, // 正常退出向上，被覆盖时向下
+                animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+            )
         ) {
             Box(
                 modifier = Modifier
-                    .width(150.dp) // 宽度缩减一半
-                    .clip(RoundedCornerShape(30.dp)) // 扩大圆角成胶囊形状
-                    .then(
-                        if (hazeState != null) {
-                            Modifier.hazeEffect(
-                                state = hazeState,
-                                style = HazeMaterials.thin()
-                            )
-                        } else Modifier
-                    )
-                    .background(if (hazeState != null) Transparent else MaterialTheme.colorScheme.surface)
-                    .border(
-                        BorderStroke(
-                            width = 0.5.dp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
-                        ),
-                        shape = RoundedCornerShape(30.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
+                contentAlignment = Alignment.TopCenter
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .width(150.dp) // 宽度缩减一半
+                        .clip(RoundedCornerShape(30.dp)) // 扩大圆角成胶囊形状
+                        .then(
+                            if (hazeState != null) {
+                                Modifier.hazeEffect(
+                                    state = hazeState,
+                                    style = hazeStyleForIntensity()
+                                )
+                            } else Modifier
+                        )
+                        .background(
+                            if (hazeState != null) {
+                                MaterialTheme.colorScheme.surface.copy(alpha = hazeTintAlpha())
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
+                        )
+                        .border(
+                            BorderStroke(
+                                width = 0.5.dp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
+                            ),
+                            shape = RoundedCornerShape(30.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        message.split("\n").forEach { line ->
-                            Text(
-                                text = line,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            message.split("\n").forEach { line ->
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }

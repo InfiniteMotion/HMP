@@ -9,25 +9,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,17 +31,22 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,26 +59,20 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.controller.DialogManager
-import com.example.hearablemusicplayer.ui.dialog.InputDialog
-import com.example.hearablemusicplayer.ui.dialogs.ScrimDialog
 import com.example.hearablemusicplayer.ui.components.AlbumCover
-import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.FixedMusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
-import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
-import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
+import com.example.hearablemusicplayer.ui.dialog.InputDialog
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -91,10 +83,10 @@ fun PlaylistScreen(
     artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
-    // 手动调用相应的加载方法，传入参数
     LaunchedEffect(playlistId, playlistName, artistName) {
         when {
             playlistId != null -> {
@@ -110,26 +102,8 @@ fun PlaylistScreen(
     }
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
-    val allMusicForAdd by playlistViewModel.allMusicForAddPicker.collectAsState()
-    var showAddSongDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(showAddSongDialog) {
-        if (showAddSongDialog) playlistViewModel.loadAllMusicForAddPicker()
-    }
-
-    if (showAddSongDialog && uiState.selectedPlaylistId != null) {
-        val context = LocalContext.current
-        val addedMessage = stringResource(R.string.song_added)
-        AddSongToPlaylistDialog(
-            allMusic = allMusicForAdd,
-            currentInPlaylistIds = uiState.playlist.map { it.music.id }.toSet(),
-            onAdd = { musicId, path ->
-                playlistViewModel.addItemToPlaylist(uiState.selectedPlaylistId!!, musicId, path)
-                dialogManager.showMessage(addedMessage)
-            },
-            onDismiss = { showAddSongDialog = false }
-        )
-    }
+    val addedMessage = stringResource(R.string.song_added)
+    val addSongsDialogTitle = stringResource(R.string.add_songs_to_playlist)
 
     PlaylistScreenContent(
         isPlaying = isPlaying,
@@ -153,6 +127,7 @@ fun PlaylistScreen(
         onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
+        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
         onUpdateDescription = { id, desc -> playlistViewModel.updatePlaylistDescription(id, desc) },
         onSetPinned = { id, pinned -> playlistViewModel.setPlaylistPinned(id, pinned) },
@@ -163,8 +138,38 @@ fun PlaylistScreen(
                 playlistViewModel.reorderPlaylistItems(pid, orderedIds)
             }
         },
-        onAddSongsClick = if (uiState.selectedPlaylistId != null) {
-            { showAddSongDialog = true }
+        onAddSongsClick = if (uiState.isCustomPlaylist && uiState.selectedPlaylistId != null) {
+            {
+                val selectedPlaylistId = uiState.selectedPlaylistId!!
+                val existingIds = uiState.playlist.map { it.music.id }.toSet()
+                playlistViewModel.loadAllMusicForAddPicker { allMusic ->
+                    val candidates = allMusic.filter { it.music.id !in existingIds }
+                    dialogViewModel.showMusicPickerDialog(
+                        allMusic = candidates,
+                        selectedIds = emptySet(),
+                        title = addSongsDialogTitle,
+                        onConfirm = { selectedIds ->
+                            val itemsToAdd = selectedIds.mapNotNull { songId ->
+                                val musicPath = candidates.firstOrNull { it.music.id == songId }?.music?.path
+                                if (musicPath.isNullOrBlank()) {
+                                    null
+                                } else {
+                                    songId to musicPath
+                                }
+                            }
+                            playlistViewModel.addItemsToPlaylist(
+                                playlistId = selectedPlaylistId,
+                                items = itemsToAdd,
+                                onComplete = {
+                                    if (selectedIds.isNotEmpty()) {
+                                        dialogManager.showMessage(addedMessage)
+                                    }
+                                }
+                            )
+                        }
+                    )
+                }
+            }
         } else null
     )
 }
@@ -188,6 +193,7 @@ fun PlaylistScreenContent(
     onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
+    onShowMusicDetailDialog: (MusicInfo) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,
     onUpdateDescription: (Long, String?) -> Unit,
     onSetPinned: (Long, Boolean) -> Unit,
@@ -206,6 +212,61 @@ fun PlaylistScreenContent(
         )
     }
     var isListEditMode by remember { mutableStateOf(false) }
+    val musicListState = rememberLazyListState()
+    val density = LocalDensity.current
+    val maxHeaderCollapsePx = with(density) { 160.dp.toPx() }
+    val headerExpandDamping = 0.80f
+    var headerCollapseOffsetPx by remember(selectedPlaylistId, playlistName) { mutableFloatStateOf(0f) }
+    val isMusicListAtTop by remember {
+        derivedStateOf {
+            musicListState.firstVisibleItemIndex == 0 && musicListState.firstVisibleItemScrollOffset == 0
+        }
+    }
+    val shouldCollapseHeader by remember(isCustomPlaylist) {
+        derivedStateOf {
+            isCustomPlaylist && headerCollapseOffsetPx > 1f
+        }
+    }
+
+    // Keep header in collapsed state whenever the inner list has moved away from top.
+    LaunchedEffect(
+        isCustomPlaylist,
+        musicListState.firstVisibleItemIndex,
+        musicListState.firstVisibleItemScrollOffset
+    ) {
+        if (
+            isCustomPlaylist &&
+            (musicListState.firstVisibleItemIndex > 0 || musicListState.firstVisibleItemScrollOffset > 24) &&
+            headerCollapseOffsetPx < maxHeaderCollapsePx
+        ) {
+            headerCollapseOffsetPx = maxHeaderCollapsePx
+        }
+    }
+    val nestedScrollConnection = remember(isCustomPlaylist, maxHeaderCollapsePx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!isCustomPlaylist || source != NestedScrollSource.UserInput) return Offset.Zero
+
+                // Upward drag: collapse header first, then let MusicList scroll.
+                if (available.y < 0f && headerCollapseOffsetPx < maxHeaderCollapsePx) {
+                    val consume = minOf(-available.y, maxHeaderCollapsePx - headerCollapseOffsetPx)
+                    headerCollapseOffsetPx += consume
+                    return Offset(x = 0f, y = -consume)
+                }
+
+                // Downward drag: when list at top, expand header first.
+                if (available.y > 0f && isMusicListAtTop && headerCollapseOffsetPx > 0f) {
+                    // Damping only: keep pull responsive but resistant.
+                    val damped = available.y * headerExpandDamping
+                    val consume = minOf(damped, headerCollapseOffsetPx)
+                    headerCollapseOffsetPx -= consume
+                    return Offset(x = 0f, y = consume)
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
 
     // 重命名歌单弹窗
     InputDialog(
@@ -256,17 +317,24 @@ fun PlaylistScreenContent(
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth(),
+                .fillMaxSize()
+                .fillMaxWidth()
+                .nestedScroll(nestedScrollConnection),
         ) {
-            if (playlistMeta != null) {
-                PlaylistHeader(
-                    meta = playlistMeta
-                )
+            if (isCustomPlaylist && playlistMeta != null) {
+                AnimatedVisibility(
+                    visible = !shouldCollapseHeader,
+                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                    exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(150))
+                ) {
+                    PlaylistHeader(
+                        meta = playlistMeta
+                    )
+                }
             }
             if (isCustomPlaylist && selectedPlaylistId != null) {
                 AnimatedVisibility(
-                    visible = isListEditMode,
+                    visible = isListEditMode && !shouldCollapseHeader,
                     enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
                     exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)),
                 ) {
@@ -347,7 +415,7 @@ fun PlaylistScreenContent(
                     coroutineScope.launch { playWith(musicInfo) }
                 }
                 override fun onMenuClick(musicInfo: MusicInfo) {
-                    onNavigate(Routes.SongDetail(musicInfo.music.id))
+                    onShowMusicDetailDialog(musicInfo)
                 }
                 override fun onRemoveFromPlaylist(musicInfo: MusicInfo) {
                     selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
@@ -399,10 +467,13 @@ fun PlaylistScreenContent(
                         ?: FullItemOptions(showPinButton = true, showRemoveButton = false, showMenuButton = true),
                 ),
             )
-            FixedMusicList(
+            MusicList(
                 musicInfoList = playlist,
                 config = config,
-                modifier = Modifier.fillMaxWidth(),
+                listState = musicListState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 isPlaying = isPlaying,
             )
         }
@@ -518,90 +589,6 @@ private fun PlaylistHeader(
                         .padding(horizontal = 8.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun AddSongToPlaylistDialog(
-    allMusic: List<MusicInfo>,
-    currentInPlaylistIds: Set<Long>,
-    onAdd: (musicId: Long, path: String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val toShow = allMusic.filter { it.music.id !in currentInPlaylistIds }
-    ScrimDialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.add_songs_to_playlist),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                if (toShow.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No songs available to add",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    val callbacks = object : MusicListCallbacksAdapter() {
-                        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                            onAdd(musicInfo.music.id, musicInfo.music.path)
-                        }
-                    }
-                    val config = defaultMusicListConfig(callbacks).copy(
-                        header = HeaderConfig.None,
-                        item = ItemConfig(
-                            variant = ItemVariant.Full,
-                            fullOptions = FullItemOptions(
-                                showPinButton = false,
-                                showRemoveButton = false,
-                                showMenuButton = false,
-                            ),
-                        ),
-                        edit = EditConfig(enabled = false),
-                    )
-                    MusicList(
-                        musicInfoList = toShow,
-                        config = config,
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                        isPlaying = false,
-                    )
-                }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
             }
         }
     }

@@ -29,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,14 @@ import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.dialogs.MusicScanDialog
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_BLUR_RADIUS
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_INTENSITY
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MATERIAL_PRESET
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MODE
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_NOISE_FACTOR
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_TINT_ALPHA
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import dev.chrisbanes.haze.HazeState
@@ -56,6 +66,12 @@ fun IntroScreen(
     val isPermissionGiven = remember { mutableStateOf(false) }
     val showScanDialog = remember { mutableStateOf(false) }
     val isScanCompleted = remember { mutableStateOf(false) }
+    val hazeMode by settingsViewModel.hazeMode.collectAsState(DEFAULT_HAZE_MODE)
+    val hazeMaterialPreset by settingsViewModel.hazeMaterialPreset.collectAsState(DEFAULT_HAZE_MATERIAL_PRESET)
+    val hazeBlurRadius by settingsViewModel.hazeBlurRadius.collectAsState(DEFAULT_HAZE_BLUR_RADIUS)
+    val hazeNoiseFactor by settingsViewModel.hazeNoiseFactor.collectAsState(DEFAULT_HAZE_NOISE_FACTOR)
+    val hazeTintAlpha by settingsViewModel.hazeTintAlpha.collectAsState(DEFAULT_HAZE_TINT_ALPHA)
+    val hazeIntensity by settingsViewModel.hazeIntensity.collectAsState(DEFAULT_HAZE_INTENSITY)
     
     val hazeState = rememberHazeState()
     
@@ -74,15 +90,25 @@ fun IntroScreen(
         isPermissionGiven.value = permissions.all { it.value }
     }
 
-    Column(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .hazeSource(state = hazeState)
-            .padding(16.dp)
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    ProvideHazeRenderSettings(
+        settings = HazeRenderSettings(
+            mode = hazeMode,
+            preset = hazeMaterialPreset,
+            intensity = hazeIntensity,
+            blurRadius = hazeBlurRadius,
+            noiseFactor = hazeNoiseFactor,
+            tintAlpha = hazeTintAlpha
+        )
     ) {
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .hazeSource(state = hazeState)
+                .padding(16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         Image(
             painter = painterResource(id = R.mipmap.ic_launcher_foreground),
             contentDescription = "Logo",
@@ -218,6 +244,7 @@ fun IntroScreen(
                     )
                 }
             }
+        }
         }
     }
 }

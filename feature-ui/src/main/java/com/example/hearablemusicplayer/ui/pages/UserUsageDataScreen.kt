@@ -48,6 +48,7 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
 import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
@@ -106,7 +107,6 @@ fun UserUsageDataScreen(
                         navController = navController,
                         haptic = haptic
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
                 is UiState.Error -> {
                     Column(
@@ -126,6 +126,7 @@ fun UserUsageDataScreen(
                     }
                 }
             }
+            MiniPlayerSafeSpacer()
         }
     }
 }

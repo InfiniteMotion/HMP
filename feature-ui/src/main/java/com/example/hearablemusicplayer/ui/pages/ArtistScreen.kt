@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
@@ -41,6 +42,7 @@ fun ArtistScreen(
     artistName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
 ) {
     // 手动调用 getSelectedArtistMusicList 方法，传入 artistName
     LaunchedEffect(artistName) {
@@ -64,9 +66,9 @@ fun ArtistScreen(
             playControlViewModel.addAllToPlaylistInOrder(artistMusicList)
             navController.add(Routes.Player)
         },
-        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist
+        addToPlaylist = playControlViewModel::addToPlaylist,
+        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
     )
 }
 
@@ -80,9 +82,9 @@ fun ArtistScreenContent(
     onBackClick: () -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit
+    addToPlaylist: (MusicInfo) -> Unit,
+    onShowMusicDetailDialog: (MusicInfo) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
@@ -93,7 +95,7 @@ fun ArtistScreenContent(
             scope.launch { playWith(musicInfo) }
         }
         override fun onAddToPlaylist(musicInfo: MusicInfo) { addToPlaylist(musicInfo) }
-        override fun onMenuClick(musicInfo: MusicInfo) { onNavigate(Routes.SongDetail(musicInfo.music.id)) }
+        override fun onMenuClick(musicInfo: MusicInfo) { onShowMusicDetailDialog(musicInfo) }
     }
     val config = defaultMusicListConfig(callbacks).copy(
         header = HeaderConfig.None,

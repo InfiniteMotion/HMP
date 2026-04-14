@@ -42,9 +42,9 @@ import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
-import com.example.hearablemusicplayer.ui.util.Routes
 import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
@@ -56,6 +56,7 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 fun SearchScreen(
     searchViewModel: SearchViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ){
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
@@ -77,9 +78,9 @@ fun SearchScreen(
             searchViewModel.searchMusic(it)
         },
         onBackClick = { navController.removeLastOrNull() },
-        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist
+        addToPlaylist = playControlViewModel::addToPlaylist,
+        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
     )
 }
 
@@ -92,9 +93,9 @@ fun SearchScreenContent(
     currentPlayingMusic: MusicInfo?,
     onSearchQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
-    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit
+    addToPlaylist: (MusicInfo) -> Unit,
+    onShowMusicDetailDialog: (MusicInfo) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
@@ -105,7 +106,7 @@ fun SearchScreenContent(
             scope.launch { playWith(musicInfo) }
         }
         override fun onAddToPlaylist(musicInfo: MusicInfo) { addToPlaylist(musicInfo) }
-        override fun onMenuClick(musicInfo: MusicInfo) { onNavigate(Routes.SongDetail(musicInfo.music.id)) }
+        override fun onMenuClick(musicInfo: MusicInfo) { onShowMusicDetailDialog(musicInfo) }
     }
     val config = defaultMusicListConfig(callbacks).copy(
         header = HeaderConfig.None,

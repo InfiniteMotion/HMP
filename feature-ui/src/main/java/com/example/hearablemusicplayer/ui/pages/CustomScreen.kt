@@ -1,8 +1,10 @@
 package com.example.hearablemusicplayer.ui.pages
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.annotation.StringRes
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -25,6 +29,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -33,8 +39,23 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_BLUR_RADIUS
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MATERIAL_PRESET
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MODE
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_NOISE_FACTOR
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_TINT_ALPHA
+import com.example.hearablemusicplayer.ui.util.HAZE_MODE_CUSTOM
+import com.example.hearablemusicplayer.ui.util.HAZE_MODE_PRESET
+import com.example.hearablemusicplayer.ui.util.HazeMaterialPreset
+import com.example.hearablemusicplayer.ui.util.hazeMaterialPresetFromValue
+import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
+import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun CustomScreen(
@@ -43,13 +64,28 @@ fun CustomScreen(
 ) {
     val customMode by settingsViewModel.customMode.collectAsState("default")
     val backgroundStyle by settingsViewModel.backgroundStyle.collectAsState("FLUID")
+    val hazeMode by settingsViewModel.hazeMode.collectAsState(DEFAULT_HAZE_MODE)
+    val hazeMaterialPreset by settingsViewModel.hazeMaterialPreset.collectAsState(DEFAULT_HAZE_MATERIAL_PRESET)
+    val hazeBlurRadius by settingsViewModel.hazeBlurRadius.collectAsState(DEFAULT_HAZE_BLUR_RADIUS)
+    val hazeNoiseFactor by settingsViewModel.hazeNoiseFactor.collectAsState(DEFAULT_HAZE_NOISE_FACTOR)
+    val hazeTintAlpha by settingsViewModel.hazeTintAlpha.collectAsState(DEFAULT_HAZE_TINT_ALPHA)
     
     CustomScreenContent(
         customMode = customMode,
         backgroundStyle = backgroundStyle,
+        hazeMode = hazeMode,
+        hazeMaterialPreset = hazeMaterialPreset,
+        hazeBlurRadius = hazeBlurRadius,
+        hazeNoiseFactor = hazeNoiseFactor,
+        hazeTintAlpha = hazeTintAlpha,
         onBackClick = { navController.removeLastOrNull() },
         setCustomMode = settingsViewModel::saveCustomMode,
-        setBackgroundStyle = settingsViewModel::saveBackgroundStyle
+        setBackgroundStyle = settingsViewModel::saveBackgroundStyle,
+        setHazeMode = settingsViewModel::saveHazeMode,
+        applyHazeMaterialPreset = settingsViewModel::applyHazeMaterialPreset,
+        setHazeBlurRadius = settingsViewModel::saveHazeBlurRadius,
+        setHazeNoiseFactor = settingsViewModel::saveHazeNoiseFactor,
+        setHazeTintAlpha = settingsViewModel::saveHazeTintAlpha
     )
 }
 
@@ -57,9 +93,19 @@ fun CustomScreen(
 fun CustomScreenContent(
     customMode: String,
     backgroundStyle: String,
+    hazeMode: String,
+    hazeMaterialPreset: String,
+    hazeBlurRadius: Float,
+    hazeNoiseFactor: Float,
+    hazeTintAlpha: Float,
     onBackClick: () -> Unit,
     setCustomMode: (String) -> Unit,
-    setBackgroundStyle: (String) -> Unit
+    setBackgroundStyle: (String) -> Unit,
+    setHazeMode: (String) -> Unit,
+    applyHazeMaterialPreset: (String, Float) -> Unit,
+    setHazeBlurRadius: (Float) -> Unit,
+    setHazeNoiseFactor: (Float) -> Unit,
+    setHazeTintAlpha: (Float) -> Unit
 ) {
     SubScreen(
         onBackClick = onBackClick,
@@ -80,9 +126,256 @@ fun CustomScreenContent(
                 backgroundStyle = backgroundStyle,
                 setBackgroundStyle = setBackgroundStyle
             )
+            SetHazeIntensity(
+                hazeMode = hazeMode,
+                hazeMaterialPreset = hazeMaterialPreset,
+                hazeBlurRadius = hazeBlurRadius,
+                hazeNoiseFactor = hazeNoiseFactor,
+                hazeTintAlpha = hazeTintAlpha,
+                setHazeMode = setHazeMode,
+                applyHazeMaterialPreset = applyHazeMaterialPreset,
+                setHazeBlurRadius = setHazeBlurRadius,
+                setHazeNoiseFactor = setHazeNoiseFactor,
+                setHazeTintAlpha = setHazeTintAlpha
+            )
 
             Spacer(modifier = Modifier.height(64.dp))
         }
+    }
+}
+
+@OptIn(ExperimentalHazeMaterialsApi::class)
+@Composable
+fun SetHazeIntensity(
+    hazeMode: String,
+    hazeMaterialPreset: String,
+    hazeBlurRadius: Float,
+    hazeNoiseFactor: Float,
+    hazeTintAlpha: Float,
+    setHazeMode: (String) -> Unit,
+    applyHazeMaterialPreset: (String, Float) -> Unit,
+    setHazeBlurRadius: (Float) -> Unit,
+    setHazeNoiseFactor: (Float) -> Unit,
+    setHazeTintAlpha: (Float) -> Unit
+) {
+    val hazeState = rememberHazeState()
+    val selectedPreset = hazeMaterialPresetFromValue(hazeMaterialPreset)
+    val activeIntensity = selectedPreset.intensity
+    val percent = (activeIntensity * 100).toInt()
+    val haptic = rememberHapticFeedback()
+
+    TitleWidget(title = stringResource(R.string.haze_intensity_title)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.haze_intensity_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HazeSelectionOption(
+                title = stringResource(R.string.haze_mode_preset_title),
+                description = stringResource(R.string.haze_mode_preset_desc),
+                isSelected = hazeMode == HAZE_MODE_PRESET,
+                onClick = {
+                    applyHazeMaterialPreset(selectedPreset.value, selectedPreset.intensity)
+                    haptic.performClick()
+                }
+            )
+
+            HazeSelectionOption(
+                title = stringResource(R.string.haze_mode_custom_title),
+                description = stringResource(R.string.haze_mode_custom_desc),
+                isSelected = hazeMode == HAZE_MODE_CUSTOM,
+                onClick = {
+                    setHazeMode(HAZE_MODE_CUSTOM)
+                    haptic.performClick()
+                }
+            )
+
+            if (hazeMode == HAZE_MODE_PRESET) {
+                Text(
+                    text = stringResource(R.string.haze_preset_list_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HazeMaterialPreset.entries.forEach { preset ->
+                        HazeSelectionOption(
+                            title = stringResource(preset.labelResId()),
+                            description = null,
+                            isSelected = preset == selectedPreset,
+                            onClick = {
+                                applyHazeMaterialPreset(preset.value, preset.intensity)
+                                haptic.performClick()
+                            }
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.haze_custom_params_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = stringResource(R.string.haze_blur_radius_label, hazeBlurRadius),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Slider(
+                    value = hazeBlurRadius,
+                    onValueChange = { value ->
+                        setHazeBlurRadius(value)
+                    },
+                    valueRange = 0f..60f
+                )
+
+                val noisePercent = (hazeNoiseFactor * 100).toInt()
+                Text(
+                    text = stringResource(R.string.haze_noise_factor_label, noisePercent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Slider(
+                    value = hazeNoiseFactor,
+                    onValueChange = { value ->
+                        setHazeNoiseFactor(value)
+                    },
+                    valueRange = 0f..1f
+                )
+
+                val tintPercent = (hazeTintAlpha * 100).toInt()
+                Text(
+                    text = stringResource(R.string.haze_tint_alpha_label, tintPercent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Slider(
+                    value = hazeTintAlpha,
+                    onValueChange = { value ->
+                        setHazeTintAlpha(value)
+                    },
+                    valueRange = 0f..1f
+                )
+            }
+
+            if (hazeMode == HAZE_MODE_PRESET) {
+                Text(
+                    text = stringResource(R.string.haze_intensity_value, percent),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.45f),
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)
+                            )
+                        )
+                    )
+                    .hazeSource(state = hazeState),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .hazeEffect(
+                            state = hazeState,
+                            style = hazeStyleForIntensity()
+                        ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = hazeTintAlpha())
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.haze_intensity_preview_title),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Text(
+                            text = stringResource(R.string.haze_intensity_preview_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HazeSelectionOption(
+    title: String,
+    description: String?,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Transparent
+        ),
+        border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = isSelected,
+                onClick = null
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (!description.isNullOrBlank()) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@StringRes
+private fun HazeMaterialPreset.labelResId(): Int {
+    return when (this) {
+        HazeMaterialPreset.ULTRA_THIN -> R.string.haze_preset_ultra_thin
+        HazeMaterialPreset.THIN -> R.string.haze_preset_thin
+        HazeMaterialPreset.REGULAR -> R.string.haze_preset_regular
+        HazeMaterialPreset.THICK -> R.string.haze_preset_thick
+        HazeMaterialPreset.ULTRA_THICK -> R.string.haze_preset_ultra_thick
     }
 }
 

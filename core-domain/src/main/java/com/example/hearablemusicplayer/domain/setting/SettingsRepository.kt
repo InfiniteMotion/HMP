@@ -22,6 +22,24 @@ interface SettingsRepository {
     val backgroundStyle: Flow<String>
     suspend fun saveBackgroundStyle(style: String)
 
+    val hazeMode: Flow<String>
+    suspend fun saveHazeMode(mode: String)
+
+    val hazeMaterialPreset: Flow<String>
+    suspend fun saveHazeMaterialPreset(preset: String)
+
+    val hazeBlurRadius: Flow<Float>
+    suspend fun saveHazeBlurRadius(radius: Float)
+
+    val hazeNoiseFactor: Flow<Float>
+    suspend fun saveHazeNoiseFactor(noiseFactor: Float)
+
+    val hazeTintAlpha: Flow<Float>
+    suspend fun saveHazeTintAlpha(alpha: Float)
+
+    val hazeIntensity: Flow<Float>
+    suspend fun saveHazeIntensity(intensity: Float)
+
     val isLoadMusic: Flow<Boolean>
     suspend fun saveIsLoadMusic(isLoadMusic: Boolean)
 
