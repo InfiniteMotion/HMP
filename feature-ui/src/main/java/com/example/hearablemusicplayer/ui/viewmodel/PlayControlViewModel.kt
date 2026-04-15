@@ -36,26 +36,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import com.example.hearablemusicplayer.ui.controller.DialogManager
 
-// 调色板颜色数据类
-data class PaletteColors(
-    // 主色调系列
-    val dominantColor: Color = Color(0xFF121212),
-    val primaryColor: Color = Color(0xFF1E1E1E),
-    
-    // 活力色调系列
-    val vibrantColor: Color = Color(0xFF2A2A2A),
-    val darkVibrantColor: Color = Color(0xFF0F0F0F),
-    val lightVibrantColor: Color = Color(0xFF808080),
-    
-    // 柔和色调系列
-    val mutedColor: Color = Color(0xFF222222),
-    val darkMutedColor: Color = Color(0xFF111111),
-    val lightMutedColor: Color = Color(0xFF666666),
-    
-    // 辅助色调
-    val accentColor: Color = Color(0xFF444444)
-)
-
+@Deprecated("Use PlaybackViewModel, PlaylistQueueViewModel, AudioEffectViewModel, ThemeViewModel instead")
 @HiltViewModel
 @UnstableApi
 class PlayControlViewModel @Inject constructor(

@@ -37,18 +37,22 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.ThemeViewModel
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
 // 播放器主界面
 @Composable
 fun PlayerScreen(
-    viewModel: PlayControlViewModel = hiltViewModel(),
-    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current
@@ -60,29 +64,28 @@ fun PlayerScreen(
 
     // 预加载当前播放音乐信息
     LaunchedEffect(Unit) {
-        viewModel.preloadCurrentMusicInfo()
     }
 
     // 开启播放进度监督
     DisposableEffect(Unit) {
-        viewModel.startProgressTracking()
+        playbackViewModel.startProgressTracking()
         onDispose {
 
         }
     }
 
-    val musicInfo by viewModel.currentPlayingMusic.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val currentPosition by viewModel.currentPosition.collectAsState()
-    val duration by viewModel.duration.collectAsState()
-    val playbackMode by viewModel.playbackMode.collectAsState()
-    val remainingTime by viewModel.timerRemaining.collectAsState()
-    val isLiked by viewModel.likeStatus.collectAsState()
-    val lyrics by viewModel.currentMusicLyrics.collectAsState()
-    val playlist by viewModel.currentPlaylist.collectAsState()
-    val currentIndex by viewModel.currentIndex.collectAsState()
-    val defaultAlgorithmType by viewModel.defaultAlgorithmType.collectAsState()
-    val defaultTemplate by viewModel.defaultWeightTemplate.collectAsState()
+    val musicInfo by playlistQueueViewModel.currentPlayingMusic.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
+    val currentPosition by playbackViewModel.currentPosition.collectAsState()
+    val duration by playbackViewModel.duration.collectAsState()
+    val playbackMode by playbackViewModel.playbackMode.collectAsState()
+    val remainingTime by playbackViewModel.timerRemaining.collectAsState()
+    val isLiked by playlistQueueViewModel.likeStatus.collectAsState()
+    val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
+    val playlist by playlistQueueViewModel.currentPlaylist.collectAsState()
+    val currentIndex by playlistQueueViewModel.currentIndex.collectAsState()
+    val defaultAlgorithmType by playlistQueueViewModel.defaultAlgorithmType.collectAsState()
+    val defaultTemplate by playlistQueueViewModel.defaultWeightTemplate.collectAsState()
 
     // 歌词配置
     val lyricsOriginalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
@@ -96,9 +99,9 @@ fun PlayerScreen(
     // 监听音乐变化并加载相关信息
     LaunchedEffect(musicInfo?.music?.id) {
         musicInfo?.music?.id?.let { id ->
-            viewModel.getLikedStatus(id)
-            viewModel.getMusicLabels(id)
-            viewModel.getMusicLyrics(id)
+            playlistQueueViewModel.getLikedStatus(id)
+            playlistQueueViewModel.getMusicLabels(id)
+            playlistQueueViewModel.getMusicLyrics(id)
         }
     }
 
@@ -200,27 +203,27 @@ fun PlayerScreen(
             lyricsDisplayMode = lyricsDisplayMode,
             lyricsAlignment = lyricsAlignment,
             onBackClick = { navController.removeLastOrNull() },
-            onSeek = viewModel::seekTo,
-            onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
-            onNext = viewModel::playNext,
-            onPrevious = viewModel::playPrevious,
-            onPlaybackModeChange = viewModel::togglePlaybackModeByOrder,
+            onSeek = playbackViewModel::seekTo,
+            onPlayPause = { if (isPlaying) playbackViewModel.pauseMusic() else playbackViewModel.playOrResume() },
+            onNext = playbackViewModel::playNext,
+            onPrevious = playbackViewModel::playPrevious,
+            onPlaybackModeChange = playbackViewModel::togglePlaybackModeByOrder,
             onFavorite = {
-                musicInfo?.let { viewModel.updateMusicLikedStatus(it, !isLiked) }
+                musicInfo?.let { playlistQueueViewModel.updateMusicLikedStatus(it, !isLiked) }
             },
-            onTimerClick = viewModel::startTimer,
-            onCancelTimer = viewModel::cancelTimer,
+            onTimerClick = playbackViewModel::startTimer,
+            onCancelTimer = playbackViewModel::cancelTimer,
             onHeartMode = { navController.add(Routes.Lyrics) },
-            onGeneratePlaylist = viewModel::generatePlaylist,
-            onSaveDefaultConfig = viewModel::saveAlgorithmConfig,
+            onGeneratePlaylist = playlistQueueViewModel::generatePlaylist,
+            onSaveDefaultConfig = playlistQueueViewModel::saveAlgorithmConfig,
             onArtistClick = { artistName ->
                 playlistViewModel.getSelectedArtistMusicList(artistName)
                 navController.add(Routes.Artist(artistName))
             },
-            onClearPlaylist = viewModel::clearPlaylist,
-            onPlayItem = viewModel::playAt,
-            onMoveToTop = viewModel::moveToTop,
-            onRemoveFromPlaylist = viewModel::removeFromPlaylist,
+            onClearPlaylist = playlistQueueViewModel::clearPlaylist,
+            onPlayItem = playlistQueueViewModel::playAt,
+            onMoveToTop = playlistQueueViewModel::moveToTop,
+            onRemoveFromPlaylist = playlistQueueViewModel::removeFromPlaylist,
             hazeState = hazeState
         )
     }

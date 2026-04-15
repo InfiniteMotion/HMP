@@ -43,22 +43,24 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
     val musicInfoList by libraryViewModel.allMusic.collectAsState()
-    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState()
+    val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
     val currentPlayingIndex = musicInfoList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
@@ -74,20 +76,20 @@ fun GalleryScreen(
         currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
-        playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist,
-        onFavorite = playControlViewModel::updateMusicLikedStatus,
+        playWith = playlistQueueViewModel::playWith,
+        addToPlaylist = playlistQueueViewModel::addToPlaylist,
+        onFavorite = playlistQueueViewModel::updateMusicLikedStatus,
         onShare =  {  },
         onDetail = {
             navController.add(Routes.SongDetail(it.music.id))
         },
         onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
-            playControlViewModel.addAllToPlaylistByShuffle(musicInfoList)
+            playlistQueueViewModel.addAllToPlaylistByShuffle(musicInfoList)
             navController.add(Routes.Player)
         },
         onOrderPlay = {
-            playControlViewModel.addAllToPlaylistInOrder(musicInfoList)
+            playlistQueueViewModel.addAllToPlaylistInOrder(musicInfoList)
             navController.add(Routes.Player)
         },
         onFilterGenreChange = {

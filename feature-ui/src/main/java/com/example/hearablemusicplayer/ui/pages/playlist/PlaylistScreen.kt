@@ -72,7 +72,8 @@ import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.launch
 
@@ -84,7 +85,8 @@ fun PlaylistScreen(
     playlistName: String? = null,
     artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
 ) {
@@ -102,7 +104,7 @@ fun PlaylistScreen(
             }
         }
     }
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
     val addedMessage = stringResource(R.string.song_added)
     val addSongsDialogTitle = stringResource(R.string.add_songs_to_playlist)
@@ -118,17 +120,17 @@ fun PlaylistScreen(
         onRecordPlaylistPlay = { playlistViewModel.recordPlaylistPlay(it) },
         onShufflePlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
-            playControlViewModel.addAllToPlaylistByShuffle(uiState.playlist)
+            playlistQueueViewModel.addAllToPlaylistByShuffle(uiState.playlist)
             navController.add(Routes.Player)
         },
         onOrderPlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
-            playControlViewModel.addAllToPlaylistInOrder(uiState.playlist)
+            playlistQueueViewModel.addAllToPlaylistInOrder(uiState.playlist)
             navController.add(Routes.Player)
         },
         onNavigate = navController::add,
-        playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist,
+        playWith = playlistQueueViewModel::playWith,
+        addToPlaylist = playlistQueueViewModel::addToPlaylist,
         dialogViewModel = dialogViewModel,
         playlistViewModel = playlistViewModel,
         dialogManager = dialogManager,

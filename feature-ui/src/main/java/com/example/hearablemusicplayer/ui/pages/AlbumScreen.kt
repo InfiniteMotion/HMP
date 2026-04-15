@@ -32,7 +32,8 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @OptIn(UnstableApi::class)
@@ -41,17 +42,18 @@ fun AlbumScreen(
     navController: NavBackStack<NavKey>,
     albumName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
 ) {
     // 手动调用 getSelectedAlbumMusicList 方法，传入 albumName
     LaunchedEffect(albumName) {
         playlistViewModel.getSelectedAlbumMusicList(albumName)
     }
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
     val displayAlbumName by playlistViewModel.selectedAlbumName.collectAsState()
     val albumMusicList by playlistViewModel.selectedAlbumMusicList.collectAsState(initial = emptyList())
-    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
+    val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     AlbumScreenContent(
         isPlaying = isPlaying,
         albumName = displayAlbumName,
@@ -59,15 +61,15 @@ fun AlbumScreen(
         currentPlayingMusic = currentPlayingMusic,
         onBackClick = { navController.removeLastOrNull() },
         onShufflePlay = {
-            playControlViewModel.addAllToPlaylistByShuffle(albumMusicList)
+            playlistQueueViewModel.addAllToPlaylistByShuffle(albumMusicList)
             navController.add(Routes.Player)
         },
         onOrderPlay = {
-            playControlViewModel.addAllToPlaylistInOrder(albumMusicList)
+            playlistQueueViewModel.addAllToPlaylistInOrder(albumMusicList)
             navController.add(Routes.Player)
         },
-        playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist,
+        playWith = playlistQueueViewModel::playWith,
+        addToPlaylist = playlistQueueViewModel::addToPlaylist,
         onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
     )
 }

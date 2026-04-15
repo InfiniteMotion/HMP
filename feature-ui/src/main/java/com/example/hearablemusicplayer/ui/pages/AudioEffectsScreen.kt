@@ -47,11 +47,11 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.AudioEffectViewModel
 
 @Composable
 fun AudioEffectsScreen(
-    viewModel: PlayControlViewModel = hiltViewModel(),
+    viewModel: AudioEffectViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val audioEffectSettings by viewModel.audioEffectSettings.collectAsState()

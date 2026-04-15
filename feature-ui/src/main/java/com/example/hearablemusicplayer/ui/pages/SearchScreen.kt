@@ -45,7 +45,8 @@ import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListC
 import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
 import androidx.compose.ui.res.stringResource
@@ -55,11 +56,12 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ){
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val searchResults by searchViewModel.searchResults.collectAsState(initial = emptyList())
 
@@ -67,7 +69,7 @@ fun SearchScreen(
         searchViewModel.searchMusic(searchQuery)
     }
 
-    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
+    val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     SearchScreenContent(
         isPlaying = isPlaying,
         searchQuery = searchQuery,
@@ -78,8 +80,8 @@ fun SearchScreen(
             searchViewModel.searchMusic(it)
         },
         onBackClick = { navController.removeLastOrNull() },
-        playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist,
+        playWith = playlistQueueViewModel::playWith,
+        addToPlaylist = playlistQueueViewModel::addToPlaylist,
         onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
     )
 }

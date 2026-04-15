@@ -54,7 +54,8 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.SegmentedOption
 import com.example.hearablemusicplayer.ui.components.VerticalSegmentedControl
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 
@@ -65,12 +66,13 @@ import kotlinx.coroutines.delay
 @OptIn(UnstableApi::class)
 @Composable
 fun LyricsScreen(
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val lyrics by playControlViewModel.currentMusicLyrics.collectAsState()
-    val currentPosition by playControlViewModel.currentPosition.collectAsState()
-    val duration by playControlViewModel.duration.collectAsState()
+    val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
+    val currentPosition by playbackViewModel.currentPosition.collectAsState()
+    val duration by playbackViewModel.duration.collectAsState()
 
     // 歌词参数 - 从设置中获取
     val originalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
@@ -92,10 +94,10 @@ fun LyricsScreen(
 
     // 开启播放进度跟踪
     DisposableEffect(Unit) {
-        playControlViewModel.startProgressTracking()
+        playbackViewModel.startProgressTracking()
         onDispose {
             // 退出时恢复底部播放栏和状态栏
-            playControlViewModel.setMiniPlayerVisible(true)
+            playbackViewModel.setMiniPlayerVisible(true)
             windowInsetsController?.show(WindowInsetsCompat.Type.statusBars())
         }
     }
@@ -120,7 +122,7 @@ fun LyricsScreen(
 
     // 同步控制 MiniPlayerBar 的显示隐藏
     LaunchedEffect(isControlsVisible) {
-        playControlViewModel.setMiniPlayerVisible(isControlsVisible)
+        playbackViewModel.setMiniPlayerVisible(isControlsVisible)
     }
 
     val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
@@ -152,7 +154,7 @@ fun LyricsScreen(
                 currentPosition = currentPosition,
                 onSeek = { 
                     lastInteractionTime = System.currentTimeMillis()
-                    playControlViewModel.seekTo(it) 
+                    playbackViewModel.seekTo(it) 
                 },
                 originalTextSize = originalTextSize,
                 translatedTextSize = translatedTextSize,

@@ -60,7 +60,8 @@ import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import kotlinx.coroutines.launch
 
@@ -68,15 +69,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val scope = rememberCoroutineScope()
     val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
-    val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
+    val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     val haptic = rememberHapticFeedback()
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -140,9 +142,9 @@ fun HomeScreen(
                             onPlay = {
                                 haptic.performClick()
                                 scope.launch {
-                                    playControlViewModel.playWith(dailyMusic!!)
-                                    navController.add(Routes.Player)
-                                }
+                                        playlistQueueViewModel.playWith(dailyMusic!!)
+                                        navController.add(Routes.Player)
+                                    }
                             },
                             onDetail = {
                                 haptic.performClick()
@@ -169,9 +171,9 @@ fun HomeScreen(
                             if (heartbeatList.isNotEmpty()){
                                 FilledIconButton(
                                     onClick = {
-                                        playControlViewModel.clearPlaylist()
-                                        playControlViewModel.addAllToPlaylistInOrder(heartbeatList)
-                                        playControlViewModel.playWith(heartbeatList.first())
+                                        playlistQueueViewModel.clearPlaylist()
+                                        playlistQueueViewModel.addAllToPlaylistInOrder(heartbeatList)
+                                        playlistQueueViewModel.playWith(heartbeatList.first())
                                         navController.add(Routes.Player)
                                     },
                                     modifier = Modifier
@@ -208,7 +210,9 @@ fun HomeScreen(
                             val callbacks = object : MusicListCallbacksAdapter() {
                                 override fun onItemClick(musicInfo: MusicInfo, index: Int) {
                                     haptic.performClick()
-                                    scope.launch { playControlViewModel.playWith(musicInfo) }
+                                    scope.launch {
+                                    playlistQueueViewModel.playWith(musicInfo)
+                                }
                                 }
                                 override fun onMenuClick(musicInfo: MusicInfo) {
                                     val menuConfig = DialogViewModel.MusicDetailMenuConfig(

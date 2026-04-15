@@ -75,9 +75,12 @@ import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.ThemeViewModel
 import dev.chrisbanes.haze.hazeSource
 
 @OptIn(UnstableApi::class)
@@ -86,17 +89,20 @@ fun MainScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
-    playControlViewModel: PlayControlViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = hiltViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel(),
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     // 订阅调色板、当前曲目与播放状态
-    val currentMusic by playControlViewModel.currentPlayingMusic.collectAsState()
-    val paletteColors by playControlViewModel.paletteColors.collectAsState()
-    val isPlaying by playControlViewModel.isPlaying.collectAsState()
-    val currentPosition by playControlViewModel.currentPosition.collectAsState()
-    val duration by playControlViewModel.duration.collectAsState()
+    val currentMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState()
+    val paletteColors by themeViewModel.paletteColors.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
+    val currentPosition by playbackViewModel.currentPosition.collectAsState()
+    val duration by playbackViewModel.duration.collectAsState()
 
     // 根据customMode确定主题模式
     val customMode by settingsViewModel.customMode.collectAsState("default")
@@ -428,7 +434,14 @@ fun MainScreen(
                                     }
                                 }
                             ) {
-                                PlayerScreen(navController = navController)
+                                PlayerScreen(
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
+                                    playlistViewModel = playlistViewModel,
+                                    settingsViewModel = settingsViewModel,
+                                    themeViewModel = themeViewModel,
+                                    navController = navController
+                                )
                             }
                             entry<Routes.Setting> {
                                 SettingScreen(navController)
@@ -495,7 +508,7 @@ fun MainScreen(
                                 CustomScreen(settingsViewModel, navController)
                             }
                             entry<Routes.Lyrics> {
-                                LyricsScreen()
+                                LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel)
                             }
                             entry<Routes.UserUsageData> {
                                 UserUsageDataScreen(navController = navController)
@@ -557,7 +570,7 @@ fun MainScreen(
             }
 
             // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
-            val isMiniPlayerVisible by playControlViewModel.isMiniPlayerVisible.collectAsState()
+            val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
             AnimatedVisibility(
                 visible = navController.none { it is Routes.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
@@ -582,13 +595,13 @@ fun MainScreen(
                         hazeState = hazeState,
                         onPlayPause = {
                             if (isPlaying) {
-                                playControlViewModel.pauseMusic()
+                                playbackViewModel.pauseMusic()
                             } else {
-                                playControlViewModel.playOrResume()
+                                playbackViewModel.playOrResume()
                             }
                         },
-                        onNext = { playControlViewModel.playNext() },
-                        onPrev = { playControlViewModel.playPrevious() },
+                        onNext = { playbackViewModel.playNext() },
+                        onPrev = { playbackViewModel.playPrevious() },
                         onOpenPlayer = { navController.add(Routes.Player) }
                     )
                 }
