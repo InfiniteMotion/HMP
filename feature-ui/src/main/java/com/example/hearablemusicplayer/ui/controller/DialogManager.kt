@@ -35,6 +35,14 @@ class DialogManager @Inject constructor() {
         showDialog(DialogEvent.Message(message, duration))
     }
 
+    fun showTimerDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit = {}) {
+        showDialog(DialogEvent.ShowTimerDialog(onConfirm, onDismiss))
+    }
+
+    fun dismissTimerDialog() {
+        showDialog(DialogEvent.DismissTimerDialog)
+    }
+
     fun dismissDialog() {
         scope.launch {
             _dialogEvent.emit(null)

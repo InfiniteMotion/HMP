@@ -5,9 +5,6 @@ package com.example.hearablemusicplayer.ui.pages.player
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -19,15 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
@@ -37,11 +31,20 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.LyricsSettingsState
+import com.example.hearablemusicplayer.ui.viewmodel.PlayerCallbacks
+import com.example.hearablemusicplayer.ui.viewmodel.PlayerUiState
 import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.ThemeViewModel
+import com.example.hearablemusicplayer.domain.enum.PlaybackMode
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
+import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
+import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
@@ -53,6 +56,7 @@ fun PlayerScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     themeViewModel: ThemeViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current
@@ -95,6 +99,59 @@ fun PlayerScreen(
     val lyricsDisplayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val lyricsAlignment by settingsViewModel.lyricsAlignment.collectAsState()
 
+    val playerUiState = PlayerUiState(
+        musicInfo = musicInfo,
+        isPlaying = isPlaying,
+        currentPosition = currentPosition,
+        duration = duration,
+        playbackMode = playbackMode,
+        remainingTime = remainingTime,
+        isLiked = isLiked,
+        lyrics = lyrics,
+        playlist = playlist,
+        currentIndex = currentIndex,
+        defaultAlgorithmType = defaultAlgorithmType,
+        defaultTemplate = defaultTemplate
+    )
+
+    val lyricsSettingsState = LyricsSettingsState(
+        lyricsOriginalTextSize = lyricsOriginalTextSize,
+        lyricsTranslatedTextSize = lyricsTranslatedTextSize,
+        lyricsCurrentTimeTextSize = lyricsCurrentTimeTextSize,
+        lyricsLineSpacing = lyricsLineSpacing,
+        lyricsDisplayMode = lyricsDisplayMode,
+        lyricsAlignment = lyricsAlignment
+    )
+
+    val playerCallbacks = object : PlayerCallbacks {
+        override fun onSeek(position: Long) { playbackViewModel.seekTo(position) }
+        override fun onPlayPause() { if (isPlaying) playbackViewModel.pauseMusic() else playbackViewModel.playOrResume() }
+        override fun onNext() { playbackViewModel.playNext() }
+        override fun onPrevious() { playbackViewModel.playPrevious() }
+        override fun onPlaybackModeChange() { playbackViewModel.togglePlaybackModeByOrder() }
+        override fun onFavorite() { musicInfo?.let { playlistQueueViewModel.updateMusicLikedStatus(it, !isLiked) } }
+        override fun onTimerClick(minutes: Int) { playbackViewModel.startTimer(minutes) }
+        override fun onShowTimerDialog() {
+            dialogViewModel.showTimerDialog(
+                onConfirm = { minutes ->
+                    playbackViewModel.startTimer(minutes)
+                },
+                onDismiss = {
+                    // 用户取消
+                }
+            )
+        }
+        override fun onCancelTimer() { playbackViewModel.cancelTimer() }
+        override fun onHeartMode() { navController.add(Routes.Lyrics) }
+        override fun onGeneratePlaylist(seedMusicId: Long) { playlistQueueViewModel.generatePlaylist(seedMusicId) }
+        override fun onSaveDefaultConfig(algorithmType: AlgorithmType, weightTemplate: WeightTemplate, extensionConfig: ExtensionConfig) { playlistQueueViewModel.saveAlgorithmConfig(algorithmType, weightTemplate, extensionConfig) }
+        override fun onArtistClick(artistName: String) { playlistViewModel.getSelectedArtistMusicList(artistName); navController.add(Routes.Artist(artistName)) }
+        override fun onClearPlaylist() { playlistQueueViewModel.clearPlaylist() }
+        override fun onPlayItem(musicInfo: MusicInfo) { playlistQueueViewModel.playAt(musicInfo) }
+        override fun onMoveToTop(musicInfo: MusicInfo) { playlistQueueViewModel.moveToTop(musicInfo) }
+        override fun onRemoveFromPlaylist(musicInfo: MusicInfo) { playlistQueueViewModel.removeFromPlaylist(musicInfo) }
+        override fun onBackClick() { navController.removeLastOrNull() }
+    }
 
     // 监听音乐变化并加载相关信息
     LaunchedEffect(musicInfo?.music?.id) {
@@ -105,74 +162,17 @@ fun PlayerScreen(
         }
     }
 
-    // 实现嵌套滚动连接，处理下滑返回
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            // 预先消耗滚动事件：当已有偏移量时，向上拖动应先消耗偏移量
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // 当有向上滚动（available.y < 0）且当前有下拉偏移时，先消耗偏移量
-                if (available.y < 0 && offsetY.value > 0f && source == NestedScrollSource.UserInput) {
-                    val consumed = available.y.coerceAtLeast(-offsetY.value)
-                    scope.launch {
-                        val newOffset = (offsetY.value + consumed).coerceAtLeast(0f)
-                        offsetY.snapTo(newOffset)
-                    }
-                    return Offset(0f, consumed)
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                // 只有当子组件没有消耗向下滚动事件，且处于拖动状态时，才处理返回
-                if (available.y > 0 && consumed.y <= 0 && source == NestedScrollSource.UserInput) {
-                    // 子组件没有消耗向下滚动事件，处理返回逻辑
-                    val delta = available.y
-                    scope.launch {
-                        val newOffset = (offsetY.value + delta).coerceAtLeast(0f)
-                        offsetY.snapTo(newOffset)
-                        // 当拖动到一定程度时给予触觉反馈
-                        if (newOffset > dismissThreshold * 0.5f && newOffset < dismissThreshold * 0.6f) {
-                            haptic.performLightClick()
-                        }
-                    }
-                    // 返回已消耗的偏移量
-                    return Offset(0f, available.y)
-                }
-                return Offset.Zero
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                // 处理快速滑动结束时的逻辑
-                if (offsetY.value > 0f) {
-                    if (offsetY.value > dismissThreshold) {
-                        // 达到阈值，执行退出
-                        navController.removeLastOrNull()
-                        haptic.performGestureEnd()
-                        offsetY.animateTo(
-                            targetValue = with(density) { 1000.dp.toPx() },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = AnimationConfig.EASE_IN
-                            )
-                        )
-                    } else {
-                        // 未达到阈值，执行回弹
-                        haptic.performLightClick()
-                        offsetY.animateTo(
-                            targetValue = 0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        )
-                    }
-                    // 消耗垂直方向的 fling 速度
-                    return Velocity(0f, available.y)
-                }
-                return Velocity.Zero
-            }
+    // 嵌套滚动处理
+    val nestedScrollConnection = rememberPlayerScreenNestedScroll(
+        dismissThreshold = dismissThreshold,
+        offsetY = offsetY,
+        scope = scope,
+        haptic = { haptic.performLightClick() },
+        onDismiss = { 
+            navController.removeLastOrNull()
+            haptic.performGestureEnd()
         }
-    }
+    )
 
     Box(
         modifier = Modifier
@@ -184,46 +184,9 @@ fun PlayerScreen(
             .nestedScroll(nestedScrollConnection) // 添加嵌套滚动支持
     ) {
         PlayContent(
-            musicInfo = musicInfo,
-            isPlaying = isPlaying,
-            currentPosition = currentPosition,
-            duration = duration,
-            playbackMode = playbackMode,
-            remainingTime = remainingTime,
-            isLiked = isLiked,
-            lyrics = lyrics,
-            playlist = playlist,
-            currentIndex = currentIndex,
-            defaultAlgorithmType = defaultAlgorithmType,
-            defaultTemplate = defaultTemplate,
-            lyricsOriginalTextSize = lyricsOriginalTextSize,
-            lyricsTranslatedTextSize = lyricsTranslatedTextSize,
-            lyricsCurrentTimeTextSize = lyricsCurrentTimeTextSize,
-            lyricsLineSpacing = lyricsLineSpacing,
-            lyricsDisplayMode = lyricsDisplayMode,
-            lyricsAlignment = lyricsAlignment,
-            onBackClick = { navController.removeLastOrNull() },
-            onSeek = playbackViewModel::seekTo,
-            onPlayPause = { if (isPlaying) playbackViewModel.pauseMusic() else playbackViewModel.playOrResume() },
-            onNext = playbackViewModel::playNext,
-            onPrevious = playbackViewModel::playPrevious,
-            onPlaybackModeChange = playbackViewModel::togglePlaybackModeByOrder,
-            onFavorite = {
-                musicInfo?.let { playlistQueueViewModel.updateMusicLikedStatus(it, !isLiked) }
-            },
-            onTimerClick = playbackViewModel::startTimer,
-            onCancelTimer = playbackViewModel::cancelTimer,
-            onHeartMode = { navController.add(Routes.Lyrics) },
-            onGeneratePlaylist = playlistQueueViewModel::generatePlaylist,
-            onSaveDefaultConfig = playlistQueueViewModel::saveAlgorithmConfig,
-            onArtistClick = { artistName ->
-                playlistViewModel.getSelectedArtistMusicList(artistName)
-                navController.add(Routes.Artist(artistName))
-            },
-            onClearPlaylist = playlistQueueViewModel::clearPlaylist,
-            onPlayItem = playlistQueueViewModel::playAt,
-            onMoveToTop = playlistQueueViewModel::moveToTop,
-            onRemoveFromPlaylist = playlistQueueViewModel::removeFromPlaylist,
+            playerUiState = playerUiState,
+            lyricsSettingsState = lyricsSettingsState,
+            callbacks = playerCallbacks,
             hazeState = hazeState
         )
     }

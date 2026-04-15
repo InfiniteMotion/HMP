@@ -43,6 +43,7 @@ import com.example.hearablemusicplayer.ui.dialogs.MessageToast
 import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.dialogs.MusicPickerDialog
 import com.example.hearablemusicplayer.ui.dialogs.PlaylistPickerDialog
+import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.pages.AIScreen
 import com.example.hearablemusicplayer.ui.pages.AlbumScreen
 import com.example.hearablemusicplayer.ui.pages.ArtistScreen
@@ -144,11 +145,19 @@ fun MainScreen(
     val dialogEvent by dialogManager.dialogEvent.collectAsState(null)
     val hazeState = dev.chrisbanes.haze.rememberHazeState()
     val messageToShowState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<DialogEvent.Message?>(null) }
+    val timerDialogState by dialogViewModel.showTimerDialog.collectAsState(null)
 
     androidx.compose.runtime.LaunchedEffect(dialogEvent) {
-        if (dialogEvent is DialogEvent.Message) {
-            // 直接替换为新消息，不等待旧消息处理完毕
-            messageToShowState.value = dialogEvent as DialogEvent.Message
+        when (dialogEvent) {
+            is DialogEvent.Message -> {
+                messageToShowState.value = dialogEvent as DialogEvent.Message
+            }
+            is DialogEvent.DismissTimerDialog -> {
+                dialogViewModel.dismissTimerDialog()
+            }
+            else -> {
+                // 无操作
+            }
         }
     }
 
@@ -644,6 +653,20 @@ fun MainScreen(
                         title = state.state.title,
                         onDismiss = dialogViewModel::dismissPlaylistPickerDialog,
                         onSelectPlaylist = dialogViewModel::confirmPlaylistPickerDialog,
+                        hazeState = hazeState,
+                        hazeRenderSettings = hazeRenderSettings
+                    )
+                }
+                is DialogViewModel.DialogUiState.Timer -> {
+                    TimerDialog(
+                        onDismiss = {
+                            state.state.onDismiss()
+                            dialogViewModel.dismissTimerDialog()
+                        },
+                        onConfirm = { minutes: Int ->
+                            state.state.onConfirm(minutes)
+                            dialogViewModel.dismissTimerDialog()
+                        },
                         hazeState = hazeState,
                         hazeRenderSettings = hazeRenderSettings
                     )

@@ -53,6 +53,10 @@ class DialogViewModel @Inject constructor(
         .map { (it as? DialogUiState.PlaylistPicker)?.state }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    // Timer Dialog 状态
+    private val _showTimerDialog = MutableStateFlow<TimerDialogConfig?>(null)
+    val showTimerDialog: StateFlow<TimerDialogConfig?> = _showTimerDialog.asStateFlow()
+
     // 收藏状态
     private val _isLiked = MutableStateFlow(false)
     val isLiked: StateFlow<Boolean> = _isLiked
@@ -90,11 +94,17 @@ class DialogViewModel @Inject constructor(
         val title: String
     )
 
+    data class TimerDialogConfig(
+        val onConfirm: (Int) -> Unit,
+        val onDismiss: () -> Unit = {}
+    )
+
     sealed class DialogUiState {
         data class MusicDetail(val state: MusicDetailState) : DialogUiState()
         data class CreatePlaylist(val state: CreatePlaylistDialogState) : DialogUiState()
         data class MusicPicker(val state: MusicPickerDialogState) : DialogUiState()
         data class PlaylistPicker(val state: PlaylistPickerDialogState) : DialogUiState()
+        data class Timer(val state: TimerDialogConfig) : DialogUiState()
     }
     
     // 显示音乐详情弹窗
@@ -504,6 +514,19 @@ class DialogViewModel @Inject constructor(
             _activeDialog.value = null
         }
         onPlaylistPickerConfirm = null
+    }
+
+    fun showTimerDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit = {}) {
+        val config = TimerDialogConfig(onConfirm, onDismiss)
+        _showTimerDialog.value = config
+        _activeDialog.value = DialogUiState.Timer(config)
+    }
+
+    fun dismissTimerDialog() {
+        _showTimerDialog.value = null
+        if (_activeDialog.value is DialogUiState.Timer) {
+            _activeDialog.value = null
+        }
     }
 
     fun submitCreatePlaylist() {

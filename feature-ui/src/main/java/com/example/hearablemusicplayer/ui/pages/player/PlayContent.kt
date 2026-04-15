@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +52,9 @@ import com.example.hearablemusicplayer.ui.components.GeneratePlaylistComboButton
 import com.example.hearablemusicplayer.ui.components.PlaylistArea
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.LyricsSettingsState
+import com.example.hearablemusicplayer.ui.viewmodel.PlayerCallbacks
+import com.example.hearablemusicplayer.ui.viewmodel.PlayerUiState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -67,47 +69,37 @@ fun formatTime(millis: Long): String {
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayContent(
-    musicInfo: MusicInfo?,
-    isPlaying: Boolean,
-    currentPosition: Long,
-    duration: Long,
-    playbackMode: PlaybackMode,
-    remainingTime: Long?,
-    isLiked: Boolean,
-    lyrics: String?,
-    playlist: List<MusicInfo>,
-    currentIndex: Int,
-    defaultAlgorithmType: AlgorithmType?,
-    defaultTemplate: WeightTemplate?,
-    lyricsOriginalTextSize: Int = 14,
-    lyricsTranslatedTextSize: Int = 14,
-    lyricsCurrentTimeTextSize: Int = 16,
-    lyricsLineSpacing: Int = 6,
-    lyricsDisplayMode: DisplayMode = DisplayMode.DUAL,
-    lyricsAlignment: LyricsAlignment = LyricsAlignment.CENTER,
-    onBackClick: () -> Unit,
-    onSeek: (Long) -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
-    onPlaybackModeChange: () -> Unit,
-    onFavorite: () -> Unit,
-    onTimerClick: (Int) -> Unit,
-    onCancelTimer: () -> Unit,
-    onHeartMode: () -> Unit,
-    onGeneratePlaylist: (Long) -> Unit,
-    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit,
-    onArtistClick: (String) -> Unit,
-    onClearPlaylist: () -> Unit,
-    onPlayItem: suspend (MusicInfo) -> Unit,
-    onMoveToTop: (MusicInfo) -> Unit,
-    onRemoveFromPlaylist: (MusicInfo) -> Unit,
-    hazeState: HazeState? = null
-){
+    playerUiState: PlayerUiState,
+    lyricsSettingsState: LyricsSettingsState,
+    callbacks: PlayerCallbacks,
+    hazeState: HazeState? = null,
+    modifier: Modifier = Modifier
+) {
     val haptic = rememberHapticFeedback()
 
     var showTimerDialog by remember { mutableStateOf(false) }
     var playlistExpanded by remember { mutableStateOf(false) }
+
+    // 解构状态以便在代码中使用
+    val musicInfo = playerUiState.musicInfo
+    val isPlaying = playerUiState.isPlaying
+    val currentPosition = playerUiState.currentPosition
+    val duration = playerUiState.duration
+    val playbackMode = playerUiState.playbackMode
+    val remainingTime = playerUiState.remainingTime
+    val isLiked = playerUiState.isLiked
+    val lyrics = playerUiState.lyrics
+    val playlist = playerUiState.playlist
+    val currentIndex = playerUiState.currentIndex
+    val defaultAlgorithmType = playerUiState.defaultAlgorithmType
+    val defaultTemplate = playerUiState.defaultTemplate
+
+    val lyricsOriginalTextSize = lyricsSettingsState.lyricsOriginalTextSize
+    val lyricsTranslatedTextSize = lyricsSettingsState.lyricsTranslatedTextSize
+    val lyricsCurrentTimeTextSize = lyricsSettingsState.lyricsCurrentTimeTextSize
+    val lyricsLineSpacing = lyricsSettingsState.lyricsLineSpacing
+    val lyricsDisplayMode = lyricsSettingsState.lyricsDisplayMode
+    val lyricsAlignment = lyricsSettingsState.lyricsAlignment
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
@@ -138,9 +130,9 @@ fun PlayContent(
                             .weight(1f) // 使顶部区域占据剩余空间
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        PlayerHeader(onBackClick)
+                        PlayerHeader({ callbacks.onBackClick() })
                         Spacer(modifier = Modifier.height(24.dp))
-                        MusicInfo(musicInfo?.music, onArtistClick)
+                        MusicInfo(musicInfo?.music, { callbacks.onArtistClick(it) })
                         Spacer(modifier = Modifier.height(16.dp))
                         // 封面区域：使用 weight(1f) 实现弹性缩放
                         MusicInfoExtra(
@@ -155,9 +147,9 @@ fun PlayContent(
                             lineSpacing = lyricsLineSpacing,
                             displayMode = lyricsDisplayMode,
                             alignment = lyricsAlignment,
-                            onSeek = onSeek,
-                            onGeneratePlaylist = onGeneratePlaylist,
-                            onSaveDefaultConfig = onSaveDefaultConfig,
+                            onSeek = { callbacks.onSeek(it) },
+                            onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
+                            onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -170,7 +162,7 @@ fun PlayContent(
                         SeekBar(
                             currentPosition = currentPosition,
                             duration = duration,
-                            onSeek = onSeek
+                            onSeek = { callbacks.onSeek(it) }
                         )
                         // 播放控制按钮区
                         PlaybackControlsButtons(
@@ -181,31 +173,28 @@ fun PlayContent(
                             playlistExpanded = playlistExpanded,
                             onPlayPause = {
                                 haptic.performClick()
-                                onPlayPause()
+                                callbacks.onPlayPause()
                             },
                             onNext = {
                                 haptic.performClick()
-                                onNext()
+                                callbacks.onNext()
                             },
                             onPrevious = {
                                 haptic.performClick()
-                                onPrevious()
+                                callbacks.onPrevious()
                             },
                             onPlaybackModeChange = {
                                 haptic.performContextClick()
-                                onPlaybackModeChange()
+                                callbacks.onPlaybackModeChange()
                             },
                             onFavorite = {
                                 haptic.performConfirm()
-                                onFavorite()
+                                callbacks.onFavorite()
                             },
-                            onTimerClick = {
-                                haptic.performClick()
-                                showTimerDialog = true
-                            },
+                            onTimerClick = { callbacks.onShowTimerDialog() },
                             onHeartMode = {
                                 haptic.performConfirm()
-                                onHeartMode()
+                                callbacks.onHeartMode()
                             },
                             onPlaylistToggle = {
                                 playlistExpanded = !playlistExpanded
@@ -221,10 +210,10 @@ fun PlayContent(
                     playlist = playlist,
                     currentIndex = currentIndex,
                     scrollState = scrollState,
-                    onClearPlaylist = onClearPlaylist,
-                    onPlayItem = onPlayItem,
-                    onMoveToTop = onMoveToTop,
-                    onRemoveFromPlaylist = onRemoveFromPlaylist
+                    onClearPlaylist = { callbacks.onClearPlaylist() },
+                    onPlayItem = { callbacks.onPlayItem(it) },
+                    onMoveToTop = { callbacks.onMoveToTop(it) },
+                    onRemoveFromPlaylist = { callbacks.onRemoveFromPlaylist(it) }
                 )
             }
         }
@@ -233,37 +222,13 @@ fun PlayContent(
                 onDismiss = { showTimerDialog = false },
                 onConfirm = { minutes: Int ->
                     if (minutes == 0) {
-                        onCancelTimer()
+                        callbacks.onCancelTimer()
                     } else {
-                        onTimerClick(minutes)
+                        callbacks.onTimerClick(minutes)
                     }
                     showTimerDialog = false
                 },
                 hazeState = hazeState
-            )
-        }
-    }
-}
-
-// 顶部返回按钮
-@Composable
-fun PlayerHeader(onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(bottom = 16.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.chevron_down),
-                tint = MaterialTheme.colorScheme.onSurface,
-                contentDescription = stringResource(R.string.back),
-                modifier = Modifier.size(24.dp),
             )
         }
     }
@@ -569,7 +534,7 @@ fun PlaybackControlsButtons(
                 )
             }
             if (remainingTime == null) {
-                IconButton(onClick = onTimerClick) {
+                IconButton(onClick = { onTimerClick() }) {
                     Icon(
                         painter = painterResource(R.drawable.timer),
                         tint = MaterialTheme.colorScheme.onSurface,
