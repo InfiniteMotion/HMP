@@ -66,7 +66,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
-import com.example.hearablemusicplayer.ui.dialog.InputDialog
+import com.example.hearablemusicplayer.ui.dialogs.InputDialog
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -85,9 +85,9 @@ fun PlaylistScreen(
     playlistName: String? = null,
     artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager

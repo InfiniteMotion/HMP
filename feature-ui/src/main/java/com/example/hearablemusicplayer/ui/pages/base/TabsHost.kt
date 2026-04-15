@@ -18,6 +18,9 @@ import com.example.hearablemusicplayer.ui.pages.HomeScreen
 import com.example.hearablemusicplayer.ui.pages.ListScreen
 import com.example.hearablemusicplayer.ui.pages.UserScreen
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 
@@ -34,6 +37,9 @@ fun TabsHost(
     tabHeader: @Composable () -> Unit,
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
 ) {
     CompositionLocalProvider(
         LocalTabHeaderContent provides tabHeader
@@ -41,10 +47,8 @@ fun TabsHost(
         val haptic = rememberHapticFeedback()
         var previousPage by remember { mutableIntStateOf(pagerState.currentPage) }
         
-        // 监听页面变化并触发确认震动反馈
         LaunchedEffect(pagerState.currentPage) {
             if (pagerState.currentPage != previousPage) {
-                // 页面切换确认时的标准震动
                 haptic.performClick()
                 previousPage = pagerState.currentPage
             }
@@ -57,10 +61,22 @@ fun TabsHost(
             when (page) {
                 0 -> HomeScreen(
                     recommendationViewModel = recommendationViewModel,
+                    playbackViewModel = playbackViewModel,
+                    playlistQueueViewModel = playlistQueueViewModel,
+                    dialogViewModel = dialogViewModel,
                     navController = navController
                 )
-                1 -> GalleryScreen(navController = navController)
-                2 -> ListScreen(navController = navController)
+                1 -> GalleryScreen(
+                    playbackViewModel = playbackViewModel,
+                    playlistQueueViewModel = playlistQueueViewModel,
+                    dialogViewModel = dialogViewModel,
+                    navController = navController
+                )
+                2 -> ListScreen(
+                    playbackViewModel = playbackViewModel,
+                    playlistQueueViewModel = playlistQueueViewModel,
+                    navController = navController
+                )
                 3 -> UserScreen(
                     settingsViewModel = settingsViewModel,
                     recommendationViewModel = recommendationViewModel,

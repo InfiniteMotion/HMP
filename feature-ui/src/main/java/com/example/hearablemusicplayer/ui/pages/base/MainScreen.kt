@@ -320,6 +320,9 @@ fun MainScreen(
                                     tabHeader = {},
                                     recommendationViewModel = recommendationViewModel,
                                     settingsViewModel = settingsViewModel,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
+                                    dialogViewModel = dialogViewModel,
                                 )
                             }
                             entry<Routes.SongDetail> { route ->
@@ -467,6 +470,8 @@ fun MainScreen(
                             entry<Routes.Search> {
                                 SearchScreen(
                                     navController = navController,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
                                     dialogViewModel = dialogViewModel
                                 )
                             }
@@ -474,6 +479,8 @@ fun MainScreen(
                                 PlaylistScreen(
                                     navController = navController,
                                     playlistName = route.name,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
                                     dialogViewModel = dialogViewModel,
                                 )
                             }
@@ -481,6 +488,8 @@ fun MainScreen(
                                 PlaylistScreen(
                                     navController = navController,
                                     playlistId = route.playlistId,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
                                     dialogViewModel = dialogViewModel
                                 )
                             }
@@ -491,6 +500,8 @@ fun MainScreen(
                                 ArtistScreen(
                                     navController = navController,
                                     artistName = route.name,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
                                     dialogViewModel = dialogViewModel
                                 )
                             }
@@ -498,6 +509,8 @@ fun MainScreen(
                                 AlbumScreen(
                                     navController = navController,
                                     albumName = route.name,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
                                     dialogViewModel = dialogViewModel
                                 )
                             }

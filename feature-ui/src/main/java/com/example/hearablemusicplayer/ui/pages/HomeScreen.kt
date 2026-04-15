@@ -69,9 +69,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
     navController: NavBackStack<NavKey>
 ) {
     val scope = rememberCoroutineScope()

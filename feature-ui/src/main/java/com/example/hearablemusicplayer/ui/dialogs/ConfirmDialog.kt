@@ -1,5 +1,5 @@
 
-package com.example.hearablemusicplayer.ui.dialog
+package com.example.hearablemusicplayer.ui.dialogs
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme

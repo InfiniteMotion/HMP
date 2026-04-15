@@ -1,7 +1,5 @@
 package com.example.hearablemusicplayer.ui.pages.playlist
 
-import android.annotation.SuppressLint
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,11 +50,10 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
-@SuppressLint("ContextCastToActivity")
 @Composable
 fun PlaylistManageScreen(
-    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    dialogViewModel: DialogViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()

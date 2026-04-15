@@ -56,9 +56,9 @@ import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
     navController: NavBackStack<NavKey>
 ){
     val isPlaying by playbackViewModel.isPlaying.collectAsState()

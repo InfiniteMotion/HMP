@@ -42,9 +42,9 @@ fun ArtistScreen(
     navController: NavBackStack<NavKey>,
     artistName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
 ) {
     // 手动调用 getSelectedArtistMusicList 方法，传入 artistName
     LaunchedEffect(artistName) {

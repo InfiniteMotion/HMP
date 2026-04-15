@@ -36,7 +36,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.galleryPresetMusicListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.indexJumpConfigForOrderBy
-import com.example.hearablemusicplayer.ui.dialog.ConfirmDialog
+import com.example.hearablemusicplayer.ui.dialogs.ConfirmDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -51,9 +51,9 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 @Composable
 fun GalleryScreen(
     libraryViewModel: LibraryViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>

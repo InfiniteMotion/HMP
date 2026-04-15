@@ -42,9 +42,9 @@ fun AlbumScreen(
     navController: NavBackStack<NavKey>,
     albumName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
 ) {
     // 手动调用 getSelectedAlbumMusicList 方法，传入 albumName
     LaunchedEffect(albumName) {

@@ -1,5 +1,5 @@
 
-package com.example.hearablemusicplayer.ui.dialog
+package com.example.hearablemusicplayer.ui.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

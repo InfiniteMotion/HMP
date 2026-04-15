@@ -1,7 +1,5 @@
 package com.example.hearablemusicplayer.ui.pages
 
-import android.annotation.SuppressLint
-import androidx.activity.ComponentActivity
 import androidx.annotation.ColorRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,7 +45,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -69,13 +66,16 @@ import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
-@SuppressLint("ContextCastToActivity")
 @Composable
 fun ListScreen(
-    playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    dialogViewModel: DialogViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
     navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
