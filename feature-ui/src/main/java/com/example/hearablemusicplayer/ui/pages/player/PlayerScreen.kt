@@ -2,7 +2,6 @@
 
 package com.example.hearablemusicplayer.ui.pages.player
 
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.Animatable
@@ -30,10 +29,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
@@ -47,21 +49,14 @@ fun PlayerScreen(
     viewModel: PlayControlViewModel = hiltViewModel(),
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current
     val dismissThreshold = with(density) { 220.dp.toPx() }
     val offsetY = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val haptic = rememberHapticFeedback()
     val hazeState = rememberHazeState()
-
-    LaunchedEffect(Unit) {
-        viewModel.toastEvent.collect { event ->
-            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-        }
-    }
 
     // 预加载当前播放音乐信息
     LaunchedEffect(Unit) {
@@ -148,11 +143,14 @@ fun PlayerScreen(
                 if (offsetY.value > 0f) {
                     if (offsetY.value > dismissThreshold) {
                         // 达到阈值，执行退出
-                        navController.popBackStack()
+                        navController.removeLastOrNull()
                         haptic.performGestureEnd()
                         offsetY.animateTo(
                             targetValue = with(density) { 1000.dp.toPx() },
-                            animationSpec = tween(durationMillis = 300)
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = AnimationConfig.EASE_IN
+                            )
                         )
                     } else {
                         // 未达到阈值，执行回弹
@@ -201,7 +199,7 @@ fun PlayerScreen(
             lyricsLineSpacing = lyricsLineSpacing,
             lyricsDisplayMode = lyricsDisplayMode,
             lyricsAlignment = lyricsAlignment,
-            onBackClick = { navController.popBackStack() },
+            onBackClick = { navController.removeLastOrNull() },
             onSeek = viewModel::seekTo,
             onPlayPause = { if (isPlaying) viewModel.pauseMusic() else viewModel.playOrResume() },
             onNext = viewModel::playNext,
@@ -212,12 +210,12 @@ fun PlayerScreen(
             },
             onTimerClick = viewModel::startTimer,
             onCancelTimer = viewModel::cancelTimer,
-            onHeartMode = { navController.navigate(Routes.Lyrics) },
+            onHeartMode = { navController.add(Routes.Lyrics) },
             onGeneratePlaylist = viewModel::generatePlaylist,
             onSaveDefaultConfig = viewModel::saveAlgorithmConfig,
             onArtistClick = { artistName ->
                 playlistViewModel.getSelectedArtistMusicList(artistName)
-                navController.navigate(Routes.Artist(artistName))
+                navController.add(Routes.Artist(artistName))
             },
             onClearPlaylist = viewModel::clearPlaylist,
             onPlayItem = viewModel::playAt,

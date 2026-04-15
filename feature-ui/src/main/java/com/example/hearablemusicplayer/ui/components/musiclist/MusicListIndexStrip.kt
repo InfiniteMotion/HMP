@@ -41,7 +41,7 @@ import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
 /** 索引条上下留白 */
-private val IndexStripVerticalPadding = 32.dp
+private val IndexStripVerticalPadding = 72.dp
 
 /**
  * 索引条：全高度，上下各 [IndexStripVerticalPadding]。支持 Letter 模式（A–Z #）与 Anchor 模式（数值/时间锚点）。

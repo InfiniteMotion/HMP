@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,9 +37,9 @@ fun MusicList(
     musicInfoList: List<MusicInfo>,
     config: MusicListConfig,
     modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
     isPlaying: Boolean = false,
 ) {
-    val listState = rememberLazyListState()
     val state = rememberMusicListState()
     val density = LocalDensity.current
     val currentIndex = config.currentPlaying.index
@@ -197,7 +198,7 @@ fun FixedMusicList(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Box(modifier = Modifier.fillMaxWidth()) {
-            MusicListContentColumn(
+            FixedMusicListContent(
                 musicInfoList = musicInfoList,
                 config = config,
                 state = state,

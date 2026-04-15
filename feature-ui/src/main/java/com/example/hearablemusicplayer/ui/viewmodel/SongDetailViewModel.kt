@@ -3,7 +3,7 @@ package com.example.hearablemusicplayer.ui.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
+
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.music.MusicLabel
 import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 data class SongDetailData(
@@ -41,11 +43,21 @@ class SongDetailViewModel @Inject constructor(
     private var currentMusicId: Long? = null
 
     init {
+        loadSongDetailFromRoute()
+    }
+
+    private fun loadSongDetailFromRoute() {
         try {
-            val songDetail = savedStateHandle.toRoute<Routes.SongDetail>()
-            loadSongDetail(songDetail.musicId)
+            // 尝试从 savedStateHandle 获取 musicId
+            val musicId = savedStateHandle.get<Long>("musicId")
+            if (musicId != null) {
+                currentMusicId = musicId
+                loadSongDetail(musicId)
+            } else {
+                _uiState.value = UiState.Error("无法获取歌曲 ID")
+            }
         } catch (e: Exception) {
-            _uiState.value = UiState.Error("Invalid navigation arguments")
+            _uiState.value = UiState.Error("导航参数错误: ${e.message}")
         }
     }
 

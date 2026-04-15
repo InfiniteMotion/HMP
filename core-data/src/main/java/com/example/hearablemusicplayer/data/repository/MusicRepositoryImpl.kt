@@ -191,6 +191,21 @@ class MusicRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo> {
+        val queryString = """
+            SELECT * FROM music 
+            LEFT JOIN musicExtra ON music.id = musicExtra.id
+            LEFT JOIN userInfo ON music.id = userInfo.id
+            WHERE music.album = ? AND music.isDeleted = 0
+            ORDER BY music.id ASC
+        """.trimIndent()
+        val query = SimpleSQLiteQuery(queryString, arrayOf(albumName))
+        val list = musicAllDao.getAllMusicInfoAsList(query).map { it.toDomain() }
+        return list.sortedWith(
+            compareBy<MusicInfo> { stringToPinyinSortKey(it.music.title) }.thenBy { it.music.title }
+        )
+    }
+
     override suspend fun searchMusic(query: String): List<MusicInfo> = musicAllDao.searchMusic("%$query%").map { it.toDomain() }
 
     override suspend fun addMusicLabel(label: MusicLabelDomain) {

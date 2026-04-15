@@ -43,7 +43,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
 import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
@@ -312,13 +313,13 @@ fun BackButton(
 
 @Composable
 fun SearchButton(
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ){
     val haptic = rememberHapticFeedback()
     FilledIconButton(
         onClick = {
             haptic.performClick()
-            navController.navigate(Routes.Search)
+            navController.add(Routes.Search)
         },
         modifier = Modifier
             .size(32.dp), // Larger touch target

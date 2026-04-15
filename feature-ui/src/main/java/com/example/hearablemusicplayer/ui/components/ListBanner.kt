@@ -26,7 +26,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
@@ -80,7 +81,7 @@ fun ListGroupName(
 fun ListBanner(
     listName: String = "",
     listCoverUri: Int,
-    navController: NavController
+    navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
     val imageModifier = Modifier
@@ -94,7 +95,7 @@ fun ListBanner(
             .width(110.dp)
             .clickable {
                 haptic.performClick()
-                navController.navigate(Routes.Playlist(listName))
+                navController.add(Routes.Playlist(listName))
             }
     ) {
         AsyncImage(

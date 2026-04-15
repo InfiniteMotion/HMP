@@ -39,6 +39,36 @@ class UserSettingsUseCase @Inject constructor(
         settingsRepository.saveBackgroundStyle(style)
     }
 
+    val hazeMode: Flow<String> = settingsRepository.hazeMode
+    suspend fun saveHazeMode(mode: String) {
+        settingsRepository.saveHazeMode(mode)
+    }
+
+    val hazeMaterialPreset: Flow<String> = settingsRepository.hazeMaterialPreset
+    suspend fun saveHazeMaterialPreset(preset: String) {
+        settingsRepository.saveHazeMaterialPreset(preset)
+    }
+
+    val hazeBlurRadius: Flow<Float> = settingsRepository.hazeBlurRadius
+    suspend fun saveHazeBlurRadius(radius: Float) {
+        settingsRepository.saveHazeBlurRadius(radius)
+    }
+
+    val hazeNoiseFactor: Flow<Float> = settingsRepository.hazeNoiseFactor
+    suspend fun saveHazeNoiseFactor(noiseFactor: Float) {
+        settingsRepository.saveHazeNoiseFactor(noiseFactor)
+    }
+
+    val hazeTintAlpha: Flow<Float> = settingsRepository.hazeTintAlpha
+    suspend fun saveHazeTintAlpha(alpha: Float) {
+        settingsRepository.saveHazeTintAlpha(alpha)
+    }
+
+    val hazeIntensity: Flow<Float> = settingsRepository.hazeIntensity
+    suspend fun saveHazeIntensity(intensity: Float) {
+        settingsRepository.saveHazeIntensity(intensity)
+    }
+
     // 头像URI
     suspend fun getAvatarUri(): String? {
         return settingsRepository.getAvatarUri()

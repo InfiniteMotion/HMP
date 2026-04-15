@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.ui.pages.base
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.components.BackButton
+import com.example.hearablemusicplayer.ui.util.AnimationConfig
 
 @Composable
 fun SubScreen(
@@ -47,14 +47,24 @@ fun SubScreen(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(durationMillis = 300, easing = LinearEasing)),
-        exit = fadeOut(animationSpec = tween(durationMillis = 200))
+        enter = fadeIn(
+            animationSpec = tween(
+                durationMillis = 300,
+                easing = AnimationConfig.EASE_OUT
+            )
+        ),
+        exit = fadeOut(
+            animationSpec = tween(
+                durationMillis = 200,
+                easing = AnimationConfig.EASE_IN
+            )
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()
-                .padding(top = 16.dp, bottom = 80.dp),
+                .padding(top = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(

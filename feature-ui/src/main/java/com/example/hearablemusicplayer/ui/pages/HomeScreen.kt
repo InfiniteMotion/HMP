@@ -40,9 +40,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
@@ -58,6 +59,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListC
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import kotlinx.coroutines.launch
@@ -67,7 +69,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     recommendationViewModel: RecommendationViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController
+    dialogViewModel: DialogViewModel = hiltViewModel(),
+    navController: NavBackStack<NavKey>
 ) {
     val scope = rememberCoroutineScope()
     val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
@@ -75,161 +78,172 @@ fun HomeScreen(
     val haptic = rememberHapticFeedback()
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
 
-    TabScreen(
-        title = stringResource(R.string.title_home),
-        trailing = {
-            IconButton(
-                onClick = {
-                    haptic.performClick()
-                    recommendationViewModel.refreshDailyMusicInfo()
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.player_d),
-                    contentDescription = stringResource(R.string.refresh_daily_recommendation),
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        }
-    ) {
-        if (dailyMusic == null) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.no_data_loaded),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.relaunch_or_config_ai),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { navController.navigate(Routes.AI) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text(stringResource(R.string.go_to_ai_config))
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-        } else {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState())
-                    .fillMaxSize()
-                    .padding(bottom = 16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.today_recommendation),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
-                DailyHeroCard(
-                    music = dailyMusic!!,
-                    onPlay = {
-                        haptic.performClick()
-                        scope.launch {
-                            playControlViewModel.playWith(dailyMusic!!)
-                            navController.navigate(Routes.Player)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            TabScreen(
+                title = stringResource(R.string.title_home),
+                trailing = {
+                    IconButton(
+                        onClick = {
+                            haptic.performClick()
+                            recommendationViewModel.refreshDailyMusicInfo()
                         }
-                    },
-                    onDetail = {
-                        haptic.performClick()
-                        navController.navigate(Routes.SongDetail(dailyMusic!!.music.id))
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Section 2: Heartbeat Playlist (Music List)
-                val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.today_heartbeat_playlist),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-                    if (heartbeatList.isNotEmpty()){
-                        FilledIconButton(
-                            onClick = {
-                                playControlViewModel.clearPlaylist()
-                                playControlViewModel.addAllToPlaylistInOrder(heartbeatList)
-                                playControlViewModel.playWith(heartbeatList.first())
-                                navController.navigate(Routes.Player)
-                            },
-                            modifier = Modifier
-                                .size(24.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.music_note_list),
-                                contentDescription = stringResource(R.string.play_heartbeat_playlist),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.player_d),
+                            contentDescription = stringResource(R.string.refresh_daily_recommendation),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 }
-
-                if (heartbeatList.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp),
-                        contentAlignment = Alignment.Center
+            ) {
+                if (dailyMusic == null) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.generating_heartbeat_playlist),
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = stringResource(R.string.no_data_loaded),
+                            style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.relaunch_or_config_ai),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { navController.add(Routes.AI) },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text(stringResource(R.string.go_to_ai_config))
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 } else {
-                    val currentPlayingIndex = heartbeatList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
-                    val callbacks = object : MusicListCallbacksAdapter() {
-                        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                            haptic.performClick()
-                            scope.launch { playControlViewModel.playWith(musicInfo) }
-                        }
-                        override fun onMenuClick(musicInfo: MusicInfo) {
-                            navController.navigate(Routes.SongDetail(musicInfo.music.id))
-                        }
-                    }
-                    val config = defaultMusicListConfig(callbacks).copy(
-                        header = HeaderConfig.None,
-                        item = ItemConfig(
-                            variant = ItemVariant.Full,
-                            showIndex = true,
-                            fullOptions = FullItemOptions(showPinButton = false, showRemoveButton = false, showMenuButton = true),
-                        ),
-                        edit = EditConfig(enabled = false),
-                        currentPlaying = CurrentPlayingConfig(index = currentPlayingIndex, autoScrollToCurrent = false),
-                    )
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        FixedMusicList(
-                            musicInfoList = heartbeatList,
-                            config = config,
-                            modifier = Modifier.fillMaxWidth(),
-                            isPlaying = isPlaying,
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                            .padding(bottom = 16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.today_recommendation),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         )
+                        DailyHeroCard(
+                            music = dailyMusic!!,
+                            onPlay = {
+                                haptic.performClick()
+                                scope.launch {
+                                    playControlViewModel.playWith(dailyMusic!!)
+                                    navController.add(Routes.Player)
+                                }
+                            },
+                            onDetail = {
+                                haptic.performClick()
+                                navController.add(Routes.SongDetail(dailyMusic!!.music.id))
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Section 2: Heartbeat Playlist (Music List)
+                        val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.today_heartbeat_playlist),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
+                            if (heartbeatList.isNotEmpty()){
+                                FilledIconButton(
+                                    onClick = {
+                                        playControlViewModel.clearPlaylist()
+                                        playControlViewModel.addAllToPlaylistInOrder(heartbeatList)
+                                        playControlViewModel.playWith(heartbeatList.first())
+                                        navController.add(Routes.Player)
+                                    },
+                                    modifier = Modifier
+                                        .size(24.dp),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.music_note_list),
+                                        contentDescription = stringResource(R.string.play_heartbeat_playlist),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (heartbeatList.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.generating_heartbeat_playlist),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            val currentPlayingIndex = heartbeatList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
+                            val callbacks = object : MusicListCallbacksAdapter() {
+                                override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                                    haptic.performClick()
+                                    scope.launch { playControlViewModel.playWith(musicInfo) }
+                                }
+                                override fun onMenuClick(musicInfo: MusicInfo) {
+                                    val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                                        showAddToPlaylist = true,
+                                        showAddToSpecificPlaylist = true,
+                                        showShare = true,
+                                        showViewDetail = true,
+                                        showPlayNext = false,
+                                        showRemoveFromCurrentPlaylist = false,
+                                        showDelete = false
+                                    )
+                                    dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
+                                }
+                            }
+                            val config = defaultMusicListConfig(callbacks).copy(
+                                header = HeaderConfig.None,
+                                item = ItemConfig(
+                                    variant = ItemVariant.Full,
+                                    showIndex = true,
+                                    fullOptions = FullItemOptions(showPinButton = false, showRemoveButton = false, showMenuButton = true),
+                                ),
+                                edit = EditConfig(enabled = false),
+                                currentPlaying = CurrentPlayingConfig(index = currentPlayingIndex, autoScrollToCurrent = false),
+                            )
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                FixedMusicList(
+                                    musicInfoList = heartbeatList,
+                                    config = config,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    isPlaying = isPlaying,
+                                )
+                            }
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(64.dp))
             }
         }
     }

@@ -2,7 +2,6 @@ package com.example.hearablemusicplayer.ui.pages.settings
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -39,28 +38,35 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.Avatar
+import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.components.TitleWidget
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
 @Composable
 fun ProfileSettingsScreen(
-    navController: NavController,
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    navController: NavBackStack<NavKey>,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel()
 ) {
+    val dialogManager = dialogManagerViewModel.dialogManager
     val avatarUri by settingsViewModel.avatarUri.collectAsState("")
     val userName by settingsViewModel.userName.collectAsState("")
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.profile_settings)
     ) {
         Column(
@@ -72,12 +78,14 @@ fun ProfileSettingsScreen(
         ) {
             UpdateAvatar(
                 avatarUri = avatarUri,
-                updateAvatar = settingsViewModel::saveAvatarUri
+                updateAvatar = settingsViewModel::saveAvatarUri,
+                dialogManager = dialogManager
             )
             UpdateUserName(
                 userName = userName,
                 updateUserName = settingsViewModel::saveUserName
             )
+            MiniPlayerSafeSpacer(height = 56.dp)
         }
     }
 }
@@ -86,7 +94,8 @@ fun ProfileSettingsScreen(
 @Composable
 private fun UpdateAvatar(
     avatarUri: String,
-    updateAvatar: (String) -> Unit
+    updateAvatar: (String) -> Unit,
+    dialogManager: DialogManager
 ){
     TitleWidget(
         title = stringResource(R.string.avatar),
@@ -162,7 +171,7 @@ private fun UpdateAvatar(
                     Button(
                         onClick = {
                             updateAvatar(uriImg.value)
-                            Toast.makeText(context, context.getString(R.string.avatar_changed), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.avatar_changed))
                         }
                     ) {
                         Text(text = stringResource(R.string.change), color = MaterialTheme.colorScheme.onPrimary)
@@ -170,7 +179,7 @@ private fun UpdateAvatar(
                     Button(
                         onClick = {
                             uriImg.value = ""
-                            Toast.makeText(context, context.getString(R.string.avatar_change_cancelled), Toast.LENGTH_SHORT).show()
+                            dialogManager.showMessage(context.getString(R.string.avatar_change_cancelled))
                         }
                     ) {
                         Text(text = stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onPrimary)

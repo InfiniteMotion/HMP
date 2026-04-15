@@ -32,20 +32,26 @@ import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.SegmentedControl
 import com.example.hearablemusicplayer.ui.components.SegmentedOption
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
+import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 
 @OptIn(ExperimentalHazeMaterialsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TimerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    hazeRenderSettings: HazeRenderSettings? = null
 ) {
     val haptic = rememberHapticFeedback()
+    val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
     
     // State
     var selectedOption by remember { mutableStateOf("0") }
@@ -59,116 +65,123 @@ fun TimerDialog(
         SegmentedOption("60", "60 min")
     )
 
-    ScrimDialog(onDismissRequest = onDismiss) {
-        val dialogShape = RoundedCornerShape(28.dp)
-        Card(
-            modifier = Modifier
-                .padding(24.dp)
-                .clip(dialogShape)
-                .then(
-                    if (hazeState != null) {
-                        Modifier.hazeEffect(
-                            state = hazeState,
-                            style = HazeMaterials.thin()
-                        )
-                    } else Modifier
-                ),
-            shape = dialogShape,
-            colors = CardDefaults.cardColors(
-                containerColor = if (hazeState != null) Transparent else MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column(
+    ProvideHazeRenderSettings(settings = resolvedHazeRenderSettings) {
+        ScrimDialog(onDismissRequest = onDismiss) {
+            val dialogShape = RoundedCornerShape(28.dp)
+            Card(
                 modifier = Modifier
                     .padding(24.dp)
-                    .fillMaxWidth()
+                    .clip(dialogShape)
+                    .then(
+                        if (hazeState != null) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = hazeStyleForIntensity()
+                            )
+                        } else Modifier
+                    ),
+                shape = dialogShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (hazeState != null) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = hazeTintAlpha())
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.sleep_timer),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-
-                // Segmented Control
-                SegmentedControl(
-                    modifier = Modifier.fillMaxWidth(),
-                    options = options,
-                    selectedOption = selectedOption,
-                    onOptionSelected = { optionId ->
-                        haptic.performClick()
-                        selectedOption = optionId
-                        if (optionId != "custom") {
-                            customMinutesInput = ""
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Custom Input
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth()
                 ) {
-                    OutlinedTextField(
-                        value = customMinutesInput,
-                        onValueChange = { input ->
-                            // Allow digits only
-                            if (input.all { it.isDigit() }) {
-                                customMinutesInput = input
-                                if (input.isNotEmpty()) {
-                                    selectedOption = "custom"
-                                }
-                            }
-                        },
-                        label = { Text(stringResource(R.string.custom_minutes)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                    Text(
+                        text = stringResource(R.string.sleep_timer),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 24.dp)
                     )
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = {
+                    // Segmented Control
+                    SegmentedControl(
+                        modifier = Modifier.fillMaxWidth(),
+                        options = options,
+                        selectedOption = selectedOption,
+                        onOptionSelected = { optionId ->
                             haptic.performClick()
-                            onDismiss()
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                            selectedOption = optionId
+                            if (optionId != "custom") {
+                                customMinutesInput = ""
+                            }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Custom Input
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.cancel),
-                            style = MaterialTheme.typography.labelLarge
+                        OutlinedTextField(
+                            value = customMinutesInput,
+                            onValueChange = { input ->
+                                // Allow digits only
+                                if (input.all { it.isDigit() }) {
+                                    customMinutesInput = input
+                                    if (input.isNotEmpty()) {
+                                        selectedOption = "custom"
+                                    }
+                                }
+                            },
+                            label = { Text(stringResource(R.string.custom_minutes)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
-                        onClick = {
-                            haptic.performConfirm()
-                            val minutes = when {
-                                selectedOption == "custom" -> customMinutesInput.toIntOrNull() ?: 0
-                                else -> selectedOption.toIntOrNull() ?: 0
-                            }
-                            onConfirm(minutes)
-                        },
-                        shape = RoundedCornerShape(12.dp)
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text(
-                            text = stringResource(R.string.ok),
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        TextButton(
+                            onClick = {
+                                haptic.performClick()
+                                onDismiss()
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.cancel),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = {
+                                haptic.performConfirm()
+                                val minutes = when {
+                                    selectedOption == "custom" -> customMinutesInput.toIntOrNull() ?: 0
+                                    else -> selectedOption.toIntOrNull() ?: 0
+                                }
+                                onConfirm(minutes)
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ok),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+

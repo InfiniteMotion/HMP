@@ -1,7 +1,6 @@
 package com.example.hearablemusicplayer.ui.components.musiclist
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.combinedClickable
@@ -34,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.ContentScale
@@ -133,10 +131,6 @@ internal fun MusicListItem(
         ItemVariant.Gallery -> DefaultGalleryHeight
         ItemVariant.Custom -> DefaultFullHeight
     }
-    val backgroundColor = when {
-        isCurrentPlaying -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        else -> Color.Transparent
-    }
 
     val onItemClick = {
         haptic.performClick()
@@ -171,7 +165,6 @@ internal fun MusicListItem(
         .fillMaxWidth()
         .height(height)
         .clip(RoundedCornerShape(12.dp))
-        .background(backgroundColor, RoundedCornerShape(12.dp))
         .padding(vertical = 4.dp)
     val rowModifier = rowVisualModifier.then(rowClickModifier)
 
@@ -212,6 +205,7 @@ internal fun MusicListItem(
                 musicInfo = musicInfo,
                 index = index,
                 options = itemConfig.fullOptions,
+                isCurrentPlaying = isCurrentPlaying,
                 callbacks = callbacks,
                 modifier = Modifier.weight(1f),
             )
@@ -225,6 +219,7 @@ internal fun MusicListItem(
             ItemVariant.Gallery -> GalleryRow(
                 musicInfo = musicInfo,
                 options = itemConfig.galleryOptions,
+                isCurrentPlaying = isCurrentPlaying,
                 callbacks = callbacks,
                 modifier = Modifier.weight(1f),
             )
@@ -241,12 +236,15 @@ private fun FullRow(
     musicInfo: MusicInfo,
     index: Int,
     options: FullItemOptions?,
+    isCurrentPlaying: Boolean,
     callbacks: MusicListCallbacks,
     modifier: Modifier = Modifier,
 ) {
     val opts = options ?: FullItemOptions()
     var menuExpanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
+    val actionTint = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Row(
         modifier = modifier
@@ -292,7 +290,7 @@ private fun FullRow(
                     Icon(
                         painter = painterResource(R.drawable.chevron_up_circle),
                         contentDescription = stringResource(R.string.pin_to_top),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -303,7 +301,7 @@ private fun FullRow(
                     Icon(
                         painter = painterResource(R.drawable.trash),
                         contentDescription = stringResource(R.string.remove),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -316,7 +314,7 @@ private fun FullRow(
                         Icon(
                             painter = painterResource(R.drawable.dot_grid_1x2),
                             contentDescription = stringResource(R.string.more),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            tint = actionTint,
                         )
                     }
                 } else {
@@ -328,7 +326,7 @@ private fun FullRow(
                             Icon(
                                 painter = painterResource(R.drawable.dot_grid_1x2),
                                 contentDescription = stringResource(R.string.more),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                tint = actionTint,
                             )
                         }
                         DropdownMenu(
@@ -378,6 +376,8 @@ private fun CompactRow(
 ) {
     val opts = options ?: CompactItemOptions()
     val haptic = rememberHapticFeedback()
+    val actionTint = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Row(
         modifier = modifier
@@ -402,8 +402,7 @@ private fun CompactRow(
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = musicInfo.music.artist,
@@ -423,7 +422,7 @@ private fun CompactRow(
                         painter = painterResource(R.drawable.chevron_up_circle),
                         contentDescription = stringResource(R.string.pin_to_top),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -436,7 +435,7 @@ private fun CompactRow(
                         painter = painterResource(R.drawable.trash),
                         contentDescription = stringResource(R.string.remove),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -450,7 +449,7 @@ private fun CompactRow(
                             painter = painterResource(R.drawable.dot_grid_1x2),
                             contentDescription = stringResource(R.string.more),
                             modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            tint = actionTint,
                         )
                     }
                 } else {
@@ -464,7 +463,7 @@ private fun CompactRow(
                                 painter = painterResource(R.drawable.dot_grid_1x2),
                                 contentDescription = stringResource(R.string.more),
                                 modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                tint = actionTint,
                             )
                         }
                         DropdownMenu(
@@ -508,11 +507,14 @@ private fun CompactRow(
 private fun GalleryRow(
     musicInfo: MusicInfo,
     options: GalleryItemOptions?,
+    isCurrentPlaying: Boolean,
     callbacks: MusicListCallbacks,
     modifier: Modifier = Modifier,
 ) {
     val opts = options ?: GalleryItemOptions()
     val haptic = rememberHapticFeedback()
+    val actionTint = if (isCurrentPlaying) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Row(
         modifier = modifier
@@ -566,7 +568,7 @@ private fun GalleryRow(
                         painter = painterResource(R.drawable.chevron_up_circle),
                         contentDescription = stringResource(R.string.pin_to_top),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -579,7 +581,7 @@ private fun GalleryRow(
                         painter = painterResource(R.drawable.trash),
                         contentDescription = stringResource(R.string.remove),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        tint = actionTint,
                     )
                 }
             }
@@ -593,7 +595,7 @@ private fun GalleryRow(
                             painter = painterResource(R.drawable.dot_grid_1x2),
                             contentDescription = stringResource(R.string.more),
                             modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            tint = actionTint,
                         )
                     }
                 } else {
@@ -607,7 +609,7 @@ private fun GalleryRow(
                                 painter = painterResource(R.drawable.dot_grid_1x2),
                                 contentDescription = stringResource(R.string.more),
                                 modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                tint = actionTint,
                             )
                         }
                         DropdownMenu(

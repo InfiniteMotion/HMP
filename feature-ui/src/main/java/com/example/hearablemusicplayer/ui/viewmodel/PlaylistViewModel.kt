@@ -22,8 +22,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
-import com.example.hearablemusicplayer.ui.util.Routes
 
 /** 播放列表详情页 UI 状态 */
 data class PlaylistUiState(
@@ -42,7 +40,6 @@ class PlaylistViewModel @Inject constructor(
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-
     // 标签分类列表名
     val genrePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.GENRE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -105,6 +102,12 @@ class PlaylistViewModel @Inject constructor(
     val selectedArtistName: StateFlow<String> = _selectedArtistName
     private val _selectedArtistMusicList = MutableStateFlow<List<MusicInfo>>(emptyList())
     val selectedArtistMusicList: StateFlow<List<MusicInfo>> = _selectedArtistMusicList
+    
+    // 专辑
+    private val _selectedAlbumName = MutableStateFlow("")
+    val selectedAlbumName: StateFlow<String> = _selectedAlbumName
+    private val _selectedAlbumMusicList = MutableStateFlow<List<MusicInfo>>(emptyList())
+    val selectedAlbumMusicList: StateFlow<List<MusicInfo>> = _selectedAlbumMusicList
 
     // 初始化默认播放列表
     fun initializeDefaultPlaylists() {
@@ -135,23 +138,37 @@ class PlaylistViewModel @Inject constructor(
     init {
         initializeDefaultPlaylists()
         loadUserCustomPlaylists()
+    }
 
-        // 尝试从路由参数加载播放列表、自定义播放列表或艺术家
+    private fun loadRouteData() {
         try {
-            val customArg = savedStateHandle.toRoute<Routes.CustomPlaylist>()
-            loadPlaylistById(customArg.playlistId)
-        } catch (e: Exception) {
-            try {
-                val playlistArg = savedStateHandle.toRoute<Routes.Playlist>()
-                getSelectedPlaylist(playlistArg.name)
-            } catch (e2: Exception) {
-                try {
-                    val artistArg = savedStateHandle.toRoute<Routes.Artist>()
-                    getSelectedArtistMusicList(artistArg.name)
-                } catch (e3: Exception) {
-                    // 不是从 Artist 路由进入
+            // 检查是否为 CustomPlaylist 路由
+            if (savedStateHandle.contains("playlistId")) {
+                val playlistId = savedStateHandle.get<Long>("playlistId")
+                if (playlistId != null) {
+                    loadPlaylistById(playlistId)
+                    return
                 }
             }
+            
+            // 检查是否为 Playlist、Artist 或 Album 路由
+            if (savedStateHandle.contains("name")) {
+                val name = savedStateHandle.get<String>("name")
+                if (name != null) {
+                    // 尝试判断是 Playlist、Artist 还是 Album
+                    val route = savedStateHandle.get<String>("nav3_route")
+                    if (route?.contains("Artist") == true) {
+                        getSelectedArtistMusicList(name)
+                    } else if (route?.contains("Album") == true) {
+                        getSelectedAlbumMusicList(name)
+                    } else {
+                        getSelectedPlaylist(name)
+                    }
+                    return
+                }
+            }
+        } catch (e: Exception) {
+            // 忽略错误，不加载特定播放列表
         }
     }
 
@@ -167,10 +184,14 @@ class PlaylistViewModel @Inject constructor(
         }
     }
 
+    private var currentPlaylistJob: kotlinx.coroutines.Job? = null
+
     /** 按 ID 加载播放列表（用于 CustomPlaylist 路由） */
     fun loadPlaylistById(playlistId: Long) {
+        currentPlaylistJob?.cancel()
         _selectedPlaylistId.value = playlistId
-        viewModelScope.launch {
+        
+        currentPlaylistJob = viewModelScope.launch {
             val meta = managePlaylistUseCase.getPlaylistMeta(playlistId)
             _selectedPlaylistMeta.value = meta
             _selectedPlaylistName.value = meta?.name ?: ""
@@ -178,18 +199,25 @@ class PlaylistViewModel @Inject constructor(
             val likedId = settingsRepository.getLikedPlaylistId()
             val recentId = settingsRepository.getRecentPlaylistId()
             _isCustomPlaylist.value = playlistId != currentId && playlistId != likedId && playlistId != recentId
-        }
-        viewModelScope.launch {
+            
+            _selectedPlaylist.value = emptyList()
+            
             managePlaylistUseCase.getMusicInfoInPlaylist(playlistId)
                 .catch { _selectedPlaylist.value = emptyList() }
-                .collect { _selectedPlaylist.value = it }
+                .collect { 
+                    if (_selectedPlaylistId.value == playlistId) {
+                        _selectedPlaylist.value = it
+                    }
+                }
         }
     }
 
     private fun refreshSelectedPlaylistMeta() {
         val id = _selectedPlaylistId.value ?: return
         viewModelScope.launch {
-            _selectedPlaylistMeta.value = managePlaylistUseCase.getPlaylistMeta(id)
+            val meta = managePlaylistUseCase.getPlaylistMeta(id)
+            _selectedPlaylistMeta.value = meta
+            meta?.name?.let { _selectedPlaylistName.value = it }
         }
     }
 
@@ -229,6 +257,7 @@ class PlaylistViewModel @Inject constructor(
         viewModelScope.launch {
             managePlaylistUseCase.removeItemFromPlaylist(musicId, playlistId)
             if (playlistId == _selectedPlaylistId.value) refreshSelectedPlaylistMeta()
+            loadUserCustomPlaylists()
         }
     }
 
@@ -237,6 +266,25 @@ class PlaylistViewModel @Inject constructor(
         viewModelScope.launch {
             managePlaylistUseCase.addToPlaylist(playlistId, musicId, musicPath)
             if (playlistId == _selectedPlaylistId.value) refreshSelectedPlaylistMeta()
+            loadUserCustomPlaylists()
+        }
+    }
+
+    /** 向播放列表批量追加歌曲，完成后统一刷新一次 */
+    fun addItemsToPlaylist(
+        playlistId: Long,
+        items: List<Pair<Long, String>>,
+        onComplete: (() -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            items.forEach { (musicId, musicPath) ->
+                managePlaylistUseCase.addToPlaylist(playlistId, musicId, musicPath)
+            }
+            if (playlistId == _selectedPlaylistId.value) {
+                refreshSelectedPlaylistMeta()
+            }
+            loadUserCustomPlaylists()
+            onComplete?.invoke()
         }
     }
 
@@ -245,9 +293,11 @@ class PlaylistViewModel @Inject constructor(
     val allMusicForAddPicker: StateFlow<List<MusicInfo>> = _allMusicForAddPicker.asStateFlow()
 
     /** 加载全部音乐供「添加歌曲」选择器使用 */
-    fun loadAllMusicForAddPicker() {
+    fun loadAllMusicForAddPicker(onLoaded: ((List<MusicInfo>) -> Unit)? = null) {
         viewModelScope.launch {
-            _allMusicForAddPicker.value = getAllMusicUseCase("title", "ASC")
+            val allMusic = getAllMusicUseCase("title", "ASC")
+            _allMusicForAddPicker.value = allMusic
+            onLoaded?.invoke(allMusic)
         }
     }
 
@@ -255,6 +305,7 @@ class PlaylistViewModel @Inject constructor(
         viewModelScope.launch {
             managePlaylistUseCase.reorderPlaylistItems(playlistId, orderedMusicIds)
             if (playlistId == _selectedPlaylistId.value) refreshSelectedPlaylistMeta()
+            loadUserCustomPlaylists()
         }
     }
 
@@ -292,6 +343,7 @@ class PlaylistViewModel @Inject constructor(
 
     // 依据标签获取音乐列表
     fun getSelectedPlaylist(label: LabelName) {
+        currentPlaylistJob?.cancel()
         _selectedPlaylistId.value = null
         _selectedPlaylistMeta.value = null
         _selectedPlaylistName.value = label.name
@@ -302,6 +354,7 @@ class PlaylistViewModel @Inject constructor(
 
     // 依据标签获取音乐列表（或默认/红心/最近）
     fun getSelectedPlaylist(label: String) {
+        currentPlaylistJob?.cancel()
         _selectedPlaylistName.value = label
         viewModelScope.launch {
             val id = when (label) {
@@ -317,7 +370,16 @@ class PlaylistViewModel @Inject constructor(
                 val recentId = settingsRepository.getRecentPlaylistId()
                 _isCustomPlaylist.value = id != currentId && id != likedId && id != recentId
                 _selectedPlaylistMeta.value = managePlaylistUseCase.getPlaylistMeta(id)
-                _selectedPlaylist.value = managePlaylistUseCase.getPlaylistById(id)
+                
+                _selectedPlaylist.value = emptyList()
+                
+                managePlaylistUseCase.getMusicInfoInPlaylist(id)
+                    .catch { _selectedPlaylist.value = emptyList() }
+                    .collect { 
+                        if (_selectedPlaylistId.value == id) {
+                            _selectedPlaylist.value = it
+                        }
+                    }
                 return@launch
             }
             _selectedPlaylistId.value = null
@@ -334,9 +396,19 @@ class PlaylistViewModel @Inject constructor(
     
     // 依据歌手名获取音乐列表
     fun getSelectedArtistMusicList(artistName: String) {
+        currentPlaylistJob?.cancel()
         _selectedArtistName.value = artistName
         viewModelScope.launch {
             _selectedArtistMusicList.value = getAllMusicUseCase.getMusicListByArtist(artistName)
+        }
+    }
+    
+    // 依据专辑名获取音乐列表
+    fun getSelectedAlbumMusicList(albumName: String) {
+        currentPlaylistJob?.cancel()
+        _selectedAlbumName.value = albumName
+        viewModelScope.launch {
+            _selectedAlbumMusicList.value = getAllMusicUseCase.getMusicListByAlbum(albumName)
         }
     }
 }

@@ -17,6 +17,7 @@ interface MusicRepository {
     fun getMusicWithMissingExtraCount(): Flow<Int>
     fun getMusicInfoById(musicId: Long): Flow<MusicInfo?>
     suspend fun getMusicListByArtist(artistName: String): List<MusicInfo>
+    suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo>
     suspend fun searchMusic(query: String): List<MusicInfo>
 
     // Music Random

@@ -29,12 +29,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,8 +53,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.enum.LabelName
 import com.example.hearablemusicplayer.domain.playlist.Playlist
@@ -69,13 +68,15 @@ import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    navController: NavController
+    dialogViewModel: DialogViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
     val moodList by playlistViewModel.moodPlaylistName.collectAsState()
@@ -92,6 +93,7 @@ fun ListScreen(
         eraList = eraList,
         userCustomPlaylists = userCustomPlaylists,
         playlistViewModel = playlistViewModel,
+        dialogViewModel = dialogViewModel,
         navController = navController
     )
 }
@@ -106,11 +108,10 @@ fun ListScreenContent(
     eraList: List<LabelName>,
     userCustomPlaylists: List<Playlist>,
     playlistViewModel: PlaylistViewModel,
-    navController: NavController
+    dialogViewModel: DialogViewModel,
+    navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
-    var showNewPlaylistDialog by remember { mutableStateOf(false) }
-    var newPlaylistName by remember { mutableStateOf("") }
 
     // 与列表管理页一致：置顶优先，再按最近播放、更新时间
     val sortedUserPlaylists = remember(userCustomPlaylists) {
@@ -121,48 +122,19 @@ fun ListScreenContent(
         )
     }
 
-    if (showNewPlaylistDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewPlaylistDialog = false; newPlaylistName = "" },
-            title = { Text(stringResource(R.string.new_playlist_dialog_title)) },
-            text = {
-                OutlinedTextField(
-                    value = newPlaylistName,
-                    onValueChange = { newPlaylistName = it },
-                    label = { Text(stringResource(R.string.playlist_name_hint)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val name = newPlaylistName.trim()
-                        if (name.isNotEmpty()) {
-                            playlistViewModel.createPlaylistAsync(name) { id ->
-                                showNewPlaylistDialog = false
-                                newPlaylistName = ""
-                                navController.navigate(Routes.CustomPlaylist(id))
-                            }
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewPlaylistDialog = false; newPlaylistName = "" }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
     TabScreen(
         title = stringResource(R.string.title_playlist),
         hasSearchBotton = false,
         navController = navController,
         trailing = {
-            NewPlaylistButton(onClick = { showNewPlaylistDialog = true })
+            NewPlaylistButton(
+                onClick = {
+                    dialogViewModel.showCreatePlaylistDialog { id ->
+                        playlistViewModel.loadUserCustomPlaylists()
+                        navController.add(Routes.CustomPlaylist(id))
+                    }
+                }
+            )
         }
     ) {
         Column(
@@ -180,11 +152,11 @@ fun ListScreenContent(
                     themeColorResId = R.color.HDPurple,
                     trailing = {
                         TextButton(
-                            onClick = {
-                                haptic.performClick()
-                                navController.navigate(Routes.UserPlaylistManage)
-                            }
-                        ) {
+                                    onClick = {
+                                        haptic.performClick()
+                                        navController.add(Routes.UserPlaylistManage)
+                                    }
+                                ) {
                             Text(
                                 text = stringResource(R.string.manage_playlists),
                                 color = MaterialTheme.colorScheme.primary
@@ -202,7 +174,7 @@ fun ListScreenContent(
                             playlist = playlist,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.CustomPlaylist(playlist.id))
+                                navController.add(Routes.CustomPlaylist(playlist.id))
                             }
                         )
                     }
@@ -260,7 +232,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -288,7 +260,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist(label.name))
                             }
                         )
                     }
@@ -315,7 +287,7 @@ fun ListScreenContent(
                                 label = label,
                                 onClick = {
                                     haptic.performClick()
-                                    navController.navigate(Routes.Playlist(label.name))
+                                    navController.add(Routes.Playlist(label.name))
                                 }
                             )
                         }
@@ -340,7 +312,7 @@ fun ListScreenContent(
                         Box(
                             modifier = Modifier.clickable {
                                 haptic.performClick()
-                                navController.navigate(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist(label.name))
                             }
                         ) {
                             Capsule(
@@ -352,7 +324,7 @@ fun ListScreenContent(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }

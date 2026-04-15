@@ -1,6 +1,6 @@
+
 package com.example.hearablemusicplayer.ui.pages.playlist
 
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -8,107 +8,104 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
-import com.example.hearablemusicplayer.ui.dialogs.ScrimDialog
 import com.example.hearablemusicplayer.ui.components.AlbumCover
-import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.FixedMusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
-import com.example.hearablemusicplayer.ui.components.musiclist.HeaderConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.ItemConfig
-import com.example.hearablemusicplayer.ui.components.musiclist.ItemVariant
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
-import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
+import com.example.hearablemusicplayer.ui.dialog.InputDialog
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
 fun PlaylistScreen(
+    navController: NavBackStack<NavKey>,
+    playlistId: Long? = null,
+    playlistName: String? = null,
+    artistName: String? = null,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController,
+    dialogViewModel: DialogViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
 ) {
+    val dialogManager = dialogManagerViewModel.dialogManager
+    LaunchedEffect(playlistId, playlistName, artistName) {
+        when {
+            playlistId != null -> {
+                playlistViewModel.loadPlaylistById(playlistId)
+            }
+            playlistName != null -> {
+                playlistViewModel.getSelectedPlaylist(playlistName)
+            }
+            artistName != null -> {
+                playlistViewModel.getSelectedArtistMusicList(artistName)
+            }
+        }
+    }
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
-    val allMusicForAdd by playlistViewModel.allMusicForAddPicker.collectAsState()
-    var showAddSongDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(showAddSongDialog) {
-        if (showAddSongDialog) playlistViewModel.loadAllMusicForAddPicker()
-    }
-
-    if (showAddSongDialog && uiState.selectedPlaylistId != null) {
-        val context = LocalContext.current
-        val addedMessage = stringResource(R.string.song_added)
-        AddSongToPlaylistDialog(
-            allMusic = allMusicForAdd,
-            currentInPlaylistIds = uiState.playlist.map { it.music.id }.toSet(),
-            onAdd = { musicId, path ->
-                playlistViewModel.addItemToPlaylist(uiState.selectedPlaylistId!!, musicId, path)
-                Toast.makeText(context, addedMessage, Toast.LENGTH_SHORT).show()
-            },
-            onDismiss = { showAddSongDialog = false }
-        )
-    }
+    val addedMessage = stringResource(R.string.song_added)
+    val addSongsDialogTitle = stringResource(R.string.add_songs_to_playlist)
 
     PlaylistScreenContent(
         isPlaying = isPlaying,
@@ -117,21 +114,24 @@ fun PlaylistScreen(
         playlistMeta = uiState.playlistMeta,
         selectedPlaylistId = uiState.selectedPlaylistId,
         isCustomPlaylist = uiState.isCustomPlaylist,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         onRecordPlaylistPlay = { playlistViewModel.recordPlaylistPlay(it) },
         onShufflePlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playControlViewModel.addAllToPlaylistByShuffle(uiState.playlist)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onOrderPlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playControlViewModel.addAllToPlaylistInOrder(uiState.playlist)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
-        onNavigate = navController::navigate,
+        onNavigate = navController::add,
         playWith = playControlViewModel::playWith,
         addToPlaylist = playControlViewModel::addToPlaylist,
+        dialogViewModel = dialogViewModel,
+        playlistViewModel = playlistViewModel,
+        dialogManager = dialogManager,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
         onUpdateDescription = { id, desc -> playlistViewModel.updatePlaylistDescription(id, desc) },
         onSetPinned = { id, pinned -> playlistViewModel.setPlaylistPinned(id, pinned) },
@@ -142,8 +142,38 @@ fun PlaylistScreen(
                 playlistViewModel.reorderPlaylistItems(pid, orderedIds)
             }
         },
-        onAddSongsClick = if (uiState.selectedPlaylistId != null) {
-            { showAddSongDialog = true }
+        onAddSongsClick = if (uiState.isCustomPlaylist && uiState.selectedPlaylistId != null) {
+            {
+                val selectedPlaylistId = uiState.selectedPlaylistId!!
+                val existingIds = uiState.playlist.map { it.music.id }.toSet()
+                playlistViewModel.loadAllMusicForAddPicker { allMusic ->
+                    val candidates = allMusic.filter { it.music.id !in existingIds }
+                    dialogViewModel.showMusicPickerDialog(
+                        allMusic = candidates,
+                        selectedIds = emptySet(),
+                        title = addSongsDialogTitle,
+                        onConfirm = { selectedIds ->
+                            val itemsToAdd = selectedIds.mapNotNull { songId ->
+                                val musicPath = candidates.firstOrNull { it.music.id == songId }?.music?.path
+                                if (musicPath.isNullOrBlank()) {
+                                    null
+                                } else {
+                                    songId to musicPath
+                                }
+                            }
+                            playlistViewModel.addItemsToPlaylist(
+                                playlistId = selectedPlaylistId,
+                                items = itemsToAdd,
+                                onComplete = {
+                                    if (selectedIds.isNotEmpty()) {
+                                        dialogManager.showMessage(addedMessage)
+                                    }
+                                }
+                            )
+                        }
+                    )
+                }
+            }
         } else null
     )
 }
@@ -164,9 +194,12 @@ fun PlaylistScreenContent(
     onRecordPlaylistPlay: (Long) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
+    dialogViewModel: DialogViewModel,
+    playlistViewModel: PlaylistViewModel,
+    dialogManager: com.example.hearablemusicplayer.ui.controller.DialogManager,
     onRenamePlaylist: (Long, String) -> Unit,
     onUpdateDescription: (Long, String?) -> Unit,
     onSetPinned: (Long, Boolean) -> Unit,
@@ -185,157 +218,151 @@ fun PlaylistScreenContent(
         )
     }
     var isListEditMode by remember { mutableStateOf(false) }
-
-    if (showRenameDialog && selectedPlaylistId != null) {
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            title = { Text(stringResource(R.string.rename_playlist)) },
-            text = {
-                OutlinedTextField(
-                    value = renameValue,
-                    onValueChange = { renameValue = it },
-                    label = { Text(stringResource(R.string.playlist_name_hint)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val name = renameValue.trim()
-                        if (name.isNotEmpty()) {
-                            onRenamePlaylist(selectedPlaylistId, name)
-                            showRenameDialog = false
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
+    val musicListState = rememberLazyListState()
+    val density = LocalDensity.current
+    val maxHeaderCollapsePx = with(density) { 160.dp.toPx() }
+    val headerExpandDamping = 0.80f
+    var headerCollapseOffsetPx by remember(selectedPlaylistId, playlistName) { mutableFloatStateOf(0f) }
+    val isMusicListAtTop by remember {
+        derivedStateOf {
+            musicListState.firstVisibleItemIndex == 0 && musicListState.firstVisibleItemScrollOffset == 0
+        }
+    }
+    val shouldCollapseHeader by remember(isCustomPlaylist) {
+        derivedStateOf {
+            isCustomPlaylist && headerCollapseOffsetPx > 1f
+        }
     }
 
-    if (showDescriptionDialog && selectedPlaylistId != null) {
-        AlertDialog(
-            onDismissRequest = { showDescriptionDialog = false },
-            title = { Text(stringResource(R.string.edit_playlist_description)) },
-            text = {
-                OutlinedTextField(
-                    value = descriptionValue,
-                    onValueChange = { descriptionValue = it },
-                    label = { Text(stringResource(R.string.playlist_description_hint)) },
-                    minLines = 2,
-                    maxLines = 4
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onUpdateDescription(
-                            selectedPlaylistId,
-                            descriptionValue.trim().ifEmpty { null })
-                        showDescriptionDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
+    // Keep header in collapsed state whenever the inner list has moved away from top.
+    LaunchedEffect(
+        isCustomPlaylist,
+        musicListState.firstVisibleItemIndex,
+        musicListState.firstVisibleItemScrollOffset
+    ) {
+        if (
+            isCustomPlaylist &&
+            (musicListState.firstVisibleItemIndex > 0 || musicListState.firstVisibleItemScrollOffset > 24) &&
+            headerCollapseOffsetPx < maxHeaderCollapsePx
+        ) {
+            headerCollapseOffsetPx = maxHeaderCollapsePx
+        }
+    }
+    val nestedScrollConnection = remember(isCustomPlaylist, maxHeaderCollapsePx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!isCustomPlaylist || source != NestedScrollSource.UserInput) return Offset.Zero
+
+                // Upward drag: collapse header first, then let MusicList scroll.
+                if (available.y < 0f && headerCollapseOffsetPx < maxHeaderCollapsePx) {
+                    val consume = minOf(-available.y, maxHeaderCollapsePx - headerCollapseOffsetPx)
+                    headerCollapseOffsetPx += consume
+                    return Offset(x = 0f, y = -consume)
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDescriptionDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+
+                // Downward drag: when list at top, expand header first.
+                if (available.y > 0f && isMusicListAtTop && headerCollapseOffsetPx > 0f) {
+                    // Damping only: keep pull responsive but resistant.
+                    val damped = available.y * headerExpandDamping
+                    val consume = minOf(damped, headerCollapseOffsetPx)
+                    headerCollapseOffsetPx -= consume
+                    return Offset(x = 0f, y = consume)
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
+
+    // 重命名歌单弹窗
+    InputDialog(
+        visible = showRenameDialog && selectedPlaylistId != null,
+        title = stringResource(R.string.rename_playlist),
+        hint = stringResource(R.string.playlist_name_hint),
+        initialValue = renameValue,
+        onConfirm = {
+            val name = it.trim()
+            if (name.isNotEmpty()) {
+                selectedPlaylistId?.let { id ->
+                    onRenamePlaylist(id, name)
                 }
             }
-        )
-    }
+            showRenameDialog = false
+        },
+        onDismiss = {
+            showRenameDialog = false
+        }
+    )
+
+    // 编辑歌单描述弹窗
+    InputDialog(
+        visible = showDescriptionDialog && selectedPlaylistId != null,
+        title = stringResource(R.string.edit_playlist_description),
+        hint = stringResource(R.string.playlist_description_hint),
+        initialValue = descriptionValue,
+        singleLine = false,
+        minLines = 2,
+        maxLines = 4,
+        onConfirm = { input ->
+            selectedPlaylistId?.let {
+                onUpdateDescription(
+                    it,
+                    input.trim().ifEmpty { null }
+                )
+            }
+            showDescriptionDialog = false
+        },
+        onDismiss = {
+            showDescriptionDialog = false
+        }
+    )
 
     SubScreen(
         onBackClick = onBackClick,
-        title = playlistName
+        title = playlistName,
+        trailingContent = if (isCustomPlaylist && playlistMeta != null) {
+            {
+                FilledIconButton(
+                    onClick = {
+                        haptic.performClick()
+                        dialogViewModel.showEditPlaylistDialog(playlistMeta) { id ->
+                            playlistViewModel.loadPlaylistById(id)
+                            playlistViewModel.loadUserCustomPlaylists()
+                        }
+                    },
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.gearshape),
+                        contentDescription = stringResource(R.string.edit_list),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        } else null
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth(),
+                .fillMaxSize()
+                .fillMaxWidth()
+                .nestedScroll(nestedScrollConnection),
         ) {
-            if (playlistMeta != null) {
-                PlaylistHeader(
-                    meta = playlistMeta
-                )
-            }
-            if (isCustomPlaylist && selectedPlaylistId != null) {
+            if (isCustomPlaylist && playlistMeta != null) {
                 AnimatedVisibility(
-                    visible = isListEditMode,
-                    enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-                    exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)),
+                    visible = !shouldCollapseHeader,
+                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                    exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(150))
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
-                        ) {
-                            if (playlistMeta != null) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    TextButton(
-                                        onClick = { onSetPinned(selectedPlaylistId, !playlistMeta.isPinned) }
-                                    ) {
-                                        Text(
-                                            stringResource(
-                                                if (playlistMeta.isPinned) R.string.unpin_playlist else R.string.pin_playlist
-                                            )
-                                        )
-                                    }
-                                    TextButton(
-                                        onClick = {
-                                            descriptionValue = playlistMeta.description ?: ""
-                                            showDescriptionDialog = true
-                                        }
-                                    ) {
-                                        Text(stringResource(R.string.edit_playlist_description))
-                                    }
-                                    TextButton(
-                                        onClick = {
-                                            playlist.firstOrNull()?.music?.albumArtUri?.let { uri ->
-                                                if (uri.isNotBlank()) onUpdateCover(selectedPlaylistId, uri)
-                                            }
-                                        }
-                                    ) {
-                                        Text(stringResource(R.string.set_cover_from_first_song))
-                                    }
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                TextButton(
-                                    onClick = { renameValue = playlistName; showRenameDialog = true }
-                                ) {
-                                    Text(stringResource(R.string.rename_playlist))
-                                }
-                            }
-                        }
-                    }
+                    PlaylistHeader(
+                        meta = playlistMeta
+                    )
                 }
             }
+
             val coroutineScope = rememberCoroutineScope()
             val callbacks = object : MusicListCallbacksAdapter() {
                 override fun onEnterEditMode() {
@@ -349,10 +376,45 @@ fun PlaylistScreenContent(
                     coroutineScope.launch { playWith(musicInfo) }
                 }
                 override fun onMenuClick(musicInfo: MusicInfo) {
-                    onNavigate(Routes.SongDetail(musicInfo.music.id))
+                    val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                        showAddToPlaylist = false,
+                        showAddToSpecificPlaylist = true,
+                        showShare = true,
+                        showViewDetail = true,
+                        showPlayNext = true,
+                        showRemoveFromCurrentPlaylist = false,
+                        showDelete = false
+                    )
+                    dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
                 }
                 override fun onRemoveFromPlaylist(musicInfo: MusicInfo) {
                     selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
+                }
+                override fun onRemove(musicInfo: MusicInfo) {
+                    selectedPlaylistId?.let { pid -> onRemoveFromPlaylist(musicInfo.music.id, pid) }
+                }
+                override fun onBatchAddToPlaylist(selectedIds: Set<Long>) {
+                    val selectedMusicList = playlist.filter { it.music.id in selectedIds }
+                    if (selectedMusicList.isNotEmpty()) {
+                        // 显示播放列表选择弹窗
+                        dialogViewModel.showPlaylistPickerDialog(
+                            playlists = playlistViewModel.userCustomPlaylists.value,
+                            title = "选择播放列表",
+                            onConfirm = { selectedPlaylist ->
+                                // 批量添加歌曲到选择的播放列表
+                                val itemsToAdd = selectedMusicList.map {
+                                    it.music.id to it.music.path
+                                }
+                                playlistViewModel.addItemsToPlaylist(
+                                    playlistId = selectedPlaylist.id,
+                                    items = itemsToAdd,
+                                    onComplete = {
+                                        dialogManager.showMessage("已添加 ${selectedMusicList.size} 首歌曲到播放列表")
+                                    }
+                                )
+                            }
+                        )
+                    }
                 }
                 override fun onMoveUp(index: Int) {
                     if (index <= 0 || index >= playlist.size) return
@@ -397,14 +459,17 @@ fun PlaylistScreenContent(
             )
             val config = baseConfig.copy(
                 item = baseConfig.item.copy(
-                    fullOptions = baseConfig.item.fullOptions?.copy(showRemoveButton = false)
-                        ?: FullItemOptions(showPinButton = true, showRemoveButton = false, showMenuButton = true),
+                    fullOptions = baseConfig.item.fullOptions?.copy(showRemoveButton = true)
+                        ?: FullItemOptions(showPinButton = true, showRemoveButton = true, showMenuButton = true),
                 ),
             )
-            FixedMusicList(
+            MusicList(
                 musicInfoList = playlist,
                 config = config,
-                modifier = Modifier.fillMaxWidth(),
+                listState = musicListState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 isPlaying = isPlaying,
             )
         }
@@ -525,86 +590,3 @@ private fun PlaylistHeader(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun AddSongToPlaylistDialog(
-    allMusic: List<MusicInfo>,
-    currentInPlaylistIds: Set<Long>,
-    onAdd: (musicId: Long, path: String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val toShow = allMusic.filter { it.music.id !in currentInPlaylistIds }
-    ScrimDialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.add_songs_to_playlist),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                if (toShow.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No songs available to add",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    val callbacks = object : MusicListCallbacksAdapter() {
-                        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                            onAdd(musicInfo.music.id, musicInfo.music.path)
-                        }
-                    }
-                    val config = defaultMusicListConfig(callbacks).copy(
-                        header = HeaderConfig.None,
-                        item = ItemConfig(
-                            variant = ItemVariant.Full,
-                            fullOptions = FullItemOptions(
-                                showPinButton = false,
-                                showRemoveButton = false,
-                                showMenuButton = false,
-                            ),
-                        ),
-                        edit = EditConfig(enabled = false),
-                    )
-                    MusicList(
-                        musicInfoList = toShow,
-                        config = config,
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                        isPlaying = false,
-                    )
-                }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
-            }
-        }
-    }
-}

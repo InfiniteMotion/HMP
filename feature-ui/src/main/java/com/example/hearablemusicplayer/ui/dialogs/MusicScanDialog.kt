@@ -26,50 +26,61 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
+import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
+import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun MusicScanDialog(
     libraryViewModel: LibraryViewModel,
     onDismiss: () -> Unit,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    hazeRenderSettings: HazeRenderSettings? = null
 ) {
     val isLoading by libraryViewModel.isScanning.collectAsState(initial = false)
     val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
+    val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
 
-    ScrimDialog(
-        onDismissRequest = onDismiss,
-        enableScrimDismiss = !isLoading,
-    ) {
-        val dialogShape = RoundedCornerShape(28.dp)
-        Card(
-            modifier = Modifier
-                .padding(24.dp)
-                .clip(dialogShape)
-                .then(
-                    if (hazeState != null) {
-                        Modifier.hazeEffect(
-                            state = hazeState,
-                            style = HazeMaterials.thin()
-                        )
-                    } else Modifier
-                ),
-            shape = dialogShape,
-            colors = CardDefaults.cardColors(
-                containerColor = if (hazeState != null) Color.Transparent else MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ProvideHazeRenderSettings(settings = resolvedHazeRenderSettings) {
+        ScrimDialog(
+            onDismissRequest = onDismiss,
+            enableScrimDismiss = !isLoading,
         ) {
-            Column(
+            val dialogShape = RoundedCornerShape(28.dp)
+            Card(
                 modifier = Modifier
                     .padding(24.dp)
-                    .fillMaxWidth()
+                    .clip(dialogShape)
+                    .then(
+                        if (hazeState != null) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = hazeStyleForIntensity()
+                            )
+                        } else Modifier
+                    ),
+                shape = dialogShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (hazeState != null) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = hazeTintAlpha())
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth()
+                ) {
                 Text(
                     text = stringResource(R.string.scan_music_title),
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -123,4 +134,5 @@ fun MusicScanDialog(
             }
         }
     }
+}
 }

@@ -42,11 +42,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
 import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
@@ -62,14 +64,14 @@ import kotlin.math.abs
 
 @Composable
 fun UserUsageDataScreen(
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     viewModel: UserUsageDataViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptic = rememberHapticFeedback()
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.title_user_usage_data),
     ) {
         Column(
@@ -105,7 +107,6 @@ fun UserUsageDataScreen(
                         navController = navController,
                         haptic = haptic
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
                 is UiState.Error -> {
                     Column(
@@ -125,6 +126,7 @@ fun UserUsageDataScreen(
                     }
                 }
             }
+            MiniPlayerSafeSpacer()
         }
     }
 }
@@ -339,7 +341,7 @@ private fun TasteCard(analytics: UserUsageAnalytics) {
 @Composable
 private fun RankingAndHistoryCard(
     analytics: UserUsageAnalytics,
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     haptic: HapticFeedbackHelper
 ) {
     var selectedTab by rememberSaveable { mutableStateOf("top_played") }
@@ -390,7 +392,7 @@ private fun RankingAndHistoryCard(
                                 trailing = "${entry.playCount}",
                                 onClick = {
                                     haptic.performClick()
-                                    navController.navigate(Routes.SongDetail(entry.musicId))
+                                    navController.add(Routes.SongDetail(entry.musicId))
                                 }
                             )
                         }
@@ -412,7 +414,7 @@ private fun RankingAndHistoryCard(
                                 trailing = "${entry.playCount}",
                                 onClick = {
                                     haptic.performClick()
-                                    navController.navigate(Routes.Artist(entry.artistName))
+                                    navController.add(Routes.Artist(entry.artistName))
                                 }
                             )
                         }
@@ -426,7 +428,7 @@ private fun RankingAndHistoryCard(
 @Composable
 private fun RecentHistoryBlock(
     analytics: UserUsageAnalytics,
-    navController: NavController,
+    navController: NavBackStack<NavKey>,
     haptic: HapticFeedbackHelper
 ) {
     SectionHeader(title = stringResource(R.string.recent_history))
@@ -447,7 +449,7 @@ private fun RecentHistoryBlock(
                 isCompleted = entry.isCompleted,
                 onClick = {
                     haptic.performClick()
-                    navController.navigate(Routes.SongDetail(entry.musicId))
+                    navController.add(Routes.SongDetail(entry.musicId))
                 }
             )
         }

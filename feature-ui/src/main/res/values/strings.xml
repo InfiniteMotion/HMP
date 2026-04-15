@@ -114,7 +114,9 @@
     <string name="dismiss">Dismiss</string>
     <string name="local_backup">Local Backups</string>
     <string name="no_local_backups">No local backups found</string>
-
+    <string name="no_playlists_available">No playlists available</string>
+    <string name="no_songs_available">No songs available</string>
+    <string name="song_count_format">%1$d songs</string>
 
     <!-- Home Screen -->
     <string name="go_to_ai_config">Go to AI Config</string>
@@ -240,12 +242,36 @@
     <string name="style_fluid_desc">Smooth color flow inspired by liquid motion (Recommended)</string>
     <string name="style_spots_desc">Abstract color spots breathing on the background (Classic)</string>
     <string name="style_blur_desc">Simple blurred cover with slow zoom effect (Battery Saver)</string>
+    <string name="haze_intensity_title">Frosted Glass Intensity</string>
+    <string name="haze_intensity_desc">Choose Material presets or tune haze parameters manually</string>
+    <string name="haze_mode_preset_title">Material Presets</string>
+    <string name="haze_mode_preset_desc">Use built-in Material blur styles</string>
+    <string name="haze_mode_custom_title">Parameter Tuning</string>
+    <string name="haze_mode_custom_desc">Adjust haze strength with exact values</string>
+    <string name="haze_custom_params_title">Independent Parameters</string>
+    <string name="haze_blur_radius_label">Blur Radius: %1$.1f dp</string>
+    <string name="haze_noise_factor_label">Noise Factor: %1$d%%</string>
+    <string name="haze_tint_alpha_label">Tint Alpha: %1$d%%</string>
+    <string name="haze_preset_list_title">Preset Levels</string>
+    <string name="haze_preset_ultra_thin">Ultra Thin</string>
+    <string name="haze_preset_thin">Thin</string>
+    <string name="haze_preset_regular">Regular</string>
+    <string name="haze_preset_thick">Thick</string>
+    <string name="haze_preset_ultra_thick">Ultra Thick</string>
+    <string name="haze_intensity_value">%1$d%%</string>
+    <string name="haze_intensity_preview_title">Realtime Preview</string>
+    <string name="haze_intensity_preview_subtitle">Dialog card visual sample</string>
     <string name="audio_effects_settings">Audio Effects Settings</string>
     <string name="preset_equalizer">Preset Equalizer</string>
     <string name="custom_equalizer">Custom Equalizer</string>
     <string name="duration_format">%1$d:%2$02d</string>
     <string name="play">Play</string>
     <string name="add_to_playlist">Add to Playlist</string>
+    <string name="add_to_specific_playlist">Add to Specific Playlist</string>
+    <string name="add_to_favorites">Add to Favorites</string>
+    <string name="play_next">Play Next</string>
+    <string name="remove_from_current_playlist">Remove from Current Playlist</string>
+    <string name="delete">Delete</string>
     <string name="add_songs_to_playlist">Add songs</string>
     <string name="song_added">Added</string>
     <string name="artist">Artist</string>
@@ -281,6 +307,7 @@
     <string name="play_count_display">Played %1$d times</string>
     <string name="playlist_description_hint">Playlist description</string>
     <string name="edit_playlist_description">Edit description</string>
+    <string name="edit_playlist">Edit Playlist</string>
     <string name="pin_playlist">Pin playlist</string>
     <string name="unpin_playlist">Unpin playlist</string>
     <string name="last_played">Last played</string>

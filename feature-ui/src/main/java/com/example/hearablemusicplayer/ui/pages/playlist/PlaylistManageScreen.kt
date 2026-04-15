@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,26 +41,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun PlaylistManageScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
-    navController: NavController
+    dialogViewModel: DialogViewModel = hiltViewModel(LocalContext.current as ComponentActivity),
+    navController: NavBackStack<NavKey>
 ) {
     val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()
     val haptic = rememberHapticFeedback()
-    var showNewPlaylistDialog by remember { mutableStateOf(false) }
-    var newPlaylistName by remember { mutableStateOf("") }
     var isEditMode by remember { mutableStateOf(false) }
     var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
     var playlistToRename by remember { mutableStateOf<Playlist?>(null) }
@@ -70,42 +72,6 @@ fun PlaylistManageScreen(
             compareByDescending<Playlist> { it.isPinned }
                 .thenByDescending { it.lastPlayedAt ?: 0L }
                 .thenByDescending { it.updatedAt }
-        )
-    }
-
-    if (showNewPlaylistDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewPlaylistDialog = false; newPlaylistName = "" },
-            title = { Text(stringResource(R.string.new_playlist_dialog_title)) },
-            text = {
-                OutlinedTextField(
-                    value = newPlaylistName,
-                    onValueChange = { newPlaylistName = it },
-                    label = { Text(stringResource(R.string.playlist_name_hint)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val name = newPlaylistName.trim()
-                        if (name.isNotEmpty()) {
-                            playlistViewModel.createPlaylistAsync(name) { id ->
-                                showNewPlaylistDialog = false
-                                newPlaylistName = ""
-                                navController.navigate(Routes.CustomPlaylist(id))
-                            }
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewPlaylistDialog = false; newPlaylistName = "" }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
         )
     }
 
@@ -169,7 +135,7 @@ fun PlaylistManageScreen(
     }
 
     SubScreen(
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.title_manage_user_playlists),
         trailingContent = {
             FilledIconButton(
@@ -207,7 +173,7 @@ fun PlaylistManageScreen(
                         isEditMode = isEditMode,
                         onClick = {
                             haptic.performClick()
-                            navController.navigate(Routes.CustomPlaylist(playlist.id))
+                            navController.add(Routes.CustomPlaylist(playlist.id))
                         },
                         onDelete = { playlistToDelete = playlist },
                         onRename = {
@@ -225,11 +191,15 @@ fun PlaylistManageScreen(
             FilledIconButton(
                 onClick = {
                     haptic.performClick()
-                    showNewPlaylistDialog = true
+                    dialogViewModel.showCreatePlaylistDialog { id ->
+                        playlistViewModel.loadUserCustomPlaylists()
+                        navController.add(Routes.CustomPlaylist(id))
+                    }
                 },
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 32.dp, end = 32.dp)
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 96.dp)
                     .size(48.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -263,7 +233,7 @@ private fun UserPlaylistRow(
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Box(
             modifier = Modifier

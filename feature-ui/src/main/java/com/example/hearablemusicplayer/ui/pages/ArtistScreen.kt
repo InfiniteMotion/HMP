@@ -6,14 +6,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
@@ -29,37 +31,44 @@ import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlayControlViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun ArtistScreen(
+    navController: NavBackStack<NavKey>,
+    artistName: String,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     playControlViewModel: PlayControlViewModel = hiltViewModel(),
-    navController: NavController,
+    dialogViewModel: DialogViewModel = hiltViewModel(),
 ) {
+    // 手动调用 getSelectedArtistMusicList 方法，传入 artistName
+    LaunchedEffect(artistName) {
+        playlistViewModel.getSelectedArtistMusicList(artistName)
+    }
     val isPlaying by playControlViewModel.isPlaying.collectAsState()
-    val artistName by playlistViewModel.selectedArtistName.collectAsState()
+    val displayArtistName by playlistViewModel.selectedArtistName.collectAsState()
     val artistMusicList by playlistViewModel.selectedArtistMusicList.collectAsState(initial = emptyList())
     val currentPlayingMusic by playControlViewModel.currentPlayingMusic.collectAsState(null)
     ArtistScreenContent(
         isPlaying = isPlaying,
-        artistName = artistName,
+        artistName = displayArtistName,
         artistMusicList = artistMusicList,
         currentPlayingMusic = currentPlayingMusic,
-        onBackClick = { navController.popBackStack() },
+        onBackClick = { navController.removeLastOrNull() },
         onShufflePlay = {
             playControlViewModel.addAllToPlaylistByShuffle(artistMusicList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
         onOrderPlay = {
             playControlViewModel.addAllToPlaylistInOrder(artistMusicList)
-            navController.navigate(Routes.Player)
+            navController.add(Routes.Player)
         },
-        onNavigate = navController::navigate,
         playWith = playControlViewModel::playWith,
-        addToPlaylist = playControlViewModel::addToPlaylist
+        addToPlaylist = playControlViewModel::addToPlaylist,
+        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
     )
 }
 
@@ -73,9 +82,9 @@ fun ArtistScreenContent(
     onBackClick: () -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (Any) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit
+    addToPlaylist: (MusicInfo) -> Unit,
+    onShowMusicDetailDialog: (MusicInfo) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
@@ -86,7 +95,7 @@ fun ArtistScreenContent(
             scope.launch { playWith(musicInfo) }
         }
         override fun onAddToPlaylist(musicInfo: MusicInfo) { addToPlaylist(musicInfo) }
-        override fun onMenuClick(musicInfo: MusicInfo) { onNavigate(Routes.SongDetail(musicInfo.music.id)) }
+        override fun onMenuClick(musicInfo: MusicInfo) { onShowMusicDetailDialog(musicInfo) }
     }
     val config = defaultMusicListConfig(callbacks).copy(
         header = HeaderConfig.None,

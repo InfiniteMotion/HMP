@@ -14,6 +14,11 @@ import com.example.hearablemusicplayer.domain.backup.usecase.ExportUserDataBacku
 import com.example.hearablemusicplayer.domain.backup.usecase.ImportUserDataBackupUseCase
 import com.example.hearablemusicplayer.domain.backup.usecase.GetBackupsUseCase
 import com.example.hearablemusicplayer.domain.backup.usecase.DeleteBackupUseCase
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_BLUR_RADIUS
+import com.example.hearablemusicplayer.ui.util.HAZE_MODE_CUSTOM
+import com.example.hearablemusicplayer.ui.util.HAZE_MODE_PRESET
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_NOISE_FACTOR
+import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_TINT_ALPHA
 import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +46,18 @@ class SettingsViewModel @Inject constructor(
     val customMode = userSettingsUseCase.customMode
     val backgroundStyle = userSettingsUseCase.backgroundStyle
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FLUID")
+    val hazeMode = userSettingsUseCase.hazeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HAZE_MODE_CUSTOM)
+    val hazeMaterialPreset = userSettingsUseCase.hazeMaterialPreset
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "regular")
+    val hazeBlurRadius = userSettingsUseCase.hazeBlurRadius
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DEFAULT_HAZE_BLUR_RADIUS)
+    val hazeNoiseFactor = userSettingsUseCase.hazeNoiseFactor
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DEFAULT_HAZE_NOISE_FACTOR)
+    val hazeTintAlpha = userSettingsUseCase.hazeTintAlpha
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DEFAULT_HAZE_TINT_ALPHA)
+    val hazeIntensity = userSettingsUseCase.hazeIntensity
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.6f)
     
     private val _avatarUri = MutableStateFlow("")
     val avatarUri: StateFlow<String> = _avatarUri
@@ -72,6 +89,51 @@ class SettingsViewModel @Inject constructor(
     fun saveBackgroundStyle(style: String) {
         viewModelScope.launch {
             userSettingsUseCase.saveBackgroundStyle(style)
+        }
+    }
+
+    fun saveHazeMode(mode: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeMode(mode)
+        }
+    }
+
+    fun saveHazeMaterialPreset(preset: String) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeMaterialPreset(preset)
+        }
+    }
+
+    fun saveHazeBlurRadius(radius: Float) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeBlurRadius(radius)
+        }
+    }
+
+    fun saveHazeNoiseFactor(noiseFactor: Float) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeNoiseFactor(noiseFactor)
+        }
+    }
+
+    fun saveHazeTintAlpha(alpha: Float) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeTintAlpha(alpha)
+        }
+    }
+
+    fun applyHazeMaterialPreset(preset: String, intensity: Float) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeMode(HAZE_MODE_PRESET)
+            userSettingsUseCase.saveHazeMaterialPreset(preset)
+            userSettingsUseCase.saveHazeIntensity(intensity)
+        }
+    }
+
+    fun saveHazeIntensity(intensity: Float) {
+        viewModelScope.launch {
+            userSettingsUseCase.saveHazeMode(HAZE_MODE_CUSTOM)
+            userSettingsUseCase.saveHazeIntensity(intensity)
         }
     }
     

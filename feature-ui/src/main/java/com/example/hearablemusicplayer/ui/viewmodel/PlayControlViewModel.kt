@@ -16,18 +16,16 @@ import com.example.hearablemusicplayer.domain.enum.PlaybackMode
 import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
 import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult
 import com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistUseCase
 import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -36,10 +34,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-
-sealed class UiEvent {
-    data class ShowToast(val message: String) : UiEvent()
-}
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 
 // 调色板颜色数据类
 data class PaletteColors(
@@ -67,7 +62,8 @@ class PlayControlViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val musicController: MusicController,
     private val generatePlaylistUseCase: GeneratePlaylistUseCase,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val dialogManager: DialogManager
 ) : ViewModel() {
 
     // Delegate flows to MusicController
@@ -91,14 +87,6 @@ class PlayControlViewModel @Inject constructor(
     val currentEqualizerBandLevels: StateFlow<FloatArray> =
         musicController.currentEqualizerBandLevels
 
-    // Events
-    private val _toastEvent = MutableSharedFlow<UiEvent.ShowToast>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val toastEvent = _toastEvent.asSharedFlow()
-
     // Palette Colors (UI specific logic)
     private val paletteCache = mutableMapOf<String, PaletteColors>()
     private val _paletteColors = MutableStateFlow(PaletteColors())
@@ -108,10 +96,10 @@ class PlayControlViewModel @Inject constructor(
     val isMiniPlayerVisible: StateFlow<Boolean> = musicController.isMiniPlayerVisible
 
     init {
-        // Forward controller toasts
+        // Forward controller toasts to DialogManager
         viewModelScope.launch {
             musicController.toastEvent.collectLatest { event ->
-                _toastEvent.emit(UiEvent.ShowToast(event.message))
+                dialogManager.showMessage(event.message)
             }
         }
 
@@ -273,18 +261,18 @@ class PlayControlViewModel @Inject constructor(
                 )
 
                 when (result) {
-                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Success -> {
+                    is GeneratePlaylistResult.Success -> {
                         // 将生成的播放列表添加到当前播放队列
                         addAllToPlaylistInOrder(result.playlist)
-                        _toastEvent.emit(UiEvent.ShowToast("已生成${result.actualLength}首歌曲的播放列表"))
+                        dialogManager.showMessage("已生成")
                     }
 
-                    is com.example.hearablemusicplayer.domain.playlist.usecase.GeneratePlaylistResult.Error -> {
-                        _toastEvent.emit(UiEvent.ShowToast("生成播放列表失败: ${result.message}"))
+                    is GeneratePlaylistResult.Error -> {
+                        dialogManager.showMessage("生成失败: ${result.message}")
                     }
                 }
             } catch (e: Exception) {
-                _toastEvent.emit(UiEvent.ShowToast("生成播放列表时发生错误: ${e.message}"))
+                dialogManager.showMessage("生成错误: ${e.message}")
             }
         }
     }
@@ -318,11 +306,9 @@ class PlayControlViewModel @Inject constructor(
             try {
                 settingsRepository.saveDefaultAlgorithmType(algorithmType.name)
                 settingsRepository.saveDefaultWeightTemplate(weightTemplate.name)
-                // 使用ExtensionConfig的toJson方法进行序列化
                 settingsRepository.saveDefaultExtensionConfig(extensionConfig.toJson())
-                _toastEvent.emit(UiEvent.ShowToast("已保存默认配置"))
             } catch (e: Exception) {
-                _toastEvent.emit(UiEvent.ShowToast("保存配置失败: ${e.message}"))
+                dialogManager.showMessage("保存失败: ${e.message}")
             }
         }
     }

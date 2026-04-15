@@ -14,8 +14,61 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-renamesourcefileattribute SourceFile
+
+# Compose rules
+-keepclassmembers class * extends androidx.compose.runtime.Composable {
+    *;
+}
+-keep class androidx.compose.** { *; }
+
+# Hilt rules
+-keep class dagger.hilt.** { *; }
+-keep class com.example.hearablemusicplayer.**_HiltModules { *; }
+
+# Media3 rules
+-keep class androidx.media3.** { *; }
+
+# Kotlin serialization
+-keep class kotlinx.serialization.** { *; }
+
+# Room rules
+-keep class androidx.room.** { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
+
+# Music info classes
+-keep class com.example.hearablemusicplayer.domain.music.** { *; }
+
+# Navigation3 rules
+-keep class androidx.navigation3.** { *; }
+
+# Preserve annotation classes
+-keepattributes *Annotation*
+
+# Preserve generic signatures
+-keepattributes Signature
+
+# Preserve exceptions
+-keepattributes Exceptions
+
+# Preserve inner classes
+-keepattributes InnerClasses
+
+# Preserve enums
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Preserve Kotlin metadata
+-keep class kotlin.Metadata { *; }
+
+# Preserve Parcelable implementations
+-keep class * implements android.os.Parcelable { *; }
+
+# Preserve Serializable implementations
+-keep class * implements java.io.Serializable { *; }

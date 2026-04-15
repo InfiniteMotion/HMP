@@ -24,13 +24,14 @@ fun AlbumCover(
     uri: String?,
     size: Dp,
     corner: Dp,
-    shadow: Dp
+    shadow: Dp,
+    modifier: Modifier = Modifier,
 ) {
     Crossfade(targetState = uri, label = "AlbumArtCrossroad") {
         AsyncImage(
             model = it,
             contentDescription = "Album art",
-            modifier = Modifier
+            modifier = modifier
                 .sizeIn(maxWidth = size, maxHeight = size)
                 .aspectRatio(1f)
                 .shadow(elevation = shadow, shape = RoundedCornerShape(corner))
