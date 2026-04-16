@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.components.common.UiStateContent
 import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
@@ -44,12 +46,12 @@ import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallback
 import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
+import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SearchViewModel
 
-import androidx.compose.ui.res.stringResource
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 
 @OptIn(UnstableApi::class)
@@ -63,7 +65,7 @@ fun SearchScreen(
 ){
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val searchResults by searchViewModel.searchResults.collectAsState(initial = emptyList())
+    val searchState by searchViewModel.searchState.collectAsState()
 
     LaunchedEffect(Unit) {
         searchViewModel.searchMusic(searchQuery)
@@ -73,7 +75,7 @@ fun SearchScreen(
     SearchScreenContent(
         isPlaying = isPlaying,
         searchQuery = searchQuery,
-        searchResults = searchResults,
+        searchState = searchState,
         currentPlayingMusic = currentPlayingMusic,
         onSearchQueryChange = {
             searchQuery = it
@@ -91,7 +93,7 @@ fun SearchScreen(
 fun SearchScreenContent(
     isPlaying: Boolean,
     searchQuery: String,
-    searchResults: List<MusicInfo>,
+    searchState: UiState<List<MusicInfo>>,
     currentPlayingMusic: MusicInfo?,
     onSearchQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
@@ -101,30 +103,6 @@ fun SearchScreenContent(
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
-    val currentPlayingIndex = searchResults.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
-    val callbacks = object : MusicListCallbacksAdapter() {
-        override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-            haptic.performClick()
-            scope.launch { playWith(musicInfo) }
-        }
-        override fun onAddToPlaylist(musicInfo: MusicInfo) { addToPlaylist(musicInfo) }
-        override fun onMenuClick(musicInfo: MusicInfo) { onShowMusicDetailDialog(musicInfo) }
-    }
-    val config = defaultMusicListConfig(callbacks).copy(
-        header = HeaderConfig.None,
-        item = ItemConfig(
-            variant = ItemVariant.Full,
-            showIndex = true,
-            fullOptions = FullItemOptions(
-                showPinButton = false,
-                showRemoveButton = false,
-                showMenuButton = true,
-                showAddToPlaylistInMenu = true,
-            ),
-        ),
-        edit = EditConfig(enabled = false),
-        currentPlaying = CurrentPlayingConfig(index = currentPlayingIndex, autoScrollToCurrent = false),
-    )
     SubScreen(
         onBackClick = onBackClick,
         title = stringResource(R.string.search)
@@ -165,12 +143,54 @@ fun SearchScreenContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
-            MusicList(
-                musicInfoList = searchResults,
-                config = config,
+            UiStateContent(
+                state = searchState,
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                isPlaying = isPlaying,
-            )
+                onEmpty = {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.no_results_found),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            ) { searchResults ->
+                val currentPlayingIndex = searchResults.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
+                val callbacks = object : MusicListCallbacksAdapter() {
+                    override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                        haptic.performClick()
+                        scope.launch { playWith(musicInfo) }
+                    }
+                    override fun onAddToPlaylist(musicInfo: MusicInfo) { addToPlaylist(musicInfo) }
+                    override fun onMenuClick(musicInfo: MusicInfo) { onShowMusicDetailDialog(musicInfo) }
+                }
+                val config = defaultMusicListConfig(callbacks).copy(
+                    header = HeaderConfig.None,
+                    item = ItemConfig(
+                        variant = ItemVariant.Full,
+                        showIndex = true,
+                        fullOptions = FullItemOptions(
+                            showPinButton = false,
+                            showRemoveButton = false,
+                            showMenuButton = true,
+                            showAddToPlaylistInMenu = true,
+                        ),
+                    ),
+                    edit = EditConfig(enabled = false),
+                    currentPlaying = CurrentPlayingConfig(index = currentPlayingIndex, autoScrollToCurrent = false),
+                )
+                MusicList(
+                    musicInfoList = searchResults,
+                    config = config,
+                    modifier = Modifier.fillMaxWidth(),
+                    isPlaying = isPlaying,
+                )
+            }
         }
     }
 }

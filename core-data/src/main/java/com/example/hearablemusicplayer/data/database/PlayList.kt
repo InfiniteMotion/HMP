@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 
 //Playlist 表:存储播放列表的基本信息(如播放列表名称、ID、封面、统计等)
@@ -66,4 +67,7 @@ interface PlaylistDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(playlists: List<Playlist>)
+
+    @Query("SELECT * FROM playlist ORDER BY isPinned DESC, updatedAt DESC")
+    fun getAllPlaylistsFlow(): Flow<List<Playlist>>
 }

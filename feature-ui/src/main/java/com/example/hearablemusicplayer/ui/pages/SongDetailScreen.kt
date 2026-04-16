@@ -132,6 +132,8 @@ fun SongDetailScreen(
                         }
                     }
                 }
+
+                else -> {}
             }
         }
     }

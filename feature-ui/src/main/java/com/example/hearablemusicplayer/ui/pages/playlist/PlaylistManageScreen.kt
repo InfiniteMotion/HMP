@@ -46,6 +46,7 @@ import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
@@ -56,7 +57,8 @@ fun PlaylistManageScreen(
     dialogViewModel: DialogViewModel = hiltViewModel(),
     navController: NavBackStack<NavKey>
 ) {
-    val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()
+    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
+    val userCustomPlaylists = (userCustomPlaylistsState as? UiState.Success)?.data ?: emptyList()
     val haptic = rememberHapticFeedback()
     var isEditMode by remember { mutableStateOf(false) }
     var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }

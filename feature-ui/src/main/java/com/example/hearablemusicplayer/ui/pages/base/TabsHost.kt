@@ -73,8 +73,6 @@ fun TabsHost(
                     navController = navController
                 )
                 2 -> ListScreen(
-                    playbackViewModel = playbackViewModel,
-                    playlistQueueViewModel = playlistQueueViewModel,
                     navController = navController
                 )
                 3 -> UserScreen(

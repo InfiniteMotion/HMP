@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.media3.common.util.UnstableApi
+import com.example.hearablemusicplayer.domain.playlist.Playlist
+import com.example.hearablemusicplayer.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.ui.R
 import javax.inject.Inject
 
@@ -31,6 +33,7 @@ class DialogViewModel @Inject constructor(
     private val musicController: MusicController,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
+    private val settingsRepository: SettingsRepository,
     private val dialogManager: DialogManager,
     private val removeFromLibraryUseCase: RemoveFromLibraryUseCase
 ) : ViewModel() {
@@ -64,7 +67,7 @@ class DialogViewModel @Inject constructor(
     private var onPlaylistCreated: ((Long) -> Unit)? = null
     private var existingPlaylistNames: Set<String> = emptySet()
     private var onMusicPickerConfirm: ((Set<Long>) -> Unit)? = null
-    private var onPlaylistPickerConfirm: ((com.example.hearablemusicplayer.domain.playlist.Playlist) -> Unit)? = null
+    private var onPlaylistPickerConfirm: ((Playlist) -> Unit)? = null
     private var pendingCreatePlaylistStateForPicker: CreatePlaylistDialogState? = null
     private var createDialogMusicLookup: Map<Long, MusicInfo> = emptyMap()
 
@@ -90,7 +93,7 @@ class DialogViewModel @Inject constructor(
     )
     
     data class PlaylistPickerDialogState(
-        val playlists: List<com.example.hearablemusicplayer.domain.playlist.Playlist>,
+        val playlists: List<Playlist>,
         val title: String
     )
 
@@ -289,9 +292,20 @@ class DialogViewModel @Inject constructor(
     private fun showPlaylistPickerDialog(musicInfo: MusicInfo, onComplete: () -> Unit) {
         viewModelScope.launch {
             try {
-                // 获取所有用户自定义播放列表
-                val playlists = managePlaylistUseCase.getAllPlaylists()
-                
+                // 获取所有用户自定义播放列表（排除系统播放列表）
+                val allPlaylists = managePlaylistUseCase.getAllPlaylists()
+                val currentId = settingsRepository.getCurrentPlaylistId()
+                val likedId = settingsRepository.getLikedPlaylistId()
+                val recentId = settingsRepository.getRecentPlaylistId()
+                val systemIds = setOfNotNull(currentId, likedId, recentId)
+                val playlists = allPlaylists.filter { it.id !in systemIds }
+
+                if (playlists.isEmpty()) {
+                    dialogManager.showMessage("没有可用的播放列表，请先创建")
+                    onComplete()
+                    return@launch
+                }
+
                 // 显示播放列表选择弹窗
                 showPlaylistPickerDialog(
                     playlists = playlists,
@@ -362,7 +376,7 @@ class DialogViewModel @Inject constructor(
     }
 
     fun showEditPlaylistDialog(
-        playlist: com.example.hearablemusicplayer.domain.playlist.Playlist,
+        playlist: Playlist,
         onUpdated: (Long) -> Unit
     ) {
         onPlaylistCreated = onUpdated
@@ -489,9 +503,9 @@ class DialogViewModel @Inject constructor(
     
     // 显示播放列表选择弹窗
     fun showPlaylistPickerDialog(
-        playlists: List<com.example.hearablemusicplayer.domain.playlist.Playlist>,
+        playlists: List<Playlist>,
         title: String,
-        onConfirm: (com.example.hearablemusicplayer.domain.playlist.Playlist) -> Unit
+        onConfirm: (Playlist) -> Unit
     ) {
         onPlaylistPickerConfirm = onConfirm
         _activeDialog.value = DialogUiState.PlaylistPicker(
@@ -503,7 +517,7 @@ class DialogViewModel @Inject constructor(
     }
     
     // 确认选择播放列表
-    fun confirmPlaylistPickerDialog(playlist: com.example.hearablemusicplayer.domain.playlist.Playlist) {
+    fun confirmPlaylistPickerDialog(playlist: Playlist) {
         onPlaylistPickerConfirm?.invoke(playlist)
         dismissPlaylistPickerDialog()
     }

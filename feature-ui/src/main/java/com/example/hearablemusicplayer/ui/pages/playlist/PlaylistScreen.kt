@@ -1,6 +1,7 @@
 
 package com.example.hearablemusicplayer.ui.pages.playlist
 
+import android.annotation.SuppressLint
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -8,7 +9,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,15 +39,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -66,9 +65,11 @@ import com.example.hearablemusicplayer.ui.components.musiclist.FullItemOptions
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.playlistPresetMusicListConfig
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.dialogs.InputDialog
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -106,38 +107,35 @@ fun PlaylistScreen(
     }
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
     val uiState by playlistViewModel.playlistUiState.collectAsState()
+    val playlistState = uiState.playlist
+    val playlist = (playlistState as? UiState.Success)?.data ?: emptyList()
     val addedMessage = stringResource(R.string.song_added)
     val addSongsDialogTitle = stringResource(R.string.add_songs_to_playlist)
 
     PlaylistScreenContent(
         isPlaying = isPlaying,
         playlistName = uiState.playlistName,
-        playlist = uiState.playlist,
+        playlist = playlist,
         playlistMeta = uiState.playlistMeta,
         selectedPlaylistId = uiState.selectedPlaylistId,
         isCustomPlaylist = uiState.isCustomPlaylist,
         onBackClick = { navController.removeLastOrNull() },
-        onRecordPlaylistPlay = { playlistViewModel.recordPlaylistPlay(it) },
         onShufflePlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
-            playlistQueueViewModel.addAllToPlaylistByShuffle(uiState.playlist)
+            playlistQueueViewModel.addAllToPlaylistByShuffle(playlist)
             navController.add(Routes.Player)
         },
         onOrderPlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
-            playlistQueueViewModel.addAllToPlaylistInOrder(uiState.playlist)
+            playlistQueueViewModel.addAllToPlaylistInOrder(playlist)
             navController.add(Routes.Player)
         },
-        onNavigate = navController::add,
         playWith = playlistQueueViewModel::playWith,
-        addToPlaylist = playlistQueueViewModel::addToPlaylist,
         dialogViewModel = dialogViewModel,
         playlistViewModel = playlistViewModel,
         dialogManager = dialogManager,
         onRenamePlaylist = { id, newName -> playlistViewModel.renamePlaylist(id, newName) },
         onUpdateDescription = { id, desc -> playlistViewModel.updatePlaylistDescription(id, desc) },
-        onSetPinned = { id, pinned -> playlistViewModel.setPlaylistPinned(id, pinned) },
-        onUpdateCover = { id, uri -> playlistViewModel.updatePlaylistCover(id, uri) },
         onRemoveFromPlaylist = { musicId, pid -> playlistViewModel.removeItemFromPlaylist(musicId, pid) },
         onReorder = { orderedIds ->
             uiState.selectedPlaylistId?.let { pid ->
@@ -147,7 +145,7 @@ fun PlaylistScreen(
         onAddSongsClick = if (uiState.isCustomPlaylist && uiState.selectedPlaylistId != null) {
             {
                 val selectedPlaylistId = uiState.selectedPlaylistId!!
-                val existingIds = uiState.playlist.map { it.music.id }.toSet()
+                val existingIds = playlist.map { it.music.id }.toSet()
                 playlistViewModel.loadAllMusicForAddPicker { allMusic ->
                     val candidates = allMusic.filter { it.music.id !in existingIds }
                     dialogViewModel.showMusicPickerDialog(
@@ -183,6 +181,7 @@ fun PlaylistScreen(
 private const val HEADER_COVER_SIZE_DP = 280
 private const val HEADER_CORNER_RADIUS_DP = 25
 
+@SuppressLint("FrequentlyChangingValue")
 @OptIn(UnstableApi::class)
 @Composable
 fun PlaylistScreenContent(
@@ -193,24 +192,21 @@ fun PlaylistScreenContent(
     selectedPlaylistId: Long?,
     isCustomPlaylist: Boolean,
     onBackClick: () -> Unit,
-    onRecordPlaylistPlay: (Long) -> Unit,
     onShufflePlay: () -> Unit,
     onOrderPlay: () -> Unit,
-    onNavigate: (NavKey) -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
-    addToPlaylist: (MusicInfo) -> Unit,
     dialogViewModel: DialogViewModel,
     playlistViewModel: PlaylistViewModel,
-    dialogManager: com.example.hearablemusicplayer.ui.controller.DialogManager,
+    dialogManager: DialogManager,
     onRenamePlaylist: (Long, String) -> Unit,
     onUpdateDescription: (Long, String?) -> Unit,
-    onSetPinned: (Long, Boolean) -> Unit,
-    onUpdateCover: (Long, String?) -> Unit,
     onRemoveFromPlaylist: (Long, Long) -> Unit,
     onReorder: (List<Long>) -> Unit,
     onAddSongsClick: (() -> Unit)? = null
 ) {
     val haptic = rememberHapticFeedback()
+    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
+    val userCustomPlaylists = (userCustomPlaylistsState as? UiState.Success)?.data ?: emptyList()
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameValue by remember { mutableStateOf(playlistName) }
     var showDescriptionDialog by remember { mutableStateOf(false) }
@@ -400,7 +396,7 @@ fun PlaylistScreenContent(
                     if (selectedMusicList.isNotEmpty()) {
                         // 显示播放列表选择弹窗
                         dialogViewModel.showPlaylistPickerDialog(
-                            playlists = playlistViewModel.userCustomPlaylists.value,
+                            playlists = userCustomPlaylists,
                             title = "选择播放列表",
                             onConfirm = { selectedPlaylist ->
                                 // 批量添加歌曲到选择的播放列表

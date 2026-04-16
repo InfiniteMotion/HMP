@@ -36,9 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -66,16 +64,12 @@ import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlaybackViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     dialogViewModel: DialogViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
     navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()
@@ -83,7 +77,8 @@ fun ListScreen(
     val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
     val languageList by playlistViewModel.languagePlaylistName.collectAsState()
     val eraList by playlistViewModel.eraPlaylistName.collectAsState()
-    val userCustomPlaylists by playlistViewModel.userCustomPlaylists.collectAsState()
+    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
+    val userCustomPlaylists = (userCustomPlaylistsState as? com.example.hearablemusicplayer.ui.util.UiState.Success)?.data ?: emptyList()
 
     ListScreenContent(
         genreList = genreList,
@@ -535,8 +530,8 @@ fun UserListCard(
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
-                                0.0f to Color.Transparent,
-                                0.5f to Color.Transparent,
+                                0.0f to Transparent,
+                                0.5f to Transparent,
                                 1.0f to Color.Black.copy(alpha = 0.8f)
                             )
                         )

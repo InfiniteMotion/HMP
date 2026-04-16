@@ -125,6 +125,8 @@ fun UserUsageDataScreen(
                         }
                     }
                 }
+
+                else -> {}
             }
             MiniPlayerSafeSpacer()
         }

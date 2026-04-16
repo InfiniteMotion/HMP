@@ -4,14 +4,13 @@ package com.example.hearablemusicplayer.ui.pages
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -23,7 +22,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.UserInfo
+import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.EditConfig
@@ -36,9 +35,11 @@ import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.galleryPresetMusicListConfig
 import com.example.hearablemusicplayer.ui.components.musiclist.indexJumpConfigForOrderBy
+import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.dialogs.ConfirmDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -63,6 +64,8 @@ fun GalleryScreen(
     val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState()
     val selectedGenre by libraryViewModel.orderBy.collectAsState("title")
     val selectedOrder by libraryViewModel.orderType.collectAsState("ASC")
+    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
+    val userCustomPlaylists = (userCustomPlaylistsState as? UiState.Success)?.data ?: emptyList()
     val currentPlayingIndex = musicInfoList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
     val dialogManager = dialogManagerViewModel.dialogManager
 
@@ -76,6 +79,7 @@ fun GalleryScreen(
         currentPlayingIndex = currentPlayingIndex,
         selectedGenre = selectedGenre,
         selectedOrder = selectedOrder,
+        userCustomPlaylists = userCustomPlaylists,
         playWith = playlistQueueViewModel::playWith,
         addToPlaylist = playlistQueueViewModel::addToPlaylist,
         onFavorite = playlistQueueViewModel::updateMusicLikedStatus,
@@ -115,6 +119,7 @@ fun GalleryScreenContent(
     currentPlayingIndex: Int?,
     selectedGenre: String,
     selectedOrder: String,
+    userCustomPlaylists: List<Playlist>,
     playWith: (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
     onFavorite: (MusicInfo, Boolean) -> Unit,
@@ -127,7 +132,7 @@ fun GalleryScreenContent(
     onFilterOrderChange: (String) -> Unit,
     dialogViewModel: DialogViewModel,
     playlistViewModel: PlaylistViewModel,
-    dialogManager: com.example.hearablemusicplayer.ui.controller.DialogManager,
+    dialogManager: DialogManager,
     navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
@@ -135,7 +140,7 @@ fun GalleryScreenContent(
     var pendingRemoveMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
     var showBatchRemoveConfirmDialog by remember { mutableStateOf(false) }
     var pendingBatchIds by remember { mutableStateOf<Set<Long>?>(null) }
-    var deleteCounter by remember { mutableStateOf(0) }
+    var deleteCounter by remember { mutableIntStateOf(0) }
 
     val callbacks = object : MusicListCallbacksAdapter() {
         override fun onItemClick(musicInfo: MusicInfo, index: Int) {
@@ -159,7 +164,7 @@ fun GalleryScreenContent(
             if (selectedMusicList.isNotEmpty()) {
                 // 显示播放列表选择弹窗
                 dialogViewModel.showPlaylistPickerDialog(
-                    playlists = playlistViewModel.userCustomPlaylists.value,
+                    playlists = userCustomPlaylists,
                     title = "选择播放列表",
                     onConfirm = { selectedPlaylist ->
                         // 批量添加歌曲到选择的播放列表

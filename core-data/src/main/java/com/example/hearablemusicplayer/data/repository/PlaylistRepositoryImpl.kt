@@ -124,6 +124,10 @@ class PlaylistRepositoryImpl @Inject constructor(
         return playlistItemDao.getMusicInfoInPlaylist(playlistId).map { list -> list.map { it.toDomain() } }
     }
 
+    override fun getAllPlaylistsFlow(): Flow<List<Playlist>> {
+        return playlistDao.getAllPlaylistsFlow().map { list -> list.map { it.toDomain() } }
+    }
+
     override suspend fun getPlaylistById(playlistId: Long): List<MusicInfo> {
         return playlistItemDao.getPlaylistById(playlistId).map { it.toDomain() }
     }
