@@ -10,7 +10,7 @@ import com.example.hearablemusicplayer.domain.music.UserInfo
 import com.example.hearablemusicplayer.domain.playlist.usecase.ManagePlaylistUseCase
 import com.example.hearablemusicplayer.player.controller.MusicController
 import com.example.hearablemusicplayer.ui.controller.DialogManager
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.example.hearablemusicplayer.ui.navigation.RouteNavigator
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.domain.setting.SettingsRepository
@@ -41,6 +42,13 @@ class DialogViewModel @Inject constructor(
     // 统一弹窗状态
     private val _activeDialog = MutableStateFlow<DialogUiState?>(null)
     val activeDialog: StateFlow<DialogUiState?> = _activeDialog.asStateFlow()
+
+    // 路由导航器，用于页面跳转
+    private var router: RouteNavigator? = null
+
+    fun setRouter(router: RouteNavigator) {
+        this.router = router
+    }
 
     // 向后兼容：按类型导出子状态，供现有组件复用
     val musicDetailState: StateFlow<MusicDetailState?> = activeDialog
@@ -195,14 +203,15 @@ class DialogViewModel @Inject constructor(
         dismissMusicDetailDialog()
     }
     
-    private var navController: NavBackStack<NavKey>? = null
+    private var routeNavigator: RouteNavigator? = null
     
     // 查看详情
-    fun viewDetail(navController: NavBackStack<NavKey>) {
+    fun viewDetail() {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
         val musicInfo = currentState.musicInfo
+        val navigator = routeNavigator ?: return
         
-        navController.add(Routes.SongDetail(musicInfo.music.id))
+        navigator.navigateTo(Routes.Library.SongDetail(musicInfo.music.id))
         dismissMusicDetailDialog()
     }
     
@@ -212,9 +221,9 @@ class DialogViewModel @Inject constructor(
         dismissMusicDetailDialog()
     }
     
-    // 设置导航控制器
-    fun setNavController(controller: NavBackStack<NavKey>) {
-        this.navController = controller
+    // 设置路由导航器
+    fun setRouteNavigator(navigator: RouteNavigator) {
+        this.routeNavigator = navigator
     }
     
     // 获取菜单选项
@@ -222,14 +231,12 @@ class DialogViewModel @Inject constructor(
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return emptyList()
         val menuConfig = currentState.menuConfig
         val menuOptions = mutableListOf<Triple<Int, Int, () -> Unit>>()
-        val navController = this.navController
+        val navigator = this.routeNavigator
         
         // 音乐详情
-        if (menuConfig.showViewDetail && navController != null) {
+        if (menuConfig.showViewDetail && navigator != null) {
             menuOptions.add(Triple(R.drawable.music, R.string.title_song_detail) {
-                viewDetail(
-                    navController
-                )
+                viewDetail()
             })
         }
         

@@ -60,7 +60,7 @@ import com.example.hearablemusicplayer.ui.components.ListBanner
 import com.example.hearablemusicplayer.ui.components.ListGroupName
 import com.example.hearablemusicplayer.ui.components.NewPlaylistButton
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.iconResId
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -126,7 +126,7 @@ fun ListScreenContent(
                 onClick = {
                     dialogViewModel.showCreatePlaylistDialog { id ->
                         playlistViewModel.loadUserCustomPlaylists()
-                        navController.add(Routes.CustomPlaylist(id))
+                        navController.add(Routes.Playlist.CustomPlaylist(id))
                     }
                 }
             )
@@ -149,7 +149,7 @@ fun ListScreenContent(
                         TextButton(
                                     onClick = {
                                         haptic.performClick()
-                                        navController.add(Routes.UserPlaylistManage)
+                                        navController.add(Routes.Playlist.UserPlaylistManage)
                                     }
                                 ) {
                             Text(
@@ -169,7 +169,7 @@ fun ListScreenContent(
                             playlist = playlist,
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.CustomPlaylist(playlist.id))
+                                navController.add(Routes.Playlist.CustomPlaylist(playlist.id))
                             }
                         )
                     }
@@ -227,7 +227,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist.Playlist(label.name))
                             }
                         )
                     }
@@ -255,7 +255,7 @@ fun ListScreenContent(
                             label = label,
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist.Playlist(label.name))
                             }
                         )
                     }
@@ -282,7 +282,7 @@ fun ListScreenContent(
                                 label = label,
                                 onClick = {
                                     haptic.performClick()
-                                    navController.add(Routes.Playlist(label.name))
+                                    navController.add(Routes.Playlist.Playlist(label.name))
                                 }
                             )
                         }
@@ -307,7 +307,7 @@ fun ListScreenContent(
                         Box(
                             modifier = Modifier.clickable {
                                 haptic.performClick()
-                                navController.add(Routes.Playlist(label.name))
+                                navController.add(Routes.Playlist.Playlist(label.name))
                             }
                         ) {
                             Capsule(

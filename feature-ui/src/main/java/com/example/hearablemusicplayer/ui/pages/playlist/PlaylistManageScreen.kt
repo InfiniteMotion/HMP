@@ -45,7 +45,7 @@ import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -171,7 +171,7 @@ fun PlaylistManageScreen(
                         isEditMode = isEditMode,
                         onClick = {
                             haptic.performClick()
-                            navController.add(Routes.CustomPlaylist(playlist.id))
+                            navController.add(Routes.Playlist.CustomPlaylist(playlist.id))
                         },
                         onDelete = { playlistToDelete = playlist },
                         onRename = {
@@ -191,7 +191,7 @@ fun PlaylistManageScreen(
                     haptic.performClick()
                     dialogViewModel.showCreatePlaylistDialog { id ->
                         playlistViewModel.loadUserCustomPlaylists()
-                        navController.add(Routes.CustomPlaylist(id))
+                        navController.add(Routes.Playlist.CustomPlaylist(id))
                     }
                 },
                 modifier = Modifier

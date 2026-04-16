@@ -50,7 +50,7 @@ import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
 import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @OptIn(UnstableApi::class)
@@ -319,7 +319,7 @@ fun SearchButton(
     FilledIconButton(
         onClick = {
             haptic.performClick()
-            navController.add(Routes.Search)
+            navController.add(Routes.Library.Search)
         },
         modifier = Modifier
             .size(32.dp), // Larger touch target

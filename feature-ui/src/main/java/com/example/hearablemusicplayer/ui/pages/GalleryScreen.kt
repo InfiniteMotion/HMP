@@ -38,7 +38,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.indexJumpConfigFo
 import com.example.hearablemusicplayer.ui.controller.DialogManager
 import com.example.hearablemusicplayer.ui.dialogs.ConfirmDialog
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
@@ -85,16 +85,16 @@ fun GalleryScreen(
         onFavorite = playlistQueueViewModel::updateMusicLikedStatus,
         onShare =  {  },
         onDetail = {
-            navController.add(Routes.SongDetail(it.music.id))
+            navController.add(Routes.Library.SongDetail(it.music.id))
         },
         onRemoveFromLibrary = { ids -> libraryViewModel.removeFromLibrary(ids) },
         onShufflePlay = {
             playlistQueueViewModel.addAllToPlaylistByShuffle(musicInfoList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         onOrderPlay = {
             playlistQueueViewModel.addAllToPlaylistInOrder(musicInfoList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         onFilterGenreChange = {
             libraryViewModel.updateOrderBy(it)

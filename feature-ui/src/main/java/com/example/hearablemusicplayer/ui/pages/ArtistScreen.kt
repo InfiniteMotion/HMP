@@ -34,7 +34,7 @@ import com.example.hearablemusicplayer.ui.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.PlaylistViewModel
 import kotlinx.coroutines.launch
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -61,11 +61,11 @@ fun ArtistScreen(
         onBackClick = { navController.removeLastOrNull() },
         onShufflePlay = { musicList ->
             playlistQueueViewModel.addAllToPlaylistByShuffle(musicList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         onOrderPlay = { musicList ->
             playlistQueueViewModel.addAllToPlaylistInOrder(musicList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         playWith = playlistQueueViewModel::playWith,
         addToPlaylist = playlistQueueViewModel::addToPlaylist,

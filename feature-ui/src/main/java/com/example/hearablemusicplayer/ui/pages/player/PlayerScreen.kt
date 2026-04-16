@@ -28,7 +28,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -142,10 +142,10 @@ fun PlayerScreen(
             )
         }
         override fun onCancelTimer() { playbackViewModel.cancelTimer() }
-        override fun onHeartMode() { navController.add(Routes.Lyrics) }
+        override fun onHeartMode() { navController.add(Routes.Player.Lyrics) }
         override fun onGeneratePlaylist(seedMusicId: Long) { playlistQueueViewModel.generatePlaylist(seedMusicId) }
         override fun onSaveDefaultConfig(algorithmType: AlgorithmType, weightTemplate: WeightTemplate, extensionConfig: ExtensionConfig) { playlistQueueViewModel.saveAlgorithmConfig(algorithmType, weightTemplate, extensionConfig) }
-        override fun onArtistClick(artistName: String) { playlistViewModel.getSelectedArtistMusicList(artistName); navController.add(Routes.Artist(artistName)) }
+        override fun onArtistClick(artistName: String) { playlistViewModel.getSelectedArtistMusicList(artistName); navController.add(Routes.Library.Artist(artistName)) }
         override fun onClearPlaylist() { playlistQueueViewModel.clearPlaylist() }
         override fun onPlayItem(musicInfo: MusicInfo) { playlistQueueViewModel.playAt(musicInfo) }
         override fun onMoveToTop(musicInfo: MusicInfo) { playlistQueueViewModel.moveToTop(musicInfo) }

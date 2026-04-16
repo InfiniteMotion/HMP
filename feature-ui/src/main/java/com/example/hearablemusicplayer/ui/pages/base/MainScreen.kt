@@ -1,5 +1,7 @@
 package com.example.hearablemusicplayer.ui.pages.base
 
+import android.annotation.SuppressLint
+import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -26,15 +28,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.components.MiniPlayerBar
@@ -44,35 +46,21 @@ import com.example.hearablemusicplayer.ui.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.dialogs.MusicPickerDialog
 import com.example.hearablemusicplayer.ui.dialogs.PlaylistPickerDialog
 import com.example.hearablemusicplayer.ui.dialogs.TimerDialog
-import com.example.hearablemusicplayer.ui.pages.AIScreen
-import com.example.hearablemusicplayer.ui.pages.AlbumScreen
-import com.example.hearablemusicplayer.ui.pages.ArtistScreen
-import com.example.hearablemusicplayer.ui.pages.AudioEffectsScreen
-import com.example.hearablemusicplayer.ui.pages.CustomScreen
-import com.example.hearablemusicplayer.ui.pages.SearchScreen
-import com.example.hearablemusicplayer.ui.pages.SongDetailScreen
-import com.example.hearablemusicplayer.ui.pages.UserUsageDataScreen
-import com.example.hearablemusicplayer.ui.pages.player.LyricsScreen
-import com.example.hearablemusicplayer.ui.pages.player.PlayerScreen
-import com.example.hearablemusicplayer.ui.pages.playlist.PlaylistManageScreen
-import com.example.hearablemusicplayer.ui.pages.playlist.PlaylistScreen
-import com.example.hearablemusicplayer.ui.pages.settings.BackupSettingsScreen
-import com.example.hearablemusicplayer.ui.pages.settings.LibrarySettingsScreen
-import com.example.hearablemusicplayer.ui.pages.settings.ProfileSettingsScreen
-import com.example.hearablemusicplayer.ui.pages.settings.SettingScreen
+import com.example.hearablemusicplayer.ui.navigation.DeepLinkHandler
+import com.example.hearablemusicplayer.ui.navigation.navigationGraph
+import com.example.hearablemusicplayer.ui.navigation.rememberRouter
 import com.example.hearablemusicplayer.ui.theme.generateDynamicColorScheme
 import com.example.hearablemusicplayer.ui.theme.getPresetColorScheme
 import com.example.hearablemusicplayer.ui.util.AnimationConfig
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_BLUR_RADIUS
-import com.example.hearablemusicplayer.ui.util.DialogEvent
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_INTENSITY
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MATERIAL_PRESET
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_MODE
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_NOISE_FACTOR
 import com.example.hearablemusicplayer.ui.util.DEFAULT_HAZE_TINT_ALPHA
+import com.example.hearablemusicplayer.ui.util.DialogEvent
 import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
-import com.example.hearablemusicplayer.ui.util.Routes
 import com.example.hearablemusicplayer.ui.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
@@ -83,7 +71,9 @@ import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.ThemeViewModel
 import dev.chrisbanes.haze.hazeSource
+import com.example.hearablemusicplayer.ui.navigation.Routes as NavRoutes
 
+@SuppressLint("ContextCastToActivity")
 @OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
@@ -144,10 +134,9 @@ fun MainScreen(
     // DialogHost状态
     val dialogEvent by dialogManager.dialogEvent.collectAsState(null)
     val hazeState = dev.chrisbanes.haze.rememberHazeState()
-    val messageToShowState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<DialogEvent.Message?>(null) }
-    val timerDialogState by dialogViewModel.showTimerDialog.collectAsState(null)
+    val messageToShowState = remember { mutableStateOf<DialogEvent.Message?>(null) }
 
-    androidx.compose.runtime.LaunchedEffect(dialogEvent) {
+    LaunchedEffect(dialogEvent) {
         when (dialogEvent) {
             is DialogEvent.Message -> {
                 messageToShowState.value = dialogEvent as DialogEvent.Message
@@ -161,8 +150,16 @@ fun MainScreen(
         }
     }
 
-    val defaultScreen = Routes.Tabs
+    val defaultScreen = NavRoutes.Main.Tabs
     val navController = rememberNavBackStack(defaultScreen)
+    val router = rememberRouter(navController)
+    val deepLinkHandler = remember { DeepLinkHandler(router) }
+    val activity = LocalContext.current as ComponentActivity
+    LaunchedEffect(activity.intent) {
+        activity.intent?.data?.let { uri ->
+            deepLinkHandler.handleDeepLink(uri)
+        }
+    }
 
     val tabCount = 4
     val savedTabIndex = rememberSaveable { mutableIntStateOf(0) }
@@ -312,234 +309,24 @@ fun MainScreen(
                                     )
                                 )
                             },
-                            entryProvider = entryProvider {
-                            entry<Routes.Tabs> {
-                                TabsHost(
-                                    navController = navController,
-                                    pagerState = pagerState,
-                                    tabHeader = {},
-                                    recommendationViewModel = recommendationViewModel,
-                                    settingsViewModel = settingsViewModel,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel,
-                                )
-                            }
-                            entry<Routes.SongDetail> { route ->
-                                SongDetailScreen(
-                                    navController = navController,
-                                    musicId = route.musicId,
-                                )
-                            }
-                            entry<Routes.Player>(
-                                metadata = metadata {
-                                    put(NavDisplay.TransitionKey) {
-                                        (
-                                            fadeIn(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            ) + scaleIn(
-                                                initialScale = 0.72f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            ) + slideInVertically(
-                                                initialOffsetY = { it / 3 },
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            )
-                                        ) togetherWith (
-                                            fadeOut(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            ) + scaleOut(
-                                                targetScale = 0.96f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            )
-                                        )
-                                    }
-                                    put(NavDisplay.PopTransitionKey) {
-                                        (
-                                            fadeIn(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            ) + scaleIn(
-                                                initialScale = 0.96f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            )
-                                        ) togetherWith (
-                                            fadeOut(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            ) + scaleOut(
-                                                targetScale = 0.72f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            ) + slideOutVertically(
-                                                targetOffsetY = { it / 3 },
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            )
-                                        )
-                                    }
-                                    put(NavDisplay.PredictivePopTransitionKey) {
-                                        (
-                                            fadeIn(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            ) + scaleIn(
-                                                initialScale = 0.96f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_OUT
-                                                )
-                                            )
-                                        ) togetherWith (
-                                            fadeOut(
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            ) + scaleOut(
-                                                targetScale = 0.72f,
-                                                transformOrigin = TransformOrigin(0.5f, 1f),
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            ) + slideOutVertically(
-                                                targetOffsetY = { it / 3 },
-                                                animationSpec = tween(
-                                                    durationMillis = AnimationConfig.TRANSITION,
-                                                    easing = AnimationConfig.EASE_IN
-                                                )
-                                            )
-                                        )
-                                    }
-                                }
-                            ) {
-                                PlayerScreen(
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    playlistViewModel = playlistViewModel,
-                                    settingsViewModel = settingsViewModel,
-                                    themeViewModel = themeViewModel,
-                                    navController = navController
-                                )
-                            }
-                            entry<Routes.Setting> {
-                                SettingScreen(navController)
-                            }
-                            entry<Routes.ProfileSettings> {
-                                ProfileSettingsScreen(navController = navController)
-                            }
-                            entry<Routes.BackupSettings> {
-                                BackupSettingsScreen(navController = navController)
-                            }
-                            entry<Routes.LibrarySettings> {
-                                LibrarySettingsScreen(navController = navController)
-                            }
-                            entry<Routes.Search> {
-                                SearchScreen(
-                                    navController = navController,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel
-                                )
-                            }
-                            entry<Routes.Playlist> { route ->
-                                PlaylistScreen(
-                                    navController = navController,
-                                    playlistName = route.name,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel,
-                                )
-                            }
-                            entry<Routes.CustomPlaylist> { route ->
-                                PlaylistScreen(
-                                    navController = navController,
-                                    playlistId = route.playlistId,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel
-                                )
-                            }
-                            entry<Routes.UserPlaylistManage> {
-                                PlaylistManageScreen(navController = navController)
-                            }
-                            entry<Routes.Artist> { route ->
-                                ArtistScreen(
-                                    navController = navController,
-                                    artistName = route.name,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel
-                                )
-                            }
-                            entry<Routes.Album> { route ->
-                                AlbumScreen(
-                                    navController = navController,
-                                    albumName = route.name,
-                                    playbackViewModel = playbackViewModel,
-                                    playlistQueueViewModel = playlistQueueViewModel,
-                                    dialogViewModel = dialogViewModel
-                                )
-                            }
-                            entry<Routes.AudioEffects> {
-                                AudioEffectsScreen(navController = navController)
-                            }
-                            entry<Routes.AI> {
-                                AIScreen(
-                                    settingsViewModel,
-                                    recommendationViewModel,
-                                    libraryViewModel,
-                                    dialogManager,
-                                    navController
-                                )
-                            }
-                            entry<Routes.Custom> {
-                                CustomScreen(settingsViewModel, navController)
-                            }
-                            entry<Routes.Lyrics> {
-                                LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel)
-                            }
-                            entry<Routes.UserUsageData> {
-                                UserUsageDataScreen(navController = navController)
-                            }
-                            }
+                            entryProvider = navigationGraph(
+                                navController = navController,
+                                pagerState = pagerState,
+                                libraryViewModel = libraryViewModel,
+                                recommendationViewModel = recommendationViewModel,
+                                settingsViewModel = settingsViewModel,
+                                playbackViewModel = playbackViewModel,
+                                playlistQueueViewModel = playlistQueueViewModel,
+                                playlistViewModel = playlistViewModel,
+                                themeViewModel = themeViewModel,
+                                dialogManagerViewModel = dialogManagerViewModel,
+                                dialogViewModel = dialogViewModel,
+                                tabHeader = tabHeader
+                            )
                         )
                         
                         // 在导航宿主之上显示固定的 TabPageIndicator
-                        val isInTabs = navController.size == 1 && navController.lastOrNull() is Routes.Tabs
+                        val isInTabs = navController.size == 1 && navController.lastOrNull() is NavRoutes.Main.Tabs
                         AnimatedVisibility(
                             visible = isInTabs,
                             enter = fadeIn(
@@ -594,7 +381,7 @@ fun MainScreen(
             // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
             val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
             AnimatedVisibility(
-                visible = navController.none { it is Routes.Player } && isMiniPlayerVisible,
+                visible = navController.none { it is NavRoutes.Player.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
                     initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                     animationSpec = tween(durationMillis = AnimationConfig.TRANSITION, easing = AnimationConfig.EASE_IN_OUT)
@@ -624,7 +411,7 @@ fun MainScreen(
                         },
                         onNext = { playbackViewModel.playNext() },
                         onPrev = { playbackViewModel.playPrevious() },
-                        onOpenPlayer = { navController.add(Routes.Player) }
+                        onOpenPlayer = { navController.add(NavRoutes.Player.Player) }
                     )
                 }
             }
@@ -637,7 +424,7 @@ fun MainScreen(
                         onDismiss = {
                             dialogViewModel.dismissMusicDetailDialog()
                         },
-                        navController = navController,
+                        router = router,
                         hazeState = hazeState,
                         hazeRenderSettings = hazeRenderSettings
                     )

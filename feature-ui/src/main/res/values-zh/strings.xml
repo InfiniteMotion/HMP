@@ -57,6 +57,7 @@
     <!-- Search Screen -->
     <string name="search">搜索</string>
     <string name="search_placeholder">搜索您的音乐</string>
+    <string name="search_hint">输入关键词开始搜索音乐</string>
     <string name="no_results_found">无结果</string>
 
     <!-- Settings Screen -->

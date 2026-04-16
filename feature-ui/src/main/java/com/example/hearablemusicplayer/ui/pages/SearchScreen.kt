@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -67,8 +68,10 @@ fun SearchScreen(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val searchState by searchViewModel.searchState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        searchViewModel.searchMusic(searchQuery)
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            searchViewModel.searchMusic(searchQuery)
+        }
     }
 
     val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
@@ -79,12 +82,15 @@ fun SearchScreen(
         currentPlayingMusic = currentPlayingMusic,
         onSearchQueryChange = {
             searchQuery = it
-            searchViewModel.searchMusic(it)
+            if (it.isNotEmpty()) {
+                searchViewModel.searchMusic(it)
+            }
         },
         onBackClick = { navController.removeLastOrNull() },
         playWith = playlistQueueViewModel::playWith,
         addToPlaylist = playlistQueueViewModel::addToPlaylist,
-        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog
+        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog,
+        onRetry = { searchViewModel.searchMusic(searchQuery) }
     )
 }
 
@@ -99,7 +105,8 @@ fun SearchScreenContent(
     onBackClick: () -> Unit,
     playWith: suspend (MusicInfo) -> Unit,
     addToPlaylist: (MusicInfo) -> Unit,
-    onShowMusicDetailDialog: (MusicInfo) -> Unit
+    onShowMusicDetailDialog: (MusicInfo) -> Unit,
+    onRetry: () -> Unit
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
@@ -143,23 +150,50 @@ fun SearchScreenContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
-            UiStateContent(
-                state = searchState,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                onEmpty = {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.no_results_found),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            if (searchQuery.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize().weight(1f),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.magnifyingglass),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = stringResource(R.string.search),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.search_placeholder),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.search_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, start = 32.dp, end = 32.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
-            ) { searchResults ->
+            } else {
+                UiStateContent(
+                    state = searchState,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    onEmpty = {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.no_results_found),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                ) { searchResults ->
                 val currentPlayingIndex = searchResults.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
                 val callbacks = object : MusicListCallbacksAdapter() {
                     override fun onItemClick(musicInfo: MusicInfo, index: Int) {
@@ -190,6 +224,7 @@ fun SearchScreenContent(
                     modifier = Modifier.fillMaxWidth(),
                     isPlaying = isPlaying,
                 )
+            }
             }
         }
     }

@@ -40,7 +40,7 @@ import com.example.hearablemusicplayer.ui.components.Avatar
 import com.example.hearablemusicplayer.ui.components.ListeningChart
 import com.example.hearablemusicplayer.ui.components.SquareCard
 import com.example.hearablemusicplayer.ui.pages.base.TabScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
@@ -104,7 +104,7 @@ fun UserScreenContent(
                     modifier = Modifier.clip(RoundedCornerShape(20.dp))
                         .clickable {
                             haptic.performClick()
-                            navController.add(Routes.ProfileSettings)
+                            navController.add(Routes.Settings.ProfileSettings)
                         }
                 ) {
                     Row(
@@ -146,7 +146,7 @@ fun UserScreenContent(
                         .clip(RoundedCornerShape(20.dp))
                         .clickable {
                             haptic.performClick()
-                            navController.add(Routes.UserUsageData)
+                            navController.add(Routes.UserData.UserUsageData)
                         }
                 ) {
                     Column(
@@ -188,7 +188,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.Custom)
+                                navController.add(Routes.Custom.Custom)
                             }
                         )
                     }
@@ -199,7 +199,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.AudioEffects)
+                                navController.add(Routes.Player.AudioEffects)
                             }
                         )
                     }
@@ -217,7 +217,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.AI)
+                                navController.add(Routes.AI.AI)
                             }
                         )
                     }
@@ -228,7 +228,7 @@ fun UserScreenContent(
                             modifier = Modifier.fillMaxWidth().aspectRatio(1.5f),
                             onClick = {
                                 haptic.performClick()
-                                navController.add(Routes.Setting)
+                                navController.add(Routes.Settings.Setting)
                             }
                         )
                     }

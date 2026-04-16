@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
@@ -95,7 +95,7 @@ fun ListBanner(
             .width(110.dp)
             .clickable {
                 haptic.performClick()
-                navController.add(Routes.Playlist(listName))
+                navController.add(Routes.Playlist.Playlist(listName))
             }
     ) {
         AsyncImage(

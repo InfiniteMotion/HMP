@@ -28,7 +28,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 
 @Composable
@@ -53,7 +53,7 @@ fun SettingScreen(
                 icon = R.drawable.person,
                 onClick = {
                     haptic.performClick()
-                    navController.add(Routes.ProfileSettings)
+                    navController.add(Routes.Settings.ProfileSettings)
                 }
             )
 
@@ -63,7 +63,7 @@ fun SettingScreen(
                 icon = R.drawable.externaldrive,
                 onClick = {
                     haptic.performClick()
-                    navController.add(Routes.BackupSettings)
+                    navController.add(Routes.Settings.BackupSettings)
                 }
             )
 
@@ -73,7 +73,7 @@ fun SettingScreen(
                 icon = R.drawable.music,
                 onClick = {
                     haptic.performClick()
-                    navController.add(Routes.LibrarySettings)
+                    navController.add(Routes.Settings.LibrarySettings)
                 }
             )
         }

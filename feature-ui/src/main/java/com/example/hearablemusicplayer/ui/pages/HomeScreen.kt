@@ -44,6 +44,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.example.hearablemusicplayer.ui.navigation.Routes as NavRoutes
 import coil.compose.AsyncImage
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
@@ -118,7 +119,7 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
-                            onClick = { navController.add(Routes.AI) },
+                            onClick = { navController.add(NavRoutes.AI.AI) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text(stringResource(R.string.go_to_ai_config))
@@ -143,12 +144,12 @@ fun HomeScreen(
                                 haptic.performClick()
                                 scope.launch {
                                         playlistQueueViewModel.playWith(dailyMusic!!)
-                                        navController.add(Routes.Player)
+                                        navController.add(NavRoutes.Player.Player)
                                     }
                             },
                             onDetail = {
                                 haptic.performClick()
-                                navController.add(Routes.SongDetail(dailyMusic!!.music.id))
+                                navController.add(NavRoutes.Library.SongDetail(dailyMusic!!.music.id))
                             }
                         )
 
@@ -174,7 +175,7 @@ fun HomeScreen(
                                         playlistQueueViewModel.clearPlaylist()
                                         playlistQueueViewModel.addAllToPlaylistInOrder(heartbeatList)
                                         playlistQueueViewModel.playWith(heartbeatList.first())
-                                        navController.add(Routes.Player)
+                                        navController.add(NavRoutes.Player.Player)
                                     },
                                     modifier = Modifier
                                         .size(24.dp),

@@ -44,10 +44,11 @@ import com.example.hearablemusicplayer.ui.components.AlbumCover
 import com.example.hearablemusicplayer.ui.util.HazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.LocalHazeRenderSettings
 import com.example.hearablemusicplayer.ui.util.ProvideHazeRenderSettings
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.hazeStyleForIntensity
 import com.example.hearablemusicplayer.ui.util.hazeTintAlpha
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.navigation.RouteNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -60,7 +61,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 fun MusicDetailDialog(
     dialogViewModel: DialogViewModel,
     onDismiss: () -> Unit,
-    navController: NavBackStack<NavKey>,
+    router: RouteNavigator,
     hazeState: HazeState? = null,
     hazeRenderSettings: HazeRenderSettings? = null
 ) {
@@ -69,7 +70,7 @@ fun MusicDetailDialog(
     val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
     
     // 设置导航控制器
-    dialogViewModel.setNavController(navController)
+    dialogViewModel.setRouter(router)
     
     if (musicInfo == null || !musicDetailState!!.isVisible) return
 
@@ -170,7 +171,7 @@ fun MusicDetailDialog(
                                 label = stringResource(R.string.artist),
                                 value = musicInfo.music.artist,
                                 onClick = {
-                                    navController.add(Routes.Artist(musicInfo.music.artist))
+                                    router.navigateTo(Routes.Library.Artist(musicInfo.music.artist))
                                     dialogViewModel.dismissMusicDetailDialog()
                                     onDismiss()
                                 }
@@ -181,7 +182,7 @@ fun MusicDetailDialog(
                                 label = stringResource(R.string.album),
                                 value = musicInfo.music.album,
                                 onClick = {
-                                    navController.add(Routes.Album(musicInfo.music.album))
+                                    router.navigateTo(Routes.Library.Album(musicInfo.music.album))
                                     dialogViewModel.dismissMusicDetailDialog()
                                     onDismiss()
                                 }

@@ -1,6 +1,7 @@
 
 package com.example.hearablemusicplayer.ui.pages.playlist
 
+import com.example.hearablemusicplayer.ui.navigation.Routes as NavRoutes
 import android.annotation.SuppressLint
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -123,12 +124,12 @@ fun PlaylistScreen(
         onShufflePlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playlistQueueViewModel.addAllToPlaylistByShuffle(playlist)
-            navController.add(Routes.Player)
+            navController.add(NavRoutes.Player.Player)
         },
         onOrderPlay = {
             uiState.selectedPlaylistId?.let { playlistViewModel.recordPlaylistPlay(it) }
             playlistQueueViewModel.addAllToPlaylistInOrder(playlist)
-            navController.add(Routes.Player)
+            navController.add(NavRoutes.Player.Player)
         },
         playWith = playlistQueueViewModel::playWith,
         dialogViewModel = dialogViewModel,

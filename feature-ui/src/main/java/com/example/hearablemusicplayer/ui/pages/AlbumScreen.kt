@@ -27,7 +27,7 @@ import com.example.hearablemusicplayer.ui.components.musiclist.MusicList
 import com.example.hearablemusicplayer.ui.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.components.musiclist.defaultMusicListConfig
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.DialogViewModel
@@ -61,11 +61,11 @@ fun AlbumScreen(
         onBackClick = { navController.removeLastOrNull() },
         onShufflePlay = { musicList ->
             playlistQueueViewModel.addAllToPlaylistByShuffle(musicList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         onOrderPlay = { musicList ->
             playlistQueueViewModel.addAllToPlaylistInOrder(musicList)
-            navController.add(Routes.Player)
+            navController.add(Routes.Player.Player)
         },
         playWith = playlistQueueViewModel::playWith,
         addToPlaylist = playlistQueueViewModel::addToPlaylist,

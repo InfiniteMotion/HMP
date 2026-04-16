@@ -50,7 +50,7 @@ import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.components.SegmentedControl
 import com.example.hearablemusicplayer.ui.components.SegmentedOption
@@ -394,7 +394,7 @@ private fun RankingAndHistoryCard(
                                 trailing = "${entry.playCount}",
                                 onClick = {
                                     haptic.performClick()
-                                    navController.add(Routes.SongDetail(entry.musicId))
+                                    navController.add(Routes.Library.SongDetail(entry.musicId))
                                 }
                             )
                         }
@@ -416,7 +416,7 @@ private fun RankingAndHistoryCard(
                                 trailing = "${entry.playCount}",
                                 onClick = {
                                     haptic.performClick()
-                                    navController.add(Routes.Artist(entry.artistName))
+                                    navController.add(Routes.Library.Artist(entry.artistName))
                                 }
                             )
                         }
@@ -451,7 +451,7 @@ private fun RecentHistoryBlock(
                 isCompleted = entry.isCompleted,
                 onClick = {
                     haptic.performClick()
-                    navController.add(Routes.SongDetail(entry.musicId))
+                    navController.add(Routes.Library.SongDetail(entry.musicId))
                 }
             )
         }

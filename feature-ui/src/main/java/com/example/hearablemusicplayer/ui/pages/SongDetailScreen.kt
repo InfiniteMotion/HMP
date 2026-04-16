@@ -54,7 +54,7 @@ import com.example.hearablemusicplayer.ui.components.SegmentedOption
 import com.example.hearablemusicplayer.ui.components.TitleWidget
 import com.example.hearablemusicplayer.ui.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.pages.player.TechnicalInfoCard
-import com.example.hearablemusicplayer.ui.util.Routes
+import com.example.hearablemusicplayer.ui.navigation.Routes
 import com.example.hearablemusicplayer.ui.util.UiState
 import com.example.hearablemusicplayer.ui.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.viewmodel.SongDetailViewModel
@@ -104,7 +104,7 @@ fun SongDetailScreen(
                         musicExtra = data.musicInfo.extra,
                         onOpenPlayer = {
                             haptic.performClick()
-                            navController.add(Routes.Player)
+                            navController.add(Routes.Player.Player)
                         }
                     )
                     SongDetailInfo(

@@ -57,6 +57,7 @@
     <!-- Search Screen -->
     <string name="search">Search</string>
     <string name="search_placeholder">Search your music</string>
+    <string name="search_hint">Enter keywords to search music</string>
     <string name="no_results_found">No results found</string>
 
     <!-- Settings Screen -->
