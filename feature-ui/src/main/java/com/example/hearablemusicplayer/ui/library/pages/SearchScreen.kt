@@ -91,7 +91,18 @@ fun SearchScreen(
         onBackClick = { navController.removeLastOrNull() },
         playWith = playlistQueueViewModel::playWith,
         addToPlaylist = playlistQueueViewModel::addToPlaylist,
-        onShowMusicDetailDialog = dialogViewModel::showMusicDetailDialog,
+        onShowMusicDetailDialog = { musicInfo ->
+            val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                showAddToPlaylist = true,
+                showAddToSpecificPlaylist = true,
+                showShare = true,
+                showViewDetail = true,
+                showPlayNext = true,
+                showRemoveFromCurrentPlaylist = false,
+                showDelete = false
+            )
+            dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
+        },
         onRetry = { searchViewModel.searchMusic(searchQuery) }
     )
 }
@@ -214,7 +225,7 @@ fun SearchScreenContent(
                             showPinButton = false,
                             showRemoveButton = false,
                             showMenuButton = true,
-                            showAddToPlaylistInMenu = true,
+                            showAddToPlaylistInMenu = false,
                         ),
                     ),
                     edit = EditConfig(enabled = false),

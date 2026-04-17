@@ -1,7 +1,10 @@
 package com.example.hearablemusicplayer.ui.common.pages
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -138,6 +141,7 @@ fun MainScreen(
     val dialogEvent by dialogManager.dialogEvent.collectAsState(null)
     val hazeState = rememberHazeState()
     val messageToShowState = remember { mutableStateOf<DialogEvent.Message?>(null) }
+    val activity = LocalContext.current as ComponentActivity
 
     LaunchedEffect(dialogEvent) {
         when (dialogEvent) {
@@ -146,6 +150,38 @@ fun MainScreen(
             }
             is DialogEvent.DismissTimerDialog -> {
                 dialogViewModel.dismissTimerDialog()
+            }
+            is DialogEvent.ShareMusic -> {
+                val shareEvent = dialogEvent as DialogEvent.ShareMusic
+                val file = java.io.File(shareEvent.filePath)
+                if (file.exists()) {
+                    val fileUri: Uri = FileProvider.getUriForFile(
+                        activity,
+                        "${activity.packageName}.fileprovider",
+                        file
+                    )
+                    val shareIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        type = "audio/*"
+                        putExtra(Intent.EXTRA_STREAM, fileUri)
+                        putExtra(Intent.EXTRA_SUBJECT, shareEvent.title)
+                        putExtra(Intent.EXTRA_TEXT, "${shareEvent.title} - ${shareEvent.artist}")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(shareIntent, "分享音乐")
+                    activity.startActivity(chooser)
+                } else {
+                    // 文件不存在，退化为分享文本
+                    val shareText = "${shareEvent.title} - ${shareEvent.artist} (${shareEvent.album})"
+                    val shareIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareText)
+                        putExtra(Intent.EXTRA_SUBJECT, shareEvent.title)
+                    }
+                    val chooser = Intent.createChooser(shareIntent, "分享音乐")
+                    activity.startActivity(chooser)
+                }
             }
             else -> {
                 // 无操作
@@ -157,7 +193,6 @@ fun MainScreen(
     val navController = rememberNavBackStack(defaultScreen)
     val router = rememberRouter(navController)
     val deepLinkHandler = remember { DeepLinkHandler(router) }
-    val activity = LocalContext.current as ComponentActivity
     LaunchedEffect(activity.intent) {
         activity.intent?.data?.let { uri ->
             deepLinkHandler.handleDeepLink(uri)

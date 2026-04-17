@@ -51,16 +51,16 @@ class DialogViewModel @Inject constructor(
     // 向后兼容：按类型导出子状态，供现有组件复用
     val musicDetailState: StateFlow<MusicDetailState?> = activeDialog
         .map { (it as? DialogUiState.MusicDetail)?.state }
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val createPlaylistState: StateFlow<CreatePlaylistDialogState?> = activeDialog
         .map { (it as? DialogUiState.CreatePlaylist)?.state }
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val musicPickerState: StateFlow<MusicPickerDialogState?> = activeDialog
         .map { (it as? DialogUiState.MusicPicker)?.state }
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val playlistPickerState: StateFlow<PlaylistPickerDialogState?> = activeDialog
         .map { (it as? DialogUiState.PlaylistPicker)?.state }
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Timer Dialog 状态
     private val _showTimerDialog = MutableStateFlow<TimerDialogConfig?>(null)
@@ -118,7 +118,7 @@ class DialogViewModel @Inject constructor(
 
     // 显示音乐详情弹窗
     fun showMusicDetailDialog(musicInfo: MusicInfo, menuConfig: MusicDetailMenuConfig = MusicDetailMenuConfig()) {
-        // 获取最新的收藏状态
+        // 获取最新收藏状态
         viewModelScope.launch {
             val isLiked = musicController.getCurrentLikedStatus(musicInfo.music.id)
             _isLiked.value = isLiked
@@ -197,17 +197,23 @@ class DialogViewModel @Inject constructor(
 
     // 分享音乐
     fun shareMusic() {
-        // 这里可以添加分享逻辑
+        val currentState = (_activeDialog.value as? DialogViewModel.DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+
+        dialogManager.shareMusic(
+            title = musicInfo.music.title,
+            artist = musicInfo.music.artist,
+            album = musicInfo.music.album,
+            filePath = musicInfo.music.path
+        )
         dismissMusicDetailDialog()
     }
-
-    private var routeNavigator: RouteNavigator? = null
 
     // 查看详情
     fun viewDetail() {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
         val musicInfo = currentState.musicInfo
-        val navigator = routeNavigator ?: return
+        val navigator = router ?: return
 
         navigator.navigateTo(Routes.Library.SongDetail(musicInfo.music.id))
         dismissMusicDetailDialog()
@@ -219,9 +225,10 @@ class DialogViewModel @Inject constructor(
         dismissMusicDetailDialog()
     }
 
+    // 设置路由导航器（向后兼容，已合并到setRouter）
     // 设置路由导航器
     fun setRouteNavigator(navigator: RouteNavigator) {
-        this.routeNavigator = navigator
+        this.router = navigator
     }
 
     // 获取菜单选项
@@ -229,7 +236,7 @@ class DialogViewModel @Inject constructor(
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return emptyList()
         val menuConfig = currentState.menuConfig
         val menuOptions = mutableListOf<Triple<Int, Int, () -> Unit>>()
-        val navigator = this.routeNavigator
+        val navigator = this.router
 
         // 音乐详情
         if (menuConfig.showViewDetail && navigator != null) {

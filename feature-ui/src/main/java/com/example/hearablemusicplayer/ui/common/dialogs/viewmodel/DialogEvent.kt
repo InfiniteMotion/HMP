@@ -13,6 +13,13 @@ sealed class DialogEvent {
     ) : DialogEvent()
 
     object DismissTimerDialog : DialogEvent()
+
+    data class ShareMusic(
+        val title: String,
+        val artist: String,
+        val album: String,
+        val filePath: String
+    ) : DialogEvent()
 }
 
 enum class MessageDuration {

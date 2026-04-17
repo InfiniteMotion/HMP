@@ -47,4 +47,8 @@ class DialogManager @Inject constructor() {
             _dialogEvent.emit(null)
         }
     }
+
+    fun shareMusic(title: String, artist: String, album: String, filePath: String) {
+        showDialog(DialogEvent.ShareMusic(title, artist, album, filePath))
+    }
 }

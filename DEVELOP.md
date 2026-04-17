@@ -110,6 +110,26 @@
 - 支持 API 连接测试功能
 - 用户可在配置界面自由切换服务商
 
+#### 7. 导航系统：Navigation 3
+
+**选择理由**：Navigation 3 提供了类型安全的导航方式，支持编译时路由检查和参数验证。迁移到 Navigation 3 后，消除了字符串路由的潜在错误，提升了导航的可靠性。
+
+**实现细节**：
+- 使用 @Serializable 注解定义路由
+- 集中式路由管理，统一处理导航逻辑
+- 支持类型安全的参数传递
+- 迁移过程中保持向后兼容
+
+#### 8. 视觉效果：毛玻璃效果
+
+**选择理由**：毛玻璃效果（Haze）可以提升UI的视觉层次感和现代感，与动态背景结合使用效果更佳。
+
+**实现细节**：
+- 使用 Haze 库实现毛玻璃效果
+- 支持动态背景风格选择
+- 可配置的模糊强度和颜色叠加
+- 应用于弹窗、底部栏等组件
+
 ## 📦 项目结构
 
 ```
@@ -153,6 +173,7 @@ Hearable Music Player/
 │   │   ├── main/
 │   │   │   ├── java/com/example/hearablemusicplayer/
 │   │   │   │   ├── player/
+│   │   │   │   │   ├── controller/  # MusicController (播放控制)
 │   │   │   │   │   ├── di/          # Player modules
 │   │   │   │   │   └── service/     # MusicPlayService and receiver
 │   │   │   └── res/                 # Player resources
@@ -163,11 +184,40 @@ Hearable Music Player/
 │   │   ├── main/
 │   │   │   ├── java/com/example/hearablemusicplayer/
 │   │   │   │   ├── ui/
-│   │   │   │   │   ├── components/  # Reusable UI components
-│   │   │   │   │   ├── home/        # Home screen
-│   │   │   │   │   ├── library/     # Library screen
-│   │   │   │   │   ├── player/      # Player screen
-│   │   │   │   │   └── settings/    # Settings screen
+│   │   │   │   │   ├── common/      # 通用组件和基础设施
+│   │   │   │   │   │   ├── components/      # 通用UI组件
+│   │   │   │   │   │   │   └── base/        # 基础组件 (Empty, Loading, Error)
+│   │   │   │   │   │   ├── design/          # 设计系统
+│   │   │   │   │   │   │   ├── animation/   # 动画令牌
+│   │   │   │   │   │   │   ├── colors/      # 颜色令牌
+│   │   │   │   │   │   │   ├── core/        # 设计系统核心
+│   │   │   │   │   │   │   ├── theme/       # 主题管理
+│   │   │   │   │   │   │   └── typography/  # 排版令牌
+│   │   │   │   │   │   ├── dialogs/         # 弹窗组件
+│   │   │   │   │   │   │   ├── base/        # 基础弹窗组件
+│   │   │   │   │   │   │   ├── controller/  # DialogManager
+│   │   │   │   │   │   │   └── viewmodel/   # DialogViewModel, DialogEvent
+│   │   │   │   │   │   ├── navigation/      # Navigation 3 路由
+│   │   │   │   │   │   ├── pages/           # 通用页面
+│   │   │   │   │   │   │   └── base/        # TabScreen, SubScreen
+│   │   │   │   │   │   ├── util/            # UI工具类
+│   │   │   │   │   │   └── viewmodel/       # ThemeViewModel
+│   │   │   │   │   ├── library/     # 音乐库模块
+│   │   │   │   │   │   ├── pages/           # Home, Gallery, Search, Artist, Album, SongDetail
+│   │   │   │   │   │   │   └── components/  # 音乐列表组件
+│   │   │   │   │   │   │       └── musiclist/   # MusicList及相关组件
+│   │   │   │   │   │   └── viewmodel/       # LibraryViewModel, SearchViewModel, SongDetailViewModel
+│   │   │   │   │   ├── player/      # 播放器模块
+│   │   │   │   │   │   ├── components/      # 播放器组件
+│   │   │   │   │   │   ├── pages/           # PlayerScreen, LyricsScreen, PlaylistArea
+│   │   │   │   │   │   └── viewmodel/       # PlaybackViewModel, PlaylistQueueViewModel, PlayControlViewModel
+│   │   │   │   │   ├── playlist/    # 播放列表模块
+│   │   │   │   │   │   ├── pages/           # PlaylistScreen, PlaylistManageScreen
+│   │   │   │   │   │   └── viewmodel/       # PlaylistViewModel
+│   │   │   │   │   └── settings/    # 设置模块
+│   │   │   │   │       ├── pages/           # SettingScreen, AIScreen, UserScreen等
+│   │   │   │   │       ├── components/      # 设置页面组件
+│   │   │   │   │       └── viewmodel/       # SettingsViewModel, AudioEffectViewModel等
 │   │   │   └── AndroidManifest.xml
 │   │   └── test/                    # UI tests
 │   └── build.gradle.kts
@@ -185,10 +235,11 @@ Hearable Music Player/
 
 ### 开发环境
 
-- Android Studio Hedgehog | 2023.1.1
-- Kotlin 1.9.0
-- Gradle 8.2
-- Android SDK 34
+- Android Studio Ladybug | 2024.2.1
+- Kotlin 2.2.21
+- Gradle 9.1.0
+- Android SDK 35
+- AGP (Android Gradle Plugin) 9.0.0
 
 ### 构建项目
 
@@ -229,6 +280,13 @@ cd hearable-music-player
 - ✅ 引入TabScreen模板
 - ✅ 实现每日推荐刷新策略系统
 - ✅ API 密钥加密存储机制
+- ✅ Navigation 3 迁移与类型安全导航
+- ✅ Gradle 9.0 升级
+- ✅ 代码混淆与包体积优化
+- ✅ ViewModel 职责拆分与代码组织优化
+- ✅ 专辑页面功能
+- ✅ 音乐文件分享功能
+- ✅ 毛玻璃视觉效果
 
 #### 进行中
 

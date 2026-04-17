@@ -580,25 +580,33 @@ class MusicController @Inject constructor(
     }
     
     fun addToNextPlay(musicInfo: MusicInfo) {
-        if (_currentPlaylist.value.none { it.music.id == musicInfo.music.id }) {
-            val currentIndex = _currentIndex.value
-            val newList = _currentPlaylist.value.toMutableList()
-            if (newList.isEmpty()) {
-                // 播放列表为空时，直接添加到列表中
-                newList.add(musicInfo)
-            } else {
-                // 播放列表不为空时，添加到当前索引的下一首
-                val insertIndex = currentIndex + 1
-                if (insertIndex <= newList.size) {
-                    newList.add(insertIndex, musicInfo)
-                } else {
-                    // 如果索引超出范围，添加到列表末尾
-                    newList.add(musicInfo)
-                }
+        val currentIndex = _currentIndex.value
+        val newList = _currentPlaylist.value.toMutableList()
+        
+        // 检查歌曲是否已在播放列表中
+        val existingIndex = newList.indexOfFirst { it.music.id == musicInfo.music.id }
+        
+        if (existingIndex != -1) {
+            // 歌曲已存在，先移除
+            newList.removeAt(existingIndex)
+            // 如果移除的歌曲在当前播放索引之前或就是当前播放的歌曲，需要调整当前索引
+            if (existingIndex <= currentIndex) {
+                _currentIndex.value = (currentIndex - 1).coerceAtLeast(0)
             }
-            _currentPlaylist.value = newList
-            persistCurrentPlaylistToDatabase()
         }
+        
+        // 计算插入位置（当前播放位置的下一首）
+        val adjustedCurrentIndex = _currentIndex.value
+        val insertIndex = if (newList.isEmpty()) {
+            0
+        } else {
+            (adjustedCurrentIndex + 1).coerceAtMost(newList.size)
+        }
+        
+        // 插入歌曲
+        newList.add(insertIndex, musicInfo)
+        _currentPlaylist.value = newList
+        persistCurrentPlaylistToDatabase()
     }
 
     private fun switchToMusicInPlaylist(musicInfo: MusicInfo) {
