@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer
 
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,12 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import com.example.hearablemusicplayer.player.controller.MusicController
-import com.example.hearablemusicplayer.ui.pages.IntroScreen
-import com.example.hearablemusicplayer.ui.pages.base.MainScreen
-import com.example.hearablemusicplayer.ui.theme.HearableMusicPlayerTheme
-import com.example.hearablemusicplayer.ui.viewmodel.LibraryViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.RecommendationViewModel
-import com.example.hearablemusicplayer.ui.viewmodel.SettingsViewModel
+import com.example.hearablemusicplayer.ui.common.pages.IntroScreen
+import com.example.hearablemusicplayer.ui.common.pages.MainScreen
+import com.example.hearablemusicplayer.ui.common.design.theme.HearableMusicPlayerTheme
+import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
+import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
+import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -85,12 +86,12 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     val statusOne = ContextCompat.checkSelfPermission(
                         context,
-                        android.Manifest.permission.READ_MEDIA_AUDIO
+                        Manifest.permission.READ_MEDIA_AUDIO
                     )
                     isMusicReadPermissionGiven.value = statusOne == PackageManager.PERMISSION_GRANTED
                     val statusTwo = ContextCompat.checkSelfPermission(
                         context,
-                        android.Manifest.permission.POST_NOTIFICATIONS
+                        Manifest.permission.POST_NOTIFICATIONS
                     )
                     isNotificationPermissionGiven.value = statusTwo == PackageManager.PERMISSION_GRANTED
                 }

@@ -1,0 +1,41 @@
+package com.example.hearablemusicplayer.ui.library.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.example.hearablemusicplayer.domain.music.usecase.SearchMusicUseCase
+import com.example.hearablemusicplayer.ui.common.util.UiState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val searchMusicUseCase: SearchMusicUseCase
+) : ViewModel() {
+
+    private val _searchState = MutableStateFlow<UiState<List<MusicInfo>>>(UiState.Idle)
+    val searchState: StateFlow<UiState<List<MusicInfo>>> = _searchState
+
+    fun searchMusic(query: String) {
+        if (query.isBlank()) {
+            _searchState.value = UiState.Idle
+            return
+        }
+        viewModelScope.launch {
+            _searchState.value = UiState.Loading
+            try {
+                val results = searchMusicUseCase(query)
+                _searchState.value = if (results.isEmpty()) {
+                    UiState.Empty
+                } else {
+                    UiState.Success(results)
+                }
+            } catch (e: Exception) {
+                _searchState.value = UiState.Error(e.message ?: "Search failed")
+            }
+        }
+    }
+}
