@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.compose)
@@ -9,51 +9,31 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hearablemusicplayer"
-    compileSdk {
-        version = release(36)
-    }
-
-    // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
-    signingConfigs {
-        create("unified") {
-            storeFile = file("hmp-unified-key.jks")
-            storePassword = "hmp123456"
-            keyAlias = "hmpkey"
-            keyPassword = "hmp123456"
-        }
-    }
+    namespace = "com.example.hearablemusicplayer.ui"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.hearablemusicplayer"
         minSdk = 33
-        targetSdk = 36
-        versionCode = 5
-        versionName = "5.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("unified")
-        }
-        debug {
-            signingConfig = signingConfigs.getByName("unified")
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    //noinspection WrongGradleMethod
     kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
@@ -66,31 +46,56 @@ android {
 }
 
 dependencies {
-
-    // Core modules - app模块只需要依赖feature-ui,其他模块通过传递依赖自动引入
-    implementation(project(":feature-ui"))
-
+    // Core modules
+    implementation(project(":android:core-data"))
+    implementation(project(":android:core-domain"))
+    api(project(":android:core-player"))  // 使用api以便app模块可以访问MusicPlayService
+    
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
     
-    // Compose BOM
+    // Compose
+    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.runtime.livedata)
     
-    // Media3 - for @UnstableApi annotation in MainActivity
+    // Media3 - for @UnstableApi annotation
     implementation(libs.androidx.media3.common)
+    
+    // Gson - for JSON parsing (TODO: move to domain layer)
+    implementation(libs.gson)
+    
+    // 汉字转拼音（索引条 A-Z 对中文按首字拼音分组）
+    implementation("com.belerweb:pinyin4j:2.5.1")
+
+    // UI utilities
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.palette.ktx)
     
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
-    
+
+    // Haze (Blur)
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
+
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

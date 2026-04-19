@@ -22,6 +22,11 @@ DerivedData
 *.xcuserstate
 project.xcworkspace
 
+# Kotlin Multiplatform
+.kotlin/
+build/
+shared/schemas/
+
 # Android/IntelliJ
 #
 .idea

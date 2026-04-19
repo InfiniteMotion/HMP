@@ -1,0 +1,11 @@
+# iOS Podfile for HMP
+# This file will be used by the shared KMP module for CocoaPods integration
+# Full iOS project setup will be completed in P6
+
+platform :ios, '16.0'
+
+use_frameworks!
+
+target 'HMP' do
+  # KMP shared framework will be integrated here in P6
+end

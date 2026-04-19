@@ -17,8 +17,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Hearable Music Player"
-include(":app")
-include(":core-data")
-include(":core-domain")
-include(":core-player")
-include(":feature-ui")
+include(":shared")
+include(":android:app")
+include(":android:core-data")
+include(":android:core-domain")
+include(":android:core-player")
+include(":android:feature-ui")

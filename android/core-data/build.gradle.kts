@@ -46,7 +46,7 @@ android {
 
 dependencies {
     // Core Domain module
-    implementation(project(":core-domain"))
+    implementation(project(":android:core-domain"))
 
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
