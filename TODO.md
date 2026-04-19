@@ -6,74 +6,95 @@
 
 - [docs/README](docs/README.md) — 项目文档索引与各文档职责
 - [ROADMAP](ROADMAP.md) — 功能状态与版本历史
+- [设计文档](docs/5_10/ios-adaptation-design.md) — iOS 适配技术设计
+- [实施计划](docs/5_10/ios-adaptation-plan.md) — v5.10 详细实施步骤
 
 ---
 
-## v5.7 重点：播放列表管理
+## v5.10 重点：iOS 平台适配与双平台架构
 
-**现状**：播放列表页面已具备三个默认播放列表（默认播放列表、红心、最近播放），且用户自定义播放列表的创建、编辑、删除及列表内管理能力已全部实现。
+**现状**：Android 单平台架构（Kotlin + Compose + MVVM），需适配 iOS 并建立长期双平台维护工作流。
 
-### 用户自定义播放列表（已补全）
-
-**数据 / 领域层**
-
-- [x] **P1** 暴露「所有播放列表」或「用户自定义播放列表」查询（getAllPlaylists 或区分默认/自定义），供 UI 展示自定义列表
-- [x] **P2** 重命名播放列表（Repository / UseCase / DAO，对自定义列表生效）
-- [x] **P3** 按 ID 删除播放列表（仅允许删除用户自定义列表，避免误删默认列表）
-- [x] **P4** 列表内单曲排序（updateItemOrder / reorderPlaylistItems）
-
-**UI 层**
-
-- [x] **P5** 在现有播放列表页中展示「用户自定义播放列表」区块或入口，可进入各自定义列表
-- [x] **P6** 新建用户自定义播放列表（入口 + 输入名称 + 创建后进入该列表或刷新列表）
-- [x] **P7** 对自定义列表：重命名、删除（长按或列表项菜单，删除前确认）
-- [x] **P8** 播放列表内拖拽排序（自定义列表内歌曲顺序可调）
-- [x] **P9** 从播放列表中移除单曲（列表内歌曲项菜单「从列表移除」，对默认/自定义列表均可用）
+**技术路线**：KMP 共享核心层（domain + data），UI 和播放引擎保持平台原生，Monorepo 结构。
 
 ---
 
-## v5.8 重点：架构升级与UI优化
+### P0: Monorepo 项目骨架
 
-**现状**：完成 Navigation 3 迁移、Gradle 9.0 升级，新增专辑页面，优化UI交互体验。
+- [ ] **P0.1** 调整目录结构 — 现有模块移入 `android/`，创建 `shared/` 和 `ios/` 空目录
+- [ ] **P0.2** 更新根构建配置 — `settings.gradle.kts`、`build.gradle.kts`、`libs.versions.toml` 新增 KMP 依赖
+- [ ] **P0.3** 创建 shared KMP 模块 — `build.gradle.kts`（androidTarget + iosX64/Arm64/SimulatorArm64 + CocoaPods）+ 空目录结构
+- [ ] **P0.4** 更新 Android 模块路径 — 所有 `project(":core-data")` 等引用改为 `project(":android:core-data")`
+- [ ] **P0.5** 验证 — `./gradlew :shared:build` + `./gradlew :android:app:assembleDebug` 通过
 
-### 架构升级（已完成）
+### P1: core-domain 迁移
 
-- [x] **P1** 迁移到 Navigation 3 和 Gradle 9.0
-- [x] **P2** 重构导航系统为集中式路由管理
-- [x] **P3** 修复 Navigation3 迁移相关问题，统一配置页面动画效果
-- [x] **P4** 简化应用名称与开启代码混淆
+- [ ] **P1.1** 移动 core-domain 源文件（36 个 .kt 文件）到 `shared/src/commonMain/kotlin/com/hmp/domain/`
+- [ ] **P1.2** 移除 Android 依赖 — `GetDailyMusicRecommendationUseCase.kt` 中 `android.util.Log` 替换为跨平台日志；移除 `javax.inject.Inject` 注解
+- [ ] **P1.3** 更新 shared 模块依赖 — 确认 commonMain 依赖完整
+- [ ] **P1.4** 更新 Android 端引用 — core-data/feature-ui/core-player 的依赖和 import 路径
+- [ ] **P1.5** 验证 — `./gradlew :shared:build` + `./gradlew :android:app:assembleDebug` 通过
+- [ ] **P1.6** 清理空模块 — 移除 `settings.gradle.kts` 中的 `include(":android:core-domain")`，删除目录
 
-### 功能新增（已完成）
+### P2: core-data 迁移 — Room
 
-- [x] **P5** 新增专辑页面及功能
-- [x] **P6** 添加毛玻璃效果相关设置和优化弹窗功能
-- [x] **P7** 添加对话框管理功能并优化UI交互
+- [ ] **P2.1** 移动 Room 数据库文件（10 个）到 `shared/src/commonMain/kotlin/com/hmp/data/database/`
+- [ ] **P2.2** 改造 AppDatabase 为 KMP 模式 — `@ConstructedBy` + `expect object AppDatabaseConstructor`
+- [ ] **P2.3** 迁移 Room Migration — 4 个 Migration 从 `SupportSQLiteDatabase` 改为 `SQLiteConnection`
+- [ ] **P2.4** 创建平台特定 Database Builder — androidMain（Context.getDatabasePath）+ iosMain（NSFileManager）
+- [ ] **P2.5** 检查 DAO 兼容性 — `@RawQuery` 改为 `RoomRawQuery`，确认 `PagingSource` KMP 兼容性
+- [ ] **P2.6** 验证 — `./gradlew :shared:build` 通过
 
-### UI优化（已完成）
+### P3: core-data 迁移 — 网络
 
-- [x] **P8** 优化音乐列表和消息提示的UI布局和交互
+- [ ] **P3.1** 移动 `MultiProviderApiAdapter.kt` 到 `shared/src/commonMain/kotlin/com/hmp/data/network/`
+- [ ] **P3.2** 重写 MultiProviderApiAdapter — OkHttp → Ktor Client，Gson → kotlinx.serialization（DTO 添加 `@Serializable`）
+- [ ] **P3.3** 创建平台特定 HttpClient — androidMain（OkHttp engine）+ iosMain（Darwin engine）
+- [ ] **P3.4** 验证 — `./gradlew :shared:build` 通过
 
----
+### P4: core-data 迁移 — DI / 标签 / 存储 / 工具
 
-## v5.9 重点：代码组织与播放器重构
+- [ ] **P4.1** 移动 Repository 实现（4 个）和 Mapper（2 个）到 shared
+- [ ] **P4.2** 处理 Repository 平台依赖 — MusicRepositoryImpl 重构（移除 Context/Gson，注入 DeviceMusicScanner/MusicTagParser/SecureStorageHelper）；SettingsRepositoryImpl DataStore 初始化；BackupFileRepositoryImpl 序列化替换
+- [ ] **P4.2a** 设备音乐扫描 expect/actual — `DeviceMusicScanner`（Android: MediaStore，iOS: FileManager + AVAsset）
+- [ ] **P4.3** 音乐标签解析 expect/actual — `MusicTagParser`（Android: MediaMetadataRetriever + Jaudiotagger，iOS: AVAsset + AVAssetReader）
+- [ ] **P4.4** 安全存储 expect/actual — `SecureStorageHelper`（Android: KeyStore + AES-GCM，iOS: Keychain）
+- [ ] **P4.5** 拼音排序 expect/actual — `stringToPinyinSortKey()`（Android: Pinyin4j，iOS: CFStringTransform）
+- [ ] **P4.6** DataStore KMP 配置 — `createDataStore()` expect/actual（Android: Context.filesDir，iOS: NSDocumentDirectory）
+- [ ] **P4.7** 配置 Koin DI 模块 — sharedModule（Database/Repositories/UseCases）+ androidPlatformModule（Context）
+- [ ] **P4.8** 移动测试文件到 `shared/src/commonTest/`
+- [ ] **P4.9** 验证 — `./gradlew :shared:build` + `./gradlew :shared:allTests` 通过
 
-**现状**：完成 ViewModel 职责拆分，优化代码组织结构，实现音乐分享功能。
+### P5: Android 端适配
 
-### 代码组织优化（已完成）
+- [ ] **P5.1** 更新 Android 模块依赖 — 删除 `android/core-data` 和 `android/core-domain` 模块，所有消费者依赖 `:shared`
+- [ ] **P5.1b** 更新 core-player 依赖 — 改为依赖 `:shared`，将 `MusicController` 切换为 Koin 管理
+- [ ] **P5.2** 更新 feature-ui 依赖 — 改为依赖 `:shared`，添加 Koin Compose 依赖，移除 Hilt
+- [ ] **P5.3** 更新 ViewModel 注入方式 — 14 个 ViewModel 从 `@HiltViewModel` 切换为 `koinViewModel()`
+- [ ] **P5.4** 更新 Application 类 — `@HiltAndroidApp` → `startKoin { modules(sharedModule, androidPlatformModule) }`
+- [ ] **P5.5** 更新包名引用 — `com.example.hearablemusicplayer.domain/data` → `com.hmp.domain/data`
+- [ ] **P5.6** 移除 feature-ui 中的 Gson 依赖
+- [ ] **P5.7** 移除 feature-ui 中的 Pinyin4j 依赖
+- [ ] **P5.8** 验证 — `assembleDebug` + `assembleRelease` 通过 + 手动功能回归测试（扫描/播放/列表/AI/搜索/歌词/设置/统计/备份/分享）
 
-- [x] **P1** 拆分 PlayControlViewModel 为多个专用 ViewModel（PlaybackViewModel、PlaylistQueueViewModel等）
-- [x] **P2** 按功能模块重新组织包结构，提升代码可维护性
-- [x] **P3** 移除视图模型默认参数并统一依赖注入方式
-- [x] **P4** 统一空状态和加载状态的UI样式
+### P6: iOS 端基础
 
-### 播放器重构（已完成）
+- [ ] **P6.1** 创建 Xcode 项目 — SwiftUI + iOS 16.0
+- [ ] **P6.2** 集成 KMP shared 框架 — CocoaPods（Podfile + pod install）
+- [ ] **P6.3** Koin iOS 初始化 — AppDelegate 中 `KoinKt.doInitKoin()`
+- [ ] **P6.4** AVPlayer 封装 — PlayerService（play/pause/seek/next/previous）+ AudioSessionManager + NowPlayingManager
+- [ ] **P6.5** 基础 SwiftUI 界面 — HMPApp + MainTabView（音乐库/播放/列表/设置）
+- [ ] **P6.6** 音乐扫描（iOS 端）— FileManager 扫描 + shared Repository 存储
+- [ ] **P6.7** 验证 — Xcode 编译通过 + 模拟器可运行 + 能播放音乐 + 锁屏控制可用
 
-- [x] **P5** 重构播放器界面结构，优化播放控制逻辑
-- [x] **P6** 优化「下一首播放」逻辑：若歌曲已存在于播放列表，先移除再插入到下一首位置
+### P7: iOS 端功能
 
-### 功能新增（已完成）
-
-- [x] **P7** 实现音乐详情弹窗的分享功能（支持分享音频文件）
+- [ ] **P7.1** 音乐库模块 — LibraryView / GalleryView / SearchView / ArtistView / AlbumView / SongDetailView
+- [ ] **P7.2** 播放器模块 — NowPlayingView / LyricsView / QueueView
+- [ ] **P7.3** 播放列表模块 — PlaylistListView / PlaylistDetailView
+- [ ] **P7.4** 设置模块 — SettingsView / AISettingsView / AudioEffectView / UserView
+- [ ] **P7.5** 通用组件 — 设计系统 / 主题管理 / 空状态加载状态 / 对话框
+- [ ] **P7.6** 验证 — 逐模块功能对比测试（音乐库/播放器/播放列表/设置/通用）
 
 ---
 
