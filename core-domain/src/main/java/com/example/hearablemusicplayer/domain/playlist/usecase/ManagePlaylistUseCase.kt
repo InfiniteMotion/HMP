@@ -49,6 +49,13 @@ class ManagePlaylistUseCase @Inject constructor(
     }
 
     /**
+     * 获取所有播放列表（Flow版本，用于响应式更新）
+     */
+    fun getAllPlaylistsFlow(): Flow<List<Playlist>> {
+        return playlistRepository.getAllPlaylistsFlow()
+    }
+
+    /**
      * 根据 ID 获取播放列表元数据（名称等）
      */
     suspend fun getPlaylistMeta(id: Long): Playlist? {

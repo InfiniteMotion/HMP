@@ -32,6 +32,9 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 - **音频效果**：支持均衡器、低音增强、环绕音等调节
 - **睡眠定时**：支持定时关闭音乐播放
 - **国际化**：UI 字符串支持多语言
+- **专辑浏览**：支持按专辑分类浏览音乐
+- **音乐分享**：支持将音乐文件分享到其他应用
+- **毛玻璃效果**：支持毛玻璃视觉效果和动态背景
 
 ### 计划实现功能
 
@@ -56,6 +59,8 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 - **音乐标签解析**：Jaudiotagger
 - **AI集成**：多服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）
 - **安全存储**：API 密钥加密存储
+- **导航系统**：Navigation 3 (类型安全导航)
+- **构建工具**：Gradle 9.0
 
 ### 模块化架构
 
@@ -77,9 +82,10 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ### 环境要求
 
-- Android Studio Hedgehog | 2023.1.1 或更高版本
-- Kotlin 1.9.0 或更高版本
-- Gradle 8.0 或更高版本
+- Android Studio Ladybug | 2024.2.1 或更高版本
+- Kotlin 2.2.21 或更高版本
+- Gradle 9.1.0 或更高版本
+- Android SDK 35
 
 ### 安装步骤
 
@@ -129,7 +135,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ## 📝 开发日志
 
-完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v5.6。
+完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v5.9。
 
 ## 🤝 贡献指南
 

@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.domain.playlist
 
+import com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot
 import com.example.hearablemusicplayer.domain.music.MusicInfo
 import kotlinx.coroutines.flow.Flow
 
@@ -30,7 +31,10 @@ interface PlaylistRepository {
     suspend fun getPlaylistById(playlistId: Long): List<MusicInfo>
     suspend fun getPlaylistByIdList(playlistIdList: List<Long>): List<MusicInfo>
 
+    // Flow-based query for reactive updates
+    fun getAllPlaylistsFlow(): Flow<List<Playlist>>
+
     // Snapshot Export/Import
-    suspend fun exportPlaylistsSnapshot(): com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot
-    suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot)
+    suspend fun exportPlaylistsSnapshot(): PlaylistsSnapshot
+    suspend fun restoreFromSnapshot(snapshot: PlaylistsSnapshot)
 }
