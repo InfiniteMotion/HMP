@@ -19,22 +19,22 @@
 
 ---
 
-### P0: Monorepo 项目骨架
+### P0: Monorepo 项目骨架 ✅
 
 - [x] **P0.1** 调整目录结构 — 现有模块移入 `android/`，创建 `shared/` 和 `ios/` 空目录
 - [x] **P0.2** 更新根构建配置 — `settings.gradle.kts`、`build.gradle.kts`、`libs.versions.toml` 新增 KMP 依赖
 - [x] **P0.3** 创建 shared KMP 模块 — `build.gradle.kts`（androidTarget + iosX64/Arm64/SimulatorArm64 + CocoaPods）+ 空目录结构
 - [x] **P0.4** 更新 Android 模块路径 — 所有 `project(":core-data")` 等引用改为 `project(":android:core-data")`
-- [x] **P0.5** 验证 — `./gradlew :shared:build` + `./gradlew :android:app:assembleDebug` 通过
+- [x] **P0.5** 验证 — `./gradlew :android:app:assembleDebug` 通过 (126 tasks BUILD SUCCESSFUL)
 
-### P1: core-domain 迁移
+### P1: core-domain 迁移 ✅
 
-- [ ] **P1.1** 移动 core-domain 源文件（36 个 .kt 文件）到 `shared/src/commonMain/kotlin/com/hmp/domain/`
-- [ ] **P1.2** 移除 Android 依赖 — `GetDailyMusicRecommendationUseCase.kt` 中 `android.util.Log` 替换为跨平台日志；移除 `javax.inject.Inject` 注解
-- [ ] **P1.3** 更新 shared 模块依赖 — 确认 commonMain 依赖完整
-- [ ] **P1.4** 更新 Android 端引用 — core-data/feature-ui/core-player 的依赖和 import 路径
-- [ ] **P1.5** 验证 — `./gradlew :shared:build` + `./gradlew :android:app:assembleDebug` 通过
-- [ ] **P1.6** 清理空模块 — 移除 `settings.gradle.kts` 中的 `include(":android:core-domain")`，删除目录
+- [x] **P1.1** 移动 core-domain 源文件（36 个 .kt 文件）到 `shared/src/commonMain/kotlin/com/hmp/domain/`
+- [x] **P1.2** 移除 Android 依赖 — `GetDailyMusicRecommendationUseCase.kt` 中 `android.util.Log` 替换为 `println`；移除 `javax.inject.Inject` 注解
+- [x] **P1.3** 更新 shared 模块依赖 — 确认 commonMain 依赖完整
+- [x] **P1.4** 更新 Android 端引用 — core-data/feature-ui/core-player 的依赖和 import 路径
+- [x] **P1.5** 验证 — `./gradlew :shared:compileAndroidMain` 通过 + `./gradlew :android:app:assembleDebug` 通过 (117 tasks BUILD SUCCESSFUL in 26s)
+- [x] **P1.6** 清理空模块 — 移除 `settings.gradle.kts` 中的 `include(":android:core-domain")`，删除目录
 
 ### P2: core-data 迁移 — Room
 

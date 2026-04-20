@@ -45,8 +45,8 @@ android {
 }
 
 dependencies {
-    // Core Domain module
-    implementation(project(":android:core-domain"))
+    // KMP Shared module (replaces core-domain)
+    implementation(project(":shared"))
 
     // AndroidX Core
     implementation(libs.androidx.core.ktx)

@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.domain.music.Music
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.Music
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.common.design.theme.HearableMusicPlayerTheme
 
 private fun previewMusicInfo(

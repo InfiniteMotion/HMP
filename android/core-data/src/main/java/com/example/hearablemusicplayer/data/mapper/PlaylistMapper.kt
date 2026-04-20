@@ -2,8 +2,8 @@ package com.example.hearablemusicplayer.data.mapper
 
 import com.example.hearablemusicplayer.data.database.Playlist as PlaylistEntity
 import com.example.hearablemusicplayer.data.database.PlaylistItem as PlaylistItemEntity
-import com.example.hearablemusicplayer.domain.playlist.Playlist
-import com.example.hearablemusicplayer.domain.playlist.PlaylistItem
+import com.hmp.domain.playlist.Playlist
+import com.hmp.domain.playlist.PlaylistItem
 
 // Playlist
 fun PlaylistEntity.toDomain(): Playlist = Playlist(

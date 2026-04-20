@@ -40,8 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
+import com.hmp.domain.config.DisplayMode
+import com.hmp.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.ui.R
 import kotlin.math.max
 

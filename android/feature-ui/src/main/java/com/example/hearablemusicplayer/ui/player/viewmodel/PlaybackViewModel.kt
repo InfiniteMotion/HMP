@@ -2,8 +2,8 @@ package com.example.hearablemusicplayer.ui.player.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.enum.PlaybackMode
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow

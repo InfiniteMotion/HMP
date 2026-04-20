@@ -2,7 +2,7 @@ package com.example.hearablemusicplayer.ui.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
+import com.hmp.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow

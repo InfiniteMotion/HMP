@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
-import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
+import com.hmp.domain.setting.model.LabelCountEntry
+import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.player.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen

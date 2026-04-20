@@ -2,14 +2,14 @@ package com.example.hearablemusicplayer.ui.playlist.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.enum.LabelCategory
-import com.example.hearablemusicplayer.domain.enum.LabelName
-import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.MusicLabelUseCase
-import com.example.hearablemusicplayer.domain.playlist.Playlist
-import com.example.hearablemusicplayer.domain.playlist.usecase.ManagePlaylistUseCase
-import com.example.hearablemusicplayer.domain.setting.SettingsRepository
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.enum.LabelCategory
+import com.hmp.domain.enum.LabelName
+import com.hmp.domain.music.usecase.GetAllMusicUseCase
+import com.hmp.domain.music.usecase.MusicLabelUseCase
+import com.hmp.domain.playlist.Playlist
+import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
+import com.hmp.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

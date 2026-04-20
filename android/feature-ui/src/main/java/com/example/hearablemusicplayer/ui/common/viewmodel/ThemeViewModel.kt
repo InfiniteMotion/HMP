@@ -10,7 +10,7 @@ import androidx.palette.graphics.Palette
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.player.controller.MusicController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext

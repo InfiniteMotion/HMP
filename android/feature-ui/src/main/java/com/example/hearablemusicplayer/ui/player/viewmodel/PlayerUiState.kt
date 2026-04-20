@@ -1,10 +1,10 @@
 package com.example.hearablemusicplayer.ui.player.viewmodel
 
 import androidx.compose.runtime.Stable
-import com.example.hearablemusicplayer.domain.enum.PlaybackMode
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
-import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.hmp.domain.enum.PlaybackMode
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.playlist.AlgorithmType
+import com.hmp.domain.playlist.WeightTemplate
 
 @Stable
 data class PlayerUiState(

@@ -22,28 +22,28 @@ import com.example.hearablemusicplayer.data.database.UserInfo
 import com.example.hearablemusicplayer.data.database.UserInfoDao
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory as DataLabelCategory
 import com.example.hearablemusicplayer.data.database.myenum.LabelName as DataLabelName
-import com.example.hearablemusicplayer.domain.enum.LabelCategory
-import com.example.hearablemusicplayer.domain.enum.LabelName
+import com.hmp.domain.enum.LabelCategory
+import com.hmp.domain.enum.LabelName
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
 import com.example.hearablemusicplayer.data.util.stringToPinyinSortKey
 import com.example.hearablemusicplayer.data.network.AiApiResult
-import com.example.hearablemusicplayer.domain.setting.model.ArtistCountEntry
-import com.example.hearablemusicplayer.domain.setting.model.LabelCountEntry
-import com.example.hearablemusicplayer.domain.setting.model.RecentPlaybackEntry
-import com.example.hearablemusicplayer.domain.setting.model.TopPlayedEntry
-import com.example.hearablemusicplayer.domain.setting.model.UserUsageAnalytics
-import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
+import com.hmp.domain.setting.model.ArtistCountEntry
+import com.hmp.domain.setting.model.LabelCountEntry
+import com.hmp.domain.setting.model.RecentPlaybackEntry
+import com.hmp.domain.setting.model.TopPlayedEntry
+import com.hmp.domain.setting.model.UserUsageAnalytics
+import com.hmp.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
 import com.example.hearablemusicplayer.data.network.MultiProviderApiAdapter
-import com.example.hearablemusicplayer.domain.backup.ListeningStatsSnapshot
-import com.example.hearablemusicplayer.domain.backup.MusicExtraUserSnapshot
-import com.example.hearablemusicplayer.domain.backup.MusicLabelSnapshot
-import com.example.hearablemusicplayer.domain.backup.MusicUserStateSnapshot
-import com.example.hearablemusicplayer.domain.backup.UserInfoSnapshot
-import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicRepository
+import com.hmp.domain.backup.ListeningStatsSnapshot
+import com.hmp.domain.backup.MusicExtraUserSnapshot
+import com.hmp.domain.backup.MusicLabelSnapshot
+import com.hmp.domain.backup.MusicUserStateSnapshot
+import com.hmp.domain.backup.UserInfoSnapshot
+import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.DailyMusicInfo
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicRepository
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -60,8 +60,8 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration as ListeningDurationDomain
-import com.example.hearablemusicplayer.domain.music.MusicLabel as MusicLabelDomain
+import com.hmp.domain.setting.model.ListeningDuration as ListeningDurationDomain
+import com.hmp.domain.music.MusicLabel as MusicLabelDomain
 
 @Singleton
 class MusicRepositoryImpl @Inject constructor(

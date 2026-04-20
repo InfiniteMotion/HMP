@@ -43,7 +43,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.setting.model.AudioEffectSettings
+import com.hmp.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen

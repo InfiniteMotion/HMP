@@ -1,9 +1,9 @@
 package com.example.hearablemusicplayer.ui.player.viewmodel
 
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
-import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
-import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.playlist.AlgorithmType
+import com.hmp.domain.playlist.ExtensionConfig
+import com.hmp.domain.playlist.WeightTemplate
 
 interface PlayerCallbacks {
     fun onSeek(position: Long)

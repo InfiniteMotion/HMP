@@ -1,8 +1,8 @@
 package com.example.hearablemusicplayer.data.network
 
 import android.util.Log
-import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.enum.AiProviderType
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers

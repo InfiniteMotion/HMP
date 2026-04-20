@@ -2,8 +2,8 @@ package com.example.hearablemusicplayer.ui.library.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.usecase.SearchMusicUseCase
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.usecase.SearchMusicUseCase
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

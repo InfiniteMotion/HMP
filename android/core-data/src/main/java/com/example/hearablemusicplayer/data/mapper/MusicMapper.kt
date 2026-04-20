@@ -6,17 +6,17 @@ import com.example.hearablemusicplayer.data.database.UserInfo as UserInfoEntity
 import com.example.hearablemusicplayer.data.database.MusicInfo as MusicInfoEntity
 import com.example.hearablemusicplayer.data.database.MusicLabel as MusicLabelEntity
 import com.example.hearablemusicplayer.data.database.ListeningDuration as ListeningDurationEntity
-import com.example.hearablemusicplayer.domain.music.Music
-import com.example.hearablemusicplayer.domain.music.MusicExtra
-import com.example.hearablemusicplayer.domain.music.UserInfo
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicLabel
-import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
-import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
+import com.hmp.domain.music.Music
+import com.hmp.domain.music.MusicExtra
+import com.hmp.domain.music.UserInfo
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
+import com.hmp.domain.setting.model.ListeningDuration
+import com.hmp.domain.setting.model.PlaybackHistory
 import com.example.hearablemusicplayer.data.database.myenum.LabelCategory as DataLabelCategory
 import com.example.hearablemusicplayer.data.database.myenum.LabelName as DataLabelName
-import com.example.hearablemusicplayer.domain.enum.LabelCategory as DomainLabelCategory
-import com.example.hearablemusicplayer.domain.enum.LabelName as DomainLabelName
+import com.hmp.domain.enum.LabelCategory as DomainLabelCategory
+import com.hmp.domain.enum.LabelName as DomainLabelName
 
 // Music
 fun MusicEntity.toDomain(): Music = Music(

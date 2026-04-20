@@ -2,13 +2,13 @@ package com.example.hearablemusicplayer.ui.library.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.usecase.GetAllMusicUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.GetDeletedMusicIdsGroupedByFolderUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.LoadMusicFromDeviceUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.RemoveFromLibraryUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.RestoreToLibraryUseCase
-import com.example.hearablemusicplayer.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.usecase.GetAllMusicUseCase
+import com.hmp.domain.music.usecase.GetDeletedMusicIdsGroupedByFolderUseCase
+import com.hmp.domain.music.usecase.LoadMusicFromDeviceUseCase
+import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
+import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
+import com.hmp.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject

@@ -34,7 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.setting.model.ListeningDuration
+import com.hmp.domain.setting.model.ListeningDuration
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.Avatar
 import com.example.hearablemusicplayer.ui.settings.components.ListeningChart

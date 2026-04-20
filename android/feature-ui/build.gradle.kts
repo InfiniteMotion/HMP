@@ -48,7 +48,7 @@ android {
 dependencies {
     // Core modules
     implementation(project(":android:core-data"))
-    implementation(project(":android:core-domain"))
+    implementation(project(":shared"))
     api(project(":android:core-player"))  // 使用api以便app模块可以访问MusicPlayService
     
     // AndroidX Core

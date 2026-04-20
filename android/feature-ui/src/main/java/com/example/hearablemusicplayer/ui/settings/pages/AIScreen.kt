@@ -58,8 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.enum.AiProviderType
+import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.enum.AiProviderType
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager

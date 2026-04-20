@@ -101,7 +101,7 @@ fun BackupSettingsScreen(
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 private fun ExportBackupSection(
-    onExportBackup: ((File) -> Unit, (String) -> Unit) -> Unit,
+    onExportBackup: ((String) -> Unit, (String) -> Unit) -> Unit,
     dialogManager: DialogManager
 ) {
     val context = LocalContext.current
@@ -123,7 +123,8 @@ private fun ExportBackupSection(
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    onExportBackup({ file ->
+                    onExportBackup({ filePath ->
+                        val file = File(filePath)
                         val uri = FileProvider.getUriForFile(
                             context,
                             "${context.packageName}.fileprovider",
@@ -150,12 +151,12 @@ private fun ExportBackupSection(
 
 @Composable
 private fun ImportBackupSection(
-    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
+    onRestoreBackup: (String, () -> Unit, (String) -> Unit) -> Unit,
     dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     var showRestoreDialog by remember { mutableStateOf(false) }
-    var selectedBackupFile by remember { mutableStateOf<File?>(null) }
+    var selectedBackupFilePath by remember { mutableStateOf<String?>(null) }
     
     val restoreLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -168,7 +169,7 @@ private fun ImportBackupSection(
                 inputStream?.copyTo(outputStream)
                 inputStream?.close()
                 outputStream.close()
-                selectedBackupFile = tempFile
+                selectedBackupFilePath = tempFile.absolutePath
                 showRestoreDialog = true
             } catch (e: Exception) {
                 dialogManager.showMessage("Error reading file: ${e.message}")
@@ -203,10 +204,10 @@ private fun ImportBackupSection(
         }
     }
     
-    if (showRestoreDialog && selectedBackupFile != null) {
+    if (showRestoreDialog && selectedBackupFilePath != null) {
         RestoreConfirmDialog(
             onConfirm = {
-                onRestoreBackup(selectedBackupFile!!, {
+                onRestoreBackup(selectedBackupFilePath!!, {
                     dialogManager.showMessage("Restore Successful")
                 }, { error ->
                     dialogManager.showMessage(error)
@@ -220,15 +221,15 @@ private fun ImportBackupSection(
 
 @Composable
 private fun ManageBackupsSection(
-    localBackups: List<File>,
-    onRestoreBackup: (File, () -> Unit, (String) -> Unit) -> Unit,
-    onDeleteBackup: (File) -> Unit,
+    localBackups: List<String>,
+    onRestoreBackup: (String, () -> Unit, (String) -> Unit) -> Unit,
+    onDeleteBackup: (String) -> Unit,
     onRefreshBackups: () -> Unit,
     dialogManager: DialogManager
 ) {
     val context = LocalContext.current
     var showRestoreDialog by remember { mutableStateOf(false) }
-    var selectedBackupFile by remember { mutableStateOf<File?>(null) }
+    var selectedBackupFilePath by remember { mutableStateOf<String?>(null) }
 
     TitleWidget(title = stringResource(R.string.local_backup)) {
         Column(
@@ -264,24 +265,24 @@ private fun ManageBackupsSection(
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
                 )
             } else {
-                localBackups.forEach { file ->
+                localBackups.forEach { filePath ->
                     BackupItem(
-                        file = file,
+                        filePath = filePath,
                         onRestore = {
-                            selectedBackupFile = file
+                            selectedBackupFilePath = filePath
                             showRestoreDialog = true
                         },
-                        onDelete = { onDeleteBackup(file) }
+                        onDelete = { onDeleteBackup(filePath) }
                     )
                 }
             }
         }
     }
     
-    if (showRestoreDialog && selectedBackupFile != null) {
+    if (showRestoreDialog && selectedBackupFilePath != null) {
         RestoreConfirmDialog(
             onConfirm = {
-                onRestoreBackup(selectedBackupFile!!, {
+                onRestoreBackup(selectedBackupFilePath!!, {
                     dialogManager.showMessage("Restore Successful")
                 }, { error ->
                     dialogManager.showMessage(error)
@@ -295,10 +296,11 @@ private fun ManageBackupsSection(
 
 @Composable
 private fun BackupItem(
-    file: File,
+    filePath: String,
     onRestore: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val file = File(filePath)
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         shape = RoundedCornerShape(12.dp),

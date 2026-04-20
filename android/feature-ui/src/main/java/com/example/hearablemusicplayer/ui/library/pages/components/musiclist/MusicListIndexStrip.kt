@@ -36,7 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

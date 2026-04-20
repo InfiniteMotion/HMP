@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 import androidx.compose.foundation.layout.PaddingValues
 
 /**

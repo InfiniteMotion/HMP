@@ -42,7 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.playlist.Playlist
+import com.hmp.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
 import com.example.hearablemusicplayer.ui.common.navigation.Routes

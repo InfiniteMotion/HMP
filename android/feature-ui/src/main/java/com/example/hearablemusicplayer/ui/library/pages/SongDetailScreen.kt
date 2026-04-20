@@ -42,11 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.music.MusicExtra
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicLabel
-import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
-import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
+import com.hmp.domain.music.MusicExtra
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
+import com.hmp.domain.setting.model.DailyMusicInfo
+import com.hmp.domain.setting.model.PlaybackHistory
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.library.pages.components.AlbumCover
 import com.example.hearablemusicplayer.ui.common.components.SegmentedControl

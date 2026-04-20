@@ -35,7 +35,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.UiStateContent
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.CurrentPlayingConfig

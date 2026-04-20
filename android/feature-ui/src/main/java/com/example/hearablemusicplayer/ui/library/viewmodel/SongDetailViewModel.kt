@@ -4,12 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.music.MusicLabel
-import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
-import com.example.hearablemusicplayer.domain.setting.model.DailyMusicInfo
-import com.example.hearablemusicplayer.domain.setting.model.PlaybackHistory
-import com.example.hearablemusicplayer.domain.setting.usecase.PlaybackHistoryUseCase
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
+import com.hmp.domain.music.usecase.GetDailyMusicRecommendationUseCase
+import com.hmp.domain.setting.model.DailyMusicInfo
+import com.hmp.domain.setting.model.PlaybackHistory
+import com.hmp.domain.setting.usecase.PlaybackHistoryUseCase
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

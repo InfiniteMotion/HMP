@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.playlist.Playlist
+import com.hmp.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.dialogs.base.ScrimDialog
 import com.example.hearablemusicplayer.ui.common.util.HazeRenderSettings

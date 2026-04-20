@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 
 /**
  * 列表主体：空占位 / LazyColumn（itemsIndexed + 底部 Spacer）。可选滚动条与索引条在 [MusicList] 中叠加。

@@ -20,8 +20,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.playlist.Playlist
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.EditConfig

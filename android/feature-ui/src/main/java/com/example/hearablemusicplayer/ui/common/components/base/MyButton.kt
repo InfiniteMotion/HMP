@@ -45,9 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.domain.playlist.AlgorithmType
-import com.example.hearablemusicplayer.domain.playlist.ExtensionConfig
-import com.example.hearablemusicplayer.domain.playlist.WeightTemplate
+import com.hmp.domain.playlist.AlgorithmType
+import com.hmp.domain.playlist.ExtensionConfig
+import com.hmp.domain.playlist.WeightTemplate
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.SegmentedControl
 import com.example.hearablemusicplayer.ui.common.components.SegmentedOption

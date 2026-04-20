@@ -42,7 +42,7 @@ android {
 dependencies {
     // Core modules
     implementation(project(":android:core-data"))
-    implementation(project(":android:core-domain"))
+    implementation(project(":shared"))
     
     // AndroidX Core
     implementation(libs.androidx.core.ktx)

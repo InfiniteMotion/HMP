@@ -2,18 +2,18 @@ package com.example.hearablemusicplayer.ui.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hearablemusicplayer.domain.backup.usecase.DeleteBackupUseCase
-import com.example.hearablemusicplayer.domain.backup.usecase.ExportUserDataBackupUseCase
-import com.example.hearablemusicplayer.domain.backup.usecase.GetBackupsUseCase
-import com.example.hearablemusicplayer.domain.backup.usecase.ImportUserDataBackupUseCase
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
-import com.example.hearablemusicplayer.domain.config.LyricsConfig
-import com.example.hearablemusicplayer.domain.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.music.usecase.GetDailyMusicRecommendationUseCase
-import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.setting.usecase.LyricsSettingsUseCase
-import com.example.hearablemusicplayer.domain.setting.usecase.UserSettingsUseCase
+import com.hmp.domain.backup.usecase.DeleteBackupUseCase
+import com.hmp.domain.backup.usecase.ExportUserDataBackupUseCase
+import com.hmp.domain.backup.usecase.GetBackupsUseCase
+import com.hmp.domain.backup.usecase.ImportUserDataBackupUseCase
+import com.hmp.domain.config.DisplayMode
+import com.hmp.domain.config.LyricsAlignment
+import com.hmp.domain.config.LyricsConfig
+import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.music.usecase.GetDailyMusicRecommendationUseCase
+import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
+import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_NOISE_FACTOR
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_TINT_ALPHA
@@ -368,8 +368,8 @@ class SettingsViewModel @Inject constructor(
     private val _backupResult = MutableStateFlow<String?>(null)
     val backupResult: StateFlow<String?> = _backupResult
 
-    private val _localBackups = MutableStateFlow<List<File>>(emptyList())
-    val localBackups: StateFlow<List<File>> = _localBackups
+    private val _localBackups = MutableStateFlow<List<String>>(emptyList())
+    val localBackups: StateFlow<List<String>> = _localBackups
 
     fun loadLocalBackups() {
         viewModelScope.launch {
@@ -378,9 +378,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun deleteLocalBackup(file: File) {
+    fun deleteLocalBackup(filePath: String) {
         viewModelScope.launch {
-            deleteBackupUseCase(file)
+            deleteBackupUseCase(filePath)
                 .onSuccess { loadLocalBackups() }
         }
     }
@@ -389,13 +389,13 @@ class SettingsViewModel @Inject constructor(
         _backupResult.value = null
     }
 
-    fun exportBackup(onSuccess: (File) -> Unit, onError: (String) -> Unit) {
+    fun exportBackup(onSuccess: (String) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             exportUserDataBackupUseCase()
-                .onSuccess { file ->
-                    _backupResult.value = "Backup success: ${file.absolutePath}"
+                .onSuccess { filePath ->
+                    _backupResult.value = "Backup success: $filePath"
                     loadLocalBackups()
-                    onSuccess(file)
+                    onSuccess(filePath)
                 }
                 .onFailure { e ->
                     _backupResult.value = "Backup failed: ${e.message}"
@@ -404,9 +404,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun restoreBackup(file: File, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun restoreBackup(filePath: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
             viewModelScope.launch {
-            importUserDataBackupUseCase(file)
+            importUserDataBackupUseCase(filePath)
                 .onSuccess {
                     _backupResult.value = "Restore success"
                     onSuccess()

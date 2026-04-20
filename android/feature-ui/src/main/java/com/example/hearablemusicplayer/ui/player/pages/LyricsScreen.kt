@@ -46,8 +46,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
+import com.hmp.domain.config.DisplayMode
+import com.hmp.domain.config.LyricsAlignment
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.SegmentedOption
 import com.example.hearablemusicplayer.ui.common.components.VerticalSegmentedControl

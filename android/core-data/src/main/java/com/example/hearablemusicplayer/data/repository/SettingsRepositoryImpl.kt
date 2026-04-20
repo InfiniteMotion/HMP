@@ -11,12 +11,12 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.hearablemusicplayer.data.util.SecureStorageHelper
 
-import com.example.hearablemusicplayer.domain.setting.model.AiProviderConfig
-import com.example.hearablemusicplayer.domain.config.DailyRefreshConfig
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
-import com.example.hearablemusicplayer.domain.enum.AiProviderType
-import com.example.hearablemusicplayer.domain.setting.SettingsRepository
+import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.config.DailyRefreshConfig
+import com.hmp.domain.config.DisplayMode
+import com.hmp.domain.config.LyricsAlignment
+import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -605,9 +605,9 @@ class SettingsRepositoryImpl @Inject constructor(
     
     /**
      * 备份设置到文件
-     * @return Result<File> 备份文件路径
+     * @return Result<String> 备份文件路径
      */
-    override suspend fun backupSettings(): kotlin.Result<File> {
+    override suspend fun backupSettings(): kotlin.Result<String> {
         return try {
             val backupDir = File(context.filesDir, "backups")
             if (!backupDir.exists()) {
@@ -637,7 +637,7 @@ class SettingsRepositoryImpl @Inject constructor(
             
             backupFile.writeText(jsonContent)
             Log.i("SettingsRepository", "Settings backed up to: ${backupFile.absolutePath}")
-            kotlin.Result.success(backupFile)
+            kotlin.Result.success(backupFile.absolutePath)
         } catch (e: IOException) {
             Log.e("SettingsRepository", "Failed to backup settings", e)
             kotlin.Result.failure(e)
@@ -649,11 +649,12 @@ class SettingsRepositoryImpl @Inject constructor(
 
     /**
      * 从文件恢复设置
-     * @param backupFile 备份文件
+     * @param backupFilePath 备份文件路径
      * @return Result<Unit> 恢复结果
      */
-    override suspend fun restoreSettings(backupFile: File): kotlin.Result<Unit> {
+    override suspend fun restoreSettings(backupFilePath: String): kotlin.Result<Unit> {
         return try {
+            val backupFile = File(backupFilePath)
             if (!backupFile.exists()) {
                 return kotlin.Result.failure(IOException("Backup file does not exist"))
             }
@@ -922,7 +923,7 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     // ==================== Snapshot Export/Import ====================
-    override suspend fun exportAppSettingsSnapshot(): com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot {
+    override suspend fun exportAppSettingsSnapshot(): com.hmp.domain.backup.AppSettingsSnapshot {
         val prefs = dataStore.data.first()
         val userName = prefs[PreferencesKeys.USER_NAME]
         val avatarUri = prefs[PreferencesKeys.AVATAR_URI]
@@ -946,7 +947,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val currentAiProvider = AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
         val aiProviderConfigs = AiProviderType.entries.associateWith { getProviderConfig(it) }
 
-        return com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot(
+        return com.hmp.domain.backup.AppSettingsSnapshot(
             userName = userName,
             avatarUri = avatarUri,
             themeMode = themeMode,
@@ -966,7 +967,7 @@ class SettingsRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun restoreFromSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.AppSettingsSnapshot) {
+    override suspend fun restoreFromSnapshot(snapshot: com.hmp.domain.backup.AppSettingsSnapshot) {
         dataStore.edit { prefs ->
             snapshot.userName?.let { prefs[PreferencesKeys.USER_NAME] = it }
             snapshot.avatarUri?.let { prefs[PreferencesKeys.AVATAR_URI] = it }
@@ -992,9 +993,9 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun exportDailyRecommendationSnapshot(): com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot? {
+    override suspend fun exportDailyRecommendationSnapshot(): com.hmp.domain.backup.DailyRecommendationSnapshot? {
         val prefs = dataStore.data.first()
-        return com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot(
+        return com.hmp.domain.backup.DailyRecommendationSnapshot(
             currentDailyMusicId = prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID],
             lastRefreshTimestamp = prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] ?: 0L,
             mode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
@@ -1004,7 +1005,7 @@ class SettingsRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun restoreDailyRecommendationSnapshot(snapshot: com.example.hearablemusicplayer.domain.backup.DailyRecommendationSnapshot) {
+    override suspend fun restoreDailyRecommendationSnapshot(snapshot: com.hmp.domain.backup.DailyRecommendationSnapshot) {
         dataStore.edit { prefs ->
             snapshot.currentDailyMusicId?.let { prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = it }
             prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = snapshot.lastRefreshTimestamp

@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.domain.music.MusicExtra
+import com.hmp.domain.music.MusicExtra
 
 @Composable
 fun TechnicalInfoCard(

@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 
 /**
  * 增强版音乐列表根组件。根据 [config] 渲染头部、编辑栏、列表内容；内部持有 [LazyListState] 与 [MusicListState]。

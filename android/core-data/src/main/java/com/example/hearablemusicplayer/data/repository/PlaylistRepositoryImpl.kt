@@ -5,11 +5,11 @@ import com.example.hearablemusicplayer.data.database.PlaylistDao
 import com.example.hearablemusicplayer.data.database.PlaylistItemDao
 import com.example.hearablemusicplayer.data.mapper.toDomain
 import com.example.hearablemusicplayer.data.mapper.toEntity
-import com.example.hearablemusicplayer.domain.backup.PlaylistsSnapshot
-import com.example.hearablemusicplayer.domain.music.MusicInfo
-import com.example.hearablemusicplayer.domain.playlist.Playlist
-import com.example.hearablemusicplayer.domain.playlist.PlaylistItem
-import com.example.hearablemusicplayer.domain.playlist.PlaylistRepository
+import com.hmp.domain.backup.PlaylistsSnapshot
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.playlist.Playlist
+import com.hmp.domain.playlist.PlaylistItem
+import com.hmp.domain.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -20,7 +20,7 @@ class PlaylistRepositoryImpl @Inject constructor(
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
     private val musicAllDao: MusicAllDao,
-    private val settingsRepository: com.example.hearablemusicplayer.domain.setting.SettingsRepository
+    private val settingsRepository: com.hmp.domain.setting.SettingsRepository
 ) : PlaylistRepository {
 
     private suspend fun isCustomPlaylist(playlistId: Long): Boolean {

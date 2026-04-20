@@ -1,6 +1,6 @@
 package com.example.hearablemusicplayer.ui.common.util
 
-import com.example.hearablemusicplayer.domain.enum.LabelName
+import com.hmp.domain.enum.LabelName
 import com.example.hearablemusicplayer.ui.R
 
 /**

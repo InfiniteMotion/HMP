@@ -47,7 +47,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 import coil.compose.AsyncImage
-import com.example.hearablemusicplayer.domain.music.MusicInfo
+import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.EditConfig

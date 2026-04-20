@@ -1,8 +1,8 @@
 package com.example.hearablemusicplayer.ui.player.viewmodel
 
 import androidx.compose.runtime.Stable
-import com.example.hearablemusicplayer.domain.config.DisplayMode
-import com.example.hearablemusicplayer.domain.config.LyricsAlignment
+import com.hmp.domain.config.DisplayMode
+import com.hmp.domain.config.LyricsAlignment
 
 @Stable
 data class LyricsSettingsState(
