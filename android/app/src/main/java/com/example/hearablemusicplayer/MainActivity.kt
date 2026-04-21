@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.annotation.OptIn
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
@@ -26,20 +25,17 @@ import com.example.hearablemusicplayer.ui.common.design.theme.HearableMusicPlaye
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
-import javax.inject.Inject
+import org.koin.android.ext.android.inject
 
 @UnstableApi
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var musicController: MusicController
+    private val musicController: MusicController by inject()
 
-    private val settingsViewModel by viewModels<SettingsViewModel>()
-    private val libraryViewModel by viewModels<LibraryViewModel>()
-    private val recommendationViewModel by viewModels<RecommendationViewModel>()
+    private val settingsViewModel: SettingsViewModel by inject()
+    private val libraryViewModel: LibraryViewModel by inject()
+    private val recommendationViewModel: RecommendationViewModel by inject()
 
 
     @OptIn(UnstableApi::class)
@@ -101,10 +97,8 @@ class MainActivity : ComponentActivity() {
                     if (shouldInitialize.value) {
                         settingsViewModel.getAvatarUri()
                         
-                        // 获取每日推荐（内部会自动处理启动计数和刷新判断）
                         recommendationViewModel.getDailyMusicInfo()
                         
-                        // 如果开启了自动后台补全，延迟 2 秒后自动开始
                         if (autoBatchProcess) {
                             delay(2000)
                             recommendationViewModel.startAutoProcessWithCurrentProvider()

@@ -31,6 +31,11 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.koin.android)
+            implementation(libs.ktor.okhttp)
+            implementation(libs.androidx.datastore.preferences)
+            implementation(libs.gson)
+            implementation(libs.jaudiotagger)
+            implementation("com.belerweb:pinyin4j:2.5.1")
         }
         iosMain.dependencies {
             implementation(libs.ktor.darwin)

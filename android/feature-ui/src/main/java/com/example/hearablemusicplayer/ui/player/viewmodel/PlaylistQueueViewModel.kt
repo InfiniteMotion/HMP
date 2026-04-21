@@ -13,17 +13,14 @@ import com.hmp.domain.playlist.usecase.GeneratePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.player.controller.MusicController
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
 @UnstableApi
-class PlaylistQueueViewModel @Inject constructor(
+class PlaylistQueueViewModel(
     private val musicController: MusicController,
     private val generatePlaylistUseCase: GeneratePlaylistUseCase,
     private val settingsRepository: SettingsRepository,

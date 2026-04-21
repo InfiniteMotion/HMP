@@ -10,7 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.library.pages.GalleryScreen
@@ -36,8 +36,8 @@ fun TabsHost(
     navController: NavBackStack<NavKey>,
     pagerState: PagerState,
     tabHeader: @Composable () -> Unit,
-    recommendationViewModel: RecommendationViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    recommendationViewModel: RecommendationViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
     playbackViewModel: PlaybackViewModel,
     playlistQueueViewModel: PlaylistQueueViewModel,
     dialogViewModel: DialogViewModel,

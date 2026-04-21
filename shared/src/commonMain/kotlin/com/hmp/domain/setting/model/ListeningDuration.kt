@@ -1,7 +1,9 @@
 package com.hmp.domain.setting.model
 
+import com.hmp.data.database.currentTimeMillis
+
 data class ListeningDuration(
-    val date: String,  // 使用 yyyy-MM-dd 格式存储日期
-    val duration: Long, // 以毫秒为单位存储时长
-    val updatedAt: Long = System.currentTimeMillis() // 最后更新时间
+    val date: String,
+    val duration: Long,
+    val updatedAt: Long = currentTimeMillis()
 )

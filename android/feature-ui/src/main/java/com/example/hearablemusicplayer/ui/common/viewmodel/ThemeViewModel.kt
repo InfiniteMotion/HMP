@@ -12,8 +12,6 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.player.controller.MusicController
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +20,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 data class PaletteColors(
     val dominantColor: Color = Color(0xFF121212),
@@ -36,10 +33,9 @@ data class PaletteColors(
     val accentColor: Color = Color(0xFF444444)
 )
 
-@HiltViewModel
 @UnstableApi
-class ThemeViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+class ThemeViewModel(
+    private val context: Context,
     private val musicController: MusicController
 ) : ViewModel() {
 

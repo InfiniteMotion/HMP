@@ -1,12 +1,12 @@
 package com.example.hearablemusicplayer.ui.library.pages.components.musiclist
 
 import java.util.Calendar
-import net.sourceforge.pinyin4j.PinyinHelper
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.music.MusicInfo
+import com.hmp.data.util.stringToPinyinSortKey
 import androidx.compose.foundation.layout.PaddingValues
 
 /**
@@ -182,10 +182,8 @@ private fun titleToIndexLetter(title: String): Char {
         c in 'A'..'Z' -> c
         c in '0'..'9' -> '#'
         else -> {
-            // 中文等：取首字默认拼音的首字母
-            val pyArray = PinyinHelper.toHanyuPinyinStringArray(c) ?: return '#'
-            val firstPy = pyArray.firstOrNull() ?: return '#'
-            firstPy.firstOrNull()?.takeIf { it.isLetter() }?.uppercaseChar() ?: '#'
+            val pinyinKey = stringToPinyinSortKey(title)
+            pinyinKey.firstOrNull()?.uppercaseChar() ?: '#'
         }
     }
 }

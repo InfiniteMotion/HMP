@@ -5,15 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.domain.setting.usecase.GetUserUsageDataUseCase
 import com.example.hearablemusicplayer.ui.common.util.UiState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class UserUsageDataViewModel @Inject constructor(
+class UserUsageDataViewModel(
     private val getUserUsageDataUseCase: GetUserUsageDataUseCase
 ) : ViewModel() {
 

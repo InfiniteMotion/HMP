@@ -10,11 +10,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class DialogManager @Inject constructor() {
+class DialogManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _dialogEvent = MutableSharedFlow<DialogEvent?>(

@@ -48,7 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
@@ -69,8 +69,8 @@ import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
 
 @Composable
 fun ListScreen(
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = koinViewModel(),
+    dialogViewModel: DialogViewModel = koinViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()

@@ -19,6 +19,5 @@ dependencyResolutionManagement {
 rootProject.name = "Hearable Music Player"
 include(":shared")
 include(":android:app")
-include(":android:core-data")
 include(":android:core-player")
 include(":android:feature-ui")

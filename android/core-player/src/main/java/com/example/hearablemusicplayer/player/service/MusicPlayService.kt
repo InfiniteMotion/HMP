@@ -19,6 +19,8 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -31,11 +33,9 @@ import coil.request.ImageRequest
 import com.hmp.domain.music.Music
 import com.example.hearablemusicplayer.player.AudioEffectManager
 import com.example.hearablemusicplayer.player.R
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 interface PlayControl {
     fun play()
@@ -66,7 +66,6 @@ interface PlayControl {
 }
 
 @UnstableApi
-@AndroidEntryPoint
 class MusicPlayService : Service(), PlayControl {
 
     companion object {
@@ -76,12 +75,20 @@ class MusicPlayService : Service(), PlayControl {
         const val ACTION_PREV = "com.example.hearablemusicplayer.ACTION_PREV"
     }
 
-    // 提供给绑定组件访问 Service 的 Binder
     private val binder = MusicPlayServiceBinder()
 
-    // ExoPlayer 实例(通过 Hilt 注入)
-    @Inject
-    lateinit var exoPlayer: ExoPlayer
+    private val exoPlayer: ExoPlayer by lazy {
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
+
+        ExoPlayer.Builder(this)
+            .setAudioAttributes(audioAttributes, true)
+            .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
+            .build()
+    }
 
     // 自定义 Player 包装器,让系统认为始终有上/下一首
     private lateinit var customPlayer: ForwardingPlayer

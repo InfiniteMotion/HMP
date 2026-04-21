@@ -19,17 +19,14 @@ import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_NOISE_FACTOR
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_TINT_ALPHA
 import com.example.hearablemusicplayer.ui.common.util.HAZE_MODE_CUSTOM
 import com.example.hearablemusicplayer.ui.common.util.HAZE_MODE_PRESET
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
-import javax.inject.Inject
 
-@HiltViewModel
-class SettingsViewModel @Inject constructor(
+class SettingsViewModel(
     private val userSettingsUseCase: UserSettingsUseCase,
     private val lyricsSettingsUseCase: LyricsSettingsUseCase,
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,

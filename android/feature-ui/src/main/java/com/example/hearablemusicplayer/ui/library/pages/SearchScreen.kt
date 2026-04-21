@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -60,7 +60,7 @@ import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
 @OptIn(UnstableApi::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel = hiltViewModel(),
+    searchViewModel: SearchViewModel = koinViewModel(),
     playbackViewModel: PlaybackViewModel,
     playlistQueueViewModel: PlaylistQueueViewModel,
     dialogViewModel: DialogViewModel,

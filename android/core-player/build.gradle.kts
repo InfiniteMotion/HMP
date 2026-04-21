@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
 }
 
@@ -40,29 +39,21 @@ android {
 }
 
 dependencies {
-    // Core modules
-    implementation(project(":android:core-data"))
     implementation(project(":shared"))
-    
-    // AndroidX Core
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    
-    // Media3
+
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
-    implementation(libs.androidx.media3.effect) // 添加音效扩展依赖
-    
-    // Coil for image loading
+    implementation(libs.androidx.media3.effect)
+
     implementation(libs.coil.compose)
-    
-    // Hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    
-    // Testing
+
+    implementation(libs.koin.android)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

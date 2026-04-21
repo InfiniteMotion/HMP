@@ -39,7 +39,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -53,7 +53,7 @@ import kotlin.math.abs
 
 @Composable
 fun AudioEffectsScreen(
-    viewModel: AudioEffectViewModel = hiltViewModel(),
+    viewModel: AudioEffectViewModel = koinViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val audioEffectSettings by viewModel.audioEffectSettings.collectAsState()

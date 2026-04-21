@@ -10,7 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -41,7 +41,7 @@ import com.example.hearablemusicplayer.ui.common.navigation.Routes
 fun ArtistScreen(
     navController: NavBackStack<NavKey>,
     artistName: String,
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = koinViewModel(),
     playbackViewModel: PlaybackViewModel,
     playlistQueueViewModel: PlaylistQueueViewModel,
     dialogViewModel: DialogViewModel,

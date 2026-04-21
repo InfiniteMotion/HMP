@@ -54,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -85,11 +85,11 @@ fun PlaylistScreen(
     playlistId: Long? = null,
     playlistName: String? = null,
     artistName: String? = null,
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = koinViewModel(),
     playbackViewModel: PlaybackViewModel,
     playlistQueueViewModel: PlaylistQueueViewModel,
     dialogViewModel: DialogViewModel,
-    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = koinViewModel(),
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     LaunchedEffect(playlistId, playlistName, artistName) {

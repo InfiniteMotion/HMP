@@ -1,5 +1,6 @@
 package com.hmp.domain.backup.usecase
 
+import com.hmp.data.database.currentTimeMillis
 import com.hmp.domain.backup.BackupFileRepository
 import com.hmp.domain.backup.UserBackupSnapshot
 import com.hmp.domain.music.MusicRepository
@@ -21,7 +22,7 @@ class ExportUserDataBackupUseCase(
             val dailyRecommendation = settingsRepository.exportDailyRecommendationSnapshot()
 
             val snapshot = UserBackupSnapshot(
-                createdAt = System.currentTimeMillis(),
+                createdAt = currentTimeMillis(),
                 appSettings = appSettings,
                 musicUserState = musicUserState,
                 listeningStats = listeningStats,

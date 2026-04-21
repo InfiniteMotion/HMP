@@ -20,7 +20,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -45,12 +45,12 @@ import dev.chrisbanes.haze.rememberHazeState
 // 播放器主界面
 @Composable
 fun PlayerScreen(
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
-    themeViewModel: ThemeViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel(),
+    playbackViewModel: PlaybackViewModel = koinViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
+    playlistViewModel: PlaylistViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
+    themeViewModel: ThemeViewModel = koinViewModel(),
+    dialogViewModel: DialogViewModel = koinViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current

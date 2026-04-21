@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
@@ -52,7 +52,7 @@ import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
 @Composable
 fun LibrarySettingsScreen(
     navController: NavBackStack<NavKey>,
-    libraryViewModel: LibraryViewModel = hiltViewModel()
+    libraryViewModel: LibraryViewModel = koinViewModel()
 ) {
     val musicCount by libraryViewModel.musicCount.collectAsState(initial = 0)
     val analyzedCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)

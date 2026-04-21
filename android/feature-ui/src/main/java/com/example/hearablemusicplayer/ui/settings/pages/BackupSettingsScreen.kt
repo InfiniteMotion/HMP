@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
@@ -56,8 +56,8 @@ import java.util.Locale
 @Composable
 fun BackupSettingsScreen(
     navController: NavBackStack<NavKey>,
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel()
+    settingsViewModel: SettingsViewModel = koinViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = koinViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     val localBackups by settingsViewModel.localBackups.collectAsState()

@@ -11,46 +11,40 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * 每日AI音乐推荐Use Case
- */
 class GetDailyMusicRecommendationUseCase(
     private val musicRepository: MusicRepository,
     private val settingsRepository: SettingsRepository,
     private val musicLabelUseCase: MusicLabelUseCase
 ) {
 
-    // ==================== 处理控制标志 ====================
-
-    private val _isPaused = AtomicBoolean(false)
-    private val _isCancelled = AtomicBoolean(false)
+    private var _isPaused = false
+    private var _isCancelled = false
 
     fun pauseProcessing() {
-        _isPaused.set(true)
+        _isPaused = true
         println("[DBG] Processing paused")
     }
 
     fun resumeProcessing() {
-        _isPaused.set(false)
+        _isPaused = false
         println("[DBG] Processing resumed")
     }
 
     fun cancelProcessing() {
-        _isCancelled.set(true)
-        _isPaused.set(false)
+        _isCancelled = true
+        _isPaused = false
         println("[DBG] Processing cancelled")
     }
 
     fun resetProcessingState() {
-        _isPaused.set(false)
-        _isCancelled.set(false)
+        _isPaused = false
+        _isCancelled = false
     }
 
-    fun isPaused(): Boolean = _isPaused.get()
+    fun isPaused(): Boolean = _isPaused
 
-    // ==================== 处理结果数据类 ====================
+    fun isCancelled(): Boolean = _isCancelled
 
     data class ProcessingResult(
         val totalProcessed: Int = 0,
@@ -101,8 +95,6 @@ class GetDailyMusicRecommendationUseCase(
         }
     }
 
-    // ==================== 多服务商支持方法 ====================
-
     private suspend fun saveMusicLabels(musicId: Long, dailyMusicInfo: DailyMusicInfo) {
         val labels = MusicLabels(
             genres = dailyMusicInfo.genre,
@@ -139,17 +131,17 @@ class GetDailyMusicRecommendationUseCase(
         val errors = mutableListOf<String>()
 
         while (true) {
-            if (_isCancelled.get()) {
+            if (isCancelled()) {
                 println("[DBG] Processing cancelled by user")
                 break
             }
 
-            while (_isPaused.get()) {
+            while (isPaused()) {
                 delay(100)
-                if (_isCancelled.get()) break
+                if (isCancelled()) break
             }
 
-            if (_isCancelled.get()) break
+            if (isCancelled()) break
 
             val music = musicRepository.getRandomMusicInfoWithMissingExtra() ?: break
 
@@ -173,7 +165,7 @@ class GetDailyMusicRecommendationUseCase(
             skippedCount = skippedCount,
             failedCount = failedCount,
             errors = errors,
-            wasCancelled = _isCancelled.get()
+            wasCancelled = isCancelled()
         )
 
         onComplete(processingResult)

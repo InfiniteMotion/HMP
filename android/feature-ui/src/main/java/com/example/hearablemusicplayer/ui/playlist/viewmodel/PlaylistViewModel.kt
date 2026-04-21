@@ -11,7 +11,6 @@ import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
 import com.example.hearablemusicplayer.ui.common.util.UiState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,9 +19,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Job
 
 data class PlaylistScreenUiState(
@@ -33,13 +30,11 @@ data class PlaylistScreenUiState(
     val isCustomPlaylist: Boolean = false
 )
 
-@HiltViewModel
-class PlaylistViewModel @Inject constructor(
+class PlaylistViewModel(
     private val managePlaylistUseCase: ManagePlaylistUseCase,
     private val musicLabelUseCase: MusicLabelUseCase,
     private val settingsRepository: SettingsRepository,
-    private val getAllMusicUseCase: GetAllMusicUseCase,
-    private val savedStateHandle: SavedStateHandle
+    private val getAllMusicUseCase: GetAllMusicUseCase
 ) : ViewModel() {
 
     val genrePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.GENRE)
@@ -133,34 +128,6 @@ class PlaylistViewModel @Inject constructor(
     init {
         initializeDefaultPlaylists()
         loadUserCustomPlaylists()
-    }
-
-    private fun loadRouteData() {
-        try {
-            if (savedStateHandle.contains("playlistId")) {
-                val playlistId = savedStateHandle.get<Long>("playlistId")
-                if (playlistId != null) {
-                    loadPlaylistById(playlistId)
-                    return
-                }
-            }
-
-            if (savedStateHandle.contains("name")) {
-                val name = savedStateHandle.get<String>("name")
-                if (name != null) {
-                    val route = savedStateHandle.get<String>("nav3_route")
-                    if (route?.contains("Artist") == true) {
-                        getSelectedArtistMusicList(name)
-                    } else if (route?.contains("Album") == true) {
-                        getSelectedAlbumMusicList(name)
-                    } else {
-                        getSelectedPlaylist(name)
-                    }
-                    return
-                }
-            }
-        } catch (e: Exception) {
-        }
     }
 
     fun loadUserCustomPlaylists() {

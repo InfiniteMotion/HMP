@@ -5,13 +5,10 @@ import androidx.media3.common.util.UnstableApi
 import com.hmp.domain.enum.PlaybackMode
 import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.player.controller.MusicController
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
-import javax.inject.Inject
 
-@HiltViewModel
 @UnstableApi
-class PlaybackViewModel @Inject constructor(
+class PlaybackViewModel(
     private val musicController: MusicController
 ) : ViewModel() {
 

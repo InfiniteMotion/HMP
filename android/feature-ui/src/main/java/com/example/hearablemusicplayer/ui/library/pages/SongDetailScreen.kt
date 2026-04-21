@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.hmp.domain.music.MusicExtra
@@ -66,7 +66,7 @@ import java.util.Locale
 fun SongDetailScreen(
     navController: NavBackStack<NavKey>,
     musicId: Long,
-    viewModel: SongDetailViewModel = hiltViewModel()
+    viewModel: SongDetailViewModel = koinViewModel()
 ) {
     // 手动调用 loadSongDetail 方法，传入 musicId
     LaunchedEffect(musicId) {

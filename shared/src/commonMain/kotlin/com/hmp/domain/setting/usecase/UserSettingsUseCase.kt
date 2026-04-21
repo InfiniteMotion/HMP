@@ -1,39 +1,31 @@
 package com.hmp.domain.setting.usecase
 
+import com.hmp.data.database.currentTimeMillis
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiProviderConfig
 import kotlinx.coroutines.flow.Flow
 
-/**
- * 用户设置管理
- * Use Case: 封装用户相关设置的读写逻辑
- */
 class UserSettingsUseCase(
-    
     private val settingsRepository: SettingsRepository
 ) {
-    // 首次启动状态
     val isFirstLaunch: Flow<Boolean> = settingsRepository.isFirstLaunch
 
     suspend fun saveIsFirstLaunch(status: Boolean) {
         settingsRepository.saveIsFirstLaunch(status)
     }
 
-    // 用户名
     val userName: Flow<String> = settingsRepository.userName
     suspend fun saveUserName(name: String) {
         settingsRepository.saveUserName(name)
     }
 
-    // 主题明暗模式
     val customMode: Flow<String> = settingsRepository.themeMode
     suspend fun saveThemeMode(mode: String) {
         settingsRepository.saveThemeMode(mode)
     }
 
-    // 动态背景风格
     val backgroundStyle: Flow<String> = settingsRepository.backgroundStyle
     suspend fun saveBackgroundStyle(style: String) {
         settingsRepository.saveBackgroundStyle(style)
@@ -69,7 +61,6 @@ class UserSettingsUseCase(
         settingsRepository.saveHazeIntensity(intensity)
     }
 
-    // 头像URI
     suspend fun getAvatarUri(): String? {
         return settingsRepository.getAvatarUri()
     }
@@ -78,14 +69,11 @@ class UserSettingsUseCase(
         settingsRepository.saveAvatarUri(uri)
     }
 
-    // 音乐加载状态
     val isLoadMusic: Flow<Boolean> = settingsRepository.isLoadMusic
 
     suspend fun saveIsLoadMusic(status: Boolean) {
         settingsRepository.saveIsLoadMusic(status)
     }
-
-    // ==================== 多 AI 服务商配置 ====================
 
     val currentAiProvider: Flow<AiProviderType> = settingsRepository.currentAiProvider
 
@@ -125,15 +113,11 @@ class UserSettingsUseCase(
         return settingsRepository.getConfiguredProviders()
     }
 
-    // ==================== AI 自动批量处理设置 ====================
-
     val autoBatchProcess: Flow<Boolean> = settingsRepository.autoBatchProcess
 
     suspend fun saveAutoBatchProcess(enabled: Boolean) {
         settingsRepository.saveAutoBatchProcess(enabled)
     }
-
-    // ==================== 每日推荐刷新策略 ====================
 
     val dailyRefreshMode: Flow<String> = settingsRepository.dailyRefreshMode
 
@@ -179,7 +163,7 @@ class UserSettingsUseCase(
 
     suspend fun shouldRefreshDailyRecommendation(): Boolean {
         val config = getDailyRefreshConfig()
-        val currentTime = System.currentTimeMillis()
+        val currentTime = currentTimeMillis()
 
         if (config.lastRefreshTimestamp == 0L) {
             return true
@@ -187,14 +171,14 @@ class UserSettingsUseCase(
 
         return when (config.mode) {
             "time" -> {
-                val hoursSinceRefresh = (currentTime - config.lastRefreshTimestamp) / (1000 * 60 * 60)
+                val hoursSinceRefresh = (currentTime - config.lastRefreshTimestamp) / (1000L * 60 * 60)
                 hoursSinceRefresh >= config.refreshHours
             }
             "startup" -> {
                 config.launchCountSinceRefresh > config.startupCount
             }
             "smart" -> {
-                val hoursSinceRefresh = (currentTime - config.lastRefreshTimestamp) / (1000 * 60 * 60)
+                val hoursSinceRefresh = (currentTime - config.lastRefreshTimestamp) / (1000L * 60 * 60)
                 hoursSinceRefresh >= 24
             }
             else -> false

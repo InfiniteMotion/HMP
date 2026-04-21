@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -46,16 +45,12 @@ android {
 }
 
 dependencies {
-    // Core modules
-    implementation(project(":android:core-data"))
     implementation(project(":shared"))
-    api(project(":android:core-player"))  // 使用api以便app模块可以访问MusicPlayService
-    
-    // AndroidX Core
+    api(project(":android:core-player"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    
-    // Compose
+
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -69,30 +64,18 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.runtime.livedata)
-    
-    // Media3 - for @UnstableApi annotation
-    implementation(libs.androidx.media3.common)
-    
-    // Gson - for JSON parsing (TODO: move to domain layer)
-    implementation(libs.gson)
-    
-    // 汉字转拼音（索引条 A-Z 对中文按首字拼音分组）
-    implementation("com.belerweb:pinyin4j:2.5.1")
 
-    // UI utilities
+    implementation(libs.androidx.media3.common)
+
     implementation(libs.coil.compose)
     implementation(libs.androidx.palette.ktx)
-    
-    // Hilt
-    implementation(libs.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
 
-    // Haze (Blur)
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose)
+
     implementation(libs.haze)
     implementation(libs.haze.materials)
 
-    // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

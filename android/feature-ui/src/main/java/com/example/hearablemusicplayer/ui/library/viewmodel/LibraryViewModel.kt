@@ -10,8 +10,6 @@ import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
 import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
 import com.hmp.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
 import com.example.hearablemusicplayer.ui.common.util.UiState
-import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,8 +35,7 @@ data class ScanResult(
     val scannedFolderCount: Int = 0
 )
 
-@HiltViewModel
-class LibraryViewModel @Inject constructor(
+class LibraryViewModel(
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase,
     private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase,

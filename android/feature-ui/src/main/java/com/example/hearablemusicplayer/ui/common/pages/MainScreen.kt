@@ -38,7 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -83,15 +83,15 @@ import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 @OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
-    libraryViewModel: LibraryViewModel = hiltViewModel(),
-    recommendationViewModel: RecommendationViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
-    playbackViewModel: PlaybackViewModel = hiltViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = hiltViewModel(),
-    playlistViewModel: PlaylistViewModel = hiltViewModel(),
-    themeViewModel: ThemeViewModel = hiltViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = hiltViewModel(),
-    dialogViewModel: DialogViewModel = hiltViewModel()
+    libraryViewModel: LibraryViewModel = koinViewModel(),
+    recommendationViewModel: RecommendationViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
+    playbackViewModel: PlaybackViewModel = koinViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
+    playlistViewModel: PlaylistViewModel = koinViewModel(),
+    themeViewModel: ThemeViewModel = koinViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = koinViewModel(),
+    dialogViewModel: DialogViewModel = koinViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     // 订阅调色板、当前曲目与播放状态

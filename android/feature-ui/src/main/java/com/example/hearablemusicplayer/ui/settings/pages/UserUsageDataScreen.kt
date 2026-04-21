@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.hmp.domain.setting.model.LabelCountEntry
@@ -65,7 +65,7 @@ import kotlin.math.abs
 @Composable
 fun UserUsageDataScreen(
     navController: NavBackStack<NavKey>,
-    viewModel: UserUsageDataViewModel = hiltViewModel()
+    viewModel: UserUsageDataViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptic = rememberHapticFeedback()
@@ -623,15 +623,17 @@ private fun LabelStackedBarWithLegend(
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
-        entries.forEachIndexed { index, entry ->
-            val pct = entry.count.toFloat() / total
-            val color = colors[index % colors.size]
-            Box(
-                modifier = Modifier
-                    .weight(pct.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .background(color)
-            )
+        if (total > 0) {
+            entries.forEachIndexed { index, entry ->
+                val pct = entry.count.toFloat() / total
+                val color = colors[index % colors.size]
+                Box(
+                    modifier = Modifier
+                        .weight(pct.coerceIn(0.001f, 1f))
+                        .fillMaxHeight()
+                        .background(color)
+                )
+            }
         }
     }
     Spacer(modifier = Modifier.height(10.dp))

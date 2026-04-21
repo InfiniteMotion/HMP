@@ -4,13 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.media3.common.util.UnstableApi
 import com.hmp.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.player.controller.MusicController
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
-import javax.inject.Inject
 
-@HiltViewModel
 @UnstableApi
-class AudioEffectViewModel @Inject constructor(
+class AudioEffectViewModel(
     private val musicController: MusicController
 ) : ViewModel() {
 

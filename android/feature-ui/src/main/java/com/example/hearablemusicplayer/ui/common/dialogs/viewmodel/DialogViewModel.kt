@@ -16,7 +16,6 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.navigation.RouteNavigator
 import com.example.hearablemusicplayer.ui.common.navigation.Routes
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,11 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @OptIn(UnstableApi::class)
-@HiltViewModel
-class DialogViewModel @Inject constructor(
+class DialogViewModel(
     private val musicController: MusicController,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,

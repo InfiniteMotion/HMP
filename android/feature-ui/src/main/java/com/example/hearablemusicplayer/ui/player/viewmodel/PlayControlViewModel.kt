@@ -23,8 +23,6 @@ import com.hmp.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.player.controller.MusicController
 import com.example.hearablemusicplayer.ui.common.viewmodel.PaletteColors
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,13 +34,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 @Deprecated("Use PlaybackViewModel, PlaylistQueueViewModel, AudioEffectViewModel, ThemeViewModel instead")
-@HiltViewModel
 @UnstableApi
-class PlayControlViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+class PlayControlViewModel(
+    private val context: Context,
     private val musicController: MusicController,
     private val generatePlaylistUseCase: GeneratePlaylistUseCase,
     private val settingsRepository: SettingsRepository,

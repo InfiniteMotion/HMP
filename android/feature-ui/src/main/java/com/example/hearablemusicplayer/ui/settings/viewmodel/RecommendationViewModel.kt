@@ -12,7 +12,6 @@ import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.usecase.CurrentPlaybackUseCase
 import com.hmp.domain.setting.usecase.UserSettingsUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,15 +20,12 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class RecommendationViewModel @Inject constructor(
+class RecommendationViewModel(
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val userSettingsUseCase: UserSettingsUseCase,
-    private val currentPlaybackUseCase: CurrentPlaybackUseCase,
-    private val savedStateHandle: SavedStateHandle
+    private val currentPlaybackUseCase: CurrentPlaybackUseCase
 ) : ViewModel() {
 
     // 每日推荐歌曲

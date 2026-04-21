@@ -18,7 +18,6 @@ import com.hmp.domain.setting.usecase.PlaybackHistoryUseCase
 import com.hmp.domain.setting.usecase.TimerUseCase
 import com.example.hearablemusicplayer.player.service.MusicPlayService
 import com.example.hearablemusicplayer.player.service.PlayControl
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,13 +39,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @UnstableApi
-@Singleton
-class MusicController @Inject constructor(
-    @ApplicationContext private val context: Context,
+class MusicController(
+    private val context: Context,
     private val currentPlaybackUseCase: CurrentPlaybackUseCase,
     private val playbackHistoryUseCase: PlaybackHistoryUseCase,
     private val timerUseCase: TimerUseCase,
