@@ -6,20 +6,27 @@
 
 ### 整体架构
 
-项目采用MVVM（Model-View-ViewModel）架构模式，结合Jetpack Compose和AndroidX组件库，实现了清晰的职责分离和可维护性。
+项目采用MVVM（Model-View-ViewModel）架构模式，结合Kotlin Multiplatform Mobile (KMM)实现跨平台开发，在Android上使用Jetpack Compose，在iOS上使用SwiftUI，实现了清晰的职责分离和可维护性。
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    UI Layer     │     │ ViewModel Layer │     │   Domain Layer  │
+│  UI Layer (Android) │     │ ViewModel Layer │     │   Domain Layer  │
 │  (Jetpack       │────▶│  (Hilt          │────▶│  (Use Cases,    │
 │   Compose)      │     │   ViewModel)    │     │   Repository)   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                               │                          │
                               ▼                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Data Layer     │     │  Service Layer  │     │  Network Layer  │
-│  (Room,         │     │  (Media3,       │     │  (Retrofit,     │
-│   DataStore)    │     │   MediaSession) │     │   OkHttp)       │
+│  UI Layer (iOS)  │     │  Service Layer  │     │  Network Layer  │
+│  (SwiftUI)      │     │  (Media3,       │     │  (Ktor,         │
+│                 │     │   AVFoundation) │     │   Retrofit)     │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                              │                          │
+                              ▼                          ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Data Layer     │     │  Shared Module  │     │  Platform       │
+│  (Room,         │     │  (KMM,          │     │  Specific      │
+│   DataStore)    │     │   Koin)         │     │  Implementations│
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
@@ -29,42 +36,52 @@
 
 #### 核心模块
 
-- **app**: 应用入口模块，包含MainActivity和Application类
-- **core-data**: 数据层模块，包含 Room 数据库、DataStore、网络请求 (Retrofit) 和 AI 服务集成
-- **core-domain**: 领域层模块，包含 Use Cases、领域模型和 Repository 接口定义
-- **core-player**: 播放核心模块，包含Media3服务和播放控制逻辑
-- **feature-ui**: UI功能模块，包含Compose页面和组件
+- **shared**: 跨平台共享模块，包含业务逻辑、数据模型、Repository接口和Koin依赖注入配置
+- **android/app**: Android应用入口模块，包含MainActivity和Application类
+- **android/core-player**: Android播放核心模块，包含Media3服务和播放控制逻辑
+- **android/feature-ui**: Android UI功能模块，包含Compose页面和组件
+- **ios**: iOS应用模块，包含SwiftUI页面和组件
 
 ### 模块间依赖关系
 
 ```
-:feature-ui ──▶ :core-player
-:feature-ui ──▶ :core-domain
-:core-player ──▶ :core-domain
-:core-data ──▶ :core-domain (implements)
+:android/feature-ui ──▶ :android/core-player
+:android/feature-ui ──▶ :shared
+:android/core-player ──▶ :shared
+:ios ──▶ :shared (via CocoaPods)
 ```
 
 ### 模块化进展
 
 - ✅ 已完成模块划分和依赖配置
-- ✅ 已将Room/Repository移至core-data
-- ✅ 已将Use Cases移至core-domain
-- ✅ 已将Media3/Service移至core-player
-- ✅ 已将Compose页面组件移至feature-ui
-- ✅ app模块仅依赖feature-ui和核心模块，避免横向耦合
+- ✅ 已创建跨平台shared模块，包含核心业务逻辑和数据模型
+- ✅ 已将Android-specific代码移至android目录下的模块
+- ✅ 已创建iOS模块，包含SwiftUI页面和组件
+- ✅ 已配置CocoaPods集成，实现iOS对shared模块的依赖
+- ✅ 已实现平台特定的Repository实现（Android和iOS）
 
 ### 关键技术决策
 
-#### 1. 依赖注入：Hilt
+#### 1. 跨平台框架：Kotlin Multiplatform Mobile (KMM)
 
-**选择理由**：Hilt与Jetpack组件深度集成，提供了简单易用的API，并且支持测试替换。作为个人项目，我希望通过使用Hilt来学习现代Android开发的最佳实践。
+**选择理由**：KMM允许使用Kotlin编写跨平台代码，在Android和iOS之间共享业务逻辑和数据模型，减少代码重复，提高开发效率。作为个人项目，我希望通过使用KMM来学习跨平台开发的最佳实践。
 
 **实现细节**：
-- MusicApplication标注为@HiltAndroidApp
-- ViewModel使用@HiltViewModel和@Inject构造函数
-- 提供@Module和@Provides方法来创建单例依赖
+- 共享模块使用Kotlin Multiplatform插件
+- 实现平台特定的Repository实现
+- 使用Koin进行跨平台依赖注入
+- 通过CocoaPods将shared模块集成到iOS项目
 
-#### 2. 状态管理：Kotlin Flow/StateFlow
+#### 2. 依赖注入：Hilt (Android) + Koin (Shared)
+
+**选择理由**：Hilt与Jetpack组件深度集成，提供了简单易用的API，并且支持测试替换。Koin是一个轻量级的依赖注入框架，支持KMM，适用于跨平台场景。
+
+**实现细节**：
+- Android端使用Hilt：MusicApplication标注为@HiltAndroidApp，ViewModel使用@HiltViewModel
+- 共享模块使用Koin：通过Module和single/provides创建依赖
+- 平台特定实现通过Koin的expected/actual机制注入
+
+#### 3. 状态管理：Kotlin Flow/StateFlow
 
 **选择理由**：Kotlin Flow和StateFlow提供了一种简洁的方式来管理UI状态，并且支持异步操作和线程切换。作为个人项目，我希望通过使用Flow来学习响应式编程的思想。
 
@@ -73,16 +90,16 @@
 - UI层使用collectAsState()订阅状态变化
 - 所有状态更新都通过Flow进行，避免竞态条件
 
-#### 3. 媒体播放：AndroidX Media3
+#### 5. 媒体播放：AndroidX Media3 (Android) + AVFoundation (iOS)
 
 **选择理由**：AndroidX Media3是Google推出的新一代媒体播放框架，提供了统一的API，支持多种媒体格式和播放场景。作为个人项目，我希望通过使用Media3来学习现代Android媒体播放的最佳实践。
 
 **实现细节**：
-- MusicPlayService管理ExoPlayer和MediaSession
-- 实现音频焦点管理和通知控制
-- 支持耳机插拔、蓝牙控制和来电打断处理
+- Android端：MusicPlayService管理ExoPlayer和MediaSession，实现音频焦点管理和通知控制
+- iOS端：使用AVFoundation框架实现音频播放，支持后台播放和远程控制
+- 平台特定实现通过共享接口统一管理
 
-#### 4. 数据存储：Room + DataStore
+#### 6. 数据存储：Room + DataStore (Android) + Core Data (iOS)
 
 **选择理由**：Room是Google推出的ORM框架，提供了简单易用的API，并且支持SQLite数据库的所有功能。DataStore是Google推出的新一代偏好设置存储框架，提供了一种安全、可靠的方式来存储应用偏好设置。作为个人项目，我希望通过使用Room和DataStore来学习现代Android数据存储的最佳实践。
 
@@ -91,16 +108,16 @@
 - DataStore存储主题、音量等偏好设置
 - Repository层封装数据访问逻辑
 
-#### 5. 网络请求：Retrofit + OkHttp
+#### 7. 网络请求：Retrofit + OkHttp (Android) + Ktor (Shared)
 
 **选择理由**：Retrofit是Square推出的网络请求框架，提供了简单易用的API，并且支持多种网络请求方式。OkHttp是Square推出的HTTP客户端，提供了高性能、可靠的网络请求能力。作为个人项目，我希望通过使用Retrofit和OkHttp来学习现代Android网络请求的最佳实践。
 
 **实现细节**：
-- Retrofit接口定义API请求
-- OkHttp配置连接、读取和写入超时
+- Android端：使用Retrofit接口定义API请求，OkHttp配置连接、读取和写入超时
+- 共享模块：使用Ktor客户端进行网络请求，支持跨平台
 - 实现失败重试和指数退避策略
 
-#### 6. AI服务集成：多服务商支持
+#### 8. AI服务集成：多服务商支持
 
 **选择理由**：为了提供更灵活的 AI 推荐服务，项目支持多个 AI 服务商（DeepSeek、OpenAI、Claude、通义千问、文心一言）。用户可以根据自己的需求选择不同的服务商。
 
@@ -110,17 +127,16 @@
 - 支持 API 连接测试功能
 - 用户可在配置界面自由切换服务商
 
-#### 7. 导航系统：Navigation 3
+#### 9. 导航系统：Navigation 3 (Android) + SwiftUI Navigation (iOS)
 
 **选择理由**：Navigation 3 提供了类型安全的导航方式，支持编译时路由检查和参数验证。迁移到 Navigation 3 后，消除了字符串路由的潜在错误，提升了导航的可靠性。
 
 **实现细节**：
-- 使用 @Serializable 注解定义路由
-- 集中式路由管理，统一处理导航逻辑
-- 支持类型安全的参数传递
-- 迁移过程中保持向后兼容
+- Android端：使用 @Serializable 注解定义路由，集中式路由管理，支持类型安全的参数传递
+- iOS端：使用SwiftUI NavigationStack和NavigationLink实现导航，支持类型安全的参数传递
+- 平台特定实现，保持各自平台的导航最佳实践
 
-#### 8. 视觉效果：毛玻璃效果
+#### 10. 视觉效果：毛玻璃效果
 
 **选择理由**：毛玻璃效果（Haze）可以提升UI的视觉层次感和现代感，与动态背景结合使用效果更佳。
 
@@ -134,93 +150,60 @@
 
 ```
 Hearable Music Player/
-├── app/
+├── shared/                           # 跨平台共享模块
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   └── MusicApplication.kt
-│   │   │   └── res/                 # Resources
-│   │   └── test/                    # Unit tests
-│   └── build.gradle.kts             # Module build configuration
-├── core-data/
-│   ├── schemas/                     # Room database schemas
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── data/
-│   │   │   │   │   ├── database/    # AppDatabase and entities
-│   │   │   │   │   ├── di/          # Database/Network/Repository modules
-│   │   │   │   │   ├── network/     # DeepSeekAPI and network utilities
-│   │   │   │   │   ├── repository/  # Repository implementations
-│   │   │   │   │   └── util/        # SecureStorage and other utilities
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # Data layer tests
-│   └── build.gradle.kts
-├── core-domain/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── domain/
-│   │   │   │   │   ├── model/       # Domain models
-│   │   │   │   │   ├── repository/  # Repository interfaces
-│   │   │   │   │   └── usecase/     # Use Cases
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # Domain layer tests
-│   └── build.gradle.kts
-├── core-player/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── player/
-│   │   │   │   │   ├── controller/  # MusicController (播放控制)
-│   │   │   │   │   ├── di/          # Player modules
-│   │   │   │   │   └── service/     # MusicPlayService and receiver
-│   │   │   └── res/                 # Player resources
-│   │   └── test/                    # Player layer tests
-│   └── build.gradle.kts
-├── feature-ui/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── ui/
-│   │   │   │   │   ├── common/      # 通用组件和基础设施
-│   │   │   │   │   │   ├── components/      # 通用UI组件
-│   │   │   │   │   │   │   └── base/        # 基础组件 (Empty, Loading, Error)
-│   │   │   │   │   │   ├── design/          # 设计系统
-│   │   │   │   │   │   │   ├── animation/   # 动画令牌
-│   │   │   │   │   │   │   ├── colors/      # 颜色令牌
-│   │   │   │   │   │   │   ├── core/        # 设计系统核心
-│   │   │   │   │   │   │   ├── theme/       # 主题管理
-│   │   │   │   │   │   │   └── typography/  # 排版令牌
-│   │   │   │   │   │   ├── dialogs/         # 弹窗组件
-│   │   │   │   │   │   │   ├── base/        # 基础弹窗组件
-│   │   │   │   │   │   │   ├── controller/  # DialogManager
-│   │   │   │   │   │   │   └── viewmodel/   # DialogViewModel, DialogEvent
-│   │   │   │   │   │   ├── navigation/      # Navigation 3 路由
-│   │   │   │   │   │   ├── pages/           # 通用页面
-│   │   │   │   │   │   │   └── base/        # TabScreen, SubScreen
-│   │   │   │   │   │   ├── util/            # UI工具类
-│   │   │   │   │   │   └── viewmodel/       # ThemeViewModel
-│   │   │   │   │   ├── library/     # 音乐库模块
-│   │   │   │   │   │   ├── pages/           # Home, Gallery, Search, Artist, Album, SongDetail
-│   │   │   │   │   │   │   └── components/  # 音乐列表组件
-│   │   │   │   │   │   │       └── musiclist/   # MusicList及相关组件
-│   │   │   │   │   │   └── viewmodel/       # LibraryViewModel, SearchViewModel, SongDetailViewModel
-│   │   │   │   │   ├── player/      # 播放器模块
-│   │   │   │   │   │   ├── components/      # 播放器组件
-│   │   │   │   │   │   ├── pages/           # PlayerScreen, LyricsScreen, PlaylistArea
-│   │   │   │   │   │   └── viewmodel/       # PlaybackViewModel, PlaylistQueueViewModel, PlayControlViewModel
-│   │   │   │   │   ├── playlist/    # 播放列表模块
-│   │   │   │   │   │   ├── pages/           # PlaylistScreen, PlaylistManageScreen
-│   │   │   │   │   │   └── viewmodel/       # PlaylistViewModel
-│   │   │   │   │   └── settings/    # 设置模块
-│   │   │   │   │       ├── pages/           # SettingScreen, AIScreen, UserScreen等
-│   │   │   │   │       ├── components/      # 设置页面组件
-│   │   │   │   │       └── viewmodel/       # SettingsViewModel, AudioEffectViewModel等
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # UI tests
-│   └── build.gradle.kts
+│   │   ├── commonMain/               # 共享代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       ├── data/             # 数据层
+│   │   │       │   ├── repository/   # Repository接口
+│   │   │       └── model/           # 数据模型
+│   │   │       ├── domain/           # 领域层
+│   │   │       │   ├── model/       # 领域模型
+│   │   │       │   └── usecase/     # Use Cases
+│   │   │       └── di/               # 依赖注入配置
+│   │   ├── androidMain/              # Android特定代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       └── data/
+│   │   │           └── repository/   # Android Repository实现
+│   │   ├── iosMain/                 # iOS特定代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       └── data/
+│   │   │           └── repository/   # iOS Repository实现
+│   │   └── test/                    # 测试代码
+│   ├── build.gradle.kts              # 共享模块构建配置
+│   └── shared.podspec               # CocoaPods配置
+├── android/                          # Android平台代码
+│   ├── app/                          # Android应用入口
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── java/com/example/hearablemusicplayer/
+│   │   │   │   │   ├── MainActivity.kt
+│   │   │   │   │   └── MusicApplication.kt
+│   │   │   │   └── res/             # 资源文件
+│   │   │   └── test/                # 单元测试
+│   │   └── build.gradle.kts         # 模块构建配置
+│   ├── core-player/                  # 播放核心模块
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── java/com/example/hearablemusicplayer/
+│   │   │   │   │   └── player/      # 播放控制逻辑
+│   │   │   └── test/                # 测试代码
+│   │   └── build.gradle.kts
+│   └── feature-ui/                   # UI功能模块
+│       ├── src/
+│       │   ├── main/
+│       │   │   ├── java/com/example/hearablemusicplayer/
+│       │   │   │   └── ui/          # Compose页面和组件
+│       │   └── test/                # UI测试
+│       └── build.gradle.kts
+├── ios/                              # iOS平台代码
+│   ├── HMP/                          # iOS应用
+│   │   ├── HMP/
+│   │   │   ├── ContentView.swift     # SwiftUI主界面
+│   │   │   └── HMPApp.swift          # iOS应用入口
+│   │   └── HMP.xcodeproj            # Xcode项目文件
+│   ├── Podfile                       # CocoaPods配置
+│   └── HMP.xcworkspace              # Xcode工作空间
 ├── gradle/
 │   └── wrapper/
 ├── .gitignore
@@ -235,26 +218,54 @@ Hearable Music Player/
 
 ### 开发环境
 
+#### Android
 - Android Studio Ladybug | 2024.2.1
 - Kotlin 2.2.21
 - Gradle 9.1.0
 - Android SDK 35
 - AGP (Android Gradle Plugin) 9.0.0
 
+#### iOS
+- Xcode 17.0 或更高版本
+- Swift 5.0 或更高版本
+- CocoaPods 1.16.0 或更高版本
+- macOS 14.0 或更高版本
+
 ### 构建项目
 
+#### Android
 ```bash
 # 克隆项目
-https://github.com/yourusername/hearable-music-player.git
+git clone https://github.com/InfiniteMotion/HMP.git
 
 # 进入项目目录
-cd hearable-music-player
+cd HMP
 
 # 构建项目
 ./gradlew build
 
 # 运行应用
 ./gradlew installDebug
+```
+
+#### iOS
+```bash
+# 克隆项目（如果尚未克隆）
+git clone https://github.com/InfiniteMotion/HMP.git
+
+# 进入项目目录
+cd HMP
+
+# 生成共享Kotlin框架
+./gradlew :shared:generateDummyFramework
+
+# 安装CocoaPods依赖
+cd ios && pod install
+
+# 使用Xcode打开工作空间
+open HMP.xcworkspace
+
+# 在Xcode中构建并运行应用
 ```
 
 ### 开发进展
@@ -287,6 +298,10 @@ cd hearable-music-player
 - ✅ 专辑页面功能
 - ✅ 音乐文件分享功能
 - ✅ 毛玻璃视觉效果
+- ✅ Kotlin Multiplatform Mobile (KMM)集成
+- ✅ iOS平台支持
+- ✅ CocoaPods配置与集成
+- ✅ 平台特定Repository实现
 
 #### 进行中
 
@@ -425,12 +440,16 @@ cd hearable-music-player
 - [Jetpack Compose官方文档](https://developer.android.com/jetpack/compose)
 - [AndroidX Media3官方文档](https://developer.android.com/jetpack/androidx/releases/media3)
 - [Hilt官方文档](https://developer.android.com/training/dependency-injection/hilt-android)
+- [Kotlin Multiplatform官方文档](https://kotlinlang.org/docs/multiplatform.html)
+- [SwiftUI官方文档](https://developer.apple.com/documentation/swiftui/)
 
 ### 推荐教程
 
 - [Jetpack Compose Tutorial](https://developer.android.com/codelabs/jetpack-compose-basics)
 - [Android MVVM Architecture](https://developer.android.com/topic/architecture)
 - [Media3 Playback Tutorial](https://developer.android.com/codelabs/media3-getting-started)
+- [Kotlin Multiplatform Mobile Tutorial](https://kotlinlang.org/docs/multiplatform-mobile-getting-started.html)
+- [SwiftUI Tutorial](https://developer.apple.com/tutorials/swiftui/)
 
 ## 🤝 贡献指南
 

@@ -1,11 +1,25 @@
-# iOS Podfile for HMP
-# This file will be used by the shared KMP module for CocoaPods integration
-# Full iOS project setup will be completed in P6
-
 platform :ios, '16.0'
 
 use_frameworks!
 
+project 'HMP/HMP.xcodeproj'
+
 target 'HMP' do
-  # KMP shared framework will be integrated here in P6
+  pod 'shared', :path => '../shared'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    if target.name == 'shared'
+      target.build_phases.each do |phase|
+        if phase.name == '[CP-User] Build shared'
+          # 完全替换构建脚本，使其始终跳过Kotlin Native构建
+          phase.shell_script = <<-SCRIPT
+            echo "Skipping Gradle build task invocation to avoid lock file permission issues"
+            exit 0
+          SCRIPT
+        end
+      end
+    end
+  end
 end

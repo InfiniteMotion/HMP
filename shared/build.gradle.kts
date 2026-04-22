@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.kotlin.serialization)
+    kotlin("native.cocoapods")
 }
 
 kotlin {
@@ -15,6 +16,18 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
+
+    cocoapods {
+        summary = "HMP shared module"
+        homepage = ""
+        version = "1.0.0"
+        ios.deploymentTarget = "16.0"
+        podfile = project.file("../ios/Podfile")
+        framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {

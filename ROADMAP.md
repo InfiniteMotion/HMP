@@ -120,6 +120,15 @@
   - 实现音乐详情弹窗的分享功能（支持分享音频文件）
   - 优化「下一首播放」逻辑：若歌曲已存在于播放列表，先移除再插入到下一首位置
 
+### v5.10 (2026-05-10)
+- **跨平台架构迁移**：
+  - 实现Kotlin Multiplatform Mobile (KMM) 架构
+  - 迁移core-domain和core-data层到shared模块
+  - 配置CocoaPods集成，支持iOS平台
+  - 创建iOS平台特定实现（8个expect/actual接口）
+  - 完成iOS应用的构建和基本UI显示
+  - 待实现：iOS端音乐扫描和播放控制功能
+
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -127,29 +136,50 @@
    - 传统Android项目结构
    - 所有代码集中在app模块
 
-2. **模块化架构** (v5.0+)
+2. **模块化架构** (v5.0-v5.9)
    - 划分为core-data、core-domain、core-player、feature-ui模块
    - 降低模块耦合度
    - 提升编译速度
 
+3. **跨平台架构** (v5.10+)
+   - 实现Kotlin Multiplatform Mobile (KMM) 架构
+   - 共享core-domain和core-data层
+   - 平台特定UI实现（Android: Jetpack Compose, iOS: SwiftUI）
+   - 平台特定播放引擎（Android: Media3, iOS: AVFoundation）
+   - Monorepo结构，统一版本管理
+
 ### 技术栈升级
 1. **播放引擎**
-   - 从ExoPlayer迁移到Media3
-   - 实现MediaSession统一控制
+   - 从ExoPlayer迁移到Media3 (Android)
+   - 实现MediaSession统一控制 (Android)
+   - 集成AVFoundation (iOS)
+   - 实现NowPlayingInfoCenter (iOS)
 
 2. **依赖注入**
-   - 引入Hilt实现依赖注入
+   - 从Hilt迁移到Koin（跨平台支持）
    - 重构ViewModel初始化流程
 
 3. **数据库**
-   - 升级Room数据库版本
+   - 升级Room数据库版本 (Android)
    - 支持分页查询
    - 优化数据访问性能
+   - 集成Core Data (iOS)
 
-4. **UI框架**
-   - 全面采用Jetpack Compose
+4. **网络**
+   - 从Retrofit+OkHttp迁移到Ktor Client（跨平台支持）
+   - 实现多平台HTTP客户端
+
+5. **UI框架**
+   - 全面采用Jetpack Compose (Android)
+   - 实现SwiftUI (iOS)
    - 实现动态主题切换
    - 优化无障碍支持
+
+6. **跨平台开发**
+   - 实现Kotlin Multiplatform Mobile (KMM)
+   - 配置CocoaPods集成
+   - 实现expect/actual平台特定代码
+   - 共享核心业务逻辑
 
 ## 🎯 核心功能演进
 
@@ -177,6 +207,12 @@
 - ✅ 音乐详情弹窗分享功能（支持分享音频文件）
 - ✅ Navigation 3 导航系统
 - ✅ 代码混淆与包体积优化
+- ✅ Kotlin Multiplatform Mobile (KMM) 架构
+- ✅ iOS平台基础支持
+- ✅ CocoaPods集成
+- ✅ 跨平台数据层和业务逻辑
+- 🔄 iOS端音乐扫描功能
+- 🔄 iOS端播放控制功能
 
 ### 计划中功能
 - 🔄 桌面小组件
@@ -220,6 +256,14 @@
 - 音乐分享功能
 - UI 细节优化（毛玻璃效果、空状态、加载状态）
 
+### 阶段7：跨平台架构实现 (2026-04 ~ 2026-05)
+- Kotlin Multiplatform Mobile (KMM) 架构搭建
+- 核心业务逻辑迁移到shared模块
+- iOS平台基础功能实现
+- CocoaPods集成与Xcode项目配置
+- 跨平台数据层和业务逻辑验证
+- iOS应用构建与运行测试
+
 ## 🚀 未来发展方向
 
 **产品边界**：坚持纯本地，不做在线/云同步、不引入账号、不做社交；仅保留用户自填 API 的 AI 推荐。
@@ -240,8 +284,8 @@
 
 ---
 
-**最后更新时间**: 2026-04-17
-**当前版本**: v5.9
+**最后更新时间**: 2026-05-10
+**当前版本**: v5.10
 
 ---
 

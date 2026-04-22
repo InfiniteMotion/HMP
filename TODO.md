@@ -79,11 +79,11 @@
 
 ### P6: iOS 端基础
 
-- [ ] **P6.1** 创建 Xcode 项目 — SwiftUI + iOS 16.0
-- [ ] **P6.2** 集成 KMP shared 框架 — CocoaPods（Podfile + pod install）
-- [ ] **P6.3** Koin iOS 初始化 — AppDelegate 中 `KoinKt.doInitKoin()`
+- [x] **P6.1** 创建 Xcode 项目 — SwiftUI + iOS 16.0
+- [x] **P6.2** 集成 KMP shared 框架 — CocoaPods（Podfile + pod install）
+- [x] **P6.3** Koin iOS 初始化 — AppDelegate 中 `KoinKt.doInitKoin()`
 - [ ] **P6.4** AVPlayer 封装 — PlayerService（play/pause/seek/next/previous）+ AudioSessionManager + NowPlayingManager
-- [ ] **P6.5** 基础 SwiftUI 界面 — HMPApp + MainTabView（音乐库/播放/列表/设置）
+- [x] **P6.5** 基础 SwiftUI 界面 — HMPApp + MainTabView（音乐库/播放/列表/设置）
 - [ ] **P6.6** 音乐扫描（iOS 端）— FileManager 扫描 + shared Repository 存储
 - [ ] **P6.7** 验证 — Xcode 编译通过 + 模拟器可运行 + 能播放音乐 + 锁屏控制可用
 
@@ -98,8 +98,8 @@
 
 ### 技术债务清理
 
-- [ ] **T1** 清理 Hilt 残留 — 删除 `libs.versions.toml` 中的 Hilt 版本和库定义（6 处）
-- [ ] **T2** 清理过时注释 — 更新 `MusicPlayService.kt` 和 `NavigationGraph.kt` 中的 Hilt 相关注释
+- [x] **T1** 清理 Hilt 残留 — 删除 `libs.versions.toml` 中的 Hilt 版本和库定义（6 处）
+- [x] **T2** 清理过时注释 — 更新 `MusicPlayService.kt` 和 `NavigationGraph.kt` 中的 Hilt 相关注释
 - [ ] **T3** 完善 iOS 平台实现 — `DataStore.ios.kt`（throw NotImplementedError）、`MusicTagParser.ios.kt`（仅获取时长）、`PinyinSortKey.ios.kt`（直接返回原字符串）
 - [ ] **T4** 实现 iOS Repository — `MusicRepositoryImpl.ios.kt`、`PlaylistRepositoryImpl.ios.kt`、`SettingsRepositoryImpl.ios.kt`、`BackupFileRepositoryImpl.ios.kt`
 - [ ] **T5** 创建 iOS Koin DI 模块 — `IosModules.kt`（iOS 平台模块 + Repository 绑定）

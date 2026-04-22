@@ -1,5 +1,7 @@
 pluginManagement {
     repositories {
+        // 使用国内镜像加速Gradle插件下载
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         gradlePluginPortal()
         google ()
         mavenCentral()
@@ -11,6 +13,9 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // 使用国内镜像加速
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
         google()
         mavenCentral()
     }

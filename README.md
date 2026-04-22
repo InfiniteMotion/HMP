@@ -1,12 +1,12 @@
 # Hearable Music Player
 
-一款现代化的本地音乐播放器，基于Jetpack Compose构建，提供流畅的用户体验和丰富的音乐播放功能。
+一款现代化的跨平台本地音乐播放器，基于Jetpack Compose和SwiftUI构建，提供流畅的用户体验和丰富的音乐播放功能。
 
 ## 🎯 项目介绍
 
-Hearable Music Player是我个人开发的一款专注于本地音乐播放的Android应用，致力于提供简洁优雅的用户界面和流畅的播放体验。应用采用最新的Jetpack Compose技术栈开发，支持音乐文件扫描、播放控制、播放列表管理以及AI驱动的音乐推荐功能。
+Hearable Music Player是我个人开发的一款专注于本地音乐播放的跨平台应用，致力于提供简洁优雅的用户界面和流畅的播放体验。应用采用最新的技术栈开发，支持音乐文件扫描、播放控制、播放列表管理以及AI驱动的音乐推荐功能。
 
-作为个人项目，我希望通过这个应用探索Android开发的最佳实践，学习Jetpack Compose和Media3等新技术，同时为用户提供一个实用的音乐播放工具。
+作为个人项目，我希望通过这个应用探索跨平台开发的最佳实践，学习Jetpack Compose、Media3和SwiftUI等新技术，同时为用户提供一个实用的音乐播放工具。
 
 ### 项目现状
 
@@ -14,6 +14,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 - 已实现核心音乐播放功能
 - 已集成DeepSeek API实现AI推荐
 - 已实现基本的UI界面和交互
+- 已支持Android和iOS双平台
 - 正在进行架构优化和性能提升
 
 ## ✨ 核心功能
@@ -46,35 +47,48 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ### 核心技术
 
-- **开发语言**：Kotlin
-- **UI框架**：Jetpack Compose
+- **开发语言**：Kotlin, Swift
+- **跨平台框架**：Kotlin Multiplatform Mobile (KMM)
+- **UI框架**：
+  - Android: Jetpack Compose
+  - iOS: SwiftUI
 - **架构模式**：MVVM
-- **依赖注入**：Hilt
+- **依赖注入**：
+  - Android: Hilt
+  - Shared: Koin
 - **数据存储**：
   - Room (本地数据库)
   - DataStore (偏好设置)
-- **媒体播放**：AndroidX Media3 (ExoPlayer)
-- **网络请求**：Retrofit + OkHttp
-- **JSON解析**：Gson
-- **音乐标签解析**：Jaudiotagger
+- **媒体播放**：
+  - Android: AndroidX Media3 (ExoPlayer)
+  - iOS: AVFoundation
+- **网络请求**：Retrofit + OkHttp (Android), Ktor (Shared)
+- **JSON解析**：Gson (Android), Kotlinx Serialization (Shared)
+- **音乐标签解析**：Jaudiotagger (Android)
 - **AI集成**：多服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）
 - **安全存储**：API 密钥加密存储
-- **导航系统**：Navigation 3 (类型安全导航)
-- **构建工具**：Gradle 9.0
+- **导航系统**：Navigation 3 (类型安全导航) - Android
+- **构建工具**：Gradle 9.0, CocoaPods (iOS)
 
 ### 模块化架构
 
 项目采用模块化架构，划分为以下核心模块：
 
-- **app**：应用入口模块，包含MainActivity和Application类
-- **core-data**：数据层模块，包含Room数据库、DAO和Repository实现
-- **core-domain**：领域层模块，包含Use Cases和业务逻辑
-- **core-player**：播放核心模块，包含Media3服务和播放控制逻辑
-- **feature-ui**：UI功能模块，包含Compose页面和组件
+- **shared**：跨平台共享模块，包含业务逻辑和数据模型
+- **android/app**：Android应用入口模块，包含MainActivity和Application类
+- **android/core-player**：Android播放核心模块，包含Media3服务和播放控制逻辑
+- **android/feature-ui**：Android UI功能模块，包含Compose页面和组件
+- **ios**：iOS应用模块，包含SwiftUI页面和组件
 
 ## 📱 系统要求
 
+### Android
 - Android 12.0 (API 31) 及以上
+- 存储空间权限
+- 网络权限 (用于推荐功能)
+
+### iOS
+- iOS 16.0 及以上
 - 存储空间权限
 - 网络权限 (用于推荐功能)
 
@@ -82,13 +96,21 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 
 ### 环境要求
 
+#### Android
 - Android Studio Ladybug | 2024.2.1 或更高版本
 - Kotlin 2.2.21 或更高版本
 - Gradle 9.1.0 或更高版本
 - Android SDK 35
 
+#### iOS
+- Xcode 17.0 或更高版本
+- Swift 5.0 或更高版本
+- CocoaPods 1.16.0 或更高版本
+- macOS 14.0 或更高版本
+
 ### 安装步骤
 
+#### Android
 1. 克隆项目代码
    ```bash
    git clone https://github.com/InfiniteMotion/HMP.git
@@ -101,6 +123,33 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的An
 4. 首次启动时，应用会请求存储权限用于扫描本地音乐文件
 
 5. 扫描完成后，您可以在主界面浏览和播放音乐
+
+#### iOS
+1. 克隆项目代码（如果尚未克隆）
+   ```bash
+   git clone https://github.com/InfiniteMotion/HMP.git
+   ```
+
+2. 生成共享Kotlin框架
+   ```bash
+   cd HMP && ./gradlew :shared:generateDummyFramework
+   ```
+
+3. 安装CocoaPods依赖
+   ```bash
+   cd ios && pod install
+   ```
+
+4. 使用Xcode打开工作空间
+   ```bash
+   open HMP.xcworkspace
+   ```
+
+5. 构建并运行到您的iOS设备或模拟器
+
+6. 首次启动时，应用会请求存储权限用于扫描本地音乐文件
+
+7. 扫描完成后，您可以在主界面浏览和播放音乐
 
 ## 🎨 界面展示
 

@@ -22,6 +22,51 @@ DerivedData
 *.xcuserstate
 project.xcworkspace
 
+# iOS Simulator
+#
+ios/.xcode.env.local
+
+# Xcode build output
+#
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
+# CocoaPods
+#
+/ios/Pods/
+/ios/Podfile.lock
+
+# Kotlin Native
+#
+.konan/
+
+# iOS specific
+#
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Temporary files created by Metro to check the health of the file watcher
+.metro-health-check*
+
+# testing
+/coverage
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
 # Kotlin Multiplatform
 .kotlin/
 build/
@@ -62,6 +107,7 @@ yarn-error.log
 
 # Ruby / CocoaPods
 /ios/Pods/
+/ios/Podfile.lock
 /vendor/bundle/
 
 # Temporary files created by Metro to check the health of the file watcher
