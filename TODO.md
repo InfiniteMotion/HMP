@@ -13,7 +13,7 @@
 
 ## v5.10 重点：iOS 平台适配与双平台架构
 
-**现状**：Android 单平台架构（Kotlin + Compose + MVVM），需适配 iOS 并建立长期双平台维护工作流。
+**现状**：Android 端已完成 KMP 迁移（Hilt → Koin，domain + data 层移入 shared），iOS 端基础设施部分就绪（8 个 expect/actual 平台实现中 6 个完整），待完成 iOS 端功能开发。
 
 **技术路线**：KMP 共享核心层（domain + data），UI 和播放引擎保持平台原生，Monorepo 结构。
 
@@ -62,7 +62,7 @@
 - [x] **P4.6** DataStore KMP 配置 — `DataStoreFactory` expect/actual ✅
 - [x] **P4.1b** 移动 Repository 实现（4 个）和 Mapper（2 个）到 shared ✅
 - [x] **P4.7** 配置 Koin DI 模块 ✅
-- [ ] **P4.8** 移动测试文件到 `shared/src/commonTest/`（待完成）
+- [x] **P4.8** 移动测试文件到 `shared/src/commonTest/` ✅（4 个测试文件，47 个用例）
 - [x] **P4.9** 验证 — `./gradlew :shared:compileAndroidMain` 通过 ✅
 
 ### P5: Android 端适配 ✅
@@ -95,6 +95,14 @@
 - [ ] **P7.4** 设置模块 — SettingsView / AISettingsView / AudioEffectView / UserView
 - [ ] **P7.5** 通用组件 — 设计系统 / 主题管理 / 空状态加载状态 / 对话框
 - [ ] **P7.6** 验证 — 逐模块功能对比测试（音乐库/播放器/播放列表/设置/通用）
+
+### 技术债务清理
+
+- [ ] **T1** 清理 Hilt 残留 — 删除 `libs.versions.toml` 中的 Hilt 版本和库定义（6 处）
+- [ ] **T2** 清理过时注释 — 更新 `MusicPlayService.kt` 和 `NavigationGraph.kt` 中的 Hilt 相关注释
+- [ ] **T3** 完善 iOS 平台实现 — `DataStore.ios.kt`（throw NotImplementedError）、`MusicTagParser.ios.kt`（仅获取时长）、`PinyinSortKey.ios.kt`（直接返回原字符串）
+- [ ] **T4** 实现 iOS Repository — `MusicRepositoryImpl.ios.kt`、`PlaylistRepositoryImpl.ios.kt`、`SettingsRepositoryImpl.ios.kt`、`BackupFileRepositoryImpl.ios.kt`
+- [ ] **T5** 创建 iOS Koin DI 模块 — `IosModules.kt`（iOS 平台模块 + Repository 绑定）
 
 ---
 

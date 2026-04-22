@@ -45,7 +45,7 @@ import com.example.hearablemusicplayer.ui.common.viewmodel.ThemeViewModel
  * 1. 使用 `entry<路由类型> { ... }` 注册页面，其中 lambda 接收路由参数（如果是 data class）
  * 2. 可以通过 `deepLinks` 参数为路由添加深层链接支持
  * 3. 可以通过 `metadata` 参数配置转场动画（进入、退出、预测性返回）
- * 4. 所有页面所需的依赖应通过参数传入，避免在 NavigationGraph 内部直接使用 hiltViewModel()
+ * 4. 所有页面所需的依赖应通过参数传入，避免在 NavigationGraph 内部直接使用 koinViewModel()
  *
  * @param navController 导航控制器
  * @param pagerState 标签页的Pager状态（用于TabsHost）

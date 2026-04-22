@@ -26,9 +26,8 @@
 }
 -keep class androidx.compose.** { *; }
 
-# Hilt rules
--keep class dagger.hilt.** { *; }
--keep class com.example.hearablemusicplayer.**_HiltModules { *; }
+# Koin rules
+-keep class org.koin.** { *; }
 
 # Media3 rules
 -keep class androidx.media3.** { *; }

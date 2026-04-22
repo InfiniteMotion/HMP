@@ -21,7 +21,5 @@
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 -dontwarn kotlinx.coroutines.flow.**
 
-# Hilt
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }
--keep class * extends dagger.hilt.internal.GeneratedComponent { *; }
+# Koin
+-keep class org.koin.** { *; }
