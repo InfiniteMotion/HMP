@@ -1,21 +1,22 @@
 package com.hmp.data.util
 
+import platform.AVFoundation.AVURLAsset
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
-import platform.Foundation.URLForDirectory
 import platform.Foundation.NSUserDomainMask
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.cinterop.ObjCBool
+import kotlinx.cinterop.ExperimentalForeignApi
 
 actual object DeviceMusicScanner {
     private val _isScanning = MutableStateFlow(false)
 
     actual fun isScanning(): Boolean = _isScanning.value
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-    actual suspend fun scanMusic(): List<ScannedMusicFile> = withContext(Dispatchers.IO) {
+    actual suspend fun scanMusic(): List<ScannedMusicFile> = withContext(Dispatchers.Default) {
         _isScanning.value = true
         try {
             performScan()
@@ -24,7 +25,6 @@ actual object DeviceMusicScanner {
         }
     }
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
     private fun performScan(): List<ScannedMusicFile> {
         val musicList = mutableListOf<ScannedMusicFile>()
         val fileManager = NSFileManager.defaultManager
@@ -39,12 +39,11 @@ actual object DeviceMusicScanner {
 
         val musicExtensions = setOf("mp3", "m4a", "wav", "flac", "aac", "ogg")
 
-        scanDirectory(documentsURL.path, musicExtensions, musicList, fileManager)
+        scanDirectory(documentsURL.path!!, musicExtensions, musicList, fileManager)
 
         return musicList
     }
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
     private fun scanDirectory(
         directory: String,
         extensions: Set<String>,
@@ -55,9 +54,9 @@ actual object DeviceMusicScanner {
 
         for (item in contents) {
             val fullPath = "$directory/$item"
-            var isDirectory: ObjCBool = false
-            if (fileManager.fileExistsAtPath(fullPath, isDirectory)) {
-                if (isDirectory.boolValue) {
+            val isDir = ObjCBool(false)
+            if (fileManager.fileExistsAtPath(fullPath, isDir)) {
+                if (isDir.value) {
                     scanDirectory(fullPath, extensions, results, fileManager)
                 } else {
                     val ext = item.substringAfterLast(".", "").lowercase()
@@ -69,10 +68,9 @@ actual object DeviceMusicScanner {
         }
     }
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
     private fun createScannedMusicFile(path: String, filename: String): ScannedMusicFile {
         val url = NSURL.fileURLWithPath(path)
-        val asset = AVFoundation.AVURLAsset(url)
+        val asset = AVURLAsset(URL = url)
 
         val id = path.hashCode().toLong()
         val title = filename.substringBeforeLast(".")
@@ -93,6 +91,3 @@ actual object DeviceMusicScanner {
         )
     }
 }
-
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-private val AVFoundation = platform.AVFoundation.AVFoundation

@@ -14,7 +14,7 @@ struct SubScreen<Content: View>: View {
     init(
         title: String? = nil,
         onBack: (() -> Void)? = nil,
-        @ViewBuilder trailing: (() -> AnyView)? = nil,
+        trailing: (() -> AnyView)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title

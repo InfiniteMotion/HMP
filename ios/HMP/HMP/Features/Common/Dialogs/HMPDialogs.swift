@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - ConfirmDialog (对应 Android ConfirmDialog.kt)
 struct ConfirmDialog: View {
+    @Binding var isPresented: Bool
     let title: String
     let message: String
     let confirmText: String
@@ -10,26 +11,24 @@ struct ConfirmDialog: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        ConfirmationDialog(
-            title,
-            titleVisibility: .visible,
-            presenting: true
-        ) {
-            Button(confirmText, role: .destructive) {
-                HapticManager.shared.click()
-                onConfirm()
+        EmptyView()
+            .alert(title, isPresented: $isPresented) {
+                Button(confirmText, role: .destructive) {
+                    HapticManager.shared.click()
+                    onConfirm()
+                }
+                Button(dismissText, role: .cancel) {
+                    onDismiss()
+                }
+            } message: {
+                Text(message)
             }
-            Button(dismissText, role: .cancel) {
-                onDismiss()
-            }
-        } message: {
-            Text(message)
-        }
     }
 }
 
 // MARK: - InputDialog (对应 Android InputDialog.kt)
 struct InputDialog: View {
+    @Binding var isPresented: Bool
     let title: String
     let hint: String
     let initialValue: String
@@ -40,6 +39,7 @@ struct InputDialog: View {
     @State private var inputValue: String
 
     init(
+        isPresented: Binding<Bool>,
         title: String,
         hint: String,
         initialValue: String = "",
@@ -48,6 +48,7 @@ struct InputDialog: View {
         onConfirm: @escaping (String) -> Void,
         onDismiss: @escaping () -> Void
     ) {
+        self._isPresented = isPresented
         self.title = title
         self.hint = hint
         self.initialValue = initialValue
@@ -59,17 +60,18 @@ struct InputDialog: View {
     }
 
     var body: some View {
-        Alert(
-            title: Text(title),
-            message: Text(hint),
-            primaryButton: .default(Text(confirmText)) {
-                HapticManager.shared.click()
-                onConfirm(inputValue)
-            },
-            secondaryButton: .cancel(Text(dismissText)) {
-                onDismiss()
+        EmptyView()
+            .alert(title, isPresented: $isPresented) {
+                Button(confirmText) {
+                    HapticManager.shared.click()
+                    onConfirm(inputValue)
+                }
+                Button(dismissText, role: .cancel) {
+                    onDismiss()
+                }
+            } message: {
+                Text(hint)
             }
-        )
         // Note: SwiftUI Alert 不支持 TextField, 如需输入框使用 sheet 包裹自定义视图
     }
 }

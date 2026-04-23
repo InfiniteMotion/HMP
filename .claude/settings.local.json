@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s /b \"D:\\\\MyFile\\\\HMP\\\\shared\\\\src\\\\iosMain\"\")"
+    ]
+  }
+}

@@ -52,3 +52,16 @@ fun initKoinIos() {
         modules(sharedModule, iosPlatformModule)
     }
 }
+
+@OptIn(kotlinx.cinterop.BetaInteropApi::class)
+@kotlinx.cinterop.ExportObjCClass
+class KoinInitializer {
+    fun init() {
+        initKoinIos()
+    }
+}
+
+// Top-level function accessible from Swift
+fun doInitKoin() {
+    initKoinIos()
+}

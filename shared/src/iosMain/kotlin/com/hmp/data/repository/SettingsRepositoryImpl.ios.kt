@@ -165,7 +165,7 @@ class SettingsRepositoryImpl(
     override suspend fun saveDailyRefreshMode(mode: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] = mode } }
     override suspend fun saveDailyRefreshHours(hours: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = hours } }
     override suspend fun saveDailyRefreshStartupCount(count: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = count } }
-    override suspend fun updateLastDailyRefreshTimestamp() { dataStore.edit { prefs -> prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = System.currentTimeMillis(); prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = 0 } }
+    override suspend fun updateLastDailyRefreshTimestamp() { dataStore.edit { prefs -> prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = currentTimeMillis(); prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = 0 } }
     override suspend fun saveCurrentDailyMusicId(musicId: Long) { dataStore.edit { prefs -> prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = musicId } }
     override suspend fun getCurrentDailyMusicId(): Long? = dataStore.data.first()[PreferencesKeys.CURRENT_DAILY_MUSIC_ID]
     override suspend fun incrementAppLaunchCount() { dataStore.edit { prefs -> prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = (prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0) + 1 } }

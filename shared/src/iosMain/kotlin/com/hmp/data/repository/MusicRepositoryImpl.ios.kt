@@ -9,28 +9,25 @@ import com.hmp.data.database.PlaybackHistoryDao
 import com.hmp.data.database.PlaylistDao
 import com.hmp.data.database.PlaylistItemDao
 import com.hmp.data.database.UserInfoDao
-import com.hmp.data.network.AiApiResult
 import com.hmp.data.network.MultiProviderApiAdapter
+import com.hmp.data.util.DeviceMusicScanner
 import com.hmp.domain.backup.ListeningStatsSnapshot
 import com.hmp.domain.backup.MusicExtraUserSnapshot
 import com.hmp.domain.backup.MusicLabelSnapshot
 import com.hmp.domain.backup.MusicUserStateSnapshot
 import com.hmp.domain.backup.UserInfoSnapshot
 import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.music.MusicRepository
 import com.hmp.domain.setting.model.AiProviderConfig
-import com.hmp.domain.setting.model.ArtistCountEntry
 import com.hmp.domain.setting.model.DailyMusicInfo
-import com.hmp.domain.setting.model.LabelCountEntry
-import com.hmp.domain.setting.model.RecentPlaybackEntry
-import com.hmp.domain.setting.model.TopPlayedEntry
+import com.hmp.domain.setting.model.ListeningDuration
+import com.hmp.domain.setting.model.PlaybackHistory
 import com.hmp.domain.setting.model.UserUsageAnalytics
-import com.hmp.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
-import com.hmp.domain.music.MusicLabel as MusicLabelDomain
-import com.hmp.domain.setting.model.ListeningDuration as ListeningDurationDomain
 import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 class MusicRepositoryImpl(
@@ -46,75 +43,131 @@ class MusicRepositoryImpl(
     private val multiProviderApiAdapter: MultiProviderApiAdapter
 ) : MusicRepository {
 
-    override fun getAllMusic(): Flow<List<MusicInfo>> = flowOf(emptyList())
+    // MARK: - Music Query
+    override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> = emptyList()
+
+    override fun getMusicCount(): Flow<Int> = flowOf(0)
+
+    override fun getMusicWithExtraCount(): Flow<Int> = flowOf(0)
+
+    override fun getMusicWithMissingExtraCount(): Flow<Int> = flowOf(0)
+
+    override fun getMusicInfoById(musicId: Long): Flow<MusicInfo?> = flowOf(null)
+
+    override suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> = emptyList()
+
+    override suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo> = emptyList()
 
     override suspend fun searchMusic(query: String): List<MusicInfo> = emptyList()
 
-    override suspend fun loadMusicFromDevice() {}
+    // MARK: - Music Random
+    override suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo? = null
 
-    override suspend fun syncMusicFromDeviceIncremental() {}
+    override suspend fun getRandomMusicInfoWithExtra(): MusicInfo? = null
 
-    override suspend fun removeFromLibrary(musicId: Long) {}
+    // MARK: - Music Action (Like/Dislike)
+    override suspend fun updateLikedStatus(id: Long, liked: Boolean) {}
 
-    override suspend fun restoreToLibrary(musicId: Long) {}
+    override suspend fun getLikedStatus(id: Long): Boolean = false
 
-    override suspend fun getDeletedMusicIdsGroupedByFolder(): Map<String, List<Long>> = emptyMap()
+    // MARK: - Soft Delete / Restore
+    override suspend fun removeFromLibrary(ids: List<Long>) {}
 
-    override suspend fun addLabel(musicId: Long, category: LabelCategory, labelName: LabelName) {}
+    override suspend fun restoreToLibrary(ids: List<Long>) {}
 
-    override suspend fun removeLabel(musicId: Long, category: LabelCategory, labelName: LabelName) {}
+    override suspend fun getDeletedMusicIdsGroupedByFolder(): List<Pair<String, List<Long>>> = emptyList()
 
-    override suspend fun getLabels(): List<MusicLabelDomain> = emptyList()
+    // MARK: - Labels
+    override suspend fun addMusicLabel(label: MusicLabel) {}
 
-    override suspend fun getDailyMusicRecommendation(): List<DailyMusicInfo> = emptyList()
+    override fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>> = flowOf(emptyList())
 
-    override suspend fun saveDailyMusicRecommendation(musicInfos: List<DailyMusicInfo>) {}
+    override suspend fun getMusicIdListByType(label: LabelName): List<Long> = emptyList()
 
-    override suspend fun updateDailyMusicInfoDate(date: String) {}
+    override suspend fun getMusicLabels(musicId: Long): List<MusicLabel> = emptyList()
 
-    override suspend fun getLastDailyMusicInfoDate(): String? = null
+    // MARK: - Similarity
+    override suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int): List<MusicInfo> = emptyList()
 
-    override suspend fun getUserUsageData(): UserUsageAnalytics = UserUsageAnalytics(0, 0, 0, 0, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    // MARK: - Listening Duration
+    override fun getRecentListeningDurations(limit: Int): Flow<List<ListeningDuration>> = flowOf(emptyList())
 
-    override suspend fun recordPlayback(musicId: Long, artist: String?, album: String?, title: String?) {}
+    // MARK: - Extra Info / AI
+    override suspend fun getMusicLyrics(musicId: Long): String? = null
 
-    override suspend fun getTopPlayed(limit: Int): List<TopPlayedEntry> = emptyList()
+    override suspend fun insertMusicExtra(musicId: Long, musicExtraInfo: DailyMusicInfo) {}
 
-    override suspend fun getRecentPlayback(limit: Int): List<RecentPlaybackEntry> = emptyList()
-
-    override suspend fun getArtistCounts(): List<ArtistCountEntry> = emptyList()
-
-    override suspend fun getLabelCounts(): List<LabelCountEntry> = emptyList()
-
-    override suspend fun getAiProviderConfig(): AiProviderConfig = AiProviderConfig(null, null, null, null, null, null, null)
-
-    override suspend fun saveAiProviderConfig(config: AiProviderConfig) {}
-
-    override suspend fun validateProviderApiKey(providerType: com.hmp.domain.enum.AiProviderType, apiKey: String): AiApiResult<String> = AiApiResult.Failure("Not implemented on iOS yet")
-
-    override suspend fun getLyrics(musicId: Long): String? = null
-
-    override suspend fun saveLyrics(musicId: Long, lyrics: String) {}
-
-    override suspend fun updatePlayCount(musicId: Long) {}
-
-    override suspend fun updateLastPlayed(musicId: Long) {}
-
-    override suspend fun getListeningDurations(): List<ListeningDurationDomain> = emptyList()
-
-    override suspend fun recordListeningDuration(musicId: Long, duration: Long) {}
-
-    override suspend fun exportUserData(): com.hmp.domain.backup.UserBackupSnapshot = com.hmp.domain.backup.UserBackupSnapshot(
-        musicUserState = MusicUserStateSnapshot(emptyList(), emptyList()),
-        musicExtraUser = MusicExtraUserSnapshot(emptyList(), emptyList()),
-        musicLabels = MusicLabelSnapshot(emptyList()),
-        userInfo = UserInfoSnapshot(emptyList()),
-        listeningStats = ListeningStatsSnapshot(emptyList(), emptyList())
+    override suspend fun getMusicExtraById(musicId: Long): DailyMusicInfo = DailyMusicInfo(
+        genre = emptyList(), mood = emptyList(), scenario = emptyList(),
+        language = "", era = "", rewards = "", lyric = "",
+        singerIntroduce = "", backgroundIntroduce = "", description = "",
+        relevantMusic = "", errorInfo = ""
     )
 
-    override suspend fun importUserData(snapshot: com.hmp.domain.backup.UserBackupSnapshot) {}
+    // MARK: - Device Scan
+    private val _isScanning = MutableStateFlow(false)
 
-    override suspend fun getBackups(): List<com.hmp.domain.backup.UserBackupSnapshot> = emptyList()
+    override suspend fun loadMusicFromDevice(): Result<Unit> {
+        _isScanning.value = true
+        val result = runCatching {
+            val scanned = DeviceMusicScanner.scanMusic()
+            // TODO: Save scanned files to database via DAOs
+        }
+        _isScanning.value = false
+        return result
+    }
 
-    override suspend fun deleteBackup(backupId: String) {}
+    override val isScanning: Flow<Boolean> = _isScanning
+
+    override suspend fun syncMusicFromDeviceIncremental(): Result<Unit> {
+        return loadMusicFromDevice()
+    }
+
+    // MARK: - AI / Extra Fetching
+    override suspend fun fetchMusicExtraInfoWithProvider(
+        providerConfig: AiProviderConfig,
+        title: String,
+        artist: String
+    ): Result<DailyMusicInfo> {
+        return Result.failure(NotImplementedError("AI fetching not implemented on iOS yet"))
+    }
+
+    override suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean> {
+        return Result.failure(NotImplementedError("API key validation not implemented on iOS yet"))
+    }
+
+    // MARK: - Listening Duration
+    override suspend fun insertPlayback(history: PlaybackHistory): Long = 0L
+
+    override suspend fun updatePlaybackRecord(id: Long, duration: Long, isCompleted: Boolean) {}
+
+    override suspend fun recordListeningDuration(duration: Long) {}
+
+    override fun getPlaybackHistory(musicId: Long, limit: Int): Flow<List<PlaybackHistory>> = flowOf(emptyList())
+
+    override suspend fun getRecentPlaybackHistoryGlobal(limit: Int): List<PlaybackHistory> = emptyList()
+
+    // MARK: - User Usage Analytics
+    override suspend fun getUserUsageAnalytics(): UserUsageAnalytics = UserUsageAnalytics(
+        totalPlayCount = 0, totalSkipCount = 0, likedCount = 0, totalListeningMinutes = 0L,
+        averageSessionMinutes = 0.0, completionRate = 0f, skipRate = 0f,
+        thisWeekMinutes = 0L, lastWeekMinutes = 0L,
+        topPlayedSongs = emptyList(), recentPlaybackWithTitle = emptyList()
+    )
+
+    // MARK: - User Stats
+    override suspend fun incrementPlayCount(musicId: Long) {}
+
+    override suspend fun incrementSkippedCount(musicId: Long) {}
+
+    override suspend fun updateLastPlayed(musicId: Long, timestamp: Long) {}
+
+    // MARK: - Snapshot Export/Import
+    override suspend fun exportMusicUserStateSnapshot(): MusicUserStateSnapshot = MusicUserStateSnapshot(emptyList(), emptyList())
+
+    override suspend fun restoreMusicUserState(snapshot: MusicUserStateSnapshot) {}
+
+    override suspend fun exportListeningStatsSnapshot(): ListeningStatsSnapshot = ListeningStatsSnapshot(emptyList(), emptyList())
+
+    override suspend fun restoreListeningStats(snapshot: ListeningStatsSnapshot) {}
 }

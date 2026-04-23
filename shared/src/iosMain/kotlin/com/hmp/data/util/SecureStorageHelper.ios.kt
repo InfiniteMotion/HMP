@@ -1,91 +1,82 @@
 package com.hmp.data.util
 
-import platform.Security.SecKeyCopyError
-import platform.Security.SecItemAdd
-import platform.Security.SecItemCopyMatching
-import platform.Security.SecItemDelete
-import platform.Security.SecRandomCopyBytes
 import platform.Foundation.NSData
-import platform.Foundation.NSMutableData
+import platform.Foundation.NSString
+import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.dataUsingEncoding
-import platform.Foundation.init
+import platform.Foundation.create
+import platform.Foundation.base64EncodedStringWithOptions
+import platform.Foundation.dataWithBase64EncodedString
+import platform.Foundation.bytes
 import platform.Foundation.length
+import platform.Security.*
+import kotlinx.cinterop.*
+import kotlin.experimental.and
 
 actual object SecureStorageHelper {
     private const val KEY_TAG = "com.hmp.secure.key"
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
     actual fun encrypt(plainText: String): String {
         val key = getOrCreateKey()
-        val data = plainText.dataUsingEncoding(kotlinx.cinterop.ObjCRuntime.kCFStringEncodingUTF8)
+        val data = plainText.dataUsingEncoding(NSUTF8StringEncoding)
             ?: return ""
 
-        val encryptedData = NSMutableData()
-        val status = SecKeyCreateEncryptedData(
+        val error = alloc<CFErrorRefVar>()
+        val encrypted = SecKeyCreateEncryptedData(
             key,
-            SecKeyAlgorithm.AES_GCM_NoPadding,
-            data as NSData,
-            encryptedData as NSMutableData
-        )
+            kSecKeyAlgorithmECIESEncryptionCoeC8MACKeyAndXorKeyX963SHA512AESGCM,
+            data,
+            error.ptr
+        ) ?: return ""
 
-        return if (status) {
-            val base64 = android.util.Base64.encodeToString(
-                encryptedData.bytes?.toByteArray() ?: ByteArray(0),
-                android.util.Base64.NO_WRAP
-            )
-            base64
-        } else {
-            ""
-        }
+        return (encrypted as NSData).base64EncodedStringWithOptions(0u)
     }
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
     actual fun decrypt(encrypted: String): String {
         val key = getOrCreateKey()
-        val encryptedData = android.util.Base64.decode(encrypted, android.util.Base64.NO_WRAP)
-        val nsData = NSData.dataWithBytes(encryptedData, length = encryptedData.size.toULong())
+        val encryptedData = NSData.dataWithBase64EncodedString(encrypted)
+            ?: return ""
 
-        val decryptedData = NSMutableData()
-        val status = SecKeyCreateDecryptedData(
+        val error = alloc<CFErrorRefVar>()
+        val decrypted = SecKeyCreateDecryptedData(
             key,
-            SecKeyAlgorithm.AES_GCM_NoPadding,
-            nsData,
-            decryptedData as NSMutableData
-        )
+            kSecKeyAlgorithmECIESEncryptionCoeC8MACKeyAndXorKeyX963SHA512AESGCM,
+            encryptedData,
+            error.ptr
+        ) ?: return ""
 
-        return if (status) {
-            String(decryptedData.bytes?.toByteArray() ?: ByteArray(0), Charsets.UTF_8)
-        } else {
-            ""
-        }
+        return NSString.create(
+            bytes = (decrypted as NSData).bytes,
+            length = (decrypted as NSData).length,
+            encoding = NSUTF8StringEncoding
+        )?.toString() ?: ""
     }
 
-    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    @OptIn(ExperimentalForeignApi::class)
     private fun getOrCreateKey(): SecKey {
-        val query = mapOf(
-            SecItemClass to kSecClassKey,
-            SecAttrApplicationTag to KEY_TAG,
-            SecAttrKeyType to kSecAttrKeyTypeAES,
-            SecReturnRef to true
+        val query: Map<String, Any> = mapOf(
+            kSecClass as String to kSecClassKey,
+            kSecAttrApplicationTag as String to KEY_TAG,
+            kSecAttrKeyType as String to kSecAttrKeyTypeAES,
+            kSecReturnRef as String to true
         )
 
-        var result = SecItemCopyMatching(query, null)
-        if (result == SecKeyCopyError.success) {
+        var result: CFTypeRef? = null
+        val status = SecItemCopyMatching(query, result)
+        if (status == errSecSuccess) {
             return result as SecKey
         }
 
-        val keySize = 256
-        val attributes = mapOf(
-            SecAttrKeyType to kSecAttrKeyTypeAES,
-            SecAttrKeySizeInBits to keySize,
-            SecAttrApplicationTag to KEY_TAG,
-            SecPrivateKeyAttrs to mapOf(
-                SecIsPermanent to true
-            )
+        // Key not found, create a new one
+        val attributes: Map<String, Any> = mapOf(
+            kSecAttrKeyType as String to kSecAttrKeyTypeAES,
+            kSecAttrKeySizeInBits as String to 256,
+            kSecAttrApplicationTag as String to KEY_TAG
         )
 
-        var error: kotlinx.cinterop.CPointer< SecKeyCopyError>? = null
-        val privateKey = SecKeyCreateRandomKey(attributes, error)
-        return SecKeyCopyPublicKey(privateKey!!)!!
+        val key = SecKeyCreateRandomKey(attributes, null)
+            ?: throw IllegalStateException("Failed to create secure key")
+
+        return key
     }
 }

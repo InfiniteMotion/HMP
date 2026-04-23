@@ -13,7 +13,7 @@ struct TabScreen<Content: View>: View {
     init(
         title: String? = nil,
         hasSearchButton: Bool = false,
-        @ViewBuilder trailing: (() -> AnyView)? = nil,
+        trailing: (() -> AnyView)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title

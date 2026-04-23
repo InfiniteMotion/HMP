@@ -1,10 +1,10 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'shared'
     spec.version                  = '1.0.0'
-    spec.homepage                 = ''
+    spec.homepage                 = 'https://github.com/example/HMP'
     spec.source                   = { :http=> ''}
-    spec.authors                  = ''
-    spec.license                  = ''
+    spec.authors                  = 'HMP Team'
+    spec.license                  = { :type => 'MIT' }
     spec.summary                  = 'HMP shared module'
     spec.vendored_frameworks      = 'build/cocoapods/framework/shared.framework'
     spec.libraries                = 'c++'

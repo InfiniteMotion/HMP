@@ -117,7 +117,7 @@ struct DailyHeroCard: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(title)
                             .font(TypographyTokens.headlineLarge)
-                            .fontWeight(.extraBold)
+                            .fontWeight(.black)
                             .foregroundColor(.white)
                             .lineLimit(2)
 
@@ -178,7 +178,7 @@ struct MusicList: View {
         onMenuClick: ((MusicItem) -> Void)? = nil
     ) {
         self.musicList = musicList
-        self.showIndex = showMenu
+        self.showIndex = showIndex
         self.showMenu = showMenu
         self.onItemClick = onItemClick
         self.onMenuClick = onMenuClick
@@ -199,8 +199,7 @@ struct MusicList: View {
                     onMenuClick?(music)
                 }
                 Divider()
-                    .padding(.leading, 60)
-                    .opacity(theme.divider.opacity)
+                        .padding(.leading, 60)
             }
         }
     }

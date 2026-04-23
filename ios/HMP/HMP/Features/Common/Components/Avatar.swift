@@ -28,7 +28,7 @@ struct Avatar: View {
     }
 
     var body: some View {
-        ZStack {
+        let content = ZStack {
             if let imageUri, !imageUri.isEmpty {
                 // TODO: 加载本地图片
                 fallbackView
@@ -37,8 +37,13 @@ struct Avatar: View {
             }
         }
         .frame(width: size, height: size)
-        .modifier(avatarShape)
-        .clipped()
+
+        switch style {
+        case .circle:
+            content.clipShape(Circle())
+        case .roundedRectangle:
+            content.clipShape(RoundedRectangle(cornerRadius: size * 0.15))
+        }
     }
 
     private var fallbackView: some View {
@@ -49,38 +54,5 @@ struct Avatar: View {
                 .font(.system(size: size * 0.4, weight: .bold))
                 .foregroundColor(theme.onPrimary)
         }
-    }
-
-    private var avatarShape: some ViewModifier {
-        switch style {
-        case .circle:
-            AnyModifier(_CircleShape())
-        case .roundedRectangle:
-            AnyModifier(_RoundedShape(radius: size * 0.15))
-        }
-    }
-}
-
-// Shape modifiers
-private struct _CircleShape: ViewModifier {
-    func body(content: Content) -> some View {
-        content.clipShape(Circle())
-    }
-}
-
-private struct _RoundedShape: ViewModifier {
-    let radius: CGFloat
-    func body(content: Content) -> some View {
-        content.clipShape(RoundedRectangle(cornerRadius: radius))
-    }
-}
-
-struct AnyModifier: ViewModifier {
-    private let _body: (Content) -> AnyView
-    init<M: ViewModifier>(_ modifier: M) {
-        _body = { AnyView(modifier.body(from: $0)) }
-    }
-    func body(content: Content) -> some View {
-        _body(content)
     }
 }
