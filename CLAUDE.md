@@ -38,6 +38,9 @@ cd ios && pod install
 
 # Shared 模块 iOS 编译 (需 macOS + Xcode)
 ./gradlew :shared:compileKotlinIosSimulatorArm64
+
+# 编译全部 iOS 目标
+./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosX64
 ```
 
 ### 测试与检查
@@ -118,10 +121,10 @@ HMP/
 | UI | Jetpack Compose + Material3 + Haze 毛玻璃 | — | SwiftUI + Liquid Glass |
 | 导航 | Navigation 3 (类型安全) | — | NavigationStack |
 | 播放 | Media3 ExoPlayer | — | AVFoundation |
-| 数据库 | Room + SQLite | Room KMP | Core Data (待集成) |
+| 数据库 | Room KMP | Room KMP | Room KMP |
 | 偏好存储 | DataStore | DataStore KMP | UserDefaults |
 | 网络 | — | Ktor Client | Ktor (Darwin engine) |
-| 序列化 | Gson | kotlinx.serialization | — |
+| 序列化 | kotlinx.serialization | kotlinx.serialization | — |
 | DI | Koin | Koin | Koin |
 | 图片加载 | Coil | — | AsyncImage |
 | 标签解析 | Jaudiotagger + pinyin4j | 平台特定 | AVAsset 元数据 |
@@ -152,7 +155,7 @@ HMP/
 版本号在 `android/app/build.gradle.kts` 中维护 (`versionCode` / `versionName`)。
 
 ### 已知待完成任务 (TODO.md)
-- P6: iOS 端编译修复与核心功能实现 (8 个 expect/actual 中 6 个待修复)
+- P6: iOS 端编译修复与核心功能实现 ✅ 已完成 (所有 expect/actual 已修复)
 - P7: iOS SwiftUI 界面迁移 (~50 个组件/ViewModel)
 - T3: Repository 通用逻辑提取到 commonMain 共享基类
 
@@ -162,5 +165,6 @@ HMP/
 - [ROADMAP.md](ROADMAP.md) — 版本历史与功能状态 (单一事实来源)
 - [TODO.md](TODO.md) — 可执行任务列表
 - [docs/VERSIONING.md](docs/VERSIONING.md) — 版本号规范
+- [docs/ROOM_KMP_SETUP.md](docs/ROOM_KMP_SETUP.md) — Room KMP 跨平台数据库配置指南
 - [docs/5_10/ios-adaptation-design.md](docs/5_10/ios-adaptation-design.md) — iOS 适配设计
 - [docs/5_10/ios-adaptation-plan.md](docs/5_10/ios-adaptation-plan.md) — iOS 适配实施计划

@@ -40,6 +40,8 @@ struct MainTabView: View {
 /// 音乐库页 - 对应 Android HomeScreen / GalleryScreen / ListScreen
 struct LibraryView: View {
     @Environment(HMPTheme.self) private var theme
+    @State private var scannedFiles: [URL] = []
+    @State private var isScanning: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -47,9 +49,38 @@ struct LibraryView: View {
                 title: "音乐库",
                 hasSearchButton: true
             ) {
-                Text("音乐库内容 (待实现)")
-                    .font(TypographyTokens.bodyLarge)
-                    .foregroundColor(theme.text)
+                VStack(spacing: 20) {
+                    Text("音乐库内容")
+                        .font(TypographyTokens.bodyLarge)
+                        .foregroundColor(theme.text)
+
+                    Button(action: { scanMusic() }) {
+                        Text(isScanning ? "扫描中..." : "扫描音乐")
+                            .padding()
+                            .background(theme.primary)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+
+                    if !scannedFiles.isEmpty {
+                        List(scannedFiles, id: \.self) {
+                            Text($0.lastPathComponent)
+                        }
+                        .frame(height: 200)
+                    }
+                }
+                .padding()
+            }
+        }
+    }
+
+    private func scanMusic() {
+        isScanning = true
+        DispatchQueue.global().async {
+            let files = MusicScannerService.shared.scanMusicFiles()
+            DispatchQueue.main.async {
+                scannedFiles = files
+                isScanning = false
             }
         }
     }

@@ -53,18 +53,17 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
   - Android: Jetpack Compose
   - iOS: SwiftUI
 - **架构模式**：MVVM
-- **依赖注入**：
-  - Android: Hilt
-  - Shared: Koin
+- **依赖注入**：Koin (跨平台，已从 Hilt 迁移)
 - **数据存储**：
-  - Room (本地数据库)
-  - DataStore (偏好设置)
+  - Room KMP (跨平台本地数据库，支持 Android/iOS)
+  - DataStore KMP (跨平台偏好设置)
+  - SQLite Bundled (跨平台 SQLite 驱动)
 - **媒体播放**：
   - Android: AndroidX Media3 (ExoPlayer)
   - iOS: AVFoundation
-- **网络请求**：Retrofit + OkHttp (Android), Ktor (Shared)
-- **JSON解析**：Gson (Android), Kotlinx Serialization (Shared)
-- **音乐标签解析**：Jaudiotagger (Android)
+- **网络请求**：Ktor Client (跨平台，Android 使用 OkHttp 引擎，iOS 使用 Darwin 引擎)
+- **JSON解析**：Kotlinx Serialization (跨平台)
+- **音乐标签解析**：Jaudiotagger (Android) / AVAsset (iOS)
 - **AI集成**：多服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）
 - **安全存储**：API 密钥加密存储
 - **导航系统**：Navigation 3 (类型安全导航) - Android
@@ -181,6 +180,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - **[DEVELOP](DEVELOP.md)** — 技术架构、模块划分、开发流程与关键实现
 - **[TODO](TODO.md)** — 可执行任务列表与优先级
 - **[docs/README](docs/README.md)** — 文档索引与各文档职责说明
+- **[Room KMP 配置](docs/ROOM_KMP_SETUP.md)** — Room 跨平台数据库配置经验总结
 
 ## 📝 开发日志
 

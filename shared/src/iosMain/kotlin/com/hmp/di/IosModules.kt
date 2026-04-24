@@ -10,8 +10,9 @@ import com.hmp.data.database.PlaybackHistoryDao
 import com.hmp.data.database.PlaylistDao
 import com.hmp.data.database.PlaylistItemDao
 import com.hmp.data.database.UserInfoDao
-import com.hmp.data.database.getRoomDatabase
 import com.hmp.data.database.getDatabaseBuilder
+import com.hmp.data.database.getRoomDatabase
+import com.hmp.data.di.sharedModule
 import com.hmp.data.repository.BackupFileRepositoryImpl
 import com.hmp.data.repository.MusicRepositoryImpl
 import com.hmp.data.repository.PlaylistRepositoryImpl

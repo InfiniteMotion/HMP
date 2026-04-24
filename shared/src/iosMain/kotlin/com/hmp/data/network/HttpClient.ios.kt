@@ -8,11 +8,6 @@ import kotlinx.serialization.json.Json
 
 actual fun createHttpClient(json: Json): HttpClient {
     return HttpClient(Darwin) {
-        engine {
-            config {
-                retryOnConnectionFailure(true)
-            }
-        }
         install(ContentNegotiation) {
             json(json)
         }

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.hmp.data.database.currentTimeMillis
 import com.hmp.data.util.SecureStorageHelper
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.config.DisplayMode
@@ -292,22 +293,22 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun restoreFromSnapshot(snapshot: AppSettingsSnapshot) {
-        dataStore.edit {
-            snapshot.userName?.let { it[PreferencesKeys.USER_NAME] = it }
-            snapshot.avatarUri?.let { it[PreferencesKeys.AVATAR_URI] = it }
-            it[PreferencesKeys.THEME_MODE] = snapshot.themeMode
-            it[PreferencesKeys.BACKGROUND_STYLE] = snapshot.backgroundStyle
-            it[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(snapshot.hazeMode)
-            it[PreferencesKeys.HAZE_MATERIAL_PRESET] = normalizeHazeMaterialPreset(snapshot.hazeMaterialPreset)
-            it[PreferencesKeys.HAZE_BLUR_RADIUS] = snapshot.hazeBlurRadius.coerceAtLeast(0f)
-            it[PreferencesKeys.HAZE_NOISE_FACTOR] = snapshot.hazeNoiseFactor.coerceIn(0f, 1f)
-            it[PreferencesKeys.HAZE_TINT_ALPHA] = snapshot.hazeTintAlpha.coerceIn(0f, 1f)
-            it[PreferencesKeys.HAZE_INTENSITY] = snapshot.hazeIntensity.coerceIn(0f, 1f)
-            it[PreferencesKeys.AUTO_BATCH_PROCESS] = snapshot.autoBatchProcess
-            it[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
-            it[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours
-            it[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.dailyRefreshStartupCount
-            it[PreferencesKeys.CURRENT_AI_PROVIDER] = snapshot.currentAiProvider.name
+        dataStore.edit { prefs ->
+            snapshot.userName?.let { prefs[PreferencesKeys.USER_NAME] = it }
+            snapshot.avatarUri?.let { prefs[PreferencesKeys.AVATAR_URI] = it }
+            prefs[PreferencesKeys.THEME_MODE] = snapshot.themeMode
+            prefs[PreferencesKeys.BACKGROUND_STYLE] = snapshot.backgroundStyle
+            prefs[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(snapshot.hazeMode)
+            prefs[PreferencesKeys.HAZE_MATERIAL_PRESET] = normalizeHazeMaterialPreset(snapshot.hazeMaterialPreset)
+            prefs[PreferencesKeys.HAZE_BLUR_RADIUS] = snapshot.hazeBlurRadius.coerceAtLeast(0f)
+            prefs[PreferencesKeys.HAZE_NOISE_FACTOR] = snapshot.hazeNoiseFactor.coerceIn(0f, 1f)
+            prefs[PreferencesKeys.HAZE_TINT_ALPHA] = snapshot.hazeTintAlpha.coerceIn(0f, 1f)
+            prefs[PreferencesKeys.HAZE_INTENSITY] = snapshot.hazeIntensity.coerceIn(0f, 1f)
+            prefs[PreferencesKeys.AUTO_BATCH_PROCESS] = snapshot.autoBatchProcess
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.dailyRefreshStartupCount
+            prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = snapshot.currentAiProvider.name
         }
         snapshot.aiProviderConfigs.forEach { (type, config) -> saveProviderConfig(config) }
     }
@@ -325,13 +326,13 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun restoreDailyRecommendationSnapshot(snapshot: DailyRecommendationSnapshot) {
-        dataStore.edit {
-            snapshot.currentDailyMusicId?.let { it[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = it }
-            it[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = snapshot.lastRefreshTimestamp
-            it[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.mode
-            it[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.refreshHours
-            it[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.startupCount
-            it[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = snapshot.launchCountSinceRefresh
+        dataStore.edit { prefs ->
+            snapshot.currentDailyMusicId?.let { prefs[PreferencesKeys.CURRENT_DAILY_MUSIC_ID] = it }
+            prefs[PreferencesKeys.LAST_DAILY_REFRESH_TIMESTAMP] = snapshot.lastRefreshTimestamp
+            prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.mode
+            prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.refreshHours
+            prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.startupCount
+            prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] = snapshot.launchCountSinceRefresh
         }
     }
 }

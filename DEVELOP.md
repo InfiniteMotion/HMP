@@ -72,14 +72,15 @@
 - 使用Koin进行跨平台依赖注入
 - 通过CocoaPods将shared模块集成到iOS项目
 
-#### 2. 依赖注入：Hilt (Android) + Koin (Shared)
+#### 2. 依赖注入：Koin (跨平台)
 
-**选择理由**：Hilt与Jetpack组件深度集成，提供了简单易用的API，并且支持测试替换。Koin是一个轻量级的依赖注入框架，支持KMM，适用于跨平台场景。
+**选择理由**：Koin 是一个轻量级的依赖注入框架，完美支持 Kotlin Multiplatform。相比 Hilt，Koin 可以在 Android 和 iOS 之间共享依赖注入配置，减少了平台特定的代码。
 
 **实现细节**：
-- Android端使用Hilt：MusicApplication标注为@HiltAndroidApp，ViewModel使用@HiltViewModel
-- 共享模块使用Koin：通过Module和single/provides创建依赖
-- 平台特定实现通过Koin的expected/actual机制注入
+- 全平台使用 Koin：从 Android 的 Hilt 迁移至 Koin
+- 共享模块：通过 `koinViewModel()` 获取 ViewModel，使用 `single`/`factory` 创建依赖
+- 平台特定实现通过 `expect/actual` 机制注入
+- iOS 端通过 `AppDelegate` 调用 `KoinKt.doInitKoin()` 初始化
 
 #### 3. 状态管理：Kotlin Flow/StateFlow
 
@@ -99,22 +100,32 @@
 - iOS端：使用AVFoundation框架实现音频播放，支持后台播放和远程控制
 - 平台特定实现通过共享接口统一管理
 
-#### 6. 数据存储：Room + DataStore (Android) + Core Data (iOS)
+#### 6. 数据存储：Room KMP + DataStore KMP (跨平台)
 
-**选择理由**：Room是Google推出的ORM框架，提供了简单易用的API，并且支持SQLite数据库的所有功能。DataStore是Google推出的新一代偏好设置存储框架，提供了一种安全、可靠的方式来存储应用偏好设置。作为个人项目，我希望通过使用Room和DataStore来学习现代Android数据存储的最佳实践。
-
-**实现细节**：
-- Room数据库版本化管理，支持迁移
-- DataStore存储主题、音量等偏好设置
-- Repository层封装数据访问逻辑
-
-#### 7. 网络请求：Retrofit + OkHttp (Android) + Ktor (Shared)
-
-**选择理由**：Retrofit是Square推出的网络请求框架，提供了简单易用的API，并且支持多种网络请求方式。OkHttp是Square推出的HTTP客户端，提供了高性能、可靠的网络请求能力。作为个人项目，我希望通过使用Retrofit和OkHttp来学习现代Android网络请求的最佳实践。
+**选择理由**：Room 2.7+ 支持 Kotlin Multiplatform，可以在 Android 和 iOS 之间共享数据库代码。配合 SQLite Bundled 驱动，实现了真正的跨平台数据存储。DataStore KMP 提供了跨平台的偏好设置存储方案。
 
 **实现细节**：
-- Android端：使用Retrofit接口定义API请求，OkHttp配置连接、读取和写入超时
-- 共享模块：使用Ktor客户端进行网络请求，支持跨平台
+- Room KMP 配置跨平台数据库，使用 `@ConstructedBy` 和 `expect/actual` 模式
+- KSP 代码生成器为各平台生成数据库实现
+- SQLite Bundled 驱动提供跨平台 SQLite 支持
+- DataStore KMP 存储主题、音量等偏好设置
+- Repository 层通过 `expect/actual` 实现平台特定的数据访问
+
+**配置要点**：
+- 参考 [Room KMP 配置文档](docs/ROOM_KMP_SETUP.md)
+- 关键：不要在 `commonMainMetadata` 上运行 KSP
+- 使用 `BundledSQLiteDriver` 作为跨平台驱动
+- iOS 使用 `NSDocumentDirectory` 存储数据库文件
+
+#### 7. 网络请求：Ktor Client (跨平台)
+
+**选择理由**：Ktor Client 是 Kotlin 官方推出的跨平台网络请求框架，支持 Android、iOS 等多个平台。通过使用不同的引擎（Android 使用 OkHttp，iOS 使用 Darwin），实现了真正的跨平台网络请求代码共享。
+
+**实现细节**：
+- 共享模块：使用 Ktor Client 定义 API 接口和请求逻辑
+- Android 端：使用 OkHttp 引擎，支持连接池、拦截器等高级特性
+- iOS 端：使用 Darwin 引擎，基于原生 NSURLSession
+- 统一配置：超时、重试策略、日志记录在 commonMain 中定义
 - 实现失败重试和指数退避策略
 
 #### 8. AI服务集成：多服务商支持
@@ -302,6 +313,9 @@ open HMP.xcworkspace
 - ✅ iOS平台支持
 - ✅ CocoaPods配置与集成
 - ✅ 平台特定Repository实现
+- ✅ Room KMP 跨平台数据库配置
+- ✅ Ktor Client 跨平台网络请求
+- ✅ 全平台 Koin 依赖注入迁移
 
 #### 进行中
 

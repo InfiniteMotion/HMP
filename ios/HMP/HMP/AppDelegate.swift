@@ -7,9 +7,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         // 初始化 KMP Koin DI
-        // 注意：doInitKoin() 需要在 shared framework 集成后可用
-        // 当前暂时注释掉，等 P6 编译修复后启用
-        // KoinModulesKt.doInitKoin()
+        // 暂时注释掉，等 shared 模块编译修复后启用
+        // let initializer = KoinInitializer()
+        // initializer.init()
         return true
     }
 }

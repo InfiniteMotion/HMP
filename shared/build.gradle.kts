@@ -17,9 +17,13 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
+    compilerOptions {
+        freeCompilerArgs.addAll(listOf("-Xexpect-actual-classes"))
+    }
+
     cocoapods {
         summary = "HMP shared module"
-        homepage = ""
+        homepage = "https://github.com/hmp/shared"
         version = "1.0.0"
         ios.deploymentTarget = "16.0"
         podfile = project.file("../ios/Podfile")

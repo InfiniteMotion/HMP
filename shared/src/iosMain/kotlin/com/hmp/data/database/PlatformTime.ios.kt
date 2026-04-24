@@ -1,8 +1,9 @@
 package com.hmp.data.database
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSDate
 
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class)
 actual fun currentTimeMillis(): Long {
-    return (NSDate().timeIntervalSince1970 * 1000).toLong()
+    return (NSDate().timeIntervalSinceReferenceDate * 1000).toLong()
 }

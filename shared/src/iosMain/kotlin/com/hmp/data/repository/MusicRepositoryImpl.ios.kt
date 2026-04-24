@@ -163,7 +163,7 @@ class MusicRepositoryImpl(
     override suspend fun updateLastPlayed(musicId: Long, timestamp: Long) {}
 
     // MARK: - Snapshot Export/Import
-    override suspend fun exportMusicUserStateSnapshot(): MusicUserStateSnapshot = MusicUserStateSnapshot(emptyList(), emptyList())
+    override suspend fun exportMusicUserStateSnapshot(): MusicUserStateSnapshot = MusicUserStateSnapshot(emptyList(), emptyList(), emptyList())
 
     override suspend fun restoreMusicUserState(snapshot: MusicUserStateSnapshot) {}
 
