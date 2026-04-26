@@ -54,7 +54,10 @@ struct LibraryView: View {
                         .font(TypographyTokens.bodyLarge)
                         .foregroundColor(theme.text)
 
-                    Button(action: { scanMusic() }) {
+                    Button(action: {
+                        print("[LibraryView] scan button tapped, isScanning: \(isScanning)")
+                        scanMusic()
+                    }) {
                         Text(isScanning ? "扫描中..." : "扫描音乐")
                             .padding()
                             .background(theme.primary)
@@ -75,9 +78,12 @@ struct LibraryView: View {
     }
 
     private func scanMusic() {
+        print("[LibraryView] scanMusic() called")
         isScanning = true
         DispatchQueue.global().async {
+            print("[LibraryView] DispatchQueue.global running")
             let files = MusicScannerService.shared.scanMusicFiles()
+            print("[LibraryView] got \(files.count) files")
             DispatchQueue.main.async {
                 scannedFiles = files
                 isScanning = false

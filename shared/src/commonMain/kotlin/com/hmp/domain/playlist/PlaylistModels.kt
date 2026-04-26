@@ -2,6 +2,7 @@ package com.hmp.domain.playlist
 
 import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
+import kotlinx.serialization.Serializable
 
 /**
  * 播放列表生成相关数据模型集合
@@ -10,6 +11,7 @@ import com.hmp.domain.enum.LabelName
 /**
  * 播放列表生成算法类型枚举
  */
+@Serializable
 enum class AlgorithmType {
     /**
      * 优化相似推荐算法
@@ -32,6 +34,7 @@ enum class AlgorithmType {
  * 权重模板枚举
  * 预设的不同场景下的标签权重配置
  */
+@Serializable
 enum class WeightTemplate {
     /**
      * 平衡权重配置
@@ -68,6 +71,7 @@ enum class WeightTemplate {
  * 自适应扩展配置数据模型
  * 控制播放列表自适应截断的行为参数
  */
+@Serializable
 data class ExtensionConfig(
     /**
      * 最小推荐数量
@@ -141,6 +145,7 @@ data class ExtensionConfig(
 /**
  * 推荐质量分析指标数据类
  */
+@Serializable
 data class QualityMetrics(
     val totalCandidates: Int,
     val baselineScore: Double,
@@ -169,6 +174,7 @@ data class QualityMetrics(
         } else 0.0
 }
 
+@Serializable
 data class Playlist(
     val id: Long = 0,
     val name: String,
@@ -183,6 +189,7 @@ data class Playlist(
     val isPinned: Boolean = false
 )
 
+@Serializable
 data class PlaylistItem(
     val songUrl: String,
     val songId: Long,

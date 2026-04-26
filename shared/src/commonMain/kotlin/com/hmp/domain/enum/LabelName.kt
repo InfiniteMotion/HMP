@@ -1,5 +1,8 @@
 package com.hmp.domain.enum
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class LabelName {
     // 曲风类型
     ROCK,

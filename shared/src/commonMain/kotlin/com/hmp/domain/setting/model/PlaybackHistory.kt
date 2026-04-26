@@ -1,5 +1,8 @@
 package com.hmp.domain.setting.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class PlaybackHistory(
     val id: Long = 0,
     val musicId: Long,

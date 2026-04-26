@@ -8,10 +8,10 @@ import com.hmp.domain.playlist.PlaylistItem
 import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.model.PlaybackHistory
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
-/**
- * 应用级用户数据备份快照
- */
+@Serializable
 data class UserBackupSnapshot(
     val version: Int = 1,
     val createdAt: Long,
@@ -19,15 +19,13 @@ data class UserBackupSnapshot(
     val musicUserState: MusicUserStateSnapshot,
     val playlists: PlaylistsSnapshot,
     val listeningStats: ListeningStatsSnapshot,
-    val dailyRecommendation: DailyRecommendationSnapshot?
+    val dailyRecommendation: DailyRecommendationSnapshot? = null
 )
 
-/**
- * 应用设置快照
- */
+@Serializable
 data class AppSettingsSnapshot(
-    val userName: String?,
-    val avatarUri: String?,
+    val userName: String? = null,
+    val avatarUri: String? = null,
     val themeMode: String,
     val backgroundStyle: String,
     val hazeMode: String = "custom",
@@ -35,77 +33,76 @@ data class AppSettingsSnapshot(
     val hazeBlurRadius: Float = 20f,
     val hazeNoiseFactor: Float = 0.15f,
     val hazeTintAlpha: Float = 0.22f,
-    val hazeIntensity: Float,
-    val autoBatchProcess: Boolean,
-    val dailyRefreshMode: String,
-    val dailyRefreshHours: Int,
-    val dailyRefreshStartupCount: Int,
+    val hazeIntensity: Float = 0f,
+    val autoBatchProcess: Boolean = false,
+    val dailyRefreshMode: String = "off",
+    val dailyRefreshHours: Int = 8,
+    val dailyRefreshStartupCount: Int = 5,
     val currentAiProvider: AiProviderType,
-    val aiProviderConfigs: Map<AiProviderType, AiProviderConfig>
+    @Contextual
+    val aiProviderConfigs: Map<AiProviderType, AiProviderConfig> = emptyMap()
 )
 
-/**
- * 音乐库用户状态快照
- */
+@Serializable
 data class MusicUserStateSnapshot(
-    val userInfos: List<UserInfoSnapshot>,
-    val extras: List<MusicExtraUserSnapshot>,
-    val labels: List<MusicLabelSnapshot>
+    val userInfos: List<UserInfoSnapshot> = emptyList(),
+    val extras: List<MusicExtraUserSnapshot> = emptyList(),
+    val labels: List<MusicLabelSnapshot> = emptyList()
 )
 
+@Serializable
 data class UserInfoSnapshot(
     val id: Long,
-    val liked: Boolean,
-    val disLiked: Boolean,
-    val lastPlayed: Long?,
-    val playCount: Int?,
-    val skippedCount: Int?,
-    val userRating: Int?,
-    val inCustomPlaylistCount: Int?
+    val liked: Boolean = false,
+    val disLiked: Boolean = false,
+    val lastPlayed: Long? = null,
+    val playCount: Int? = null,
+    val skippedCount: Int? = null,
+    val userRating: Int? = null,
+    val inCustomPlaylistCount: Int? = null
 )
 
+@Serializable
 data class MusicExtraUserSnapshot(
     val id: Long,
-    val isGetExtraInfo: Boolean,
-    val rewards: String?,
-    val popLyric: String?,
-    val singerIntroduce: String?,
-    val backgroundIntroduce: String?,
-    val description: String?,
-    val relevantMusic: String?
+    val isGetExtraInfo: Boolean = false,
+    val rewards: String? = null,
+    val popLyric: String? = null,
+    val singerIntroduce: String? = null,
+    val backgroundIntroduce: String? = null,
+    val description: String? = null,
+    val relevantMusic: String? = null
 )
 
+@Serializable
 data class MusicLabelSnapshot(
     val musicId: Long,
     val label: LabelName,
     val category: LabelCategory
 )
 
-/**
- * 播放列表快照
- */
+@Serializable
 data class PlaylistsSnapshot(
-    val playlists: List<Playlist>,
-    val playlistItems: List<PlaylistItem>
+    @Contextual
+    val playlists: List<Playlist> = emptyList(),
+    @Contextual
+    val playlistItems: List<PlaylistItem> = emptyList()
 )
 
-/**
- * 听歌统计快照
- */
+@Serializable
 data class ListeningStatsSnapshot(
-    val listeningDurations: List<ListeningDuration>,
-    val playbackHistories: List<PlaybackHistory>
+    @Contextual
+    val listeningDurations: List<ListeningDuration> = emptyList(),
+    @Contextual
+    val playbackHistories: List<PlaybackHistory> = emptyList()
 )
 
-/**
- * 每日推荐相关快照
- */
+@Serializable
 data class DailyRecommendationSnapshot(
-    val currentDailyMusicId: Long?,
-    val lastRefreshTimestamp: Long,
-    val mode: String,
-    val refreshHours: Int,
-    val startupCount: Int,
-    val launchCountSinceRefresh: Int
+    val currentDailyMusicId: Long? = null,
+    val lastRefreshTimestamp: Long = 0L,
+    val mode: String = "off",
+    val refreshHours: Int = 8,
+    val startupCount: Int = 5,
+    val launchCountSinceRefresh: Int = 0
 )
-

@@ -1,8 +1,11 @@
 package com.hmp.domain.enum
 
+import kotlinx.serialization.Serializable
+
 /**
  * AI 服务商类型枚举
  */
+@Serializable
 enum class AiProviderType(
     val displayName: String,
     val defaultModel: String,

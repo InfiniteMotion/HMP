@@ -14,14 +14,14 @@
 
 ## v5.10 重点：iOS 平台适配与双平台架构
 
-**现状**：Android 端已完成 KMP 迁移（Hilt → Koin，domain + data 层移入 shared），iOS 端 SwiftUI 界面已大规模实现（设计系统 ✅、通用组件 🔶、部分页面 ✅），待完成 P6 编译修复和 ViewModel 集成。
+**现状**：Android 端已完成 KMP 迁移（Hilt → Koin，domain + data 层移入 shared），iOS 端 SwiftUI 界面已大规模实现（设计系统 ✅、通用组件部分 ✅、部分页面 ✅），待完成 P6 编译修复和 ViewModel 集成。
 
 **技术路线**：KMP 共享核心层（domain + data），UI 和播放引擎保持平台原生，Monorepo 结构。
 
 **实际进度**：
 - P0-P5: ✅ 全部完成
-- P6: 🔶 阶段一/二完成，阶段三待开始
-- P7: 🔶 23/49 任务已完成 (约 47%)
+- P6: 🔶 阶段一/二 ✅，阶段三待完成
+- P7: 🔶 设计系统 ✅，部分页面完整实现，部分占位待完善
 
 ---
 
@@ -85,31 +85,30 @@
 
 ### P6: iOS 端基础 🔶
 
-> **当前状态**：iosMain 编译错误待修复（P6.1-P6.4），SwiftUI 界面已大规模实现，Koin 初始化待启用（P6.8 注释中）。需完成编译修复 → ViewModel 集成 → 验证。
+> **当前状态**：Kotlin iOS 编译 ✅，P6.6 ✅，P6.8 ✅（Koin 已启用），P6.9 ✅（Xcode 编译通过 + 模拟器运行），阶段三待完成。
 
-#### 阶段一：修复 iosMain 编译错误
+#### 阶段一：Kotlin iOS 编译 ✅
 
-- [ ] **P6.1** 修复 SecureStorageHelper.ios.kt — 移除 `android.util.Base64` 和不存在的 `SecKeyCreateEncryptedData`，改用 Keychain Services（`SecItemAdd`/`SecItemCopyMatching`/`SecItemDelete`）存储 API Key
-- [ ] **P6.2** 修复 BackupFileRepositoryImpl.ios.kt — 移除 `java.io.File`/`java.io.IOException`，改用 `NSFileManager` + 路径字符串；若 commonMain 接口使用 `File` 类型则需同步抽象为 `String`
-- [ ] **P6.3** 修复 DeviceMusicScanner.ios.kt — 修正 `fileExistsAtPath` 的 `ObjCBool` 指针参数（`memScoped` + `alloc<ObjCBool>()`）；移除末尾 `AVFoundation` 变量，直接使用 `platform.AVFoundation.AVURLAsset`
-- [ ] **P6.4** 修复 SettingsRepositoryImpl.ios.kt — 第 168 行 `System.currentTimeMillis()` 替换为 `currentTimeMillis()`（commonMain expect/actual）
-- [ ] **P6.5** 验证 — `./gradlew :shared:compileKotlinIosSimulatorArm64` 编译通过（需 macOS 环境）
+- [x] **P6.1** SecureStorageHelper.ios.kt — 存根实现（encrypt/decrypt 返回原文），编译通过，功能待完善 → 见 P6.10
+- [x] **P6.2** BackupFileRepositoryImpl.ios.kt — 存根实现（saveBackup 返回路径，loadBackup 抛异常），编译通过，功能待完善 → 见 P6.13
+- [x] **P6.3** DeviceMusicScanner.ios.kt — 存根实现（isDirectoryAtPath 返回 false，元数据硬编码），编译通过，功能待完善 → 见 P6.11
+- [x] **P6.4** SettingsRepositoryImpl.ios.kt — ✅ 已修复，`currentTimeMillis()` 正确使用
+- [x] **P6.5** 验证 — `./gradlew :shared:compileKotlinIosSimulatorArm64` 编译通过（需 macOS 环境）✅
 
-#### 阶段二：KMP 框架集成与 DI 打通
+#### 阶段二：KMP 框架集成与 DI 打通 ✅
 
-- [ ] **P6.6** 修复 Podfile 构建脚本 — 排查 `post_install` 中 lock file 权限问题，恢复 Gradle 构建脚本执行；确认 `pod install` 后 `shared.framework` 正确生成
-- [ ] **P6.7** 修正 Xcode 部署目标 — pbxproj 中 `IPHONEOS_DEPLOYMENT_TARGET` 从 26.4 改为 16.0，与 Podfile 一致
-- [ ] **P6.8** 接入 Swift 层 Koin 初始化 — 创建 `AppDelegate.swift`（`@UIApplicationDelegateAdaptor`），调用 `KoinKt.doInitKoin()`；修改 `HMPApp.swift` 引用 AppDelegate
-- [ ] **P6.9** 验证 — Xcode 编译通过 + Koin 初始化成功（`startKoin { modules(sharedModule, iosPlatformModule) }` 无报错）
+- [x] **P6.6** Podfile 构建脚本 — `post_install` 中 `[CP-User] Build shared` 阶段调用 Gradle 编译 `shared.framework`，`FRAMEWORK_SEARCH_PATHS` 正确指向 `shared/build/cocoapods/framework` ✅
+- [x] **P6.8** 接入 Swift 层 Koin 初始化 — `AppDelegate.swift` 中 `KoinInitializer()` 已启用，`import shared` 已添加 ✅
+- [x] **P6.9** 验证 — Xcode 编译通过 + 模拟器可运行 + Koin 初始化成功 ✅
 
 #### 阶段三：iOS 核心功能实现
 
-- [ ] **P6.10** 完善 DeviceMusicScanner — 从 `AVAsset.commonMetadata` 提取 title/artist/album（当前硬编码 "Unknown"）；通过 `AVAssetTrack` 提取 bitRate/sampleRate；通过 `NSFileManager.attributesOfItemAtPath` 获取 fileSize
-- [ ] **P6.11** 完善 MusicTagParser.ios.kt — 实现 `parseMetadata()` 的 title/artist/album/bitRate/sampleRate 提取；评估歌词解析方案（ID3 标签 `AVMetadataID3MetadataKeyUnsynchronisedLyric` 或 LRC 外挂文件）
-- [ ] **P6.12** 实现 PinyinSortKey.ios.kt — 使用 `CFStringTransform`（`kCFStringTransformToLatin` + `kCFStringTransformStripDiacritics`）将中文转拼音排序键
-- [ ] **P6.13** 实现 MusicRepositoryImpl — 将 Android 版本通用逻辑提取到 commonMain 共享基类，iOS 仅覆盖 `loadMusicFromDevice()`（调用 `DeviceMusicScanner.scanMusic()`），DAO/AI 调用复用 commonMain
-- [ ] **P6.14** 实现 PlaylistRepositoryImpl — 同上策略，DAO 操作跨平台复用，iOS 仅提供平台特定差异
-- [ ] **P6.15** 实现 BackupFileRepositoryImpl — 基于 `NSFileManager` 实现备份文件读写，补全 SettingsRepository 的 `backupSettings()`/`restoreSettings()`
+- [ ] **P6.10** 完善 SecureStorageHelper + DeviceMusicScanner — 实现 Keychain 加密存储 + 完整元数据提取（title/artist/album/bitRate/sampleRate/fileSize）
+- [ ] **P6.11** 完善 MusicTagParser.ios.kt — 实现 `parseMetadata()` 的 title/artist/album/bitRate/sampleRate 提取；歌词解析（ID3 或 LRC）
+- [ ] **P6.12** 实现 PinyinSortKey.ios.kt — 使用 `CFStringTransform`（`kCFStringTransformToLatin` + `kCFStringTransformStripDiacritics`）将中文转拼音排序键（当前：直接返回原字符串）
+- [ ] **P6.13** 实现 MusicRepositoryImpl — 将 Android 版本通用逻辑提取到 commonMain 共享基类，iOS 仅覆盖 `loadMusicFromDevice()`（调用 `DeviceMusicScanner.scanMusic()`），DAO/AI 调用复用 commonMain（当前：所有方法返回空值）
+- [ ] **P6.14** 实现 PlaylistRepositoryImpl — 同上策略，DAO 操作跨平台复用，iOS 仅提供平台特定差异（当前：所有方法返回空值）
+- [ ] **P6.15** 实现 BackupFileRepositoryImpl — 基于 `NSFileManager` 实现备份文件读写，补全 SettingsRepository 的 `backupSettings()`/`restoreSettings()`（当前：saveBackup 仅返回路径，loadBackup 抛异常）
 - [ ] **P6.16** AVPlayer 封装 — `PlayerService.swift`（play/pause/seek/next/previous/播放列表管理）+ `AudioSessionManager.swift`（音频焦点/中断处理）+ `NowPlayingManager.swift`（锁屏控制/远程命令）
 - [ ] **P6.17** 基础 SwiftUI 界面 — `MainTabView`（音乐库/播放/列表/设置 4 个 Tab）+ `LibraryView`（歌曲列表）+ `NowPlayingMiniView`（迷你播放栏）+ `SettingsView`（基础设置项）
 - [ ] **P6.18** 验证 — Xcode 编译通过 + 模拟器可运行 + 能扫描并播放音乐 + 锁屏控制可用
@@ -120,7 +119,7 @@
 >
 > **迁移顺序**：设计系统基础 → 通用组件 → 导航框架 → 各模块页面 → 验证
 >
-> **实际进度**：设计系统 (P7-A) ✅、通用组件 (P7-B) 🔶、导航 (P7-C) 🔶、部分页面 ✅
+> **实际进度**：设计系统 (P7-A) ✅、通用组件 (P7-B) 🔶、导航框架 (P7-C) ✅、部分页面完整/部分占位 🔶
 
 #### P7-A: 设计系统与基础 ✅
 
@@ -151,8 +150,8 @@
 
 - [x] **P7.17** MusicList 组件族 — `MusicList` / `MusicRow` / `DailyHeroCard` 已实现（内置 HomeScreen），`MusicListIndexStrip` 待实现
 - [x] **P7.18** HomeScreen — 每日推荐卡片 + 心动歌单入口，集成 `TabScreen` + `TitleWidget` + `MusicList`
-- [x] **P7.19** GalleryScreen — 画廊/浏览，按专辑/艺术家分组展示
-- [x] **P7.20** ListScreen — 音乐列表页，集成 MusicList 组件 + 排序/筛选
+- [x] **P7.19** GalleryScreen — 画廊/浏览，完整网格布局 + 空状态，占位专辑/歌手数据待接入 ViewModel
+- [ ] **P7.20** ListScreen — 音乐列表页，Tab 分段选择器已实现，5 个内容子视图（歌曲/歌手/专辑/文件夹/标签）均为"待实现"占位
 - [x] **P7.21** SearchScreen — **改用原生 `.searchable(text:)` modifier**，自带搜索栏动画+取消按钮+结果切换
 - [ ] **P7.22** SongDetailScreen — 歌曲详情页（参数：musicId），标签/播放历史/操作，对应 Android `SongDetailScreen.kt`
 - [ ] **P7.23** ArtistScreen — 艺术家页（参数：name），对应 Android `ArtistScreen.kt`
@@ -178,14 +177,14 @@
 
 #### P7-G: 设置模块（对照 Android `ui/settings/`）🔶
 
-- [ ] **P7.37** SettingScreen — 设置主页，**改用原生 `Form` / `List(.insetGrouped)` 分组样式**，主题/背景/Haze/AI/音效/备份/关于
-- [ ] **P7.38** ProfileSettingsScreen — 个人资料设置（用户名/头像），对应 Android `ProfileSettingsScreen.kt`
+- [ ] **P7.37** SettingScreen — **改用原生 `Form` / `List(.insetGrouped)` 分组样式**，主题/背景/Haze/AI/音效/备份/关于；UserScreen.swift 已建框架，子页面均为占位"待实现"
+- [ ] **P7.38** ProfileSettingsScreen — 个人资料设置（用户名/头像），对应 Android `ProfileSettingsScreen.kt`，当前：占位"待实现"
 - [x] **P7.39** UserScreen — 用户页（Tab 内），每日推荐 + 使用统计 + AI 配置入口
-- [ ] **P7.40** AIScreen — AI 配置页，Provider 切换 + API Key + 模型选择 + 连接测试 + 批量处理
+- [ ] **P7.40** AIScreen — AI 配置页，Provider 切换 + API Key + 模型选择 + 连接测试 + 批量处理，当前：占位"待实现"
 - [x] **P7.41** AudioEffectsScreen — 音效调节页，均衡器 + 低音增强 + 环绕声 + 混响
-- [ ] **P7.42** BackupSettingsScreen — 备份/还原，导出 + 导入 + 本地备份列表，对应 Android `BackupSettingsScreen.kt`
-- [ ] **P7.43** LibrarySettingsScreen — 音乐库设置，扫描 + 隐藏文件夹，对应 Android `LibrarySettingsScreen.kt`
-- [ ] **P7.44** UserUsageDataScreen — 使用数据统计页，播放次数/收听时长/标签分布/图表，对应 Android `UserUsageDataScreen.kt`
+- [ ] **P7.42** BackupSettingsScreen — 备份/还原，导出 + 导入 + 本地备份列表，对应 Android `BackupSettingsScreen.kt`，当前：占位"待实现"
+- [ ] **P7.43** LibrarySettingsScreen — 音乐库设置，扫描 + 隐藏文件夹，对应 Android `LibrarySettingsScreen.kt`，当前：占位"待实现"
+- [ ] **P7.44** UserUsageDataScreen — 使用数据统计页，播放次数/收听时长/标签分布/图表，对应 Android `UserUsageDataScreen.kt`，当前：占位"待实现"
 - [ ] **P7.45** SettingsViewModel + RecommendationViewModel + AudioEffectViewModel + UserUsageDataViewModel — 设置/AI推荐/音效/使用数据 4 个 ViewModel
 
 #### P7-H: 验证

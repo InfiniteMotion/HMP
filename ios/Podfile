@@ -1,5 +1,5 @@
 source 'https://cdn.cocoapods.org'
-platform :ios, '16.0'
+platform :ios, '26.3'
 
 use_frameworks!
 
@@ -10,17 +10,20 @@ target 'HMP' do
 end
 
 post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    if target.name == 'shared'
-      target.build_phases.each do |phase|
-        if phase.name == '[CP-User] Build shared'
-          # 完全替换构建脚本，使其始终跳过Kotlin Native构建
-          phase.shell_script = <<-SCRIPT
-            echo "Skipping Gradle build task invocation to avoid lock file permission issues"
-            exit 0
-          SCRIPT
+    installer.pods_project.targets.each do |target|
+        if target.name == 'shared'
+            target.build_phases.each do |phase|
+                if phase.name == '[CP-User] Build shared'
+                    phase.shell_script = <<-SCRIPT
+set -ev
+REPO_ROOT="$PODS_TARGET_SRCROOT"
+"$REPO_ROOT/../gradlew" -p "$REPO_ROOT" $KOTLIN_PROJECT_PATH:syncFramework \
+    -Pkotlin.native.cocoapods.platform=$PLATFORM_NAME \
+    -Pkotlin.native.cocoapods.archs="$ARCHS" \
+    -Pkotlin.native.cocoapods.configuration="$CONFIGURATION"
+SCRIPT
+                end
+            end
         end
-      end
     end
-  end
 end

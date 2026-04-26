@@ -1,10 +1,12 @@
 package com.hmp.domain.setting.model
 
 import com.hmp.domain.enum.AiProviderType
+import kotlinx.serialization.Serializable
 
 /**
  * AI 服务商配置数据类
  */
+@Serializable
 data class AiProviderConfig(
     val type: AiProviderType,
     val apiKey: String = "",

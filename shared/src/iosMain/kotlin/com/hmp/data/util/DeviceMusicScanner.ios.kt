@@ -1,19 +1,16 @@
 package com.hmp.data.util
 
-import platform.AVFoundation.AVURLAsset
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.withContext
-import kotlinx.cinterop.BooleanVar
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.value
+import platform.Foundation.NSFileSize
 
+@OptIn(ExperimentalForeignApi::class)
 actual object DeviceMusicScanner {
     private val _isScanning = MutableStateFlow(false)
 
@@ -28,7 +25,6 @@ actual object DeviceMusicScanner {
         }
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     private fun performScan(): List<ScannedMusicFile> {
         val musicList = mutableListOf<ScannedMusicFile>()
         val fileManager = NSFileManager.defaultManager
@@ -48,7 +44,6 @@ actual object DeviceMusicScanner {
         return musicList
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     private fun scanDirectory(
         directory: String,
         extensions: Set<String>,
@@ -59,51 +54,48 @@ actual object DeviceMusicScanner {
 
         for (item in contents) {
             val fullPath = "$directory/$item"
-            if (fileManager.fileExistsAtPath(fullPath)) {
-                if (fileManager.fileExistsAtPath(fullPath) && fileManager.isDirectoryAtPath(fullPath)) {
-                    scanDirectory(fullPath, extensions, results, fileManager)
-                } else {
-                    val ext = item.toString().substringAfterLast(".", "").lowercase()
-                    if (ext in extensions) {
-                        results.add(createScannedMusicFile(fullPath, item.toString()))
-                    }
+            val url = NSURL.fileURLWithPath(fullPath)
+            if (url.hasDirectoryPath) {
+                scanDirectory(fullPath, extensions, results, fileManager)
+            } else {
+                val ext = item.toString().substringAfterLast(".", "").lowercase()
+                if (ext in extensions) {
+                    results.add(createScannedMusicFile(fullPath, item.toString()))
                 }
             }
         }
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     private fun createScannedMusicFile(path: String, filename: String): ScannedMusicFile {
-        val url = NSURL.fileURLWithPath(path)
-        val asset = AVURLAsset.URLAssetWithURL(url, null)
-
-        val id = path.hashCode().toLong()
         val title = filename.substringBeforeLast(".")
-        val artist = "Unknown Artist"
-        val album = "Unknown Album"
-        val duration = 0L // 暂时设置为0，需要修复AVURLAsset的duration访问
-        val albumArtUri = ""
+
+        val fileSize: Long? = try {
+            val attributes = NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
+            if (attributes != null) {
+                val sizeValue = attributes[NSFileSize]
+                when (sizeValue) {
+                    is Long -> sizeValue
+                    is Int -> sizeValue.toLong()
+                    is Double -> sizeValue.toLong()
+                    else -> null
+                }
+            } else null
+        } catch (_: Exception) {
+            null
+        }
 
         return ScannedMusicFile(
-            id = id,
+            id = path.hashCode().toLong(),
             title = title,
-            artist = artist,
-            album = album,
-            duration = duration,
+            artist = "Unknown Artist",
+            album = "Unknown Album",
+            duration = 0L,
             path = path,
-            albumArtUri = albumArtUri,
+            albumArtUri = "",
+            bitRate = null,
+            sampleRate = null,
+            fileSize = fileSize,
             format = path.substringAfterLast(".").uppercase()
         )
-    }
-
-    @OptIn(ExperimentalForeignApi::class)
-    private fun NSFileManager.isDirectoryAtPath(path: String): Boolean {
-        val fileManager = NSFileManager.defaultManager
-        var isDirectory = false
-        if (fileManager.fileExistsAtPath(path)) {
-            // 暂时简化实现，后续需要使用正确的指针方式
-            isDirectory = false
-        }
-        return isDirectory
     }
 }

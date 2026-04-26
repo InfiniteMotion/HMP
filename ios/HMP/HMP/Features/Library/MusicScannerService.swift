@@ -1,42 +1,79 @@
 import Foundation
+import MediaPlayer
+import AVFoundation
 
-/// 音乐扫描服务 - 使用 FileManager 扫描本地音乐文件
+/// 音乐扫描服务 - 递归扫描应用沙盒 Documents 目录
 class MusicScannerService {
     static let shared = MusicScannerService()
     
-    /// 扫描音乐文件
+    /// 支持的音乐文件扩展名
+    private let supportedExtensions = ["mp3", "m4a", "aac", "wav", "flac", "alac", "ogg"]
+    
+    /// 扫描音乐文件（递归扫描 Documents 目录）
     func scanMusicFiles() -> [URL] {
+        print("[MusicScanner] scanMusicFiles called")
         var musicFiles: [URL] = []
         
-        // 获取 Documents 目录
-        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        // 递归扫描 Documents 目录及其所有子目录
+        let documentsFiles = scanDocumentsDirectory()
+        print("[MusicScanner] found \(documentsFiles.count) files in Documents")
+        musicFiles.append(contentsOf: documentsFiles)
+        
+        print("[MusicScanner] total files: \(musicFiles.count)")
+        return musicFiles
+    }
+    
+    /// 递归扫描应用沙盒 Documents 目录
+    private func scanDocumentsDirectory() -> [URL] {
+        var musicFiles: [URL] = []
+        
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("[MusicScanner] cannot get Documents directory")
             return musicFiles
         }
         
-        // 扫描 Documents 目录
+        print("[MusicScanner] scanning Documents directory: \(documentsURL.path)")
+        
         do {
-            let files = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
+            // 递归扫描 Documents 及其所有子目录
+            let enumerator = FileManager.default.enumerator(at: documentsURL, includingPropertiesForKeys: nil)
+            var itemCount = 0
             
-            // 筛选音乐文件（支持的格式）
-            let supportedExtensions = ["mp3", "m4a", "wav", "aiff", "flac"]
-            for file in files {
-                let fileExtension = file.pathExtension.lowercased()
-                if supportedExtensions.contains(fileExtension) {
-                    musicFiles.append(file)
+            while let fileURL = enumerator?.nextObject() as? URL {
+                itemCount += 1
+                let ext = fileURL.pathExtension.lowercased()
+                if supportedExtensions.contains(ext) {
+                    print("[MusicScanner] found music file: \(fileURL.lastPathComponent)")
+                    musicFiles.append(fileURL)
                 }
             }
+            print("[MusicScanner] scanned \(itemCount) total items in Documents")
         } catch {
-            print("Error scanning music files: \(error)")
+            print("[MusicScanner] error reading Documents: \(error)")
         }
         
         return musicFiles
     }
     
-    /// 获取音乐文件信息
+    /// 获取音乐文件元数据信息
     func getMusicFileInfo(url: URL) -> (title: String, artist: String, album: String)? {
-        // 这里可以使用 shared 模块的 MusicTagParser 来解析音乐标签
-        // 暂时返回文件名作为标题
-        let fileName = url.lastPathComponent.replacingOccurrences(of: ".\(url.pathExtension)", with: "")
-        return (title: fileName, artist: "Unknown", album: "Unknown")
+        let asset = AVURLAsset(url: url)
+        let metadata = asset.commonMetadata
+        var title: String?
+        var artist: String?
+        var album: String?
+        
+        for item in metadata {
+            if let key = item.commonKey?.rawValue {
+                switch key {
+                case "title": title = item.stringValue
+                case "artist": artist = item.stringValue
+                case "albumName": album = item.stringValue
+                default: break
+                }
+            }
+        }
+        
+        return (title: title ?? url.lastPathComponent, artist: artist ?? "Unknown", album: album ?? "Unknown")
     }
 }
