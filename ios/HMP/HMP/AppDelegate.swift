@@ -10,8 +10,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         requestMusicLibraryPermission()
         ensureDocumentsFolderVisible()
-        let initializer = KoinInitializer()
-        type(of: initializer).init()
+        KoinInitializer().doInit()
+        print("[AppDelegate] Koin initialized")
+        MetadataParserBridge().register(parser: MusicMetadataParser())
         return true
     }
 

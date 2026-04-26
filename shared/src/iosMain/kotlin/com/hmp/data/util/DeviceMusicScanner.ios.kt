@@ -37,7 +37,7 @@ actual object DeviceMusicScanner {
             null
         ) ?: return musicList
 
-        val musicExtensions = setOf("mp3", "m4a", "wav", "flac", "aac", "ogg")
+        val musicExtensions = setOf("mp3", "m4a", "wav", "flac", "aac", "ogg", "alac")
 
         scanDirectory(documentsURL.path!!, musicExtensions, musicList, fileManager)
 
@@ -67,7 +67,9 @@ actual object DeviceMusicScanner {
     }
 
     private fun createScannedMusicFile(path: String, filename: String): ScannedMusicFile {
-        val title = filename.substringBeforeLast(".")
+        val fallbackTitle = filename.substringBeforeLast(".")
+
+        val metadata = MusicTagParser.parseMetadata(path)
 
         val fileSize: Long? = try {
             val attributes = NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
@@ -85,17 +87,27 @@ actual object DeviceMusicScanner {
         }
 
         return ScannedMusicFile(
-            id = path.hashCode().toLong(),
-            title = title,
-            artist = "Unknown Artist",
-            album = "Unknown Album",
-            duration = 0L,
+            id = generateStableId(path),
+            title = metadata?.title ?: fallbackTitle,
+            artist = metadata?.artist ?: "Unknown Artist",
+            album = metadata?.album ?: "Unknown Album",
+            duration = metadata?.duration ?: 0L,
             path = path,
             albumArtUri = "",
-            bitRate = null,
-            sampleRate = null,
+            bitRate = metadata?.bitRate,
+            sampleRate = metadata?.sampleRate,
             fileSize = fileSize,
-            format = path.substringAfterLast(".").uppercase()
+            format = metadata?.format ?: path.substringAfterLast(".").uppercase(),
+            lyrics = metadata?.lyrics
         )
+    }
+
+    private fun generateStableId(path: String): Long {
+        var hash = 0xcbf29ce484222325UL
+        for (byte in path.encodeToByteArray()) {
+            hash = hash xor byte.toULong()
+            hash *= 0x100000001b3UL
+        }
+        return hash.toLong()
     }
 }

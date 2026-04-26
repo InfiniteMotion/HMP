@@ -4,6 +4,7 @@ import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * 获取所有音乐
@@ -18,6 +19,7 @@ class GetAllMusicUseCase(
      * @param orderType 排序方式 (ASC, DESC)
      * @return 音乐列表
      */
+    @Throws(CancellationException::class)
     suspend operator fun invoke(orderBy: String = "title", orderType: String = "ASC"): List<MusicInfo> {
         return musicRepository.getAllMusicInfoAsList(orderBy, orderType)
     }
