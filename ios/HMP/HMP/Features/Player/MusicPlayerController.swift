@@ -1,5 +1,6 @@
 import Foundation
 import shared
+import UIKit
 
 /// 播放编排器单例 — 等价于 Android MusicController
 /// 管理：播放状态、队列、播放模式、进度、历史记录、定时器
@@ -45,7 +46,40 @@ class MusicPlayerController {
         self.settingsRepository = KoinHelperKt.getSettingsRepository()
 
         setupEngineCallbacks()
+        setupAppLifecycleObservers()
         restoreSavedState()
+    }
+
+    // MARK: - App Lifecycle
+
+    private func setupAppLifecycleObservers() {
+        // 应用进入后台时保存播放状态
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+
+        // 应用终止时保存播放状态
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppWillTerminate),
+            name: UIApplication.willTerminateNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleAppDidEnterBackground() {
+        print("[MusicPlayerController] App did enter background, saving playback state")
+        persistPlaybackState()
+        saveCurrentPosition()
+    }
+
+    @objc private func handleAppWillTerminate() {
+        print("[MusicPlayerController] App will terminate, saving playback state")
+        persistPlaybackState()
+        saveCurrentPosition()
     }
 
     // MARK: - Engine Callbacks
@@ -57,9 +91,15 @@ class MusicPlayerController {
         engine.onPositionUpdated = { [weak self] pos, dur in
             self?.currentPosition = pos
             self?.duration = dur
+            // 每10秒保存一次播放位置
+            if pos % 10000 < 500 {
+                self?.saveCurrentPosition()
+            }
         }
         engine.onPlayStateChanged = { [weak self] playing in
             self?.isPlaying = playing
+            // 播放状态改变时保存位置
+            self?.saveCurrentPosition()
         }
         engine.onError = { [weak self] msg in
             print("[MusicPlayerController] error: \(msg)")
@@ -80,6 +120,9 @@ class MusicPlayerController {
             currentIndex = 0
             startPlaying(list[0])
         }
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
+        }
     }
 
     func addAllToPlaylistByShuffle(_ list: [MusicInfo_]) {
@@ -87,6 +130,9 @@ class MusicPlayerController {
         if !currentPlaylist.isEmpty {
             currentIndex = 0
             startPlaying(currentPlaylist[0])
+        }
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
         }
     }
 
@@ -174,6 +220,9 @@ class MusicPlayerController {
         currentPlayingMusic = nil
         isMiniPlayerVisible = false
         engine.stop()
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
+        }
     }
 
     // MARK: - Private Helpers
@@ -404,14 +453,129 @@ class MusicPlayerController {
         Task {
             do {
                 try await settingsRepository.saveCurrentMusicId(id: musicInfo.music.id)
-                try await settingsRepository.saveCurrentPosition(position: 0)
+                try await settingsRepository.saveCurrentPosition(position: currentPosition)
+                // 确保 currentPlaylistId 已保存
+                if let playlistId = try await settingsRepository.getCurrentPlaylistId() {
+                    try await persistCurrentPlaylistToDatabase(playlistId: playlistId.int64Value)
+                }
             } catch {
                 print("[MusicPlayerController] persistPlaybackState failed: \(error)")
             }
         }
     }
 
+    private func persistCurrentPlaylistToDatabase(playlistId: Int64) async {
+        do {
+            try await managePlaylistUseCase.resetPlaylistItems(playlistId: playlistId, playlist: currentPlaylist)
+        } catch {
+            print("[MusicPlayerController] persistCurrentPlaylistToDatabase failed: \(error)")
+        }
+    }
+
+    private func persistCurrentPlaylistToDatabaseWithCurrentId() async {
+        do {
+            let playlistId = try await settingsRepository.getCurrentPlaylistId()
+            guard let pid = playlistId else { return }
+            try await persistCurrentPlaylistToDatabase(playlistId: pid.int64Value)
+        } catch {
+            print("[MusicPlayerController] persistCurrentPlaylistToDatabaseWithCurrentId failed: \(error)")
+        }
+    }
+
+    /// 初始化默认播放列表（如果不存在）
+    /// 对应 Android PlaylistViewModel.initializeDefaultPlaylists()
+    func initializeDefaultPlaylists() async {
+        do {
+            // 检查并创建默认播放列表
+            if try await settingsRepository.getCurrentPlaylistId() == nil {
+                // 先尝试删除可能存在的同名列表（避免重复）
+                try? await managePlaylistUseCase.removePlaylist(name: "默认播放列表")
+                let defaultId = try await managePlaylistUseCase.createPlaylist(name: "默认播放列表")
+                try await settingsRepository.saveCurrentPlaylistId(playlistId: defaultId.int64Value)
+                print("[MusicPlayerController] Created default playlist with id: \(defaultId)")
+            }
+
+            // 检查并创建红心播放列表
+            if try await settingsRepository.getLikedPlaylistId() == nil {
+                try? await managePlaylistUseCase.removePlaylist(name: "红心")
+                let likedId = try await managePlaylistUseCase.createPlaylist(name: "红心")
+                try await settingsRepository.saveLikedPlaylistId(playlistId: likedId.int64Value)
+                print("[MusicPlayerController] Created liked playlist with id: \(likedId)")
+            }
+
+            // 检查并创建最近播放列表
+            if try await settingsRepository.getRecentPlaylistId() == nil {
+                try? await managePlaylistUseCase.removePlaylist(name: "最近播放")
+                let recentId = try await managePlaylistUseCase.createPlaylist(name: "最近播放")
+                try await settingsRepository.saveRecentPlaylistId(playlistId: recentId.int64Value)
+                print("[MusicPlayerController] Created recent playlist with id: \(recentId)")
+            }
+
+            // 初始化完成后，恢复播放状态
+            await loadPlaylistFromSettings()
+            await restoreLastPosition()
+        } catch {
+            print("[MusicPlayerController] Failed to initialize playlists: \(error)")
+        }
+    }
+
     private func restoreSavedState() {
-        // Playback state restoration deferred — will be handled when user interacts
+        // 不再直接恢复，等待 initializeDefaultPlaylists 完成后再恢复
+        // 这是为了避免在默认播放列表创建之前尝试恢复状态
+    }
+
+    private func loadPlaylistFromSettings() async {
+        do {
+            guard let playlistId = try await settingsRepository.getCurrentPlaylistId() else {
+                print("[MusicPlayerController] loadPlaylistFromSettings: no currentPlaylistId")
+                return
+            }
+            let currentMusicId = try await KoinHelperKt.getCurrentMusicId()
+            let list = try await managePlaylistUseCase.getPlaylistById(playlistId: playlistId.int64Value)
+
+            await MainActor.run {
+                self.currentPlaylist = list
+                self.playbackMode = .sequential
+                if let musicId = currentMusicId {
+                    self.currentIndex = list.firstIndex { $0.music.id == musicId.int64Value } ?? 0
+                    if self.currentIndex < list.count {
+                        self.currentPlayingMusic = list[self.currentIndex]
+                        self.isMiniPlayerVisible = true
+                        print("[MusicPlayerController] Restored playback state: musicId=\(musicId), position=\(self.currentPosition)")
+                    }
+                } else {
+                    self.currentIndex = 0
+                }
+            }
+        } catch {
+            print("[MusicPlayerController] loadPlaylistFromSettings failed: \(error)")
+        }
+    }
+
+    private func restoreLastPosition() async {
+        do {
+            let lastPos = try await KoinHelperKt.getSettingsCurrentPosition()
+            let lastPosValue = lastPos.int64Value
+            await MainActor.run {
+                self.currentPosition = lastPosValue
+                // 如果有当前歌曲，seek到保存的位置
+                if self.currentPlayingMusic != nil && lastPosValue > 0 {
+                    self.seekTo(position: lastPosValue)
+                    print("[MusicPlayerController] Restored position: \(lastPosValue)ms")
+                }
+            }
+        } catch {
+            print("[MusicPlayerController] restoreLastPosition failed: \(error)")
+        }
+    }
+
+    func saveCurrentPosition() {
+        Task {
+            do {
+                try await settingsRepository.saveCurrentPosition(position: currentPosition)
+            } catch {
+                print("[MusicPlayerController] saveCurrentPosition failed: \(error)")
+            }
+        }
     }
 }

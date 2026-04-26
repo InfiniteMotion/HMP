@@ -13,6 +13,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         KoinInitializer().doInit()
         print("[AppDelegate] Koin initialized")
         MetadataParserBridge().register(parser: MusicMetadataParser())
+        ArtworkBridge().register(extractor: ArtworkExtractor())
+
+        // 初始化默认播放列表（这会触发播放状态的恢复）
+        Task {
+            await MusicPlayerController.shared.initializeDefaultPlaylists()
+        }
+
         return true
     }
 

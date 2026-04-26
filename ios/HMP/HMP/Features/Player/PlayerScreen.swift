@@ -2,6 +2,7 @@ import SwiftUI
 import shared
 
 /// 播放器页面 - 对应 Android PlayerScreen.kt
+/// 核心对齐版：封面居中 + 歌曲信息左对齐 + 5个次控制按钮 + 安全区适配
 struct PlayerScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(HMPTheme.self) private var theme
@@ -11,8 +12,33 @@ struct PlayerScreen: View {
     @State private var showLyrics = false
     @State private var showAudioEffects = false
     @State private var showQueue = false
+    @State private var showTimer = false
     @State private var isSeeking = false
     @State private var seekingPosition: Double = 0
+    @State private var dragOffset: CGFloat = 0
+
+    private let dismissThreshold: CGFloat = 220
+
+    // MARK: - Computed Properties for Default Values
+    private var musicTitle: String {
+        controller.currentPlayingMusic?.music.title ?? "Music Title"
+    }
+
+    private var musicArtist: String {
+        controller.currentPlayingMusic?.music.artist ?? "Artist"
+    }
+
+    private var musicAlbum: String {
+        controller.currentPlayingMusic?.music.album ?? "Album"
+    }
+
+    private var albumArtUri: String? {
+        controller.currentPlayingMusic?.music.albumArtUri
+    }
+
+    private var musicPath: String? {
+        controller.currentPlayingMusic?.music.path
+    }
 
     var body: some View {
         ZStack {
@@ -22,95 +48,81 @@ struct PlayerScreen: View {
             // 遮罩
             Color.black.opacity(0.3).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // 顶部栏
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    }
+            // 安全区适配
+            SafeAreaView {
+                VStack(spacing: 0) {
+                    // 顶部栏 - 安全区内
+                    playerHeader
 
-                    Spacer()
+                    VStack(spacing: 0) {
+                        Spacer()
 
-                    Button {
-                        showLyrics = true
-                    } label: {
-                        Image(systemName: "quote.bubble")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    }
+                        // 歌曲信息（左对齐）
+                        HStack {
+                            musicInfoSection
+                            Spacer()
+                        }
+                        .padding(.horizontal, 32)
 
-                    Button {
-                        showQueue = true
-                    } label: {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    }
+                        Spacer()
 
-                    Button {
-                        showAudioEffects = true
-                    } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
+                        // 专辑封面（居中）
+                        AlbumCover(
+                            uri: albumArtUri,
+                            musicPath: musicPath,
+                            size: UIScreen.main.bounds.width * 0.65,
+                            cornerRadius: 20
+                        )
+
+                        Spacer()
+
+                        // 进度条
+                        PlayerSeekBar(
+                            currentPosition: controller.currentPosition,
+                            duration: controller.duration,
+                            isSeeking: $isSeeking,
+                            seekingPosition: $seekingPosition,
+                            onSeek: { pos in controller.seekTo(position: pos) }
+                        )
+                        .padding(.horizontal, 32)
+
+                        Spacer()
+
+                        // 控制按钮
+                        MainControlRow()
+
+                        Spacer()
+
+                        SecondaryControlRow(
+                            showTimerAction: { showTimer = true },
+                            showQueue: $showQueue
+                        )
+
+                        Spacer()
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 8)
-
-                // 专辑封面
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(theme.primary.opacity(0.15))
-                    .frame(width: UIScreen.main.bounds.width * 0.65,
-                           height: UIScreen.main.bounds.width * 0.65)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 60))
-                            .foregroundColor(theme.primary)
-                    }
-                    .padding(.top, 32)
-
-                Spacer(minLength: 32)
-
-                // 歌曲信息
-                if let music = controller.currentPlayingMusic {
-                    VStack(spacing: 8) {
-                        Text(music.music.title)
-                            .font(TypographyTokens.headlineLarge)
-                            .foregroundColor(.white)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.center)
-
-                        Text(music.music.artist)
-                            .font(TypographyTokens.bodyLarge)
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 40)
-
-                    // 进度条
-                    PlayerSeekBar(
-                        currentPosition: controller.currentPosition,
-                        duration: controller.duration,
-                        isSeeking: $isSeeking,
-                        seekingPosition: $seekingPosition,
-                        onSeek: { pos in controller.seekTo(position: pos) }
-                    )
-                    .padding(.top, 24)
-                    .padding(.horizontal, 40)
-
-                    // 控制按钮
-                    PlayerControls()
-                        .padding(.top, 16)
-                }
+                .offset(y: dragOffset)
+                .opacity(max(0, 1 - abs(dragOffset) / (2 * dismissThreshold)))
             }
         }
         .ignoresSafeArea()
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { value in
+                    if value.translation.height > 0 {
+                        dragOffset = value.translation.height
+                    }
+                }
+                .onEnded { value in
+                    if value.translation.height > dismissThreshold {
+                        dismiss()
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
+                    }
+                }
+        )
         .sheet(isPresented: $showLyrics) {
             LyricsScreen()
                 .presentationDetents([.medium, .large])
@@ -122,6 +134,66 @@ struct PlayerScreen: View {
         .sheet(isPresented: $showQueue) {
             PlayQueueSheet()
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showTimer) {
+            TimerSheet()
+                .presentationDetents([.height(300)])
+        }
+    }
+
+    // MARK: - 顶部栏
+    private var playerHeader: some View {
+        HStack(spacing: 16) {
+            Spacer()
+            Button {
+                HapticManager.shared.click()
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 32, height: 32)
+            }
+            Spacer()
+        }
+        .padding(.top, 64)
+        .padding(.bottom, 16)
+    }
+
+    // MARK: - 歌曲信息区
+    private var musicInfoSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(musicTitle)
+                .font(TypographyTokens.displayMedium)
+                .foregroundColor(.white)
+                .lineLimit(1)
+
+            Text(musicArtist)
+                .font(TypographyTokens.titleMedium)
+                .foregroundColor(.white.opacity(0.7))
+                .lineLimit(1)
+
+            Text(musicAlbum)
+                .font(TypographyTokens.titleMedium)
+                .foregroundColor(.white.opacity(0.7))
+                .lineLimit(1)
+        }
+    }
+}
+
+// MARK: - 安全区适配容器
+struct SafeAreaView<Content: View>: View {
+    let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            content()
+                .padding(.top, geo.safeAreaInsets.top)
+                .padding(.bottom, geo.safeAreaInsets.bottom)
         }
     }
 }
@@ -175,155 +247,234 @@ struct PlayerSeekBar: View {
         let seconds = ms / 1000
         let min = seconds / 60
         let sec = seconds % 60
+        return String(format: "%02d:%02d", min, sec)
+    }
+}
+
+// MARK: - 主控制行（播放/暂停）
+struct MainControlRow: View {
+    private var controller: MusicPlayerController { MusicPlayerController.shared }
+    
+    var body: some View {
+        HStack(spacing: 48) {
+            // 上一首
+            Button {
+                HapticManager.shared.lightClick()
+                controller.playPrevious()
+            } label: {
+                Image(systemName: "backward.end.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(.white)
+            }
+
+            // 播放/暂停
+            Button {
+                HapticManager.shared.click()
+                if controller.isPlaying {
+                    controller.pauseMusic()
+                } else {
+                    controller.playOrResume()
+                }
+            } label: {
+                Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.white)
+                    .frame(width: 72, height: 72)
+                    .background(Circle().fill(ColorTokens.hdRed))
+            }
+
+            // 下一首
+            Button {
+                HapticManager.shared.lightClick()
+                controller.playNext()
+            } label: {
+                Image(systemName: "forward.end.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(.white)
+            }
+        }
+    }
+}
+
+// MARK: - 次要控制行（播放模式/收藏等）
+struct SecondaryControlRow: View {
+    private var controller: MusicPlayerController { MusicPlayerController.shared }
+    let showTimerAction: () -> Void
+    let showQueue: Binding<Bool>
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // 播放模式
+            Button {
+                controller.togglePlaybackModeByOrder()
+            } label: {
+                Image(systemName: playbackModeIcon)
+                    .font(.system(size: 20))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+
+            Spacer()
+
+            // 收藏
+            Button {
+                controller.updateLikedStatus(!controller.likeStatus)
+            } label: {
+                Image(systemName: controller.likeStatus ? "heart.fill" : "heart")
+                    .font(.system(size: 20))
+                    .foregroundColor(controller.likeStatus ? ColorTokens.hdRed : .white.opacity(0.7))
+            }
+
+            Spacer()
+
+            // 识别歌曲/心随律动
+            Button {
+                HapticManager.shared.click()
+            } label: {
+                Image(systemName: "waveform")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+
+            Spacer()
+
+            // 定时器
+            if let remaining = controller.timerRemaining {
+                Button {
+                    showTimerAction()
+                } label: {
+                    Text(formatRemaining(remaining))
+                        .font(TypographyTokens.bodySmall)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            } else {
+                Button {
+                    showTimerAction()
+                } label: {
+                    Image(systemName: "timer")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
+
+            Spacer()
+
+            // 播放列表
+            Button {
+                HapticManager.shared.click()
+                showQueue.wrappedValue = true
+            } label: {
+                Image(systemName: "music.note.list")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+    
+    private var playbackModeIcon: String {
+        switch controller.playbackMode {
+        case .repeatOne: return "repeat.1"
+        case .shuffle: return "shuffle"
+        default: return "repeat"
+        }
+    }
+    
+    private func formatRemaining(_ ms: Int64) -> String {
+        let seconds = ms / 1000
+        let min = seconds / 60
+        let sec = seconds % 60
         return String(format: "%d:%02d", min, sec)
     }
 }
 
-// MARK: - 播放控制按钮
-struct PlayerControls: View {
+// MARK: - 定时器弹窗
+struct TimerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(HMPTheme.self) private var theme
     private var controller: MusicPlayerController { MusicPlayerController.shared }
 
-    var body: some View {
-        VStack(spacing: 16) {
-            // 主控制行
-            HStack(spacing: 40) {
-                // 上一首
-                Button {
-                    HapticManager.shared.lightClick()
-                    controller.playPrevious()
-                } label: {
-                    Image(systemName: "backward.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white)
-                }
+    let timerOptions: [(label: String, minutes: Int)] = [
+        ("1 分钟", 1),
+        ("5 分钟", 5),
+        ("10 分钟", 10),
+        ("15 分钟", 15),
+        ("30 分钟", 30),
+        ("60 分钟", 60),
+        ("播完当前", 0)
+    ]
 
-                // 播放/暂停
-                Button {
-                    HapticManager.shared.click()
-                    if controller.isPlaying {
-                        controller.pauseMusic()
-                    } else {
-                        controller.playOrResume()
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(timerOptions, id: \.minutes) { option in
+                    Button {
+                        HapticManager.shared.click()
+                        controller.startTimer(minutes: option.minutes)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(option.label)
+                                .foregroundColor(theme.text)
+                            Spacer()
+                            if controller.timerRemaining != nil && option.minutes > 0 {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(theme.primary)
+                            }
+                        }
                     }
-                } label: {
-                    Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(.white)
-                        .frame(width: 64, height: 64)
-                        .background(Circle().fill(ColorTokens.hdRed))
                 }
 
-                // 下一首
-                Button {
-                    HapticManager.shared.lightClick()
-                    controller.playNext()
-                } label: {
-                    Image(systemName: "forward.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white)
+                if controller.timerRemaining != nil {
+                    Button {
+                        HapticManager.shared.click()
+                        controller.cancelTimer()
+                        dismiss()
+                    } label: {
+                        Text("取消定时器")
+                            .foregroundColor(.red)
+                    }
                 }
             }
-
-            // 次要控制行
-            HStack(spacing: 24) {
-                // 播放模式
-                Button {
-                    controller.togglePlaybackModeByOrder()
-                } label: {
-                    Image(systemName: playbackModeIcon)
-                        .font(.system(size: 18))
-                        .foregroundColor(.white.opacity(0.7))
-                }
-
-                Spacer()
-
-                // 收藏
-                Button {
-                    controller.updateLikedStatus(!controller.likeStatus)
-                } label: {
-                    Image(systemName: controller.likeStatus ? "heart.fill" : "heart")
-                        .font(.system(size: 18))
-                        .foregroundColor(controller.likeStatus ? ColorTokens.hdRed : .white.opacity(0.7))
+            .listStyle(.insetGrouped)
+            .navigationTitle("定时关闭")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("取消") { dismiss() }
                 }
             }
-            .padding(.horizontal, 40)
         }
-    }
-
-    private var playbackModeIcon: String {
-        let mode = controller.playbackMode
-        if mode == PlaybackMode.repeatOne {
-            return "repeat.1"
-        } else if mode == PlaybackMode.shuffle {
-            return "shuffle"
-        } else {
-            return "repeat"
-        }
-    }
-}
-
-// MARK: - FluidBackgroundView (placeholder)
-struct FluidBackgroundView: View {
-    let albumArtUri: String
-
-    var body: some View {
-        Color.black
-            .ignoresSafeArea()
     }
 }
 
 // MARK: - 播放队列
 struct PlayQueueSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(HMPTheme.self) private var theme
     private var controller: MusicPlayerController { MusicPlayerController.shared }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            Group {
                 if controller.currentPlaylist.isEmpty {
-                    Spacer()
-                    Text("队列为空")
-                        .font(TypographyTokens.bodyLarge)
-                        .foregroundColor(theme.text.opacity(0.4))
-                    Spacer()
+                    VStack(spacing: 16) {
+                        Spacer()
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 48))
+                            .foregroundColor(theme.text.opacity(0.3))
+                        Text("队列为空")
+                            .font(TypographyTokens.bodyLarge)
+                            .foregroundColor(theme.text.opacity(0.4))
+                        Spacer()
+                    }
                 } else {
                     List {
                         ForEach(Array(controller.currentPlaylist.enumerated()), id: \.element.music.id) { index, info in
-                            HStack(spacing: 12) {
-                                // 序号或播放指示
-                                if index == controller.currentIndex {
-                                    Image(systemName: "speaker.wave.2.fill")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(theme.primary)
-                                        .frame(width: 24)
-                                } else {
-                                    Text("\(index + 1)")
-                                        .font(TypographyTokens.bodySmall)
-                                        .foregroundColor(theme.text.opacity(0.4))
-                                        .frame(width: 24)
-                                }
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(info.music.title)
-                                        .font(TypographyTokens.bodyMedium)
-                                        .foregroundColor(index == controller.currentIndex ? theme.primary : theme.text)
-                                        .lineLimit(1)
-
-                                    Text(info.music.artist)
-                                        .font(TypographyTokens.bodySmall)
-                                        .foregroundColor(theme.text.opacity(0.6))
-                                        .lineLimit(1)
-                                }
-
-                                Spacer()
-
-                                Text(formatDuration(info.music.duration))
-                                    .font(TypographyTokens.bodySmall)
-                                    .foregroundColor(theme.text.opacity(0.4))
-                            }
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
+                            MusicListRow(
+                                music: info.music,
+                                index: index,
+                                isPlaying: index == controller.currentIndex
+                            ) {
                                 controller.playAt(index)
                             }
                         }
@@ -335,7 +486,6 @@ struct PlayQueueSheet: View {
                                     if index < controller.currentIndex {
                                         controller.currentIndex -= 1
                                     } else if index == controller.currentIndex {
-                                        // Current track removed — play next or stop
                                         if controller.currentPlaylist.isEmpty {
                                             controller.clearPlaylist()
                                         } else {
@@ -350,23 +500,17 @@ struct PlayQueueSheet: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("播放队列 (\(controller.currentPlaylist.count))")
+            .navigationTitle("播放队列")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("清除") {
                         controller.clearPlaylist()
+                        dismiss()
                     }
                     .disabled(controller.currentPlaylist.isEmpty)
                 }
             }
         }
-    }
-
-    private func formatDuration(_ ms: Int64) -> String {
-        let seconds = ms / 1000
-        let min = seconds / 60
-        let sec = seconds % 60
-        return String(format: "%d:%02d", min, sec)
     }
 }

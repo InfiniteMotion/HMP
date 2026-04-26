@@ -86,6 +86,9 @@ actual object DeviceMusicScanner {
             null
         }
 
+        // Extract album artwork via registered bridge
+        val albumArtUri = ArtworkBridge.registered?.extractAndSave(path) ?: ""
+
         return ScannedMusicFile(
             id = generateStableId(path),
             title = metadata?.title ?: fallbackTitle,
@@ -93,7 +96,7 @@ actual object DeviceMusicScanner {
             album = metadata?.album ?: "Unknown Album",
             duration = metadata?.duration ?: 0L,
             path = path,
-            albumArtUri = "",
+            albumArtUri = albumArtUri,
             bitRate = metadata?.bitRate,
             sampleRate = metadata?.sampleRate,
             fileSize = fileSize,
@@ -109,5 +112,21 @@ actual object DeviceMusicScanner {
             hash *= 0x100000001b3UL
         }
         return hash.toLong()
+    }
+}
+
+/**
+ * Bridge for Swift to register artwork extraction implementation.
+ * Same pattern as MetadataParserBridge.
+ */
+object ArtworkBridge {
+    var registered: ArtworkExtractor? = null
+
+    fun register(extractor: ArtworkExtractor) {
+        registered = extractor
+    }
+
+    interface ArtworkExtractor {
+        fun extractAndSave(filePath: String): String?
     }
 }

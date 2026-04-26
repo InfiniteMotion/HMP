@@ -11,6 +11,7 @@ struct MusicDetailDialog: View {
     let album: String
     let durationMs: Int64
     let albumArtUri: String?
+    let musicPath: String?
 
     let onAddToPlaylist: () -> Void
     let onPlayNext: () -> Void
@@ -25,7 +26,7 @@ struct MusicDetailDialog: View {
                 // 歌曲信息区
                 Section {
                     HStack(spacing: 12) {
-                        AlbumCover(uri: albumArtUri, size: 56)
+                        AlbumCover(uri: albumArtUri, musicPath: musicPath, size: 56)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(title)
                                 .font(TypographyTokens.titleMedium)

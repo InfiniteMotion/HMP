@@ -4,7 +4,7 @@ struct ContentView: View {
     @State private var theme = HMPTheme()
 
     var body: some View {
-        MainTabView()
+        MainScreen()
             .environment(theme)
     }
 }

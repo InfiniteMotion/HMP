@@ -20,8 +20,8 @@
 
 **实际进度**：
 - P0-P5: ✅ 全部完成
-- P6: 🔶 阶段一/二 ✅，阶段三待完成
-- P7: 🔶 设计系统 ✅，部分页面完整实现，部分占位待完善
+- P6: 🔶 阶段一/二 ✅，阶段三部分完成（P6.14/P6.16/P6.17 ✅，P6.18 🔶）
+- P7: 🔶 设计系统 ✅，通用组件部分 ✅，播放模块核心 ✅，导航重构 ✅（Phase 1），ViewModel 全线接入待做（Phase 2）
 
 ---
 
@@ -107,11 +107,11 @@
 - [ ] **P6.11** 完善 MusicTagParser.ios.kt — 实现 `parseMetadata()` 的 title/artist/album/bitRate/sampleRate 提取；歌词解析（ID3 或 LRC）
 - [ ] **P6.12** 实现 PinyinSortKey.ios.kt — 使用 `CFStringTransform`（`kCFStringTransformToLatin` + `kCFStringTransformStripDiacritics`）将中文转拼音排序键（当前：直接返回原字符串）
 - [ ] **P6.13** 实现 MusicRepositoryImpl — 将 Android 版本通用逻辑提取到 commonMain 共享基类，iOS 仅覆盖 `loadMusicFromDevice()`（调用 `DeviceMusicScanner.scanMusic()`），DAO/AI 调用复用 commonMain（当前：所有方法返回空值）
-- [ ] **P6.14** 实现 PlaylistRepositoryImpl — 同上策略，DAO 操作跨平台复用，iOS 仅提供平台特定差异（当前：所有方法返回空值）
+- [x] **P6.14** 实现 PlaylistRepositoryImpl — DAO 操作委托 Room DAO，全平台复用 ✅（2026-04-26）
 - [ ] **P6.15** 实现 BackupFileRepositoryImpl — 基于 `NSFileManager` 实现备份文件读写，补全 SettingsRepository 的 `backupSettings()`/`restoreSettings()`（当前：saveBackup 仅返回路径，loadBackup 抛异常）
-- [ ] **P6.16** AVPlayer 封装 — `PlayerService.swift`（play/pause/seek/next/previous/播放列表管理）+ `AudioSessionManager.swift`（音频焦点/中断处理）+ `NowPlayingManager.swift`（锁屏控制/远程命令）
-- [ ] **P6.17** 基础 SwiftUI 界面 — `MainTabView`（音乐库/播放/列表/设置 4 个 Tab）+ `LibraryView`（歌曲列表）+ `NowPlayingMiniView`（迷你播放栏）+ `SettingsView`（基础设置项）
-- [ ] **P6.18** 验证 — Xcode 编译通过 + 模拟器可运行 + 能扫描并播放音乐 + 锁屏控制可用
+- [x] **P6.16** 播放引擎实现 — `PlayerEngine.swift`（AVPlayer + addPeriodicTimeObserver 进度回调 + 播放结束通知）+ `MusicPlayerController.swift`（@Observable 单例编排器，播放/暂停/seek/切歌/队列/播放模式/历史/睡眠定时）+ `AudioSessionManager.swift`（耳机断开自动暂停）+ `NowPlayingManager.swift`（锁屏远程控制）+ `DataStore.ios.kt` 修复持久化 ✅（2026-04-26）
+- [x] **P6.17** 基础 SwiftUI 界面 — `MainTabView`（音乐库/播放/列表/设置 4 个 Tab）+ `LibraryView`（歌曲列表+点击播放+播放全部）+ `MiniPlayerBar`（实时播放状态）+ `PlayerScreen`（可拖动进度条/播放控制/队列Sheet/收藏/播放模式）✅（2026-04-26）
+- [ ] **P6.18** 验证 — 模拟器播放验证 ✅，锁屏控制需真机验证，PlayerService.swift 可删除（已被 PlayerEngine 替代）
 
 ### P7: iOS SwiftUI 界面迁移
 
@@ -119,7 +119,7 @@
 >
 > **迁移顺序**：设计系统基础 → 通用组件 → 导航框架 → 各模块页面 → 验证
 >
-> **实际进度**：设计系统 (P7-A) ✅、通用组件 (P7-B) 🔶、导航框架 (P7-C) ✅、部分页面完整/部分占位 🔶
+> **实际进度**：设计系统 (P7-A) ✅、通用组件 (P7-B) 🔶、导航框架 (P7-C) ✅、播放器模块 (P7-E) 🔶（核心播放已通）、部分页面待完善
 
 #### P7-A: 设计系统与基础 ✅
 
@@ -162,12 +162,12 @@
 
 #### P7-E: 播放器模块（对照 Android `ui/player/`）🔶
 
-- [x] **P7.28** PlayerScreen — 播放主界面，专辑封面 + 进度条 + 播放控制，`FluidBackgroundView` 占位（待实现 CoreImage 取色）
-- [x] **P7.29** LyricsScreen — 歌词显示页，支持 `.sheet` + `.presentationDetents`
-- [ ] **P7.30** PlaylistArea + TechnicalInfoCard — 播放队列区域 + 技术信息卡片(比特率/采样率/格式)，对应 Android `PlaylistArea.kt` + `TechnicalInfoCard.kt`
-- [x] **P7.31** MiniPlayerBar — 全局悬浮迷你播放器（播放/暂停/进度/点击展开），`.ultraThinMaterial` 毛玻璃
-- [ ] **P7.32** PlaybackViewModel — `isPlaying` / `currentPosition` / `duration` / `playbackMode` / `currentPlayingMusic` / `timerRemaining`，对应 Android `PlaybackViewModel.kt`
-- [ ] **P7.33** PlaylistQueueViewModel — `currentPlaylist` / `likeStatus` / `currentMusicLabels` / `currentMusicLyrics` / 心动模式 / 智能列表生成，对应 Android `PlaylistQueueViewModel.kt`
+- [x] **P7.28** PlayerScreen — 播放主界面，专辑封面 + 可拖动进度条 + 播放控制（播放/暂停/上首/下首/播放模式/收藏）+ 队列 Sheet + 歌词/音效入口，`FluidBackgroundView` 占位（待实现 CoreImage 取色）✅
+- [x] **P7.29** LyricsScreen — 歌词显示页，支持 `.sheet` + `.presentationDetents` ✅
+- [ ] **P7.30** TechnicalInfoCard — 技术信息卡片(比特率/采样率/格式)，对应 Android `TechnicalInfoCard.kt`（PlaylistArea 已由 PlayQueueSheet 替代）
+- [x] **P7.31** MiniPlayerBar — 全局悬浮迷你播放器（播放/暂停/歌名/艺术家/点击展开），接入 MusicPlayerController 实时状态 ✅
+- [x] **P7.32** PlaybackViewModel — 不需要独立 VM，`MusicPlayerController` @Observable 单例直接驱动 UI（isPlaying/currentPosition/duration/playbackMode/currentPlayingMusic/timerRemaining/likeStatus）✅
+- [ ] **P7.33** PlaylistQueueViewModel — 心动模式 / 智能列表生成（基础队列管理已由 MusicPlayerController 覆盖），对应 Android `PlaylistQueueViewModel.kt`
 
 #### P7-F: 播放列表模块（对照 Android `ui/playlist/`）🔶
 

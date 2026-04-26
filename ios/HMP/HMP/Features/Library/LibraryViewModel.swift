@@ -18,7 +18,13 @@ class LibraryViewModel {
         self.syncMusicFromDeviceIncrementalUseCase = KoinHelperKt.getSyncMusicFromDeviceIncrementalUseCase()
 
         // Load existing music on init
-        Task { await loadMusic() }
+        Task {
+            await loadMusic()
+            // Auto-sync if music exists but has no artwork (first run after ArtworkExtractor was added)
+            if !musicList.isEmpty && musicList.allSatisfy({ $0.music.albumArtUri.isEmpty }) {
+                await incrementalSync()
+            }
+        }
     }
 
     @MainActor

@@ -1,158 +1,118 @@
 import SwiftUI
+import shared
 
 /// 播放列表页 - 对应 Android PlaylistScreen.kt
-/// 展示所有用户自定义播放列表
 struct PlaylistScreen: View {
     @Environment(HMPTheme.self) private var theme
+    @State private var playlistVM = PlaylistViewModel()
 
-    @State private var showCreateDialog = false
-    @State private var playlists: [PlaylistItem] = []  // 占位
+    var playlistName: String? = nil
+    var playlistId: Int64? = nil
 
-    // TODO: 连接 PlaylistViewModel (P6 完成后)
-    // @StateObject private var playlistVM: PlaylistViewModel
+    private var controller: MusicPlayerController { MusicPlayerController.shared }
 
     var body: some View {
-        TabScreen(
-            title: "播放列表",
-            trailing: {
-                AnyView(
-                    Button {
-                        HapticManager.shared.click()
-                        showCreateDialog = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18))
-                            .foregroundColor(theme.text)
-                    }
-                )
-            }
+        SubScreen(
+            title: playlistName ?? "播放列表"
         ) {
-            if playlists.isEmpty {
-                emptyStateView
-            } else {
+            switch playlistVM.selectedPlaylistState {
+            case .loading:
+                ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+            case .empty:
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note").font(.system(size: 40)).foregroundColor(theme.text.opacity(0.4))
+                    Text("播放列表为空").font(TypographyTokens.bodyMedium).foregroundColor(theme.text.opacity(0.4))
+                }
+                .frame(maxWidth: .infinity).padding(.top, 60)
+            case .success(let musicList):
                 ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(playlists) { playlist in
-                            NavigationLink {
-                                CustomPlaylistDetailView(playlistId: playlist.id, name: playlist.name)
-                            } label: {
-                                PlaylistRow(playlist: playlist)
+                    LazyVStack(spacing: 0) {
+                        ForEach(musicList, id: \.music.id) { info in
+                            HStack(spacing: 12) {
+                                AlbumCover(uri: info.music.albumArtUri, musicPath: info.music.path, size: 44, cornerRadius: 8)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(info.music.title).font(TypographyTokens.bodyMedium).foregroundColor(theme.text).lineLimit(1)
+                                    Text(info.music.artist).font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.6)).lineLimit(1)
+                                }
+                                Spacer()
                             }
-                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
+                            .onTapGesture { controller.playWith(info) }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
                         }
                     }
-                    .padding(.horizontal, 16)
                 }
+            case .error(let message):
+                VStack(spacing: 12) {
+                    Text("加载失败").font(TypographyTokens.bodyMedium).foregroundColor(theme.text.opacity(0.4))
+                    Text(message).font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.4))
+                }
+                .frame(maxWidth: .infinity).padding(.top, 60)
+            case .idle:
+                EmptyView()
+            }
+        }
+        .onAppear {
+            if let id = playlistId {
+                playlistVM.loadPlaylistById(id)
+            }
+        }
+    }
+}
+
+/// 歌单管理页 - 对应 Android PlaylistManageScreen.kt
+struct PlaylistManageScreen: View {
+    @Environment(HMPTheme.self) private var theme
+    @State private var playlistVM = PlaylistViewModel()
+    @State private var showCreateDialog = false
+
+    var body: some View {
+        SubScreen(title: "歌单管理") {
+            if playlistVM.userCustomPlaylists.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "music.note.list").font(.system(size: 48)).foregroundColor(theme.text.opacity(0.4))
+                    Text("暂无歌单").font(TypographyTokens.titleLarge).foregroundColor(theme.text.opacity(0.4))
+                    Button("创建歌单") {
+                        HapticManager.shared.click()
+                        showCreateDialog = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity).padding(.top, 60)
+            } else {
+                List {
+                    ForEach(Array(playlistVM.userCustomPlaylists.enumerated()), id: \.element.id) { index, playlist in
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 8).fill(theme.primary.opacity(0.12)).frame(width: 44, height: 44)
+                                .overlay { Image(systemName: "music.note.list").foregroundColor(theme.primary).font(.system(size: 16)) }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(playlist.name).font(TypographyTokens.bodyMedium).foregroundColor(theme.text)
+                                Text("\(playlist.songCount) 首").font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.6))
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                playlistVM.deletePlaylist(id: playlist.id)
+                            } label: {
+                                Label("删除", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+                .listStyle(.insetGrouped)
             }
         }
         .sheet(isPresented: $showCreateDialog) {
             CreatePlaylistDialog { name in
-                // TODO: playlistVM.createPlaylist(name)
+                playlistVM.createPlaylist(name: name)
             }
         }
-    }
-
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "music.note.list")
-                .font(.system(size: 48))
-                .foregroundColor(theme.secondaryText)
-            Text("暂无播放列表")
-                .font(TypographyTokens.titleLarge)
-                .foregroundColor(theme.secondaryText)
-            Button("创建播放列表") {
-                HapticManager.shared.click()
-                showCreateDialog = true
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 8)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 60)
-    }
-}
-
-// MARK: - PlaylistRow
-struct PlaylistRow: View {
-    @Environment(HMPTheme.self) private var theme
-    let playlist: PlaylistItem
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // 封面
-            Rectangle()
-                .fill(theme.primaryContainer)
-                .frame(width: 48, height: 48)
-                .cornerRadius(8)
-                .overlay(
-                    Image(systemName: "music.note.list")
-                        .foregroundColor(theme.onPrimary)
-                        .font(.system(size: 18))
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(playlist.name)
-                    .font(TypographyTokens.titleMedium)
-                    .foregroundColor(theme.text)
-                    .lineLimit(1)
-                Text("\(playlist.songCount) 首")
-                    .font(TypographyTokens.bodySmall)
-                    .foregroundColor(theme.secondaryText)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(theme.secondaryText)
-        }
-        .padding(.vertical, 8)
-    }
-}
-
-/// 播放列表模型 (Swift 端)
-struct PlaylistItem: Identifiable, Hashable {
-    let id: Int64
-    let name: String
-    let coverUri: String?
-    let songCount: Int
-    let description: String?
-    let isPinned: Bool
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-
-    static func == (lhs: PlaylistItem, rhs: PlaylistItem) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-/// 播放列表详情页
-struct CustomPlaylistDetailView: View {
-    @Environment(HMPTheme.self) private var theme
-    let playlistId: Int64
-    let name: String
-
-    // 占位歌曲列表
-    @State private var musicList: [MusicItem] = []
-
-    var body: some View {
-        SubScreen(title: name) {
-            if musicList.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "music.note")
-                        .font(.system(size: 40))
-                        .foregroundColor(theme.secondaryText)
-                    Text("播放列表为空")
-                        .font(TypographyTokens.bodyLarge)
-                        .foregroundColor(theme.secondaryText)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
-            } else {
-                MusicList(musicList: musicList)
-            }
+        .onAppear {
+            playlistVM.loadUserCustomPlaylists()
         }
     }
 }

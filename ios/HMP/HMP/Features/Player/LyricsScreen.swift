@@ -1,30 +1,36 @@
 import SwiftUI
+import shared
 
 /// 歌词页面 - 对应 Android LyricsScreen.kt
-/// 逐行歌词显示，滚动高亮当前行
 struct LyricsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(HMPTheme.self) private var theme
 
+    private var controller: MusicPlayerController { MusicPlayerController.shared }
+
     @State private var currentLineIndex: Int = 0
-    @State private var lyricsLines: [LyricLine] = []  // 占位
-    @State private var hasTranslation: Bool = false
+    @State private var lyricsLines: [LyricLine] = []
     @State private var showSettings: Bool = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                if let music = getCurrentMusic() {
-                    FluidBackgroundView(albumArtUri: music.albumArtUri ?? "")
-                }
-                Color.black.opacity(0.5)
+                Color.black.ignoresSafeArea()
+                Color.black.opacity(0.5).ignoresSafeArea()
 
                 VStack {
                     if lyricsLines.isEmpty {
-                        Text("暂无歌词")
-                            .font(TypographyTokens.headlineMedium)
-                            .foregroundColor(.white.opacity(0.6))
-                            .padding(.top, 100)
+                        VStack(spacing: 12) {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 40))
+                                .foregroundColor(.white.opacity(0.4))
+                            Text(controller.currentMusicLyrics ?? "暂无歌词")
+                                .font(TypographyTokens.bodyLarge)
+                                .foregroundColor(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                        }
+                        .padding(.top, 100)
                     } else {
                         ScrollViewReader { proxy in
                             ScrollView {
@@ -65,41 +71,37 @@ struct LyricsScreen: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("关闭") { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gear")
-                            .foregroundColor(.white)
-                    }
-                }
+            }
+            .onAppear {
+                parseLyrics()
             }
         }
     }
 
-    private func getCurrentMusic() -> MusicItem? { nil }
+    private func parseLyrics() {
+        guard let raw = controller.currentMusicLyrics, !raw.isEmpty else { return }
+        // Simple LRC parser: [mm:ss.xx]text
+        let pattern = "\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\](.*)"
+        var lines: [LyricLine] = []
+        for line in raw.components(separatedBy: "\n") {
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) {
+                let minStr = String(line[Range(match.range(at: 1), in: line)!])
+                let secStr = String(line[Range(match.range(at: 2), in: line)!])
+                let msStr = String(line[Range(match.range(at: 3), in: line)!])
+                let text = String(line[Range(match.range(at: 4), in: line)!])
+                let ms = msStr.count == 2 ? Int(msStr)! * 10 : Int(msStr)!
+                let time = Double(minStr)! * 60 + Double(secStr)! + Double(ms) / 1000.0
+                lines.append(LyricLine(time: time, text: text, translation: nil))
+            }
+        }
+        lyricsLines = lines.sorted { $0.time < $1.time }
+    }
 }
 
-// MARK: - 歌词模型
 struct LyricLine: Identifiable {
     let id = UUID()
-    let time: Double      // 秒
+    let time: Double
     let text: String
     let translation: String?
-}
-
-// MARK: - 高级歌词页面 (对应 Android AdvancedLyrics.kt)
-struct AdvancedLyricsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(HMPTheme.self) private var theme
-    @State private var fontSize: CGFloat = 18
-    @State private var lineHeight: CGFloat = 36
-
-    var body: some View {
-        NavigationStack {
-            LyricsScreen()
-                .navigationTitle("高级歌词")
-        }
-        .presentationDetents([.large])
-    }
 }

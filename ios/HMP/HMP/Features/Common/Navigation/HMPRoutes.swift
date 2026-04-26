@@ -38,19 +38,28 @@ enum HMPRoute: Hashable {
     case userUsageData
 }
 
-/// Tab 页枚举
-enum TabItem: String, CaseIterable, Hashable {
-    case library = "music.note.list"
-    case player = "play.circle"
-    case playlist = "list.bullet"
-    case settings = "gearshape"
+/// Tab 页枚举 - 对齐 Android TabsHost 四页布局
+enum TabItem: Int, CaseIterable, Hashable {
+    case home = 0
+    case gallery = 1
+    case list = 2
+    case user = 3
 
     var title: String {
         switch self {
-        case .library: return "音乐库"
-        case .player: return "播放"
-        case .playlist: return "列表"
-        case .settings: return "设置"
+        case .home: return "首页"
+        case .gallery: return "浏览"
+        case .list: return "列表"
+        case .user: return "我的"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .home: return "house.fill"
+        case .gallery: return "square.grid.2x2.fill"
+        case .list: return "list.bullet"
+        case .user: return "person.fill"
         }
     }
 }
