@@ -74,11 +74,27 @@ struct LibraryView: View {
                             .padding(.horizontal)
                     }
 
-                    // Music count
+                    // Music count + play all
                     if viewModel.musicCount > 0 {
-                        Text("共 \(viewModel.musicCount) 首歌曲")
-                            .font(TypographyTokens.bodyMedium)
-                            .foregroundColor(theme.text.opacity(0.6))
+                        HStack {
+                            Text("共 \(viewModel.musicCount) 首歌曲")
+                                .font(TypographyTokens.bodyMedium)
+                                .foregroundColor(theme.text.opacity(0.6))
+
+                            Spacer()
+
+                            Button {
+                                MusicPlayerController.shared.addAllToPlaylistInOrder(viewModel.musicList)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "play.fill")
+                                        .font(.system(size: 10))
+                                    Text("播放全部")
+                                        .font(TypographyTokens.bodySmall)
+                                }
+                                .foregroundColor(theme.primary)
+                            }
+                        }
                     }
 
                     // Music list
@@ -92,6 +108,9 @@ struct LibraryView: View {
                         List {
                             ForEach(viewModel.musicList, id: \.music.id) { info in
                                 MusicInfoRow(info: info, theme: theme)
+                                    .onTapGesture {
+                                        MusicPlayerController.shared.playWith(info)
+                                    }
                             }
                         }
                         .listStyle(.plain)
@@ -149,13 +168,9 @@ private struct MusicInfoRow: View {
 
 /// 播放页 - 对应 Android PlayerScreen
 struct PlayerView: View {
-    @Environment(HMPTheme.self) private var theme
-
     var body: some View {
         NavigationStack {
-            Text("播放器 (待实现)")
-                .font(TypographyTokens.bodyLarge)
-                .foregroundColor(theme.text)
+            PlayerScreen()
         }
     }
 }

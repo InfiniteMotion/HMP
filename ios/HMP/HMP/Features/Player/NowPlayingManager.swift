@@ -1,75 +1,79 @@
-import AVFoundation
 import MediaPlayer
 
-/// 现在播放管理器 - 处理锁屏控制和媒体信息中心
+/// 锁屏/控制中心播放信息与远程控制
 class NowPlayingManager {
     static let shared = NowPlayingManager()
-    
+
     private init() {
         setupRemoteCommandCenter()
     }
-    
-    /// 更新锁屏信息
-    func updateNowPlayingInfo(title: String, artist: String, album: String, artwork: UIImage? = nil, duration: TimeInterval, elapsedTime: TimeInterval) {
+
+    func updateNowPlayingInfo(title: String, artist: String, album: String,
+                              artwork: UIImage? = nil, duration: TimeInterval, elapsedTime: TimeInterval) {
         var nowPlayingInfo = [String: Any]()
-        
+
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
         nowPlayingInfo[MPMediaItemPropertyArtist] = artist
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = album
-        
+
         if let artwork = artwork {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in
                 return artwork
             }
         }
-        
+
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedTime
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = PlayerService.shared.isCurrentlyPlaying() ? 1.0 : 0.0
-        
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = MusicPlayerController.shared.isPlaying ? 1.0 : 0.0
+
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
-    
-    /// 设置远程控制中心
+
+    func updateElapsedTime(_ elapsed: TimeInterval) {
+        guard var info = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsed
+        info[MPNowPlayingInfoPropertyPlaybackRate] = MusicPlayerController.shared.isPlaying ? 1.0 : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
     private func setupRemoteCommandCenter() {
         let commandCenter = MPRemoteCommandCenter.shared()
-        
-        // 播放/暂停
-        commandCenter.playCommand.addTarget { [weak self] event in
-            PlayerService.shared.resume()
+
+        commandCenter.playCommand.addTarget { _ in
+            MusicPlayerController.shared.playOrResume()
             return .success
         }
-        
-        commandCenter.pauseCommand.addTarget { [weak self] event in
-            PlayerService.shared.pause()
+
+        commandCenter.pauseCommand.addTarget { _ in
+            MusicPlayerController.shared.pauseMusic()
             return .success
         }
-        
-        // 下一首
-        commandCenter.nextTrackCommand.addTarget { [weak self] event in
-            // 实现下一首逻辑
+
+        commandCenter.nextTrackCommand.addTarget { _ in
+            MusicPlayerController.shared.playNext()
             return .success
         }
-        
-        // 上一首
-        commandCenter.previousTrackCommand.addTarget { [weak self] event in
-            // 实现上一首逻辑
+
+        commandCenter.previousTrackCommand.addTarget { _ in
+            MusicPlayerController.shared.playPrevious()
             return .success
         }
-        
-        // 快进/快退
-        commandCenter.seekForwardCommand.addTarget { [weak self] event in
-            // 实现快进逻辑
+
+        commandCenter.seekForwardCommand.addTarget { event in
+            guard let evt = event as? MPSeekCommandEvent else { return .commandFailed }
+            let current = MusicPlayerController.shared.currentPosition
+            MusicPlayerController.shared.seekTo(position: current + 10_000)
             return .success
         }
-        
-        commandCenter.seekBackwardCommand.addTarget { [weak self] event in
-            // 实现快退逻辑
+
+        commandCenter.seekBackwardCommand.addTarget { event in
+            guard let evt = event as? MPSeekCommandEvent else { return .commandFailed }
+            let current = MusicPlayerController.shared.currentPosition
+            MusicPlayerController.shared.seekTo(position: max(0, current - 10_000))
             return .success
         }
     }
-    
-    /// 清除现在播放信息
+
     func clearNowPlayingInfo() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
