@@ -18,6 +18,6 @@ struct TabPageIndicator: View {
                     .animation(.easeInOut(duration: 0.2), value: currentPage)
             }
         }
-        .padding(.top, 8)
+        .padding(.vertical, 8)
     }
 }

@@ -37,10 +37,7 @@ struct TabScreen<Content: View>: View {
                     }
 
                     if hasSearchButton {
-                        Button {
-                            HapticManager.shared.click()
-                            // Navigate to Search via NavigationLink
-                        } label: {
+                        NavigationLink(value: HMPRoute.search) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 18))
                                 .foregroundColor(theme.text)
@@ -55,6 +52,7 @@ struct TabScreen<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea(edges: .bottom)
     }
 }
 

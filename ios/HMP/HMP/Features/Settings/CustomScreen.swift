@@ -27,7 +27,15 @@ struct CustomScreen: View {
                 Section("主题模式") {
                     Picker("", selection: Binding(
                         get: { themes.firstIndex(of: settingsVM.customMode) ?? 0 },
-                        set: { settingsVM.saveCustomMode(themes[$0]) }
+                        set: { idx in
+                            let mode = themes[idx]
+                            settingsVM.saveCustomMode(mode)
+                            switch mode {
+                            case "light": theme.mode = .light
+                            case "dark":  theme.mode = .dark
+                            default:      theme.mode = .system
+                            }
+                        }
                     )) {
                         ForEach(0..<themeNames.count, id: \.self) { Text(themeNames[$0]).tag($0) }
                     }

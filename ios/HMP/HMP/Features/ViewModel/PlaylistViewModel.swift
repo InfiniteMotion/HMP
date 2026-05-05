@@ -27,14 +27,37 @@ class PlaylistViewModel {
     private let managePlaylistUseCase: ManagePlaylistUseCase
     private let musicLabelUseCase: MusicLabelUseCase
     private let getAllMusicUseCase: GetAllMusicUseCase
+    private let settingsRepository: SettingsRepository
 
     init() {
         self.managePlaylistUseCase = KoinHelperKt.getManagePlaylistUseCase()
         self.musicLabelUseCase = KoinHelperKt.getMusicLabelUseCase()
         self.getAllMusicUseCase = KoinHelperKt.getGetAllMusicUseCase()
+        self.settingsRepository = KoinHelperKt.getSettingsRepository()
+    }
+
+    // MARK: - System Playlist IDs
+
+    func getCurrentPlaylistId() async -> Int64? {
+        guard let value = try? await settingsRepository.getCurrentPlaylistId() else { return nil }
+        return value.int64Value
+    }
+
+    func getLikedPlaylistId() async -> Int64? {
+        guard let value = try? await settingsRepository.getLikedPlaylistId() else { return nil }
+        return value.int64Value
+    }
+
+    func getRecentPlaylistId() async -> Int64? {
+        guard let value = try? await settingsRepository.getRecentPlaylistId() else { return nil }
+        return value.int64Value
     }
 
     // MARK: - Labels
+
+    func getLabelName(_ name: String) -> LabelName_? {
+        LabelName_.companion.match(value: name)
+    }
 
     func loadLabels() {
         loadLabelType(.genre, into: \.genrePlaylistName)
@@ -156,6 +179,57 @@ class PlaylistViewModel {
             try? await managePlaylistUseCase.removeItemFromPlaylist(musicId: musicId, playlistId: playlistId)
             loadPlaylistById(playlistId)
         }
+    }
+
+    // MARK: - Playlist Meta
+
+    var playlistMeta: Playlist_? = nil
+
+    func getPlaylistMeta(id: Int64) async -> Playlist_? {
+        try? await managePlaylistUseCase.getPlaylistMeta(id: id)
+    }
+
+    func loadPlaylistMeta(id: Int64) {
+        Task {
+            let meta = await getPlaylistMeta(id: id)
+            await MainActor.run { self.playlistMeta = meta }
+        }
+    }
+
+    // MARK: - Batch Operations
+
+    func reorderPlaylistItems(playlistId: Int64, orderedMusicIds: [Int64]) {
+        Task {
+            try? await managePlaylistUseCase.reorderPlaylistItems(playlistId: playlistId, orderedMusicIds: orderedMusicIds.map { KotlinLong(value: $0) })
+            loadPlaylistById(playlistId)
+        }
+    }
+
+    func addItemsToPlaylist(playlistId: Int64, items: [(Int64, String)]) {
+        Task {
+            for (musicId, musicPath) in items {
+                try? await managePlaylistUseCase.addToPlaylist(playlistId: playlistId, musicId: musicId, musicPath: musicPath)
+            }
+            loadPlaylistById(playlistId)
+        }
+    }
+
+    func updatePlaylistDescription(id: Int64, description: String?) {
+        Task {
+            try? await managePlaylistUseCase.updatePlaylistDescription(id: id, description: description)
+            loadPlaylistMeta(id: id)
+        }
+    }
+
+    func recordPlaylistPlay(playlistId: Int64) {
+        Task {
+            try? await managePlaylistUseCase.incrementPlaylistPlayCount(id: playlistId)
+            try? await managePlaylistUseCase.setPlaylistLastPlayedAt(id: playlistId, timestamp: Int64(Date().timeIntervalSince1970 * 1000))
+        }
+    }
+
+    func loadAllMusicForAddPicker() async -> [MusicInfo_] {
+        (try? await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")) ?? []
     }
 
     // MARK: - Artist / Album

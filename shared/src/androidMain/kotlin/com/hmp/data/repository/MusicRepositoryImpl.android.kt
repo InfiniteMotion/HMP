@@ -81,25 +81,26 @@ class MusicRepositoryImpl(
 
     override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
         val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
-        if (orderBy == "title" || orderBy == "artist") {
-            val byIdQuery = """
-                SELECT * FROM music
-                LEFT JOIN musicExtra ON music.id = musicExtra.id
-                LEFT JOIN userInfo ON music.id = userInfo.id
-                WHERE music.isDeleted = 0
-                ORDER BY music.id ASC
-            """.trimIndent()
+        // Text-based sorts (title/artist/album) always use in-memory pinyin-aware sorting
+        if (orderBy == "title" || orderBy == "artist" || orderBy == "album") {
             val list = musicAllDao.getAllMusicInfoAsListById().map { it.toDomain() }
             val keyFn: (MusicInfo) -> String = when (orderBy) {
                 "title" -> { info -> stringToPinyinSortKey(info.music.title) }
-                else -> { info -> stringToPinyinSortKey(info.music.artist) }
+                "artist" -> { info -> stringToPinyinSortKey(info.music.artist) }
+                else -> { info -> stringToPinyinSortKey(info.music.album) }
+            }
+            val rawFn: (MusicInfo) -> String = when (orderBy) {
+                "title" -> { info -> info.music.title }
+                "artist" -> { info -> info.music.artist }
+                else -> { info -> info.music.album }
             }
             return if (safeOrderType == "DESC") {
-                list.sortedWith(compareByDescending(keyFn).thenByDescending { if (orderBy == "title") it.music.title else it.music.artist })
+                list.sortedWith(compareByDescending(keyFn).thenByDescending(rawFn))
             } else {
-                list.sortedWith(compareBy(keyFn).thenBy { if (orderBy == "title") it.music.title else it.music.artist })
+                list.sortedWith(compareBy(keyFn).thenBy(rawFn))
             }
         }
+        // Numeric/date sorts use SQL-level sorting
         val tablePrefix = when {
             musicFields.contains(orderBy) -> "music"
             extraFields.contains(orderBy) -> "musicExtra"
@@ -108,17 +109,14 @@ class MusicRepositoryImpl(
         }
         val baseList = when {
             tablePrefix == "music" && orderBy == "id" -> musicAllDao.getAllMusicInfoAsListById()
-            tablePrefix == "music" && orderBy == "title" -> musicAllDao.getAllMusicInfoAsListByTitle()
-            tablePrefix == "music" && orderBy == "artist" -> musicAllDao.getAllMusicInfoAsListByArtist()
-            tablePrefix == "music" && orderBy == "album" -> musicAllDao.getAllMusicInfoAsListByAlbum()
             tablePrefix == "music" && orderBy == "duration" -> musicAllDao.getAllMusicInfoAsListByDuration()
             else -> musicAllDao.getAllMusicInfoAsListById()
         }
         val mappedList = baseList.map { it.toDomain() }
         return if (safeOrderType == "DESC") {
             when(orderBy) {
-                "title" -> mappedList.sortedByDescending { stringToPinyinSortKey(it.music.title) }
-                "artist" -> mappedList.sortedByDescending { stringToPinyinSortKey(it.music.artist) }
+                "duration" -> mappedList.sortedByDescending { it.music.duration }
+                "playCount" -> mappedList.sortedByDescending { it.userInfo?.playCount ?: 0 }
                 else -> mappedList.sortedByDescending { it.music.id }
             }
         } else {

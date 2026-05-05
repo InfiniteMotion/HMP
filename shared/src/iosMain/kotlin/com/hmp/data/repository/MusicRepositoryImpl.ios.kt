@@ -36,6 +36,10 @@ import com.hmp.domain.music.MusicRepository
 import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.PlaybackHistory
+import com.hmp.domain.setting.model.ArtistCountEntry
+import com.hmp.domain.setting.model.LabelCountEntry
+import com.hmp.domain.setting.model.RecentPlaybackEntry
+import com.hmp.domain.setting.model.TopPlayedEntry
 import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.domain.setting.model.ListeningDuration as ListeningDurationDomain
 import com.hmp.domain.music.MusicLabel as MusicLabelDomain
@@ -228,41 +232,31 @@ class MusicRepositoryImpl(
 
     override suspend fun getAllMusicInfoAsList(orderBy: String, orderType: String): List<MusicInfo> {
         val safeOrderType = if (orderType.uppercase() == "DESC") "DESC" else "ASC"
-        if (orderBy == "title" || orderBy == "artist") {
+        // Text-based sorts (title/artist/album) use in-memory pinyin-aware sorting
+        if (orderBy == "title" || orderBy == "artist" || orderBy == "album") {
             val list = musicAllDao.getAllMusicInfoAsListById().map { it.toDomain() }
             val keyFn: (MusicInfo) -> String = when (orderBy) {
                 "title" -> { info -> stringToPinyinSortKey(info.music.title) }
-                else -> { info -> stringToPinyinSortKey(info.music.artist) }
+                "artist" -> { info -> stringToPinyinSortKey(info.music.artist) }
+                else -> { info -> stringToPinyinSortKey(info.music.album) }
             }
-            return if (safeOrderType == "DESC") {
-                list.sortedWith(compareByDescending(keyFn).thenByDescending { if (orderBy == "title") it.music.title else it.music.artist })
-            } else {
-                list.sortedWith(compareBy(keyFn).thenBy { if (orderBy == "title") it.music.title else it.music.artist })
-            }
+            val sorted = list.sortedWith(compareBy(keyFn))
+            return if (safeOrderType == "DESC") sorted.reversed() else sorted
         }
-        val tablePrefix = when {
-            musicFields.contains(orderBy) -> "music"
-            extraFields.contains(orderBy) -> "musicExtra"
-            userInfoFields.contains(orderBy) -> "userInfo"
-            else -> "music"
-        }
-        val baseList = when {
-            tablePrefix == "music" && orderBy == "id" -> musicAllDao.getAllMusicInfoAsListById()
-            tablePrefix == "music" && orderBy == "title" -> musicAllDao.getAllMusicInfoAsListByTitle()
-            tablePrefix == "music" && orderBy == "artist" -> musicAllDao.getAllMusicInfoAsListByArtist()
-            tablePrefix == "music" && orderBy == "album" -> musicAllDao.getAllMusicInfoAsListByAlbum()
-            tablePrefix == "music" && orderBy == "duration" -> musicAllDao.getAllMusicInfoAsListByDuration()
-            else -> musicAllDao.getAllMusicInfoAsListById()
-        }
-        val mappedList = baseList.map { it.toDomain() }
+        // Numeric/date sorts
+        val list = musicAllDao.getAllMusicInfoAsListById().map { it.toDomain() }
         return if (safeOrderType == "DESC") {
             when (orderBy) {
-                "title" -> mappedList.sortedByDescending { stringToPinyinSortKey(it.music.title) }
-                "artist" -> mappedList.sortedByDescending { stringToPinyinSortKey(it.music.artist) }
-                else -> mappedList.sortedByDescending { it.music.id }
+                "duration" -> list.sortedByDescending { it.music.duration }
+                "playCount" -> list.sortedByDescending { it.userInfo?.playCount ?: 0 }
+                else -> list.sortedByDescending { it.music.id }
             }
         } else {
-            mappedList
+            when (orderBy) {
+                "duration" -> list.sortedBy { it.music.duration }
+                "playCount" -> list.sortedBy { it.userInfo?.playCount ?: 0 }
+                else -> list
+            }
         }
     }
 
@@ -571,14 +565,164 @@ class MusicRepositoryImpl(
         userInfoDao.updateLastPlayed(musicId, timestamp)
     }
 
-    override suspend fun getUserUsageAnalytics(): UserUsageAnalytics =
-        com.hmp.domain.setting.model.UserUsageAnalytics(
-            totalPlayCount = 0, totalSkipCount = 0, likedCount = 0,
-            totalListeningMinutes = 0L, averageSessionMinutes = 0.0,
-            completionRate = 0f, skipRate = 0f,
-            thisWeekMinutes = 0L, lastWeekMinutes = 0L,
-            topPlayedSongs = emptyList(), recentPlaybackWithTitle = emptyList()
+    override suspend fun getUserUsageAnalytics(): UserUsageAnalytics = withContext(Dispatchers.Default) {
+        val userInfos = userInfoDao.getAllUserInfos().filter { !it.isDeleted }
+        val allHistory = playbackHistoryDao.getAllHistory()
+        val recentHistory = playbackHistoryDao.getRecentHistory(10)
+        val allDurations = listeningDurationDao.getAllDurations()
+        val allLabels = musicLabelDao.getAllLabels()
+        val allMusic = getAllMusicInfoAsList("playCount", "DESC")
+        val playlists = playlistDao.getAllPlaylists()
+        val playlistItems = playlistItemDao.getAllPlaylistItems()
+
+        val totalPlayCount = userInfos.sumOf { (it.playCount ?: 0).toLong() }.toInt()
+        val totalSkipCount = userInfos.sumOf { (it.skippedCount ?: 0).toLong() }.toInt()
+        val totalPlayPlusSkip = totalPlayCount + totalSkipCount
+        val skipRate = if (totalPlayPlusSkip > 0) totalSkipCount.toFloat() / totalPlayPlusSkip else 0f
+        val likedCount = userInfos.count { it.liked }
+
+        val completedCount = allHistory.count { it.isCompleted }
+        val totalSessions = allHistory.size
+        val completionRate = if (totalSessions > 0) completedCount.toFloat() / totalSessions else 0f
+        val totalListeningMs = allHistory.sumOf { it.playDuration }
+        val totalListeningMinutes = totalListeningMs / 60_000
+        val averageSessionMinutes = if (totalSessions > 0) totalListeningMs / 60_000.0 / totalSessions else 0.0
+
+        val playSourceBreakdown = allHistory
+            .mapNotNull { it.source }
+            .groupingBy { it }
+            .eachCount()
+
+        val weekMs = 7 * 24 * 60 * 60 * 1000L
+        val now = currentTimeMillis()
+        val thisWeekStart = now - weekMs
+        val lastWeekStart = now - 2 * weekMs
+        val dateFormatter = NSDateFormatter().apply { dateFormat = "yyyy-MM-dd" }
+        val thisWeekMinutes = allDurations
+            .filter { d ->
+                try {
+                    val parsed = dateFormatter.dateFromString(d.date)
+                    val t = ((parsed?.timeIntervalSinceReferenceDate ?: 0.0) * 1000).toLong()
+                    t in thisWeekStart..now
+                } catch (_: Exception) { false }
+            }
+            .sumOf { it.duration } / 60_000
+        val lastWeekMinutes = allDurations
+            .filter { d ->
+                try {
+                    val parsed = dateFormatter.dateFromString(d.date)
+                    val t = ((parsed?.timeIntervalSinceReferenceDate ?: 0.0) * 1000).toLong()
+                    t in lastWeekStart until thisWeekStart
+                } catch (_: Exception) { false }
+            }
+            .sumOf { it.duration } / 60_000
+
+        val userInfoMap = userInfos.associateBy { it.id }
+        val topByPlay = userInfos
+            .sortedByDescending { it.playCount ?: 0 }
+            .take(5)
+            .mapNotNull { ui -> ui.id }
+        val topMusicIds = topByPlay
+        val topMusicInfos = if (topMusicIds.isEmpty()) emptyList() else musicAllDao.getPlaylistByIdList(topMusicIds)
+        val topMusicInfoMap = topMusicInfos.associateBy { it.music.id }
+        val topPlayedSongs = topMusicIds.mapNotNull { id ->
+            val info = topMusicInfoMap[id] ?: return@mapNotNull null
+            TopPlayedEntry(
+                musicId = id,
+                title = info.music.title,
+                artist = info.music.artist,
+                playCount = userInfoMap[id]?.playCount ?: 0
+            )
+        }
+
+        val recentMusicIds = recentHistory.map { it.musicId }.distinct()
+        val recentMusicInfos = if (recentMusicIds.isEmpty()) emptyList() else musicAllDao.getPlaylistByIdList(recentMusicIds)
+        val recentMusicInfoMap = recentMusicInfos.associateBy { it.music.id }
+        val recentPlaybackWithTitle = recentHistory.map { h ->
+            val info = recentMusicInfoMap[h.musicId]
+            RecentPlaybackEntry(
+                musicId = h.musicId,
+                title = info?.music?.title ?: "",
+                artist = info?.music?.artist ?: "",
+                playedAt = h.playedAt,
+                playDuration = h.playDuration,
+                isCompleted = h.isCompleted,
+                source = h.source
+            )
+        }
+
+        val playCountByMusicId = userInfos.associate { it.id to (it.playCount ?: 0).toLong() }
+        val labelToCount = mutableMapOf<Pair<DataLabelCategory, DataLabelName>, Long>()
+        allLabels.forEach { ml ->
+            val key = ml.type to ml.label
+            val add = playCountByMusicId[ml.musicId] ?: 0L
+            labelToCount[key] = (labelToCount[key] ?: 0L) + add
+        }
+        val topGenres = labelToCount
+            .filter { (key, _) -> key.first == DataLabelCategory.GENRE }
+            .toList()
+            .sortedByDescending { (_, count) -> count }
+            .take(5)
+            .map { (key, count) -> LabelCountEntry(labelDisplayName = key.second.name, count = count.toInt()) }
+        val topMoods = labelToCount
+            .filter { (key, _) -> key.first == DataLabelCategory.MOOD }
+            .toList()
+            .sortedByDescending { (_, count) -> count }
+            .take(5)
+            .map { (key, count) -> LabelCountEntry(labelDisplayName = key.second.name, count = count.toInt()) }
+        val topScenarios = labelToCount
+            .filter { (key, _) -> key.first == DataLabelCategory.SCENARIO }
+            .toList()
+            .sortedByDescending { (_, count) -> count }
+            .take(5)
+            .map { (key, count) -> LabelCountEntry(labelDisplayName = key.second.name, count = count.toInt()) }
+
+        val artistToCount = allMusic
+            .filter { it.userInfo != null }
+            .groupBy { it.music.artist }
+            .mapValues { (_, list) -> list.sumOf { (it.userInfo?.playCount ?: 0).toLong() } }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(5)
+        val topArtists = artistToCount.map { ArtistCountEntry(artistName = it.first, playCount = it.second.toInt()) }
+
+        val customPlaylistCount = playlists.size
+
+        val songIdToPlaylistCount = playlistItems.groupingBy { it.songId }.eachCount()
+        val topSongIdsInPlaylists = songIdToPlaylistCount.toList().sortedByDescending { it.second }.take(5).map { it.first }
+        val topSongsInPlaylistsInfos = if (topSongIdsInPlaylists.isEmpty()) emptyList() else musicAllDao.getPlaylistByIdList(topSongIdsInPlaylists)
+        val topSongsInPlaylistsMap = topSongsInPlaylistsInfos.associateBy { it.music.id }
+        val topSongsInPlaylists = topSongIdsInPlaylists.mapNotNull { id ->
+            val info = topSongsInPlaylistsMap[id] ?: return@mapNotNull null
+            TopPlayedEntry(
+                musicId = id,
+                title = info.music.title,
+                artist = info.music.artist,
+                playCount = songIdToPlaylistCount[id] ?: 0
+            )
+        }
+
+        UserUsageAnalytics(
+            totalPlayCount = totalPlayCount,
+            totalSkipCount = totalSkipCount,
+            likedCount = likedCount,
+            totalListeningMinutes = totalListeningMinutes,
+            averageSessionMinutes = averageSessionMinutes,
+            completionRate = completionRate,
+            skipRate = skipRate,
+            thisWeekMinutes = thisWeekMinutes,
+            lastWeekMinutes = lastWeekMinutes,
+            topPlayedSongs = topPlayedSongs,
+            recentPlaybackWithTitle = recentPlaybackWithTitle,
+            playSourceBreakdown = playSourceBreakdown,
+            topGenres = topGenres,
+            topMoods = topMoods,
+            topScenarios = topScenarios,
+            topArtists = topArtists,
+            customPlaylistCount = customPlaylistCount,
+            topSongsInPlaylists = topSongsInPlaylists
         )
+    }
 
     // endregion
 

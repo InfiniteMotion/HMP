@@ -46,6 +46,7 @@ animationCore = "1.10.4"
 koin = "4.0.4"
 ktor = "3.1.1"
 sqlite = "2.6.1"
+composeMultiplatform = "1.8.2"
 
 [libraries]
 androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }

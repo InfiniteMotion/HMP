@@ -1,11 +1,11 @@
 import SwiftUI
 import shared
 
-/// 主页 - 对应 Android HomeScreen.kt
-/// 展示每日推荐 + 心动歌单
+/// 主页 - 与 Android HomeScreen.kt 对齐
 struct HomeScreen: View {
     @Environment(HMPTheme.self) private var theme
     @State private var recommendationVM = RecommendationViewModel()
+    @State private var selectedMusicId: Int64? = nil
 
     private var controller: MusicPlayerController { MusicPlayerController.shared }
 
@@ -26,77 +26,17 @@ struct HomeScreen: View {
                 )
             }
         ) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    if let daily = recommendationVM.dailyMusic {
-                        // Section 1: 今日推荐
-                        TitleWidget(title: "今日推荐")
-
-                        DailyHeroCard(
-                            title: daily.music.title,
-                            artist: daily.music.artist,
-                            albumArtUri: daily.music.albumArtUri,
-                            musicPath: daily.music.path
-                        ) {
-                            controller.playWith(daily)
-                        }
-
+            if recommendationVM.dailyMusic == nil {
+                emptyState
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        todayRecommendationHeader
+                        dailyHeroCard
                         Spacer(minLength: 24)
-
-                        // Section 2: 心动歌单
-                        HStack {
-                            TitleWidget(title: "心动歌单")
-                            Spacer()
-                            if !recommendationVM.heartbeatList.isEmpty {
-                                Button {
-                                    controller.addAllToPlaylistInOrder(recommendationVM.heartbeatList)
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "play.fill").font(.system(size: 10))
-                                        Text("播放全部").font(TypographyTokens.bodySmall)
-                                    }
-                                    .foregroundColor(theme.primary)
-                                }
-                                .padding(.trailing, 16)
-                            }
-                        }
-
-                        if recommendationVM.heartbeatList.isEmpty {
-                            Text("正在生成心动歌单...")
-                                .font(TypographyTokens.bodyMedium)
-                                .foregroundColor(theme.text.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 20)
-                        } else {
-                            FixedMusicList(
-                                musicInfoList: recommendationVM.heartbeatList,
-                                config: .galleryPreset(
-                                    callbacks: {
-                                        let cb = MusicListCallbacks()
-                                        cb.onItemClick = { info, _ in
-                                            controller.playWith(info)
-                                        }
-                                        return cb
-                                    }()
-                                )
-                            )
-                            .padding(.horizontal, 16)
-                        }
-                    } else {
-                        // 无数据状态：只显示提示和跳转按钮
-                        VStack(spacing: 16) {
-                            Text("暂无数据")
-                                .font(TypographyTokens.titleLarge)
-                                .foregroundColor(theme.text.opacity(0.4))
-                            Button("前往 AI 设置") {
-                                // TODO: navigate to AI
-                            }
-                            .buttonStyle(.bordered)
-                            .padding(.top, 8)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(.top, 200)
+                        heartbeatSection
                     }
+                    .padding(.bottom, 16)
                 }
             }
         }
@@ -104,10 +44,135 @@ struct HomeScreen: View {
             recommendationVM.getDailyMusicInfo()
             recommendationVM.loadHeartbeatList()
         }
+        .background {
+            if let musicId = selectedMusicId {
+                NavigationLink(value: HMPRoute.songDetail(musicId: musicId)) {
+                    EmptyView()
+                }
+                .hidden()
+            }
+        }
+    }
+
+    // MARK: - Section header
+
+    private var todayRecommendationHeader: some View {
+        Text("今日推荐")
+            .font(TypographyTokens.titleLarge)
+            .fontWeight(.bold)
+            .foregroundColor(theme.text)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+    }
+
+    // MARK: - Daily hero card
+
+    private var dailyHeroCard: some View {
+        let daily = recommendationVM.dailyMusic!
+        return DailyHeroCard(
+            title: daily.music.title,
+            artist: daily.music.artist,
+            albumArtUri: daily.music.albumArtUri,
+            musicPath: daily.music.path,
+            onTap: { selectedMusicId = daily.music.id },
+            onPlay: {
+                HapticManager.shared.click()
+                controller.playWith(daily)
+            }
+        )
+    }
+
+    // MARK: - Heartbeat section
+
+    private var heartbeatSection: some View {
+        VStack(spacing: 0) {
+            // Header row
+            HStack {
+                Text("心动歌单")
+                    .font(TypographyTokens.titleLarge)
+                    .fontWeight(.bold)
+                    .foregroundColor(theme.text)
+                Spacer()
+                if !recommendationVM.heartbeatList.isEmpty {
+                    Button {
+                        HapticManager.shared.click()
+                        controller.addAllToPlaylistInOrder(recommendationVM.heartbeatList)
+                    } label: {
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(theme.primary, in: Circle())
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            // Content
+            if recommendationVM.heartbeatList.isEmpty {
+                Text("正在生成心动歌单...")
+                    .font(TypographyTokens.bodyMedium)
+                    .foregroundColor(theme.text.opacity(0.4))
+                    .frame(maxWidth: .infinity, minHeight: 100)
+            } else {
+                let currentId = controller.currentPlayingMusic?.music.id
+                let playingIndex = currentId.flatMap { id in
+                    recommendationVM.heartbeatList.firstIndex { $0.music.id == id }
+                }
+                FixedMusicList(
+                    musicInfoList: recommendationVM.heartbeatList,
+                    config: MusicListConfig(
+                        header: .none,
+                        item: ItemConfig.full(showRemove: false, showMenu: true),
+                        currentPlayingIndex: playingIndex,
+                        callbacks: heartbeatCallbacks
+                    )
+                )
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private var heartbeatCallbacks: MusicListCallbacks {
+        let cb = MusicListCallbacks()
+        cb.onItemClick = { info, index in
+            HapticManager.shared.click()
+            controller.addAllToPlaylistInOrder(recommendationVM.heartbeatList)
+            controller.playAt(Int(index))
+        }
+        cb.onMenuClick = { info in
+            HapticManager.shared.click()
+            selectedMusicId = info.music.id
+        }
+        return cb
+    }
+
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Text("暂无数据")
+                .font(TypographyTokens.titleLarge)
+                .foregroundColor(theme.text.opacity(0.4))
+            Text("启动app后自动刷新，或前往AI设置进行配置")
+                .font(TypographyTokens.titleLarge)
+                .foregroundColor(theme.text.opacity(0.4))
+            NavigationLink(value: HMPRoute.ai) {
+                Text("前往 AI 设置")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(theme.primary)
+            Spacer().frame(height: 32)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 200)
     }
 }
 
 // MARK: - DailyHeroCard
+
 struct DailyHeroCard: View {
     @Environment(HMPTheme.self) private var theme
 
@@ -115,29 +180,43 @@ struct DailyHeroCard: View {
     let artist: String
     let albumArtUri: String?
     let musicPath: String?
+    let onTap: () -> Void
     let onPlay: () -> Void
 
     var body: some View {
-        Button {
-            HapticManager.shared.click()
-            onPlay()
-        } label: {
-            GeometryReader { geo in
-                let size = min(geo.size.width, geo.size.height)
-                ZStack(alignment: .bottomLeading) {
-                    if let image = resolveImage() {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(theme.primary.opacity(0.15))
-                            .overlay { Image(systemName: "music.note").font(.system(size: 60)).foregroundColor(theme.primary) }
+        ZStack(alignment: .bottomLeading) {
+            if let image = resolveImage() {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(theme.primary.opacity(0.15))
+                    .overlay {
+                        Image(systemName: "music.note")
+                            .font(.system(size: 60))
+                            .foregroundColor(theme.primary)
                     }
+            }
 
-                    Rectangle()
-                        .fill(LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .top, endPoint: .bottom))
+            // Gradient: matches Android colorStops 0→Transparent, 0.5→Transparent, 1.0→Black(0.8)
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .clear, location: 0.5),
+                            .init(color: .black.opacity(0.8), location: 1),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
+            // Text + Play button
+            VStack {
+                Spacer()
+                HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(title)
                             .font(TypographyTokens.headlineLarge)
@@ -149,14 +228,30 @@ struct DailyHeroCard: View {
                             .foregroundColor(.white.opacity(0.8))
                             .lineLimit(1)
                     }
-                    .padding(24)
+                    Spacer()
+                    Button {
+                        HapticManager.shared.click()
+                        onPlay()
+                    } label: {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                            .background(theme.primary, in: Circle())
+                    }
                 }
+                .padding(24)
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: UIScreen.main.bounds.width * 0.75)
-        .padding(.horizontal, 16)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .aspectRatio(1, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .shadow(color: .black.opacity(0.2), radius: 8)
+        .padding(.horizontal, 32)
+        .padding(.vertical, 16)
+        .onTapGesture {
+            HapticManager.shared.click()
+            onTap()
+        }
     }
 
     private func resolveImage() -> UIImage? {

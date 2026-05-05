@@ -9,11 +9,13 @@ import com.hmp.domain.music.usecase.LoadMusicFromDeviceUseCase
 import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
 import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
 import com.hmp.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
+
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch

@@ -6,7 +6,8 @@ import shared
 struct MiniPlayerBar: View {
     @Environment(HMPTheme.self) private var theme
     @State private var showPlayer = false
-    @State private var coverRotation: Double = 0
+    @State private var rotationAngle: Double = 0
+    @State private var rotationTimer: Timer?
 
     private var controller: MusicPlayerController { MusicPlayerController.shared }
 
@@ -30,7 +31,7 @@ struct MiniPlayerBar: View {
         HStack(spacing: 16) {
             // 旋转的专辑封面
             AlbumCover(uri: albumArtUri, musicPath: musicPath, size: 56, cornerRadius: 28)
-                .rotationEffect(.degrees(coverRotation))
+                .rotationEffect(.degrees(rotationAngle))
 
             // 音乐信息
             VStack(alignment: .leading, spacing: 4) {
@@ -102,7 +103,6 @@ struct MiniPlayerBar: View {
         )
         .padding(.horizontal, 24)
         .padding(.top, 8)
-        .padding(.bottom, 16)
         .onTapGesture {
             HapticManager.shared.lightClick()
             showPlayer = true
@@ -111,19 +111,25 @@ struct MiniPlayerBar: View {
             PlayerScreen()
         }
         .onAppear {
-            startRotationAnimation()
+            if controller.isPlaying { startRotation() }
         }
-        .onChange(of: controller.isPlaying) { _ in
-            startRotationAnimation()
+        .onChange(of: controller.isPlaying) { _, newValue in
+            if newValue { startRotation() } else { stopRotation() }
+        }
+        .onDisappear { stopRotation() }
+    }
+
+    private func startRotation() {
+        stopRotation()
+        let step = 360.0 / (8.0 * 60.0) // 8秒一圈，60fps
+        rotationTimer = Timer.scheduledTimer(withTimeInterval: 1/60, repeats: true) { _ in
+            rotationAngle += step
+            if rotationAngle >= 360 { rotationAngle -= 360 }
         }
     }
 
-    private func startRotationAnimation() {
-        guard controller.isPlaying else { return }
-
-        // 8秒一圈的旋转动画
-        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-            coverRotation = 360
-        }
+    private func stopRotation() {
+        rotationTimer?.invalidate()
+        rotationTimer = nil
     }
 }

@@ -9,14 +9,24 @@ struct MusicListConfig {
     let item: ItemConfig
     let currentPlayingIndex: Int?
     let callbacks: MusicListCallbacks
-    
+    let indexJump: IndexJumpConfig?
+
+    init(
+        header: HeaderConfig = .none,
+        item: ItemConfig = ItemConfig.full,
+        currentPlayingIndex: Int? = nil,
+        callbacks: MusicListCallbacks = MusicListCallbacks(),
+        indexJump: IndexJumpConfig? = nil
+    ) {
+        self.header = header
+        self.item = item
+        self.currentPlayingIndex = currentPlayingIndex
+        self.callbacks = callbacks
+        self.indexJump = indexJump
+    }
+
     static var defaultConfig: MusicListConfig {
-        MusicListConfig(
-            header: .none,
-            item: ItemConfig.full,
-            currentPlayingIndex: nil,
-            callbacks: MusicListCallbacks()
-        )
+        MusicListConfig()
     }
     
     static func libraryPreset(
@@ -73,6 +83,14 @@ enum HeaderConfig {
     case simple(onOrderPlay: () -> Void, onShufflePlay: () -> Void, trailing: (() -> AnyView)?)
     case full(selectedGenre: String, selectedOrder: String, onOrderPlay: () -> Void, onShufflePlay: () -> Void)
     case custom(content: () -> AnyView)
+}
+
+// MARK: - IndexJumpConfig
+
+struct IndexJumpConfig {
+    let isLetterMode: Bool
+    let isReversed: Bool
+    let orderBy: String
 }
 
 // MARK: - ItemConfig
@@ -150,36 +168,46 @@ struct MusicList: View {
             } else {
                 headerView
             }
-            
+
             if !musicInfoList.isEmpty {
                 Divider().padding(.vertical, 8)
             }
-            
+
             // 列表内容
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(musicInfoList.enumerated()), id: \.element.music.id) { index, info in
-                        MusicListItem(
-                            musicInfo: info,
-                            index: index,
-                            config: config,
-                            isCurrentPlaying: config.currentPlayingIndex == index,
-                            isEditMode: listState.isEditMode,
-                            isSelected: listState.selectedIds.contains(info.music.id),
-                            callbacks: config.callbacks
-                        )
-                        .onLongPressGesture {
-                            if !listState.isEditMode {
-                                withAnimation {
-                                    listState.enterEditMode()
-                                    listState.selectedIds.insert(info.music.id)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(musicInfoList.enumerated()), id: \.offset) { index, info in
+                            MusicListItem(
+                                musicInfo: info,
+                                index: index,
+                                config: config,
+                                isCurrentPlaying: config.currentPlayingIndex == index,
+                                isEditMode: listState.isEditMode,
+                                isSelected: listState.selectedIds.contains(info.music.id),
+                                callbacks: config.callbacks
+                            )
+                            .id(index)
+                            .onLongPressGesture {
+                                if !listState.isEditMode {
+                                    withAnimation {
+                                        listState.enterEditMode()
+                                        listState.selectedIds.insert(info.music.id)
+                                    }
+                                    config.callbacks.onEnterEditMode?()
                                 }
-                                config.callbacks.onEnterEditMode?()
                             }
                         }
                     }
+                    .padding(.horizontal, 8)
                 }
-                .padding(.horizontal, 8)
+                .onReceive(NotificationCenter.default.publisher(for: .indexStripJump)) { notification in
+                    if let index = notification.userInfo?["index"] as? Int {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo(index, anchor: .center)
+                        }
+                    }
+                }
             }
         }
     }
@@ -294,7 +322,7 @@ struct FixedMusicList: View {
                 Divider().padding(.vertical, 8)
             }
             
-            ForEach(Array(musicInfoList.enumerated()), id: \.element.music.id) { index, info in
+            ForEach(Array(musicInfoList.enumerated()), id: \.offset) { index, info in
                 MusicListItem(
                     musicInfo: info,
                     index: index,
@@ -391,7 +419,9 @@ struct MusicListItem: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
+        .padding(.leading, config.item.showIndex ? 4 : 10)
+        .padding(.trailing, config.item.variant == .gallery ? 28 : 6)
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
             if isEditMode {
@@ -399,14 +429,6 @@ struct MusicListItem: View {
             } else {
                 HapticManager.shared.click()
                 callbacks.onItemClick?(musicInfo, index)
-            }
-        }
-        .background(isCurrentPlaying ? theme.primary.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            if isCurrentPlaying {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(theme.primary.opacity(0.3), lineWidth: 1)
             }
         }
     }
@@ -433,7 +455,7 @@ struct FullRowContent: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(musicInfo.music.title)
                 .font(TypographyTokens.headlineSmall)
-                .foregroundColor(isCurrentPlaying ? theme.primary : theme.text)
+                .foregroundColor(theme.text)
                 .lineLimit(1)
             Text(musicInfo.music.artist)
                 .font(TypographyTokens.labelSmall)
@@ -489,7 +511,7 @@ struct CompactRowContent: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(musicInfo.music.title)
                 .font(TypographyTokens.bodyMedium)
-                .foregroundColor(isCurrentPlaying ? theme.primary : theme.text)
+                .foregroundColor(theme.text)
                 .lineLimit(1)
             Text(musicInfo.music.artist)
                 .font(TypographyTokens.bodySmall)
@@ -538,7 +560,7 @@ struct GalleryRowContent: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(musicInfo.music.title)
                 .font(TypographyTokens.headlineSmall)
-                .foregroundColor(isCurrentPlaying ? theme.primary : theme.text)
+                .foregroundColor(theme.text)
                 .lineLimit(1)
             Text(musicInfo.music.artist)
                 .font(TypographyTokens.labelSmall)

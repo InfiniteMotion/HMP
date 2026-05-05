@@ -7,4 +7,5 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.androidx.room) apply false
+    id("org.jetbrains.compose") version libs.versions.composeMultiplatform.get() apply false
 }

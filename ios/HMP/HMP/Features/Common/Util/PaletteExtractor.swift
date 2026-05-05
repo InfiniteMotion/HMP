@@ -2,7 +2,7 @@ import SwiftUI
 import CoreImage
 
 /// 从专辑封面提取调色板颜色 - 对应 Android Palette API
-struct PaletteColors {
+class PaletteColors: NSObject {
     var dominantColor: Color = Color(red: 0.07, green: 0.07, blue: 0.07)
     var primaryColor: Color = Color(red: 0.12, green: 0.12, blue: 0.12)
     var vibrantColor: Color = Color(red: 0.17, green: 0.17, blue: 0.17)
@@ -12,6 +12,33 @@ struct PaletteColors {
     var darkMutedColor: Color = Color(red: 0.07, green: 0.07, blue: 0.07)
     var lightMutedColor: Color = Color(red: 0.4, green: 0.4, blue: 0.4)
     var accentColor: Color = Color(red: 0.27, green: 0.27, blue: 0.27)
+    
+    override init() {
+        super.init()
+    }
+    
+    init(
+        dominantColor: Color,
+        primaryColor: Color,
+        vibrantColor: Color,
+        darkVibrantColor: Color,
+        lightVibrantColor: Color,
+        mutedColor: Color,
+        darkMutedColor: Color,
+        lightMutedColor: Color,
+        accentColor: Color
+    ) {
+        self.dominantColor = dominantColor
+        self.primaryColor = primaryColor
+        self.vibrantColor = vibrantColor
+        self.darkVibrantColor = darkVibrantColor
+        self.lightVibrantColor = lightVibrantColor
+        self.mutedColor = mutedColor
+        self.darkMutedColor = darkMutedColor
+        self.lightMutedColor = lightMutedColor
+        self.accentColor = accentColor
+        super.init()
+    }
 }
 
 /// iOS 端取色引擎 - 用 Core Image 替代 Android Palette API

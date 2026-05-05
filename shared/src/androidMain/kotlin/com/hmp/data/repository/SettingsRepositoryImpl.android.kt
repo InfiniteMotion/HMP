@@ -88,6 +88,8 @@ class SettingsRepositoryImpl(
         val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
         val DEFAULT_WEIGHT_TEMPLATE = stringPreferencesKey("default_weight_template")
         val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
+        val GALLERY_ORDER_BY = stringPreferencesKey("gallery_order_by")
+        val GALLERY_ORDER_TYPE = stringPreferencesKey("gallery_order_type")
     }
 
     private val dataStore = context.dataStore
@@ -143,6 +145,15 @@ class SettingsRepositoryImpl(
         val alignmentStr = prefs[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
     }
+    override val galleryOrderBy: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] ?: "title" }
+    override val galleryOrderType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] ?: "ASC" }
+    override suspend fun saveGalleryOrderBy(orderBy: String) {
+        dataStore.edit { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] = orderBy }
+    }
+    override suspend fun saveGalleryOrderType(orderType: String) {
+        dataStore.edit { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] = orderType }
+    }
+
     override val defaultAlgorithmType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] ?: "OPTIMIZED_SIMILARITY" }
     override val defaultWeightTemplate: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] ?: "BALANCED" }
     override val defaultExtensionConfig: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] ?: "{}" }

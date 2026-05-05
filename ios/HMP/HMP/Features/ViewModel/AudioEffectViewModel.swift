@@ -7,6 +7,9 @@ class AudioEffectViewModel {
     var bassBoostLevel: Int = 0
     var surroundSoundEnabled: Bool = false
     var reverbPreset: Int = 0
+    var currentEqualizerBandLevels: [Float] = [0, 0, 0, 0, 0]
+
+    let equalizerBandLevelRange: (Int, Int) = (-15, 15)
 
     private let settingsRepository: SettingsRepository
 
@@ -22,11 +25,19 @@ class AudioEffectViewModel {
                 let bass = try await KoinHelperKt.getSettingsBassBoostLevel()
                 let surround = try await KoinHelperKt.getSettingsIsSurroundSoundEnabled()
                 let reverb = try await KoinHelperKt.getSettingsReverbPreset()
+                let levels = try await KoinHelperKt.getSettingsCustomEqualizerLevels()
                 await MainActor.run {
                     self.equalizerPreset = Int(eq)
                     self.bassBoostLevel = Int(bass)
                     self.surroundSoundEnabled = surround.boolValue
                     self.reverbPreset = Int(reverb)
+                    if levels.size > 0 {
+                        var swiftLevels: [Float] = []
+                        for i in 0..<Int(levels.size) {
+                            swiftLevels.append(levels.get(index: Int32(i)))
+                        }
+                        self.currentEqualizerBandLevels = swiftLevels
+                    }
                 }
             } catch {
                 print("[AudioEffectVM] loadSettings failed: \(error)")
@@ -60,5 +71,23 @@ class AudioEffectViewModel {
         Task {
             try? await settingsRepository.saveReverbPreset(preset: Int32(preset))
         }
+    }
+
+    func setEqualizerBandLevel(band: Int32, level: Float) {
+        guard band >= 0 && band < currentEqualizerBandLevels.count else { return }
+        currentEqualizerBandLevels[Int(band)] = level
+        Task {
+            try? await KoinHelperKt.saveSettingsCustomEqualizerLevels(levels: currentEqualizerBandLevels.toKotlinArray())
+        }
+    }
+}
+
+private extension Array where Element == Float {
+    func toKotlinArray() -> KotlinFloatArray {
+        let array = KotlinFloatArray(size: Int32(count))
+        for (i, val) in enumerated() {
+            array.set(index: Int32(i), value: val)
+        }
+        return array
     }
 }

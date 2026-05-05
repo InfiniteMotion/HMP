@@ -150,6 +150,13 @@ interface SettingsRepository {
     suspend fun saveCurrentDailyMusicId(musicId: Long)
     suspend fun getCurrentDailyMusicId(): Long?
 
+    // Gallery Sort
+    val galleryOrderBy: Flow<String>
+    suspend fun saveGalleryOrderBy(orderBy: String)
+
+    val galleryOrderType: Flow<String>
+    suspend fun saveGalleryOrderType(orderType: String)
+
     // Backup / Restore
     // Playlist Algorithm Configuration
     val defaultAlgorithmType: Flow<String>

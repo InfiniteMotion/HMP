@@ -6,19 +6,28 @@ import shared
 struct LibrarySettingsScreen: View {
     @Environment(HMPTheme.self) private var theme
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = LibraryViewModel()
+    @StateObject private var viewModel = LibraryViewModel()
     @State private var showConfirmRescan = false
 
     var body: some View {
         List {
-            // 音乐统计
+            // 音乐统计 - 统计卡片
             Section("音乐统计") {
-                HStack {
-                    Text("已导入音乐")
-                    Spacer()
-                    Text("\(viewModel.musicCount) 首")
-                        .foregroundColor(theme.text.opacity(0.6))
+                HStack(spacing: 12) {
+                    StatsCard(
+                        title: "已导入",
+                        count: viewModel.musicCount,
+                        icon: "music.note",
+                        color: theme.primary
+                    )
+                    StatsCard(
+                        title: "已分析",
+                        count: viewModel.musicWithExtraCount,
+                        icon: "waveform",
+                        color: .orange
+                    )
                 }
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
             }
 
             // 扫描操作
@@ -92,5 +101,35 @@ struct LibrarySettingsScreen: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+    }
+}
+
+// MARK: - Stats Card
+
+struct StatsCard: View {
+    @Environment(HMPTheme.self) private var theme
+
+    let title: String
+    let count: Int32
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(color)
+            Text("\(count)")
+                .font(TypographyTokens.titleLarge)
+                .fontWeight(.bold)
+                .foregroundColor(theme.text)
+            Text(title)
+                .font(TypographyTokens.bodySmall)
+                .foregroundColor(theme.text.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

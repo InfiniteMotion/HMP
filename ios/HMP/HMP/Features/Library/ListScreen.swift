@@ -5,6 +5,10 @@ import shared
 struct ListScreen: View {
     @Environment(HMPTheme.self) private var theme
     @State private var playlistVM = PlaylistViewModel()
+    @State private var currentPlaylistId: Int64? = nil
+    @State private var likedPlaylistId: Int64? = nil
+    @State private var recentPlaylistId: Int64? = nil
+    @State private var navigateRoute: HMPRoute? = nil
 
     var body: some View {
         TabScreen(title: "列表") {
@@ -50,9 +54,21 @@ struct ListScreen: View {
                     VStack(alignment: .leading, spacing: 12) {
                         TitleWidget(title: "常用")
                         HStack(spacing: 12) {
-                            ListBannerCard(title: "默认", icon: "music.note.list", accent: theme.primary) {}
-                            ListBannerCard(title: "红心", icon: "heart.fill", accent: .red) {}
-                            ListBannerCard(title: "最近", icon: "clock.fill", accent: .orange) {}
+                            ListBannerCard(title: "默认", icon: "music.note.list", accent: theme.primary) {
+                                if let id = currentPlaylistId {
+                                    navigateRoute = .customPlaylist(playlistId: id)
+                                }
+                            }
+                            ListBannerCard(title: "红心", icon: "heart.fill", accent: .red) {
+                                if let id = likedPlaylistId {
+                                    navigateRoute = .customPlaylist(playlistId: id)
+                                }
+                            }
+                            ListBannerCard(title: "最近", icon: "clock.fill", accent: .orange) {
+                                if let id = recentPlaylistId {
+                                    navigateRoute = .customPlaylist(playlistId: id)
+                                }
+                            }
                         }
                     }
 
@@ -79,6 +95,19 @@ struct ListScreen: View {
         .onAppear {
             playlistVM.loadLabels()
             playlistVM.loadUserCustomPlaylists()
+            Task {
+                currentPlaylistId = await playlistVM.getCurrentPlaylistId()
+                likedPlaylistId = await playlistVM.getLikedPlaylistId()
+                recentPlaylistId = await playlistVM.getRecentPlaylistId()
+            }
+        }
+        .background {
+            if let route = navigateRoute {
+                NavigationLink(value: route) {
+                    EmptyView()
+                }
+                .hidden()
+            }
         }
     }
 }
@@ -120,12 +149,12 @@ struct ListBannerCard: View {
     let title: String
     let icon: String
     let accent: Color
-    let onTap: () -> Void
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
         Button {
             HapticManager.shared.click()
-            onTap()
+            onTap?()
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon)

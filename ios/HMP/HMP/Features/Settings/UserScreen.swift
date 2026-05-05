@@ -2,55 +2,48 @@ import SwiftUI
 import shared
 
 /// 我的页 - 对应 Android UserScreen.kt + SettingScreen.kt
-/// 用户信息 + 设置入口 + AI 推荐 + 使用数据
 struct UserScreen: View {
     @Environment(HMPTheme.self) private var theme
 
     var body: some View {
         TabScreen(title: "我的") {
             List {
-                // 用户资料
                 Section("用户资料") {
-                    NavigationLink("个人资料") {
-                        Text("个人资料 (待实现)")
+                    NavigationLink(value: HMPRoute.profileSettings) {
+                        Text("个人资料")
                     }
-                    NavigationLink("使用数据") {
-                        Text("使用数据 (待实现)")
+                    NavigationLink(value: HMPRoute.userUsageData) {
+                        Text("使用数据")
                     }
                 }
 
-                // 音乐库
                 Section("音乐库") {
-                    NavigationLink("音乐库设置") {
-                        LibrarySettingsScreen()
+                    NavigationLink(value: HMPRoute.librarySettings) {
+                        Text("音乐库设置")
                     }
-                    NavigationLink("音效设置") {
-                        AudioEffectsScreen()
+                    NavigationLink(value: HMPRoute.audioEffects) {
+                        Text("音效设置")
                     }
                 }
 
-                // AI 推荐
                 Section("AI 推荐") {
-                    NavigationLink("AI 设置") {
-                        Text("AI 设置 (待实现)")
+                    NavigationLink(value: HMPRoute.ai) {
+                        Text("AI 设置")
                     }
                 }
 
-                // 数据管理
                 Section("数据管理") {
-                    NavigationLink("备份与恢复") {
-                        Text("备份与恢复 (待实现)")
+                    NavigationLink(value: HMPRoute.backupSettings) {
+                        Text("备份与恢复")
                     }
                 }
 
-                // 主题自定义
                 Section("个性化") {
-                    NavigationLink("主题与背景") {
-                        CustomScreen()
+                    NavigationLink(value: HMPRoute.custom) {
+                        Text("主题与背景")
                     }
                 }
 
-                // 关于
                 Section("关于") {
                     HStack {
                         Text("版本")

@@ -1,67 +1,65 @@
 import Foundation
 import shared
 
-@Observable
-class LibraryViewModel {
-    var musicList: [MusicInfo_] = []
-    var isScanning: Bool = false
-    var musicCount: Int32 = 0
-    var errorMessage: String? = nil
+class LibraryViewModel: ObservableObject {
+    @Published var musicList: [MusicInfo_] = []
+    @Published var musicCount: Int32 = 0
+    @Published var musicWithExtraCount: Int32 = 0
+    @Published var isScanning: Bool = false
+    @Published var errorMessage: String? = nil
+    @Published var orderBy: String = "title"
+    @Published var orderType: String = "ASC"
 
-    private let getAllMusicUseCase: GetAllMusicUseCase
-    private let loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase
-    private let syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase
+    private let getAllMusicUseCase = KoinHelperKt.getGetAllMusicUseCase()
 
     init() {
-        self.getAllMusicUseCase = KoinHelperKt.getGetAllMusicUseCase()
-        self.loadMusicFromDeviceUseCase = KoinHelperKt.getLoadMusicFromDeviceUseCase()
-        self.syncMusicFromDeviceIncrementalUseCase = KoinHelperKt.getSyncMusicFromDeviceIncrementalUseCase()
+        loadMusic()
+    }
 
-        // Load existing music on init
-        Task {
-            await loadMusic()
-            // Auto-sync if music exists but has no artwork (first run after ArtworkExtractor was added)
-            if !musicList.isEmpty && musicList.allSatisfy({ $0.music.albumArtUri.isEmpty }) {
-                await incrementalSync()
+    func loadMusic() {
+        let ob = orderBy
+        let ot = orderType
+        getAllMusicUseCase.invoke(orderBy: ob, orderType: ot, completionHandler: { [weak self] result, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.objectWillChange.send()
+                if let list = result {
+                    self.musicList = list
+                    self.musicCount = Int32(list.count)
+                }
             }
-        }
+        })
     }
 
-    @MainActor
-    func loadMusic() async {
-        do {
-            let list = try await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")
-            self.musicList = list
-            self.musicCount = Int32(list.count)
-        } catch {
-            print("[LibraryVM] loadMusic failed: \(error)")
-        }
+    func selectSortOption(_ newOrderBy: String) {
+        guard newOrderBy != orderBy else { return }
+        orderBy = newOrderBy
+        loadMusic()
     }
 
-    @MainActor
+    func toggleSortOrder() {
+        orderType = orderType == "ASC" ? "DESC" : "ASC"
+        loadMusic()
+    }
+
     func fullRescan() async {
         isScanning = true
         errorMessage = nil
         do {
-            try await loadMusicFromDeviceUseCase.invoke()
-            let list = try await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")
-            self.musicList = list
-            self.musicCount = Int32(list.count)
+            try await KoinHelperKt.getLoadMusicFromDeviceUseCase().invoke()
+            loadMusic()
         } catch {
             self.errorMessage = error.localizedDescription
         }
         isScanning = false
     }
 
-    @MainActor
     func incrementalSync() async {
         isScanning = true
         errorMessage = nil
         do {
-            try await syncMusicFromDeviceIncrementalUseCase.invoke()
-            let list = try await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")
-            self.musicList = list
-            self.musicCount = Int32(list.count)
+            try await KoinHelperKt.getSyncMusicFromDeviceIncrementalUseCase().invoke()
+            loadMusic()
         } catch {
             self.errorMessage = error.localizedDescription
         }

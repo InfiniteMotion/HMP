@@ -16,6 +16,8 @@ struct PlayerScreen: View {
     @State private var isSeeking = false
     @State private var seekingPosition: Double = 0
     @State private var dragOffset: CGFloat = 0
+    @State private var paletteColors = PaletteColors()
+    @State private var backgroundStyle: BackgroundStyle = .fluid
 
     private let dismissThreshold: CGFloat = 220
 
@@ -42,11 +44,18 @@ struct PlayerScreen: View {
 
     var body: some View {
         ZStack {
-            // 背景
-            ColorTokens.darkBackground.ignoresSafeArea()
-
-            // 遮罩
-            Color.black.opacity(0.3).ignoresSafeArea()
+            // 背景：播放时动态，暂停时跟随主题
+            if controller.isPlaying {
+                DynamicBackground(
+                    albumArtUri: albumArtUri,
+                    musicPath: musicPath,
+                    paletteColors: paletteColors,
+                    isDark: theme.isDark,
+                    style: backgroundStyle
+                )
+            } else {
+                theme.background
+            }
 
             // 安全区适配
             SafeAreaView {
@@ -139,6 +148,21 @@ struct PlayerScreen: View {
             TimerSheet()
                 .presentationDetents([.height(300)])
         }
+        .task(id: albumArtUri) {
+            extractPalette()
+        }
+    }
+    
+    private func extractPalette() {
+        if let uri = albumArtUri, !uri.isEmpty, let image = CoverCache.shared.get(path: uri) {
+            paletteColors = PaletteExtractor.shared.extract(from: image) ?? PaletteColors()
+        } else if let path = musicPath, !path.isEmpty {
+            let extractor = ArtworkExtractor()
+            if let coverPath = extractor.extractAndSave(filePath: path), 
+               let image = UIImage(contentsOfFile: coverPath) {
+                paletteColors = PaletteExtractor.shared.extract(from: image) ?? PaletteColors()
+            }
+        }
     }
 
     // MARK: - 顶部栏
@@ -151,7 +175,7 @@ struct PlayerScreen: View {
             } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(theme.text)
                     .frame(width: 32, height: 32)
             }
             Spacer()
@@ -165,17 +189,17 @@ struct PlayerScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(musicTitle)
                 .font(TypographyTokens.displayMedium)
-                .foregroundColor(.white)
+                .foregroundColor(theme.text)
                 .lineLimit(1)
 
             Text(musicArtist)
                 .font(TypographyTokens.titleMedium)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(theme.text.opacity(0.7))
                 .lineLimit(1)
 
             Text(musicAlbum)
                 .font(TypographyTokens.titleMedium)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(theme.text.opacity(0.7))
                 .lineLimit(1)
         }
     }
@@ -200,6 +224,7 @@ struct SafeAreaView<Content: View>: View {
 
 // MARK: - 可拖动进度条
 struct PlayerSeekBar: View {
+    @Environment(HMPTheme.self) private var theme
     let currentPosition: Int64
     let duration: Int64
     @Binding var isSeeking: Bool
@@ -229,16 +254,16 @@ struct PlayerSeekBar: View {
                     }
                 }
             )
-            .tint(.white)
+            .tint(theme.primary)
 
             HStack {
                 Text(formatTime(isSeeking ? Int64(seekingPosition * Double(duration)) : currentPosition))
                     .font(TypographyTokens.labelSmall)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(theme.text.opacity(0.7))
                 Spacer()
                 Text(formatTime(duration))
                     .font(TypographyTokens.labelSmall)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(theme.text.opacity(0.7))
             }
         }
     }
@@ -253,6 +278,7 @@ struct PlayerSeekBar: View {
 
 // MARK: - 主控制行（播放/暂停）
 struct MainControlRow: View {
+    @Environment(HMPTheme.self) private var theme
     private var controller: MusicPlayerController { MusicPlayerController.shared }
     
     var body: some View {
@@ -264,7 +290,7 @@ struct MainControlRow: View {
             } label: {
                 Image(systemName: "backward.end.fill")
                     .font(.system(size: 28))
-                    .foregroundColor(.white)
+                    .foregroundColor(theme.text)
             }
 
             // 播放/暂停
@@ -278,7 +304,7 @@ struct MainControlRow: View {
             } label: {
                 Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 40))
-                    .foregroundColor(.white)
+                    .foregroundColor(theme.text)
                     .frame(width: 72, height: 72)
                     .background(Circle().fill(ColorTokens.hdRed))
             }
@@ -290,7 +316,7 @@ struct MainControlRow: View {
             } label: {
                 Image(systemName: "forward.end.fill")
                     .font(.system(size: 28))
-                    .foregroundColor(.white)
+                    .foregroundColor(theme.text)
             }
         }
     }
@@ -298,6 +324,7 @@ struct MainControlRow: View {
 
 // MARK: - 次要控制行（播放模式/收藏等）
 struct SecondaryControlRow: View {
+    @Environment(HMPTheme.self) private var theme
     private var controller: MusicPlayerController { MusicPlayerController.shared }
     let showTimerAction: () -> Void
     let showQueue: Binding<Bool>
@@ -310,7 +337,7 @@ struct SecondaryControlRow: View {
             } label: {
                 Image(systemName: playbackModeIcon)
                     .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(theme.text.opacity(0.7))
             }
 
             Spacer()
@@ -321,7 +348,7 @@ struct SecondaryControlRow: View {
             } label: {
                 Image(systemName: controller.likeStatus ? "heart.fill" : "heart")
                     .font(.system(size: 20))
-                    .foregroundColor(controller.likeStatus ? ColorTokens.hdRed : .white.opacity(0.7))
+                    .foregroundColor(controller.likeStatus ? ColorTokens.hdRed : theme.text.opacity(0.7))
             }
 
             Spacer()
@@ -332,7 +359,7 @@ struct SecondaryControlRow: View {
             } label: {
                 Image(systemName: "waveform")
                     .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(theme.text.opacity(0.7))
             }
 
             Spacer()
@@ -344,7 +371,7 @@ struct SecondaryControlRow: View {
                 } label: {
                     Text(formatRemaining(remaining))
                         .font(TypographyTokens.bodySmall)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(theme.text.opacity(0.7))
                 }
             } else {
                 Button {
@@ -352,7 +379,7 @@ struct SecondaryControlRow: View {
                 } label: {
                     Image(systemName: "timer")
                         .font(.system(size: 20))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(theme.text.opacity(0.7))
                 }
             }
 
@@ -365,7 +392,7 @@ struct SecondaryControlRow: View {
             } label: {
                 Image(systemName: "music.note.list")
                     .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(theme.text.opacity(0.7))
             }
         }
         .padding(.horizontal, 24)

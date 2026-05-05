@@ -18,12 +18,26 @@ import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.backup.AppSettingsSnapshot
 import com.hmp.domain.backup.DailyRecommendationSnapshot
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.readBytes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import platform.Foundation.NSDate
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSString
+import platform.Foundation.NSUserDomainMask
+import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.dataUsingEncoding
 
+@OptIn(ExperimentalForeignApi::class)
 class SettingsRepositoryImpl(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val json: Json
 ) : SettingsRepository {
     private companion object {
         const val HAZE_MODE_CUSTOM = "custom"
@@ -84,6 +98,8 @@ class SettingsRepositoryImpl(
         val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
         val DEFAULT_WEIGHT_TEMPLATE = stringPreferencesKey("default_weight_template")
         val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
+        val GALLERY_ORDER_BY = stringPreferencesKey("gallery_order_by")
+        val GALLERY_ORDER_TYPE = stringPreferencesKey("gallery_order_type")
     }
 
     private fun normalizeHazeMode(mode: String): String {
@@ -137,6 +153,11 @@ class SettingsRepositoryImpl(
         val alignmentStr = it[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
     }
+    override val galleryOrderBy: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] ?: "title" }
+    override val galleryOrderType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] ?: "ASC" }
+    override suspend fun saveGalleryOrderBy(orderBy: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] = orderBy } }
+    override suspend fun saveGalleryOrderType(orderType: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] = orderType } }
+
     override val defaultAlgorithmType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] ?: "OPTIMIZED_SIMILARITY" }
     override val defaultWeightTemplate: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] ?: "BALANCED" }
     override val defaultExtensionConfig: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DEFAULT_EXTENSION_CONFIG] ?: "{}" }
@@ -240,8 +261,77 @@ class SettingsRepositoryImpl(
     override suspend fun saveSurroundSoundEnabled(enabled: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = enabled } }
     override suspend fun saveReverbPreset(preset: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.REVERB_PRESET] = preset } }
     override suspend fun saveCustomEqualizerLevels(levels: FloatArray) { dataStore.edit { prefs -> prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS] = levels.joinToString(",") } }
-    override suspend fun backupSettings(): Result<String> = Result.failure(NotImplementedError("Backup not implemented on iOS yet"))
-    override suspend fun restoreSettings(backupFilePath: String): Result<Unit> = Result.failure(NotImplementedError("Restore not implemented on iOS yet"))
+    override suspend fun backupSettings(): Result<String> = withContext(Dispatchers.Default) {
+        try {
+            val prefs = dataStore.data.first()
+            val entries = prefs.asMap().entries.mapNotNull { (key, value) ->
+                val keyName = key.name
+                val valueStr = when (value) {
+                    is String -> "\"$value\""
+                    is Boolean -> value.toString()
+                    is Long -> value.toString()
+                    is Int -> value.toString()
+                    is Float -> value.toString()
+                    else -> null
+                }
+                valueStr?.let { "\"$keyName\":$it" }
+            }
+            val jsonString = "{${entries.joinToString(",")}}"
+
+            val backupDir = getBackupDir()
+            val filename = "settings_backup_${com.hmp.data.database.currentTimeMillis()}.json"
+            val filePath = "$backupDir/$filename"
+            val data = (jsonString as NSString).dataUsingEncoding(NSUTF8StringEncoding)!!
+            NSFileManager.defaultManager.createFileAtPath(filePath, data, null)
+            Result.success(filePath)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun restoreSettings(backupFilePath: String): Result<Unit> = withContext(Dispatchers.Default) {
+        try {
+            if (!NSFileManager.defaultManager.fileExistsAtPath(backupFilePath)) {
+                return@withContext Result.failure(Exception("Backup file does not exist"))
+            }
+            val data = NSFileManager.defaultManager.contentsAtPath(backupFilePath)
+                ?: return@withContext Result.failure(Exception("Failed to read backup file"))
+            val bytes = data.bytes
+                ?: return@withContext Result.failure(Exception("Failed to read backup data"))
+            val jsonString = bytes.readBytes(data.length.toInt()).decodeToString()
+            val regex = """"([^"]+)":\s*([^,}]+)""".toRegex()
+            val matches = regex.findAll(jsonString)
+
+            dataStore.edit { prefs ->
+                matches.forEach { match ->
+                    val key = match.groupValues[1]
+                    val value = match.groupValues[2].trim()
+                    try {
+                        when (key) {
+                            PreferencesKeys.IS_FIRST_LAUNCH.name -> prefs[PreferencesKeys.IS_FIRST_LAUNCH] = value.toBoolean()
+                            PreferencesKeys.IS_LOAD_MUSIC.name -> prefs[PreferencesKeys.IS_LOAD_MUSIC] = value.toBoolean()
+                            PreferencesKeys.CURRENT_MUSIC_ID.name -> prefs[PreferencesKeys.CURRENT_MUSIC_ID] = value.toLong()
+                            PreferencesKeys.CURRENT_PLAYLIST_ID.name -> prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] = value.toLong()
+                            PreferencesKeys.LIKED_PLAYLIST_ID.name -> prefs[PreferencesKeys.LIKED_PLAYLIST_ID] = value.toLong()
+                            PreferencesKeys.RECENT_PLAYLIST_ID.name -> prefs[PreferencesKeys.RECENT_PLAYLIST_ID] = value.toLong()
+                            PreferencesKeys.USER_NAME.name -> prefs[PreferencesKeys.USER_NAME] = value.trim('"')
+                            PreferencesKeys.AVATAR_URI.name -> prefs[PreferencesKeys.AVATAR_URI] = value.trim('"')
+                            PreferencesKeys.HAZE_INTENSITY.name -> prefs[PreferencesKeys.HAZE_INTENSITY] = value.toFloat()
+                            PreferencesKeys.HAZE_BLUR_RADIUS.name -> prefs[PreferencesKeys.HAZE_BLUR_RADIUS] = value.toFloat().coerceAtLeast(0f)
+                            PreferencesKeys.EQUALIZER_PRESET.name -> prefs[PreferencesKeys.EQUALIZER_PRESET] = value.toInt()
+                            PreferencesKeys.BASS_BOOST_LEVEL.name -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] = value.toInt()
+                            PreferencesKeys.IS_SURROUND_SOUND_ENABLED.name -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = value.toBoolean()
+                            PreferencesKeys.REVERB_PRESET.name -> prefs[PreferencesKeys.REVERB_PRESET] = value.toInt()
+                            PreferencesKeys.CUSTOM_EQUALIZER_LEVELS.name -> prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS] = value.trim('"')
+                        }
+                    } catch (_: Exception) { }
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     override suspend fun saveLyricsOriginalTextSize(size: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] = size } }
     override suspend fun saveLyricsTranslatedTextSize(size: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] = size } }
     override suspend fun saveLyricsCurrentTimeTextSize(size: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] = size } }
@@ -260,7 +350,41 @@ class SettingsRepositoryImpl(
     override suspend fun getLyricsTranslatedTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] ?: 14
     override suspend fun getLyricsCurrentTimeTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] ?: 16
     override suspend fun getLyricsLineSpacing(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_LINE_SPACING] ?: 6
-    override suspend fun cleanOldBackups(keepCount: Int): Result<Unit> = Result.success(Unit)
+    override suspend fun cleanOldBackups(keepCount: Int): Result<Unit> = withContext(Dispatchers.Default) {
+        try {
+            val dir = getBackupDir()
+            if (!NSFileManager.defaultManager.fileExistsAtPath(dir)) return@withContext Result.success(Unit)
+            val files = NSFileManager.defaultManager.contentsOfDirectoryAtPath(dir, null)
+                ?.filterIsInstance<String>()
+                ?.filter { it.startsWith("settings_backup_") && it.endsWith(".json") }
+                ?.map { "$dir/$it" }
+                ?.sortedByDescending { f ->
+                    val attrs = NSFileManager.defaultManager.attributesOfItemAtPath(f, null)
+                    (attrs?.get("NSFileModificationDate") as? NSDate)?.timeIntervalSinceReferenceDate ?: 0.0
+                }
+                ?: return@withContext Result.success(Unit)
+
+            if (files.size > keepCount) {
+                files.drop(keepCount).forEach { path ->
+                    NSFileManager.defaultManager.removeItemAtPath(path, null)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun getBackupDir(): String {
+        val docs = NSFileManager.defaultManager.URLForDirectory(
+            NSDocumentDirectory, NSUserDomainMask, null, false, null
+        )!!
+        val dir = "${docs.path}/backups"
+        if (!NSFileManager.defaultManager.fileExistsAtPath(dir)) {
+            NSFileManager.defaultManager.createDirectoryAtPath(dir, true, null, null)
+        }
+        return dir
+    }
     override suspend fun saveDefaultAlgorithmType(type: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] = type } }
     override suspend fun getDefaultAlgorithmType(): String = dataStore.data.first()[PreferencesKeys.DEFAULT_ALGORITHM_TYPE] ?: "OPTIMIZED_SIMILARITY"
     override suspend fun saveDefaultWeightTemplate(template: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.DEFAULT_WEIGHT_TEMPLATE] = template } }
