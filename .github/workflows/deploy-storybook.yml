@@ -1,0 +1,121 @@
+name: Deploy Storybook to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'storybook/**'
+      - '.github/workflows/deploy-storybook.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download JetBrains JDK
+        run: |
+          wget -q https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk-21.0.6-linux-x64-b895.91.tar.gz
+          tar -xzf jbrsdk-21.0.6-linux-x64-b895.91.tar.gz
+          mv jbrsdk-21.0.6-linux-x64-b895.91 $HOME/jbrsdk
+          echo "JAVA_HOME=$HOME/jbrsdk" >> $GITHUB_ENV
+          echo "$HOME/jbrsdk/bin" >> $GITHUB_PATH
+
+      - name: Verify Java
+        run: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create CI settings
+        run: |
+          cat > settings.gradle.kts.ci << 'CIEOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+                  ivy {
+                      name = "Node.js Distributions"
+                      url = uri("https://nodejs.org/dist")
+                      patternLayout {
+                          artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("org.nodejs", "node") }
+                  }
+                  ivy {
+                      name = "Yarn Distributions"
+                      url = uri("https://github.com/yarnpkg/yarn/releases/download")
+                      patternLayout {
+                          artifact("v[revision]/[artifact](-v[revision]).[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("com.yarnpkg", "yarn") }
+                  }
+                  ivy {
+                      name = "Binaryen Distributions"
+                      url = uri("https://github.com/WebAssembly/binaryen/releases/download")
+                      patternLayout {
+                          artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("com.github.webassembly", "binaryen") }
+                  }
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":android:app")
+          include(":android:core-player")
+          include(":android:feature-ui")
+          include(":storybook")
+          CIEOF
+          cp settings.gradle.kts.ci settings.gradle.kts
+
+      - name: Build Storybook
+        run: ./gradlew :storybook:wasmJsBrowserDistribution --no-daemon
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: storybook/build/dist/wasmJs/productionExecutable
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
