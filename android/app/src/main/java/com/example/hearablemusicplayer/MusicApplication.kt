@@ -5,6 +5,7 @@ import com.example.hearablemusicplayer.player.di.playerModule
 import com.example.hearablemusicplayer.ui.di.uiModule
 import com.hmp.data.di.androidPlatformModule
 import com.hmp.data.di.sharedModule
+import com.hmp.shared.resource.SharedIconLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -20,6 +21,7 @@ class MusicApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        SharedIconLoader.init(this)
         startKoin {
             androidLogger(Level.ERROR)
             androidContext(this@MusicApplication)

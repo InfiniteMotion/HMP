@@ -62,7 +62,8 @@ import com.example.hearablemusicplayer.ui.common.components.base.NewPlaylistButt
 import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
 import com.example.hearablemusicplayer.ui.common.navigation.Routes
 import com.example.hearablemusicplayer.ui.common.util.UiState
-import com.example.hearablemusicplayer.ui.common.util.iconResId
+import com.example.hearablemusicplayer.ui.common.components.SharedLabelIcon
+import com.example.hearablemusicplayer.ui.common.util.iconName
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
@@ -362,8 +363,8 @@ private fun GenreCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 背景图
-            AsyncImage(
-                model = label.iconResId,
+            SharedLabelIcon(
+                iconName = label.iconName,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -407,8 +408,8 @@ private fun MoodCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = label.iconResId,
+            SharedLabelIcon(
+                iconName = label.iconName,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -435,8 +436,8 @@ private fun ScenarioCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = label.iconResId,
+            SharedLabelIcon(
+                iconName = label.iconName,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

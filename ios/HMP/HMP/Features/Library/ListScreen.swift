@@ -240,9 +240,9 @@ struct CategorySection: View {
                             } label: {
                                 switch cardStyle {
                                 case .large:
-                                    CategoryCardLarge(title: label, icon: icon)
+                                    CategoryCardLarge(title: label, icon: icon, iconName: label)
                                 case .medium:
-                                    CategoryCardMedium(title: label, icon: icon)
+                                    CategoryCardMedium(title: label, icon: icon, iconName: label)
                                 case .compact:
                                     CategoryCardCompact(title: label)
                                 }
@@ -260,12 +260,17 @@ struct CategoryCardLarge: View {
     @Environment(HMPTheme.self) private var theme
     let title: String
     let icon: String
+    var iconName: String?
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 40))
-                .foregroundColor(theme.primary)
+            if let iconName {
+                SharedLabelIcon(iconName: iconName, size: 48)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 40))
+                    .foregroundColor(theme.primary)
+            }
             Text(title)
                 .font(TypographyTokens.bodyMedium)
                 .foregroundColor(theme.text)
@@ -282,12 +287,17 @@ struct CategoryCardMedium: View {
     @Environment(HMPTheme.self) private var theme
     let title: String
     let icon: String
+    var iconName: String?
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 28))
-                .foregroundColor(theme.primary)
+            if let iconName {
+                SharedLabelIcon(iconName: iconName, size: 36)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(theme.primary)
+            }
             Text(title)
                 .font(TypographyTokens.bodySmall)
                 .foregroundColor(theme.text)
@@ -358,12 +368,15 @@ struct MoodGridItem: View {
     let title: String
 
     var body: some View {
-        Text(title)
-            .font(TypographyTokens.bodyMedium)
-            .foregroundColor(theme.text)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(theme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+        HStack(spacing: 8) {
+            SharedLabelIcon(iconName: title, size: 28)
+            Text(title)
+                .font(TypographyTokens.bodyMedium)
+                .foregroundColor(theme.text)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 50)
+        .background(theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

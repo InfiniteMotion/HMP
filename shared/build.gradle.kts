@@ -70,3 +70,19 @@ dependencies {
 room {
     schemaDirectory("$projectDir/schemas")
 }
+
+// Copy shared icons to iOS project bundle resources
+val copyIconsToIos by tasks.registering(Copy::class) {
+    from("$projectDir/src/commonMain/resources/icons")
+    into("$projectDir/../ios/HMP/HMP/icons")
+}
+
+tasks.matching { it.name == "compileKotlinIosSimulatorArm64" }.configureEach {
+    finalizedBy(copyIconsToIos)
+}
+tasks.matching { it.name == "compileKotlinIosArm64" }.configureEach {
+    finalizedBy(copyIconsToIos)
+}
+tasks.matching { it.name == "compileKotlinIosX64" }.configureEach {
+    finalizedBy(copyIconsToIos)
+}
