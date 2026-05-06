@@ -8,11 +8,16 @@ class PlayerEngine {
     private var statusObserver: NSKeyValueObservation?
     private var rateObserver: NSKeyValueObservation?
     private var itemStatusObserver: NSKeyValueObservation?
+    
+    /// 是否准备就绪
+    var isReady: Bool = false
 
     var onPlaybackEnded: (() -> Void)?
     var onPositionUpdated: ((Int64, Int64) -> Void)? // (currentMs, durationMs)
     var onPlayStateChanged: ((Bool) -> Void)?
     var onError: ((String) -> Void)?
+    /// 播放器准备就绪回调
+    var onReady: (() -> Void)?
 
     var isPlaying: Bool {
         return player?.rate ?? 0 > 0
@@ -24,6 +29,7 @@ class PlayerEngine {
 
     func play(url: URL) {
         cleanup()
+        isReady = false
 
         let item = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: item)
@@ -91,8 +97,14 @@ class PlayerEngine {
 
     private func observeItemStatus(_ item: AVPlayerItem) {
         itemStatusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
-            if item.status == .failed {
-                self?.onError?(item.error?.localizedDescription ?? "Playback failed")
+            guard let self else { return }
+            
+            if item.status == .readyToPlay {
+                // 播放器准备就绪
+                self.isReady = true
+                self.onReady?()
+            } else if item.status == .failed {
+                self.onError?(item.error?.localizedDescription ?? "Playback failed")
             }
         }
 
@@ -112,6 +124,8 @@ class PlayerEngine {
     }
 
     private func cleanup() {
+        isReady = false
+        
         if let observer = timeObserver {
             player?.removeTimeObserver(observer)
             timeObserver = nil

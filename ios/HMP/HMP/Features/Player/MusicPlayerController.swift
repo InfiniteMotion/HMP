@@ -21,6 +21,9 @@ class MusicPlayerController {
     var currentMusicLyrics: String? = nil
     var isMiniPlayerVisible: Bool = false
     var timerRemaining: Int64? = nil
+    
+    /// 初始化是否完成（用于 UI 等待初始化完成）
+    var isInitializationComplete: Bool = false
 
     // MARK: - Private
 
@@ -36,6 +39,11 @@ class MusicPlayerController {
     private var listeningDurationAccumulator: Int64 = 0
     private var listeningDurationTimer: Timer? = nil
     private var sleepTimer: Timer? = nil
+    
+    /// 恢复位置的缓存（在引擎准备好后使用）
+    private var pendingSeekPosition: Int64 = 0
+    /// 是否正在初始化播放器（用于防止重复初始化）
+    private var isInitializing: Bool = false
 
     private init() {
         self.engine = PlayerEngine()
@@ -53,7 +61,6 @@ class MusicPlayerController {
     // MARK: - App Lifecycle
 
     private func setupAppLifecycleObservers() {
-        // 应用进入后台时保存播放状态
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidEnterBackground),
@@ -61,7 +68,6 @@ class MusicPlayerController {
             object: nil
         )
 
-        // 应用终止时保存播放状态
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppWillTerminate),
@@ -91,18 +97,28 @@ class MusicPlayerController {
         engine.onPositionUpdated = { [weak self] pos, dur in
             self?.currentPosition = pos
             self?.duration = dur
-            // 每10秒保存一次播放位置
             if pos % 10000 < 500 {
                 self?.saveCurrentPosition()
             }
         }
         engine.onPlayStateChanged = { [weak self] playing in
             self?.isPlaying = playing
-            // 播放状态改变时保存位置
             self?.saveCurrentPosition()
         }
         engine.onError = { [weak self] msg in
             print("[MusicPlayerController] error: \(msg)")
+        }
+        engine.onReady = { [weak self] in
+            self?.handleEngineReady()
+        }
+    }
+
+    /// 引擎准备好后的回调 - 用于恢复播放位置
+    private func handleEngineReady() {
+        if pendingSeekPosition > 0 {
+            engine.seekToMs(pendingSeekPosition)
+            print("[MusicPlayerController] Engine ready, seeking to: \(pendingSeekPosition)ms")
+            pendingSeekPosition = 0
         }
     }
 
@@ -151,7 +167,12 @@ class MusicPlayerController {
     }
 
     func seekTo(position: Int64) {
-        engine.seekToMs(position)
+        if engine.isReady {
+            engine.seekToMs(position)
+            currentPosition = position
+        } else {
+            pendingSeekPosition = position
+        }
     }
 
     func playNext() {
@@ -163,7 +184,7 @@ class MusicPlayerController {
             nextIndex = currentIndex
         case .shuffle:
             nextIndex = Int.random(in: 0..<currentPlaylist.count)
-        default: // SEQUENTIAL
+        default:
             nextIndex = currentIndex + 1
         }
 
@@ -175,7 +196,6 @@ class MusicPlayerController {
     func playPrevious() {
         guard !currentPlaylist.isEmpty else { return }
 
-        // If more than 3 seconds in, restart current track
         if currentPosition > 3000 {
             seekTo(position: 0)
             return
@@ -228,7 +248,6 @@ class MusicPlayerController {
     // MARK: - Private Helpers
 
     private func startPlaying(_ musicInfo: MusicInfo_) {
-        // End previous session
         if currentPlaybackHistoryId != nil {
             endCurrentPlaybackSession(isCompleted: false)
         }
@@ -239,7 +258,6 @@ class MusicPlayerController {
         let path = musicInfo.music.path
         let fileExists = FileManager.default.fileExists(atPath: path)
         if !fileExists {
-            // Path may be stale (app reinstalled), try Documents directory
             let filename = (path as NSString).lastPathComponent
             let docsDir = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first ?? ""
             let newPath = (docsDir as NSString).appendingPathComponent(filename)
@@ -252,16 +270,10 @@ class MusicPlayerController {
         let url = URL(fileURLWithPath: path)
         engine.play(url: url)
 
-        // Load metadata
         loadMetadata(for: musicInfo)
-
-        // Start new playback session
         startNewPlaybackSession(musicInfo: musicInfo)
-
-        // Persist state
         persistPlaybackState()
 
-        // Update Now Playing
         NowPlayingManager.shared.updateNowPlayingInfo(
             title: musicInfo.music.title,
             artist: musicInfo.music.artist,
@@ -274,7 +286,6 @@ class MusicPlayerController {
     private func loadMetadata(for musicInfo: MusicInfo_) {
         let musicId = musicInfo.music.id
 
-        // Like status
         Task {
             do {
                 let liked = try await currentPlaybackUseCase.getLikedStatus(musicId: musicId)
@@ -284,7 +295,6 @@ class MusicPlayerController {
             }
         }
 
-        // Lyrics
         Task {
             do {
                 let lyrics = try await currentPlaybackUseCase.getMusicLyrics(musicId: musicId)
@@ -305,11 +315,10 @@ class MusicPlayerController {
             startNewPlaybackSession(musicInfo: currentPlayingMusic!)
         case .shuffle:
             playNext()
-        default: // SEQUENTIAL
+        default:
             if currentIndex + 1 < currentPlaylist.count {
                 playNext()
             }
-            // else: end of playlist, don't auto-loop
         }
     }
 
@@ -376,7 +385,6 @@ class MusicPlayerController {
     }
 
     private func pauseListeningDurationTracking() {
-        // Accumulate time played so far
         if let start = playbackStartTime {
             listeningDurationAccumulator += Int64(Date().timeIntervalSince(start) * 1000)
             playbackStartTime = nil
@@ -384,7 +392,6 @@ class MusicPlayerController {
     }
 
     private func recordListeningDurationTick() {
-        // Add time since last checkpoint
         if let start = playbackStartTime {
             listeningDurationAccumulator += Int64(Date().timeIntervalSince(start) * 1000)
             playbackStartTime = Date()
@@ -423,7 +430,6 @@ class MusicPlayerController {
 
     private func tickSleepTimer() {
         timerUseCase.decrementTimer(decrement: 1000)
-        // decrementTimer sets remaining to null when it hits 0
         if !timerUseCase.isTimerActive() {
             pauseMusic()
             cancelTimer()
@@ -454,7 +460,6 @@ class MusicPlayerController {
             do {
                 try await settingsRepository.saveCurrentMusicId(id: musicInfo.music.id)
                 try await settingsRepository.saveCurrentPosition(position: currentPosition)
-                // 确保 currentPlaylistId 已保存
                 if let playlistId = try await settingsRepository.getCurrentPlaylistId() {
                     try await persistCurrentPlaylistToDatabase(playlistId: playlistId.int64Value)
                 }
@@ -482,13 +487,16 @@ class MusicPlayerController {
         }
     }
 
-    /// 初始化默认播放列表（如果不存在）
-    /// 对应 Android PlaylistViewModel.initializeDefaultPlaylists()
     func initializeDefaultPlaylists() async {
+        if isInitializing {
+            print("[MusicPlayerController] Already initializing, skipping")
+            return
+        }
+        isInitializing = true
+        
         do {
             // 检查并创建默认播放列表
             if try await settingsRepository.getCurrentPlaylistId() == nil {
-                // 先尝试删除可能存在的同名列表（避免重复）
                 try? await managePlaylistUseCase.removePlaylist(name: "默认播放列表")
                 let defaultId = try await managePlaylistUseCase.createPlaylist(name: "默认播放列表")
                 try await settingsRepository.saveCurrentPlaylistId(playlistId: defaultId.int64Value)
@@ -514,14 +522,23 @@ class MusicPlayerController {
             // 初始化完成后，恢复播放状态
             await loadPlaylistFromSettings()
             await restoreLastPosition()
+            
+            await MainActor.run {
+                self.isInitializationComplete = true
+                print("[MusicPlayerController] Initialization complete")
+            }
         } catch {
             print("[MusicPlayerController] Failed to initialize playlists: \(error)")
+            await MainActor.run {
+                self.isInitializationComplete = true
+            }
         }
+        
+        isInitializing = false
     }
 
     private func restoreSavedState() {
-        // 不再直接恢复，等待 initializeDefaultPlaylists 完成后再恢复
-        // 这是为了避免在默认播放列表创建之前尝试恢复状态
+        // 等待 initializeDefaultPlaylists 完成后再恢复
     }
 
     private func loadPlaylistFromSettings() async {
@@ -536,15 +553,25 @@ class MusicPlayerController {
             await MainActor.run {
                 self.currentPlaylist = list
                 self.playbackMode = .sequential
+                
                 if let musicId = currentMusicId {
-                    self.currentIndex = list.firstIndex { $0.music.id == musicId.int64Value } ?? 0
-                    if self.currentIndex < list.count {
-                        self.currentPlayingMusic = list[self.currentIndex]
+                    // 查找当前歌曲在列表中的位置
+                    if let idx = list.firstIndex(where: { $0.music.id == musicId.int64Value }) {
+                        self.currentIndex = idx
+                        self.currentPlayingMusic = list[idx]
                         self.isMiniPlayerVisible = true
-                        print("[MusicPlayerController] Restored playback state: musicId=\(musicId), position=\(self.currentPosition)")
+                        print("[MusicPlayerController] Restored playback state: musicId=\(musicId), index=\(idx)")
+                    } else {
+                        // 如果保存的歌曲不在当前列表中，重置状态
+                        self.currentIndex = 0
+                        self.currentPlayingMusic = list.first
+                        self.isMiniPlayerVisible = !list.isEmpty
+                        print("[MusicPlayerController] Saved music not found in playlist, resetting to first item")
                     }
                 } else {
                     self.currentIndex = 0
+                    self.currentPlayingMusic = list.first
+                    self.isMiniPlayerVisible = !list.isEmpty
                 }
             }
         } catch {
@@ -558,10 +585,12 @@ class MusicPlayerController {
             let lastPosValue = lastPos.int64Value
             await MainActor.run {
                 self.currentPosition = lastPosValue
-                // 如果有当前歌曲，seek到保存的位置
+                print("[MusicPlayerController] Restored position: \(lastPosValue)ms")
+                
+                // 如果有当前歌曲且位置大于0，设置待恢复位置
                 if self.currentPlayingMusic != nil && lastPosValue > 0 {
-                    self.seekTo(position: lastPosValue)
-                    print("[MusicPlayerController] Restored position: \(lastPosValue)ms")
+                    self.pendingSeekPosition = lastPosValue
+                    print("[MusicPlayerController] Pending seek position: \(lastPosValue)ms")
                 }
             }
         } catch {

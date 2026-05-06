@@ -106,24 +106,25 @@ struct ItemConfig {
     let variant: ItemVariant
     let showIndex: Bool
     let showPin: Bool
+    let showMoveButtons: Bool
     let showRemove: Bool
     let showMenu: Bool
     let extraMenuItems: [(String, (MusicInfo_) -> Void)]
     
-    static var full: ItemConfig { ItemConfig(variant: .full, showIndex: false, showPin: false, showRemove: false, showMenu: false, extraMenuItems: []) }
-    static var compact: ItemConfig { ItemConfig(variant: .compact, showIndex: false, showPin: false, showRemove: false, showMenu: false, extraMenuItems: []) }
-    static var gallery: ItemConfig { ItemConfig(variant: .gallery, showIndex: true, showPin: false, showRemove: false, showMenu: true, extraMenuItems: []) }
+    static var full: ItemConfig { ItemConfig(variant: .full, showIndex: false, showPin: false, showMoveButtons: false, showRemove: false, showMenu: false, extraMenuItems: []) }
+    static var compact: ItemConfig { ItemConfig(variant: .compact, showIndex: false, showPin: false, showMoveButtons: false, showRemove: false, showMenu: false, extraMenuItems: []) }
+    static var gallery: ItemConfig { ItemConfig(variant: .gallery, showIndex: true, showPin: false, showMoveButtons: false, showRemove: false, showMenu: true, extraMenuItems: []) }
     
-    static func full(showPin: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
-        ItemConfig(variant: .full, showIndex: true, showPin: showPin, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
+    static func full(showPin: Bool = false, showMoveButtons: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
+        ItemConfig(variant: .full, showIndex: true, showPin: showPin, showMoveButtons: showMoveButtons, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
     }
     
-    static func compact(showPin: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
-        ItemConfig(variant: .compact, showIndex: false, showPin: showPin, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
+    static func compact(showPin: Bool = false, showMoveButtons: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
+        ItemConfig(variant: .compact, showIndex: false, showPin: showPin, showMoveButtons: showMoveButtons, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
     }
     
-    static func gallery(showPin: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
-        ItemConfig(variant: .gallery, showIndex: true, showPin: showPin, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
+    static func gallery(showPin: Bool = false, showMoveButtons: Bool = false, showRemove: Bool = false, showMenu: Bool = false, extraMenuItems: [(String, (MusicInfo_) -> Void)] = []) -> ItemConfig {
+        ItemConfig(variant: .gallery, showIndex: true, showPin: showPin, showMoveButtons: showMoveButtons, showRemove: showRemove, showMenu: showMenu, extraMenuItems: extraMenuItems)
     }
 }
 
@@ -133,6 +134,8 @@ class MusicListCallbacks: ObservableObject {
     var onItemClick: ((MusicInfo_, Int) -> Void)?
     var onMenuClick: ((MusicInfo_) -> Void)?
     var onPinToTop: ((MusicInfo_) -> Void)?
+    var onMoveUp: ((Int) -> Void)?
+    var onMoveDown: ((Int) -> Void)?
     var onRemove: ((MusicInfo_) -> Void)?
     var onAddToPlaylist: ((MusicInfo_) -> Void)?
     var onSelectionChange: ((Int64, Bool) -> Void)?
@@ -409,7 +412,7 @@ struct MusicListItem: View {
             // 行内容
             switch config.item.variant {
             case .full:
-                FullRowContent(musicInfo: musicInfo, isCurrentPlaying: isCurrentPlaying, config: config.item, callbacks: callbacks, showMenu: $showMenu)
+                FullRowContent(musicInfo: musicInfo, index: index, isCurrentPlaying: isCurrentPlaying, config: config.item, callbacks: callbacks, showMenu: $showMenu)
             case .compact:
                 CompactRowContent(musicInfo: musicInfo, isCurrentPlaying: isCurrentPlaying, config: config.item, callbacks: callbacks, showMenu: $showMenu)
             case .gallery:
@@ -439,6 +442,7 @@ struct MusicListItem: View {
 struct FullRowContent: View {
     @Environment(HMPTheme.self) private var theme
     let musicInfo: MusicInfo_
+    let index: Int
     let isCurrentPlaying: Bool
     let config: ItemConfig
     let callbacks: MusicListCallbacks
@@ -477,6 +481,9 @@ struct FullRowContent: View {
                     callbacks.onPinToTop?(musicInfo)
                 }
             }
+            if config.showMoveButtons {
+                moveButtons
+            }
             if config.showRemove {
                 actionButton(systemName: "trash", tint: isCurrentPlaying ? theme.primary : theme.text.opacity(0.6)) {
                     HapticManager.shared.click()
@@ -486,6 +493,33 @@ struct FullRowContent: View {
             if config.showMenu {
                 MenuButtonView(musicInfo: musicInfo, config: config, callbacks: callbacks, showMenu: $showMenu)
             }
+        }
+    }
+    
+    @ViewBuilder
+    private var moveButtons: some View {
+        VStack(spacing: 0) {
+            Button {
+                HapticManager.shared.click()
+                callbacks.onMoveUp?(index)
+            } label: {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.text.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+            .frame(width: 28, height: 20)
+            
+            Button {
+                HapticManager.shared.click()
+                callbacks.onMoveDown?(index)
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.text.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+            .frame(width: 28, height: 20)
         }
     }
 }

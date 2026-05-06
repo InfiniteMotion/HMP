@@ -1,6 +1,9 @@
 import SwiftUI
 import shared
 
+private let MAX_HEADER_COLLAPSE: CGFloat = 160
+private let HEADER_EXPAND_DAMPING: CGFloat = 0.8
+
 /// 播放列表页 - 对应 Android PlaylistScreen.kt
 struct PlaylistScreen: View {
     @Environment(HMPTheme.self) private var theme
@@ -8,11 +11,15 @@ struct PlaylistScreen: View {
     @State private var selectedMusicId: Int64? = nil
     @State private var showEditDialog = false
     @State private var showAddSongDialog = false
+    @State private var headerCollapseOffset: CGFloat = 0
 
     var playlistName: String? = nil
     var playlistId: Int64? = nil
 
     private var controller: MusicPlayerController { MusicPlayerController.shared }
+
+    private var isCustomPlaylist: Bool { playlistId != nil }
+    private var shouldCollapseHeader: Bool { isCustomPlaylist && headerCollapseOffset > 1 }
 
     private var musicList: [MusicInfo_] {
         switch playlistVM.selectedPlaylistState {
@@ -23,11 +30,12 @@ struct PlaylistScreen: View {
 
     var body: some View {
         SubScreen(
-            title: playlistName ?? playlistVM.playlistMeta?.name ?? "播放列表"
+            title: shouldCollapseHeader ? (playlistName ?? playlistVM.playlistMeta?.name ?? "播放列表") : "",
+            largeTitle: !shouldCollapseHeader
         ) {
             switch playlistVM.selectedPlaylistState {
-            case .loading:
-                ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+            case .idle, .loading:
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 VStack(spacing: 12) {
                     Image(systemName: "music.note").font(.system(size: 40)).foregroundColor(theme.text.opacity(0.4))
@@ -35,55 +43,13 @@ struct PlaylistScreen: View {
                 }
                 .frame(maxWidth: .infinity).padding(.top, 60)
             case .success:
-                MusicList(
-                    musicInfoList: musicList,
-                    config: {
-                        let cb = MusicListCallbacks()
-                        cb.onItemClick = { info, _ in
-                            controller.addAllToPlaylistInOrder(musicList)
-                            if let idx = musicList.firstIndex(where: { $0.music.id == info.music.id }) {
-                                controller.playAt(idx)
-                            }
-                            if let id = playlistId {
-                                playlistVM.recordPlaylistPlay(playlistId: id)
-                            }
-                        }
-                        cb.onPinToTop = { info in
-                            guard let id = playlistId else { return }
-                            var ids = musicList.map { $0.music.id }
-                            ids.removeAll { $0 == info.music.id }
-                            ids.insert(info.music.id, at: 0)
-                            playlistVM.reorderPlaylistItems(playlistId: id, orderedMusicIds: ids)
-                        }
-                        cb.onRemove = { info in
-                            if let id = playlistId {
-                                playlistVM.removeItemFromPlaylist(musicId: info.music.id, playlistId: id)
-                            }
-                        }
-                        cb.onMenuClick = { info in
-                            selectedMusicId = info.music.id
-                        }
-                        return MusicListConfig.playlistPreset(
-                            onOrderPlay: {
-                                controller.addAllToPlaylistInOrder(musicList)
-                                if let id = playlistId { playlistVM.recordPlaylistPlay(playlistId: id) }
-                            },
-                            onShufflePlay: {
-                                controller.addAllToPlaylistByShuffle(musicList)
-                                if let id = playlistId { playlistVM.recordPlaylistPlay(playlistId: id) }
-                            },
-                            callbacks: cb
-                        )
-                    }()
-                )
+                playlistContent
             case .error(let message):
                 VStack(spacing: 12) {
                     Text("加载失败").font(TypographyTokens.bodyMedium).foregroundColor(theme.text.opacity(0.4))
                     Text(message).font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.4))
                 }
                 .frame(maxWidth: .infinity).padding(.top, 60)
-            case .idle:
-                EmptyView()
             }
         }
         .toolbar {
@@ -108,6 +74,7 @@ struct PlaylistScreen: View {
             }
         }
         .onAppear {
+            headerCollapseOffset = 0
             if let id = playlistId {
                 playlistVM.loadPlaylistById(id)
                 playlistVM.loadPlaylistMeta(id: id)
@@ -126,12 +93,13 @@ struct PlaylistScreen: View {
         .sheet(isPresented: $showEditDialog) {
             if let id = playlistId, let meta = playlistVM.playlistMeta {
                 CreatePlaylistDialog(
-                    onCreate: { newName in
+                    onCreate: { newName, newDesc in
                         playlistVM.renamePlaylist(id: id, newName: newName)
-                        playlistVM.loadPlaylistMeta(id: id)
+                        playlistVM.updatePlaylistDescription(id: id, description: newDesc.isEmpty ? nil : newDesc)
                     },
                     isEditing: true,
-                    initialName: meta.name
+                    initialName: meta.name,
+                    initialDescription: meta.description
                 )
             }
         }
@@ -267,7 +235,7 @@ struct PlaylistManageScreen: View {
             }
         }
         .sheet(isPresented: $showCreateDialog) {
-            CreatePlaylistDialog { name in
+            CreatePlaylistDialog { name, _ in
                 playlistVM.createPlaylist(name: name)
             }
         }
@@ -298,4 +266,142 @@ struct PlaylistManageScreen: View {
         }
         return Text(parts.joined(separator: " · "))
     }
+}
+
+// MARK: - PlaylistScreen Extensions
+private extension PlaylistScreen {
+    var playlistContent: some View {
+        let config = buildPlaylistConfig()
+        return ScrollView {
+            VStack(spacing: 0) {
+                // Header with collapse animation
+                PlaylistHeader(playlist: playlistVM.playlistMeta)
+                    .opacity(shouldCollapseHeader ? 0 : 1)
+                    .scaleEffect(shouldCollapseHeader ? 0.9 : 1)
+                    .offset(y: -headerCollapseOffset * 0.3)
+                    .animation(.easeInOut(duration: 0.2), value: shouldCollapseHeader)
+
+                // Music list items in a single LazyVStack
+                LazyVStack(spacing: 0) {
+                    // Play/Shuffle controls header
+                    switch config.header {
+                    case .simple(let onOrderPlay, let onShufflePlay, let trailing):
+                        SimpleHeader(count: musicList.count, onOrderPlay: onOrderPlay, onShufflePlay: onShufflePlay, trailing: trailing)
+                    default:
+                        EmptyView()
+                    }
+
+                    if !musicList.isEmpty {
+                        Divider().padding(.vertical, 8)
+                    }
+
+                    // Song items
+                    ForEach(Array(musicList.enumerated()), id: \.offset) { index, info in
+                        MusicListItem(
+                            musicInfo: info,
+                            index: index,
+                            config: config,
+                            isCurrentPlaying: config.currentPlayingIndex == index,
+                            isEditMode: false,
+                            isSelected: false,
+                            callbacks: config.callbacks
+                        )
+                        .id(index)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .offset(y: -min(headerCollapseOffset, MAX_HEADER_COLLAPSE))
+            }
+        }
+        .background(theme.background)
+        .onScrollChange { offset in
+            let delta = offset.y - headerCollapseOffset
+            if delta < 0 {
+                headerCollapseOffset = min(headerCollapseOffset - delta, MAX_HEADER_COLLAPSE)
+            } else if delta > 0 {
+                let damped = delta * HEADER_EXPAND_DAMPING
+                headerCollapseOffset = max(headerCollapseOffset - damped, 0)
+            }
+        }
+    }
+
+    func buildPlaylistConfig() -> MusicListConfig {
+        let cb = MusicListCallbacks()
+        cb.onItemClick = { info, _ in
+            controller.addAllToPlaylistInOrder(musicList)
+            if let idx = musicList.firstIndex(where: { $0.music.id == info.music.id }) {
+                controller.playAt(idx)
+            }
+            if let id = playlistId {
+                playlistVM.recordPlaylistPlay(playlistId: id)
+            }
+        }
+        cb.onPinToTop = { info in
+            guard let id = playlistId else { return }
+            var ids = musicList.map { $0.music.id }
+            ids.removeAll { $0 == info.music.id }
+            ids.insert(info.music.id, at: 0)
+            playlistVM.reorderPlaylistItems(playlistId: id, orderedMusicIds: ids)
+        }
+        cb.onMoveUp = { index in
+            guard let id = playlistId else { return }
+            if index <= 0 || index >= musicList.count { return }
+            var ids = musicList.map { $0.music.id }
+            ids.swapAt(index, index - 1)
+            playlistVM.reorderPlaylistItems(playlistId: id, orderedMusicIds: ids)
+        }
+        cb.onMoveDown = { index in
+            guard let id = playlistId else { return }
+            if index < 0 || index >= musicList.count - 1 { return }
+            var ids = musicList.map { $0.music.id }
+            ids.swapAt(index, index + 1)
+            playlistVM.reorderPlaylistItems(playlistId: id, orderedMusicIds: ids)
+        }
+        cb.onRemove = { info in
+            guard let id = playlistId else { return }
+            playlistVM.removeItemFromPlaylist(musicId: info.music.id, playlistId: id)
+        }
+        cb.onMenuClick = { info in
+            selectedMusicId = info.music.id
+        }
+        return MusicListConfig.playlistPreset(
+            onOrderPlay: {
+                controller.addAllToPlaylistInOrder(musicList)
+                if let id = playlistId { playlistVM.recordPlaylistPlay(playlistId: id) }
+            },
+            onShufflePlay: {
+                controller.addAllToPlaylistByShuffle(musicList)
+                if let id = playlistId { playlistVM.recordPlaylistPlay(playlistId: id) }
+            },
+            callbacks: cb
+        )
+    }
+}
+
+extension View {
+    func onScrollChange(_ action: @escaping (CGPoint) -> Void) -> some View {
+        self.modifier(ScrollChangeModifier(action: action))
+    }
+}
+
+private struct ScrollChangeModifier: ViewModifier {
+    let action: (CGPoint) -> Void
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: ScrollOffsetKey.self, value: proxy.frame(in: .global).origin)
+                }
+            )
+            .onPreferenceChange(ScrollOffsetKey.self) { offset in
+                action(offset)
+            }
+    }
+}
+
+private struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGPoint = .zero
+    static func reduce(value: inout CGPoint, nextValue: () -> CGPoint) {}
 }

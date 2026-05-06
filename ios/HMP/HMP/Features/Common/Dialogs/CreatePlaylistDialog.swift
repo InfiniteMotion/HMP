@@ -5,14 +5,17 @@ struct CreatePlaylistDialog: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(HMPTheme.self) private var theme
 
-    let onCreate: (String) -> Void
+    let onCreate: (String, String) -> Void
     var isEditing: Bool = false
     var initialName: String = ""
+    var initialDescription: String = ""
 
     @State private var name = ""
+    @State private var description = ""
     @State private var nameError: String? = nil
 
     private let maxNameLength = 30
+    private let maxDescriptionLength = 100
 
     var body: some View {
         NavigationStack {
@@ -38,6 +41,21 @@ struct CreatePlaylistDialog: View {
                         .foregroundColor(theme.text.opacity(0.4))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
+
+                Section {
+                    TextField("描述（可选）", text: $description)
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: description) { _, newValue in
+                            if newValue.count > maxDescriptionLength {
+                                description = String(newValue.prefix(maxDescriptionLength))
+                            }
+                        }
+
+                    Text("\(description.count)/\(maxDescriptionLength)")
+                        .font(TypographyTokens.bodySmall)
+                        .foregroundColor(theme.text.opacity(0.4))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             .navigationTitle(isEditing ? "编辑播放列表" : "创建播放列表")
             .toolbar {
@@ -46,13 +64,13 @@ struct CreatePlaylistDialog: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEditing ? "保存" : "创建") {
-                        let trimmed = name.trimmingCharacters(in: .whitespaces)
-                        guard !trimmed.isEmpty else {
+                        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+                        guard !trimmedName.isEmpty else {
                             nameError = "名称不能为空"
                             return
                         }
                         HapticManager.shared.confirm()
-                        onCreate(trimmed)
+                        onCreate(trimmedName, description.trimmingCharacters(in: .whitespaces))
                         dismiss()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -63,6 +81,7 @@ struct CreatePlaylistDialog: View {
         .onAppear {
             if isEditing {
                 name = initialName
+                description = initialDescription
             }
         }
     }
