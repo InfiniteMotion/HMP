@@ -275,7 +275,7 @@ private extension PlaylistScreen {
         return ScrollView {
             VStack(spacing: 0) {
                 // Header with collapse animation
-                PlaylistHeader(playlist: playlistVM.playlistMeta)
+                PlaylistHeader(playlist: playlistVM.playlistMeta, musicList: musicList)
                     .opacity(shouldCollapseHeader ? 0 : 1)
                     .scaleEffect(shouldCollapseHeader ? 0.9 : 1)
                     .offset(y: -headerCollapseOffset * 0.3)

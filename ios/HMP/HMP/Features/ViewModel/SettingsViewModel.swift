@@ -138,7 +138,7 @@ class SettingsViewModel {
     }
 
     func saveProviderConfig() {
-        let config = AiProviderConfig(
+        let config = shared.AiProviderConfig(
             type: currentAiProvider,
             apiKey: providerApiKey,
             model: providerModel,
@@ -157,7 +157,7 @@ class SettingsViewModel {
     }
 
     func testConnection() {
-        let config = AiProviderConfig(
+        let config = shared.AiProviderConfig(
             type: currentAiProvider,
             apiKey: providerApiKey,
             model: providerModel,

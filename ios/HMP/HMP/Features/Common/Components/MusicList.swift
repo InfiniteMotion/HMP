@@ -701,7 +701,7 @@ struct FullHeader: View {
 
 // MARK: - Helpers
 
-func actionButton(systemName: String, size: CGFloat = 24, tint: Color, action: @escaping () -> Void) -> some View {
+func actionButton(systemName: String, size: CGFloat = 18, tint: Color, action: @escaping () -> Void) -> some View {
     Button {
         HapticManager.shared.click()
         action()
@@ -711,7 +711,7 @@ func actionButton(systemName: String, size: CGFloat = 24, tint: Color, action: @
             .foregroundColor(tint)
     }
     .buttonStyle(.plain)
-    .frame(width: 32, height: 40)
+    .frame(width: 28, height: 32)
 }
 
 struct Checkbox: View {

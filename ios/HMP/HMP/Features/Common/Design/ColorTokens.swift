@@ -14,6 +14,7 @@ struct ColorTokens {
     static let lightSecondary = hdBlue
     static let lightBackground = Color.white
     static let lightSurface = Color.white
+    static let lightSurfaceVariant = Color(red: 0.882, green: 0.886, blue: 0.925) // #E1E2EC
     static let lightError = lightPrimaryContainer
 
     // MARK: - 深色主题
@@ -24,6 +25,7 @@ struct ColorTokens {
     static let darkSecondary = Color(red: 0.957, green: 0.561, blue: 0.694)     // #F48FB1
     static let darkBackground = Color(red: 0.071, green: 0.071, blue: 0.071)    // #121212
     static let darkSurface = darkBackground
+    static let darkSurfaceVariant = Color(red: 0.267, green: 0.271, blue: 0.306) // #44464F
     static let darkError = darkPrimaryContainer
 
     // MARK: - 通用色

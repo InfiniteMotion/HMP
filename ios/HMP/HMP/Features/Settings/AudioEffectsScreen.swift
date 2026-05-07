@@ -12,14 +12,8 @@ struct AudioEffectsScreen: View {
     private let bandLabels = ["60", "230", "910", "3.6k", "14k"]
 
     var body: some View {
-        NavigationStack {
+        SubScreen(title: "音效设置") {
             formContent
-                .navigationTitle("音效设置")
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("关闭") { dismiss() }
-                    }
-                }
         }
     }
 

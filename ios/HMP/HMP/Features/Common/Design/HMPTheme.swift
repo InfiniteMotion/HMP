@@ -61,6 +61,9 @@ class HMPTheme {
     var divider: Color { isDark ? ColorTokens.dividerDark : ColorTokens.dividerLight }
     var cardBackground: Color { isDark ? ColorTokens.cardDark : ColorTokens.cardLight }
     var tertiary: Color { isDark ? ColorTokens.darkSecondary : ColorTokens.lightPrimaryContainer }
+    var surfaceVariant: Color { isDark ? ColorTokens.darkSurfaceVariant : ColorTokens.lightSurfaceVariant }
+    var error: Color { isDark ? ColorTokens.darkError : ColorTokens.lightError }
+    var outline: Color { divider }
 }
 
 // MARK: - View 扩展

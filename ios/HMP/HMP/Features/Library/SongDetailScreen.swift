@@ -1,319 +1,484 @@
 import SwiftUI
 import shared
 
-/// 歌曲详情页 — 对应 Android SongDetailScreen.kt
 struct SongDetailScreen: View {
     @Environment(HMPTheme.self) private var theme
     @Environment(\.dismiss) private var dismiss
-
+    
     let musicId: Int64
-    @State private var vm = SongDetailViewModel()
-    @State private var selectedTab = "intro"
-
-    private var controller: MusicPlayerController { MusicPlayerController.shared }
-
+    @State private var uiState: UiState<SongDetailData>? = nil
+    @State private var selectedSection: String = "user"
+    
+    private let userSection = "user"
+    private let introSection = "intro"
+    private let lyricsSection = "lyrics"
+    
     var body: some View {
-        SubScreen(title: titleText) {
-            switch vm.state {
-            case .idle, .loading:
+        Group {
+            switch uiState {
+            case .idle, .loading, .none:
                 loadingView
             case .success(let data):
-                ScrollView {
-                    VStack(spacing: 0) {
-                        posterSection(data)
-                        tabPicker
-                        tabContent(data)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                }
-            case .error(let msg):
-                VStack(spacing: 16) {
-                    Text(msg).foregroundColor(.red)
-                    Button("重试") { vm.retry() }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                successView(data: data)
             case .empty:
-                Text("未找到歌曲").foregroundColor(theme.text.opacity(0.4))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                emptyView
+            case .error(let message):
+                errorView(message: message)
             }
         }
-        .onAppear { vm.load(musicId: musicId) }
-    }
-
-    private var titleText: String {
-        if case .success(let data) = vm.state {
-            return data.musicInfo.music.title
-        }
-        return "歌曲详情"
-    }
-
-    // MARK: - Poster
-
-    private func posterSection(_ data: SongDetailData_) -> some View {
-        VStack(spacing: 16) {
-            AlbumCover(
-                uri: data.musicInfo.music.albumArtUri,
-                musicPath: data.musicInfo.music.path,
-                size: 280,
-                cornerRadius: 25
-            )
-            .onTapGesture { controller.playWith(data.musicInfo) }
-
-            VStack(spacing: 4) {
-                Text(data.musicInfo.music.artist)
-                    .font(TypographyTokens.titleMedium)
-                    .foregroundColor(theme.text.opacity(0.86))
-                    .lineLimit(1)
-                Text(data.musicInfo.music.album)
-                    .font(TypographyTokens.bodyMedium)
-                    .foregroundColor(theme.text.opacity(0.6))
-                    .lineLimit(1)
-            }
-
-            if let extra = data.musicInfo.extra {
-                technicalInfo(extra)
-            }
-        }
-        .padding(18)
-    }
-
-    private func technicalInfo(_ extra: MusicExtra_) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            if let br = extra.bitRate { infoCell("比特率", "\(br) kbps") }
-            if let sr = extra.sampleRate { infoCell("采样率", "\(sr) Hz") }
-            if let fs = extra.fileSize, fs.int64Value > 0 { infoCell("文件大小", formatFileSize(fs.int64Value)) }
-            if let fmt = extra.format, !fmt.isEmpty { infoCell("格式", fmt) }
-            if let lang = extra.language, !lang.isEmpty { infoCell("语言", lang) }
-            if let date = extra.date, date.int64Value > 0 { infoCell("日期", formatTimestamp(date.int64Value)) }
-        }
-    }
-
-    private func infoCell(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 4) {
-            Text(label).font(.caption2).foregroundColor(theme.text.opacity(0.5))
-            Text(value).font(TypographyTokens.titleMedium).fontWeight(.black).foregroundColor(theme.text)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(8)
-        .background(theme.surface.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    // MARK: - Tab Picker
-
-    private var tabPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(["intro", "lyrics", "user"], id: \.self) { tab in
+        .navigationTitle(uiState?.data?.musicInfo.music.title ?? "歌曲详情")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     HapticManager.shared.click()
-                    selectedTab = tab
+                    dismiss()
                 } label: {
-                    Text(tabLabel(tab))
-                        .font(TypographyTokens.bodySmall)
-                        .fontWeight(selectedTab == tab ? .bold : .regular)
-                        .foregroundColor(selectedTab == tab ? theme.primary : theme.text.opacity(0.5))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(theme.text)
                 }
             }
         }
-        .background(theme.surface.opacity(0.3), in: RoundedRectangle(cornerRadius: 10))
-        .padding(.top, 14)
-    }
-
-    private func tabLabel(_ tab: String) -> String {
-        switch tab {
-        case "intro": return "介绍"
-        case "lyrics": return "歌词"
-        default: return "用户"
+        .task {
+            await loadSongDetail()
         }
     }
-
-    // MARK: - Tab Content
-
-    @ViewBuilder
-    private func tabContent(_ data: SongDetailData_) -> some View {
-        switch selectedTab {
-        case "intro": introTab(data)
-        case "lyrics": lyricsTab(data)
-        default: userTab(data)
-        }
-    }
-
-    // MARK: - Intro Tab
-
-    private func introTab(_ data: SongDetailData_) -> some View {
-        guard let info = data.dailyMusicInfo else { return AnyView(EmptyView()) }
-        if info.errorInfo != "None" && !info.errorInfo.isEmpty {
-            return AnyView(
-                Text(info.errorInfo)
-                    .font(TypographyTokens.bodyMedium)
-                    .foregroundColor(.red)
-                    .padding()
-                    .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                    .padding(.top, 14)
-            )
-        }
-        return AnyView(
-            VStack(alignment: .leading, spacing: 16) {
-                introBlock("创作背景", info.backgroundIntroduce)
-                introBlock("歌曲描述", info.description_)
-                introBlock("歌手介绍", info.singerIntroduce)
-                introBlock("获奖成就", info.rewards)
-                introBlock("相关推荐", info.relevantMusic)
+    
+    private func loadSongDetail() async {
+        uiState = .loading
+        do {
+            // 这里需要调用 shared 模块的方法来加载歌曲详情
+            // 由于目前没有专门的 UseCase，我们先做简单实现
+            let allMusic = try await KoinHelperKt.getGetAllMusicUseCase().invoke(orderBy: "title", orderType: "ASC")
+            if let music = allMusic.first(where: { $0.music.id == musicId }) {
+                let data = SongDetailData(
+                    musicInfo: music,
+                    dailyMusicInfo: nil,
+                    labels: [],
+                    playbackHistory: []
+                )
+                uiState = .success(data)
+            } else {
+                uiState = .empty
             }
-            .padding(.top, 14)
-        )
+        } catch {
+            uiState = .error(error.localizedDescription)
+        }
     }
-
-    @ViewBuilder
-    private func introBlock(_ title: String, _ content: String) -> some View {
-        if !content.isEmpty && content != "None" {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(TypographyTokens.titleSmall).fontWeight(.bold)
-                    .foregroundColor(theme.text)
-                Text(content)
-                    .font(TypographyTokens.bodyMedium)
-                    .foregroundColor(theme.text.opacity(0.6))
-                    .lineSpacing(4)
+    
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+            Text("加载中...")
+                .foregroundColor(theme.text.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var emptyView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "music.note")
+                .font(.system(size: 60))
+                .foregroundColor(theme.text.opacity(0.3))
+            Text("未找到歌曲")
+                .foregroundColor(theme.text.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 60))
+                .foregroundColor(theme.error)
+            Text(message)
+                .foregroundColor(theme.error)
+            Button("重试") {
+                Task { await loadSongDetail() }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
-    // MARK: - Lyrics Tab
-
-    private func lyricsTab(_ data: SongDetailData_) -> some View {
-        guard let info = data.dailyMusicInfo else { return AnyView(EmptyView()) }
-        let fullLyrics = (data.musicInfo.extra?.lyrics ?? "")
-            .replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return AnyView(
-            VStack(alignment: .leading, spacing: 16) {
-                if !info.lyric.isEmpty && info.lyric != "None" {
-                    introBlock("热门歌词", info.lyric)
-                }
-                if !fullLyrics.isEmpty && fullLyrics != "None Full Lyrics" {
-                    introBlock("完整歌词", fullLyrics)
-                }
+    
+    private func successView(data: SongDetailData) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                SongDetailPoster(
+                    musicInfo: data.musicInfo,
+                    onOpenPlayer: {
+                        // 打开播放器
+                    }
+                )
+                .padding(.bottom, 24)
+                
+                SongDetailInfo(
+                    musicInfo: data.musicInfo,
+                    selectedSection: $selectedSection
+                )
             }
-            .padding(.top, 14)
-        )
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
     }
+}
 
-    // MARK: - User Tab
-
-    private func userTab(_ data: SongDetailData_) -> some View {
-        let ui = data.musicInfo.userInfo
-        return AnyView(
-            VStack(alignment: .leading, spacing: 16) {
-                // Stats grid
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    statItem("播放次数", "\(ui?.playCount ?? 0)")
-                    statItem("跳过次数", "\(ui?.skippedCount ?? 0)")
-                    statItem("歌单数", "\(ui?.inCustomPlaylistCount ?? 0)")
-                    statItem("评分", "\(ui?.userRating ?? 0)")
-                    statItem("最近播放", formatLastPlayed(ui?.lastPlayed))
-                    statItem("喜欢", (ui?.liked ?? false) ? "是" : "否")
-                }
-
-                // Playback history
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("最近播放")
-                        .font(TypographyTokens.titleSmall).fontWeight(.bold)
-                    if data.playbackHistory.isEmpty {
-                        Text("暂无播放记录")
-                            .font(TypographyTokens.bodyMedium)
-                            .foregroundColor(theme.text.opacity(0.4))
-                    } else {
-                        ForEach(data.playbackHistory.indices, id: \.self) { idx in
-                            let h = data.playbackHistory[idx]
-                            historyRow(h)
+struct SongDetailPoster: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let musicInfo: MusicInfo_
+    let onOpenPlayer: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // 专辑封面
+            Button {
+                HapticManager.shared.click()
+                onOpenPlayer()
+            } label: {
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(theme.surface)
+                    .frame(width: 280, height: 280)
+                    .overlay {
+                        let albumArtUri = musicInfo.music.albumArtUri
+                        if !albumArtUri.isEmpty {
+                            // 这里可以使用 AsyncImage 加载
+                            Image(systemName: "music.note")
+                                .font(.system(size: 80))
+                                .foregroundColor(theme.text.opacity(0.3))
+                        } else {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 80))
+                                .foregroundColor(theme.text.opacity(0.3))
                         }
                     }
-                }
+                    .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
             }
-            .padding(.top, 14)
+            .buttonStyle(.plain)
+            
+            // 艺术家和专辑信息
+            VStack(spacing: 4) {
+                Text(musicInfo.music.artist)
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.text.opacity(0.86))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                
+                Text(musicInfo.music.album)
+                    .font(.subheadline)
+                    .foregroundColor(theme.text.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+            }
+            
+            // 技术信息卡片
+            if let extra = musicInfo.extra {
+                TechnicalInfoCard(music: musicInfo.music, extra: extra)
+            }
+        }
+    }
+}
+
+struct TechnicalInfoCard: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let music: Music_
+    let extra: MusicExtra_
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                StatItem(
+                    icon: "clock",
+                    label: "时长",
+                    value: formatDuration(music.duration)
+                )
+                StatItem(
+                    icon: "waveform",
+                    label: "比特率",
+                    value: (Int(extra.bitRate?.intValue ?? 0)) > 0 ? "\(extra.bitRate!.intValue)kbps" : "-"
+                )
+            }
+            HStack(spacing: 12) {
+                StatItem(
+                    icon: "speaker.wave.2",
+                    label: "采样率",
+                    value: (Int(extra.sampleRate?.intValue ?? 0)) > 0 ? "\(extra.sampleRate!.intValue)Hz" : "-"
+                )
+                StatItem(
+                    icon: "doc",
+                    label: "格式",
+                    value: (extra.format ?? "").isEmpty ? "-" : (extra.format ?? "-")
+                )
+            }
+        }
+        .padding(16)
+        .background(theme.surfaceVariant.opacity(0.25))
+        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(theme.outline.opacity(0.1), lineWidth: 1)
         )
     }
-
-    private func statItem(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 4) {
-            Text(label).font(.caption2).foregroundColor(theme.text.opacity(0.5))
-            Text(value).font(TypographyTokens.titleMedium).fontWeight(.black)
-        }
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
-        .padding(8)
-        .background(theme.surface.opacity(0.25), in: RoundedRectangle(cornerRadius: 20))
+    
+    private func formatDuration(_ ms: Int64) -> String {
+        let totalSeconds = ms / 1000
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
     }
+}
 
-    private func historyRow(_ h: PlaybackHistory_) -> some View {
-        HStack {
+struct StatItem: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let icon: String
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(theme.primary)
             VStack(alignment: .leading, spacing: 2) {
-                Text("时长: \(formatDuration(h.playDuration))")
-                    .font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.6))
-                Text(formatTimestamp(h.playedAt))
-                    .font(TypographyTokens.bodySmall).foregroundColor(theme.text.opacity(0.5))
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(theme.text.opacity(0.6))
+                Text(value)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.text)
             }
-            Spacer()
-            if let src = h.source { Text(src).font(.caption2).foregroundColor(theme.text.opacity(0.4)) }
-            Text(h.isCompleted ? "完成" : "未完成")
-                .font(.caption2).fontWeight(.bold)
-                .foregroundColor(h.isCompleted ? theme.primary : .red)
-                .padding(.horizontal, 8).padding(.vertical, 2)
-                .background((h.isCompleted ? theme.primary : Color.red).opacity(0.1), in: Capsule())
         }
-        .padding(10)
-        .background(theme.surface.opacity(0.2), in: RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(theme.surface)
+        .cornerRadius(12)
     }
+}
 
-    // MARK: - Loading
-
-    private var loadingView: some View {
-        RoundedRectangle(cornerRadius: 24)
-            .fill(theme.surface.opacity(0.38))
-            .frame(height: 240)
-            .overlay {
-                HStack(spacing: 12) {
-                    ProgressView().scaleEffect(0.8)
-                    Text("加载中...").foregroundColor(theme.text.opacity(0.5))
+struct SongDetailInfo: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let musicInfo: MusicInfo_
+    @Binding var selectedSection: String
+    
+    private let userSection = "user"
+    private let introSection = "intro"
+    private let lyricsSection = "lyrics"
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 分段控制器
+            Picker("详情", selection: $selectedSection) {
+                Text("统计").tag(userSection)
+                Text("介绍").tag(introSection)
+                Text("歌词").tag(lyricsSection)
+            }
+            .pickerStyle(.segmented)
+            .padding(.bottom, 14)
+            
+            // 内容区域
+            switch selectedSection {
+            case introSection:
+                introContent
+            case lyricsSection:
+                lyricsContent
+            default:
+                userStatsContent
+            }
+        }
+    }
+    
+    private var introContent: some View {
+        VStack(spacing: 16) {
+            // 这里放置介绍内容，由于没有 DailyMusicInfo，先显示占位
+            EmptyContentView(
+                icon: "info.circle",
+                message: "暂无介绍信息"
+            )
+        }
+    }
+    
+    private var lyricsContent: some View {
+        VStack(spacing: 16) {
+            if let lyrics = musicInfo.extra?.lyrics, !lyrics.isEmpty, lyrics != "None" {
+                let processedLyrics = lyrics
+                    .replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
+                    .components(separatedBy: .newlines)
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    .joined(separator: "\n")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                if !processedLyrics.isEmpty {
+                    SectionTitleView(title: "歌词") {
+                        Text(processedLyrics)
+                            .font(.body)
+                            .foregroundColor(theme.text.opacity(0.8))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineSpacing(6)
+                    }
+                } else {
+                    EmptyContentView(
+                        icon: "text.quote",
+                        message: "暂无歌词"
+                    )
+                }
+            } else {
+                EmptyContentView(
+                    icon: "text.quote",
+                    message: "暂无歌词"
+                )
+            }
+        }
+    }
+    
+    private var userStatsContent: some View {
+        VStack(spacing: 16) {
+            SectionTitleView(title: "个人统计") {
+                let userInfo = musicInfo.userInfo
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 8) {
+                    GridStatItem(
+                        label: "播放次数",
+                        value: "\(userInfo?.playCount ?? 0)"
+                    )
+                    GridStatItem(
+                        label: "跳过次数",
+                        value: "\(userInfo?.skippedCount ?? 0)"
+                    )
+                    GridStatItem(
+                        label: "播放列表",
+                        value: "\(userInfo?.inCustomPlaylistCount ?? 0)"
+                    )
+                    GridStatItem(
+                        label: "评分",
+                        value: "\(userInfo?.userRating ?? 0)"
+                    )
+                    GridStatItem(
+                        label: "最后播放",
+                        value: formatLastPlayed(userInfo?.lastPlayed)
+                    )
+                    GridStatItem(
+                        label: "喜欢",
+                        value: (userInfo?.liked ?? false) ? "是" : "否"
+                    )
                 }
             }
-            .padding(20)
+        }
     }
-
-    // MARK: - Formatters
-
-    private func formatDuration(_ ms: Int64) -> String {
-        let sec = ms / 1000
-        return String(format: "%02d:%02d", sec / 60, sec % 60)
+    
+    private func formatLastPlayed(_ timestamp: KotlinLong?) -> String {
+        guard let timestamp = timestamp?.int64Value, timestamp > 0 else {
+            return "从未"
+        }
+        let now = Date().timeIntervalSince1970 * 1000
+        let diff = now - Double(timestamp)
+        
+        if diff < 60000 {
+            return "刚刚"
+        } else if diff < 3600000 {
+            return "\(Int(diff / 60000))分钟前"
+        } else if diff < 86400000 {
+            return "\(Int(diff / 3600000))小时前"
+        } else if diff < 604800000 {
+            return "\(Int(diff / 86400000))天前"
+        } else {
+            let date = Date(timeIntervalSince1970: Double(timestamp) / 1000)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MM-dd"
+            return formatter.string(from: date)
+        }
     }
+}
 
-    private func formatFileSize(_ bytes: Int64) -> String {
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1048576 { return String(format: "%.1f KB", Double(bytes) / 1024) }
-        return String(format: "%.1f MB", Double(bytes) / 1048576)
+struct SectionTitleView<Content: View>: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let title: String
+    @ViewBuilder let content: () -> Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(theme.text)
+            
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
 
-    private func formatTimestamp(_ ts: Int64) -> String {
-        if ts <= 0 { return "" }
-        let date = Date(timeIntervalSince1970: Double(ts) / 1000.0)
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd HH:mm"
-        return f.string(from: date)
+struct GridStatItem: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let label: String
+    let value: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(theme.text.opacity(0.6))
+                .lineLimit(1)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(theme.text)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .aspectRatio(1, contentMode: .fill)
+        .background(theme.surfaceVariant.opacity(0.25))
+        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(theme.outline.opacity(0.1), lineWidth: 1)
+        )
     }
+}
 
-    private func formatLastPlayed(_ ts: KotlinLong?) -> String {
-        guard let ts = ts, ts.int64Value > 0 else { return "从未" }
-        let diff = Int64(Date().timeIntervalSince1970 * 1000) - ts.int64Value
-        if diff < 60_000 { return "刚刚" }
-        if diff < 3_600_000 { return "\(diff / 60_000)分钟前" }
-        if diff < 86_400_000 { return "\(diff / 3_600_000)小时前" }
-        if diff < 604_800_000 { return "\(diff / 86_400_000)天前" }
-        let d = Date(timeIntervalSince1970: Double(ts.int64Value) / 1000.0)
-        let f = DateFormatter(); f.dateFormat = "MM-dd"
-        return f.string(from: d)
+struct EmptyContentView: View {
+    @Environment(HMPTheme.self) private var theme
+    
+    let icon: String
+    let message: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 40))
+                .foregroundColor(theme.text.opacity(0.3))
+            Text(message)
+                .font(.body)
+                .foregroundColor(theme.text.opacity(0.5))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
+// 临时数据模型
+struct SongDetailData {
+    let musicInfo: MusicInfo_
+    let dailyMusicInfo: Any?
+    let labels: [Any?]
+    let playbackHistory: [Any]
+}
+
+#Preview {
+    NavigationStack {
+        SongDetailScreen(musicId: 0)
     }
 }

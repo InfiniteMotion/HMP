@@ -8,75 +8,78 @@ struct ListScreen: View {
     @State private var currentPlaylistId: Int64? = nil
     @State private var likedPlaylistId: Int64? = nil
     @State private var recentPlaylistId: Int64? = nil
+    @State private var showCreateDialog = false
 
     var body: some View {
-        TabScreen(title: "列表") {
+        TabScreen(title: "我的歌单", hasSearchButton: false) {
+            AnyView(
+                Button {
+                    HapticManager.shared.click()
+                    showCreateDialog = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(theme.primary)
+                }
+                .buttonStyle(.plain)
+            )
+        } content: {
             ScrollView {
                 VStack(spacing: 24) {
                     // 用户歌单 - 横向滚动卡片
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            TitleWidget(title: "我的歌单")
-                            Spacer()
-                            NavigationLink {
-                                PlaylistManageScreen()
-                            } label: {
-                                Text("管理").font(TypographyTokens.bodySmall).foregroundColor(theme.primary)
-                            }
-                        }
-
-                        if playlistVM.userCustomPlaylists.isEmpty {
-                            Text("暂无歌单")
-                                .font(TypographyTokens.bodyMedium)
-                                .foregroundColor(theme.text.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 20)
-                        } else {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(Array(playlistVM.userCustomPlaylists.enumerated()), id: \.element.id) { _, playlist in
-                                        NavigationLink {
-                                            PlaylistScreen(playlistId: playlist.id)
-                                        } label: {
-                                            UserPlaylistCard(playlist: playlist)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Divider()
+                    userPlaylistsSection
 
                     // 常用列表 - 3 个横幅卡片
-                    VStack(alignment: .leading, spacing: 12) {
-                        TitleWidget(title: "常用")
-                        HStack(spacing: 12) {
-                            bannerPlaylistLink(playlistId: currentPlaylistId, title: "默认", icon: "music.note.list", accent: theme.primary)
-                            bannerPlaylistLink(playlistId: likedPlaylistId, title: "红心", icon: "heart.fill", accent: .red)
-                            bannerPlaylistLink(playlistId: recentPlaylistId, title: "最近", icon: "clock.fill", accent: .orange)
+                    commonPlaylistsSection
+
+                    // 适用场景 - 沉浸推荐
+                    if !playlistVM.scenarioPlaylistName.isEmpty {
+                        LabelListGroup(
+                            title: "适用场景",
+                            subtitle: "沉浸推荐",
+                            themeColor: Color(red: 0.2, green: 0.8, blue: 0.3)
+                        ) {
+                            scenarioHorizontalScroll
                         }
                     }
 
-                    Divider()
+                    // 风格流派 - 横向画廊
+                    if !playlistVM.genrePlaylistName.isEmpty {
+                        LabelListGroup(
+                            title: "风格流派",
+                            subtitle: "音乐探索",
+                            themeColor: theme.primary
+                        ) {
+                            genreHorizontalScroll
+                        }
+                    }
 
-                    // 场景 - 横向滚动大卡片
-                    CategorySection(title: "场景", items: playlistVM.scenarioPlaylistName, icon: "sparkles", cardStyle: .large)
+                    // 音乐情绪 - 网格探索
+                    if !playlistVM.moodPlaylistName.isEmpty {
+                        LabelListGroup(
+                            title: "音乐情绪",
+                            subtitle: "心情匹配",
+                            themeColor: .orange
+                        ) {
+                            moodGridSection
+                        }
+                    }
 
-                    // 流派 - 横向滚动中等卡片
-                    CategorySection(title: "流派", items: playlistVM.genrePlaylistName, icon: "globe", cardStyle: .medium)
+                    // 探索更多 - 语言 & 年代 标签云
+                    let exploreItems = playlistVM.languagePlaylistName + playlistVM.eraPlaylistName
+                    if !exploreItems.isEmpty {
+                        LabelListGroup(
+                            title: "探索更多",
+                            subtitle: "",
+                            themeColor: Color(red: 0.5, green: 0.3, blue: 0.8)
+                        ) {
+                            exploreFlowRow(items: exploreItems)
+                        }
+                    }
 
-                    // 心情 - 2x2 网格
-                    MoodGridSection(title: "心情", items: playlistVM.moodPlaylistName)
-
-                    // 语言
-                    CategorySection(title: "语言", items: playlistVM.languagePlaylistName, icon: "character.bubble", cardStyle: .compact)
-
-                    // 年代
-                    CategorySection(title: "年代", items: playlistVM.eraPlaylistName, icon: "calendar", cardStyle: .compact)
+                    Spacer().frame(height: 72)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 0)
             }
         }
         .onAppear {
@@ -88,104 +91,352 @@ struct ListScreen: View {
                 recentPlaylistId = await playlistVM.getRecentPlaylistId()
             }
         }
+        .sheet(isPresented: $showCreateDialog) {
+            CreatePlaylistDialog { name, _ in
+                playlistVM.createPlaylist(name: name)
+            }
+        }
+    }
+
+    // MARK: - User Playlists Section
+    private var userPlaylistsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ListSectionHeader(
+                title: "我的歌单",
+                subtitle: "每日推荐",
+                themeColor: Color(red: 0.5, green: 0.3, blue: 0.8)
+            ) {
+                NavigationLink {
+                    PlaylistManageScreen()
+                } label: {
+                    Text("管理").font(TypographyTokens.bodySmall).foregroundColor(theme.primary)
+                }
+            }
+
+            if playlistVM.userCustomPlaylists.isEmpty {
+                Text("暂无歌单")
+                    .font(TypographyTokens.bodyMedium)
+                    .foregroundColor(theme.text.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 20)
+            } else {
+                let sortedPlaylists = sortedUserPlaylists
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(sortedPlaylists, id: \.id) { playlist in
+                            NavigationLink {
+                                PlaylistScreen(playlistId: playlist.id)
+                            } label: {
+                                UserPlaylistCard(playlist: playlist, firstSongMusicPath: playlistVM.userPlaylistFirstSongPaths[playlist.id])
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+        }
+    }
+
+    private var sortedUserPlaylists: [Playlist_] {
+        playlistVM.userCustomPlaylists.sorted { a, b in
+            if a.isPinned != b.isPinned { return a.isPinned }
+            let aLastPlayed = a.lastPlayedAt?.int64Value ?? 0
+            let bLastPlayed = b.lastPlayedAt?.int64Value ?? 0
+            if aLastPlayed != bLastPlayed { return aLastPlayed > bLastPlayed }
+            return a.updatedAt > b.updatedAt
+        }
+    }
+
+    // MARK: - Common Playlists Section
+    private var commonPlaylistsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ListSectionHeader(
+                title: "常用",
+                subtitle: "快速访问",
+                themeColor: .red
+            )
+
+            HStack(spacing: 0) {
+                commonBannerItem(id: currentPlaylistId, title: "默认", icon: "music.note.list", accent: theme.primary)
+                Spacer()
+                commonBannerItem(id: likedPlaylistId, title: "红心", icon: "heart.fill", accent: .red)
+                Spacer()
+                commonBannerItem(id: recentPlaylistId, title: "最近", icon: "clock.fill", accent: .orange)
+            }
+            .padding(.horizontal, 20)
+        }
     }
 
     @ViewBuilder
-    private func bannerPlaylistLink(playlistId: Int64?, title: String, icon: String, accent: Color) -> some View {
-        if let id = playlistId {
+    private func commonBannerItem(id: Int64?, title: String, icon: String, accent: Color) -> some View {
+        if let playlistId = id {
             NavigationLink {
-                PlaylistScreen(playlistId: id)
+                PlaylistScreen(playlistId: playlistId)
             } label: {
-                ListBannerCard(title: title, icon: icon, accent: accent)
+                CommonBannerView(title: title, icon: icon, accent: accent)
             }
             .buttonStyle(.plain)
         } else {
-            ListBannerCard(title: title, icon: icon, accent: accent)
+            CommonBannerView(title: title, icon: icon, accent: accent)
+        }
+    }
+
+    // MARK: - Scenario Horizontal Scroll
+    private var scenarioHorizontalScroll: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(playlistVM.scenarioPlaylistName, id: \.self) { label in
+                    NavigationLink {
+                        PlaylistScreen(playlistName: label)
+                    } label: {
+                        ScenarioCardView(label: label)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Genre Horizontal Scroll
+    private var genreHorizontalScroll: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(playlistVM.genrePlaylistName, id: \.self) { label in
+                    NavigationLink {
+                        PlaylistScreen(playlistName: label)
+                    } label: {
+                        GenreCardView(label: label)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Mood Grid Section (横向滚动单行)
+    private var moodGridSection: some View {
+        let displayItems = Array(playlistVM.moodPlaylistName.prefix(4))
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(displayItems, id: \.self) { label in
+                    NavigationLink {
+                        PlaylistScreen(playlistName: label)
+                    } label: {
+                        MoodCardView(label: label)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Explore Flow Row (模拟 FlowRow 标签云)
+    @ViewBuilder
+    private func exploreFlowRow(items: [String]) -> some View {
+        FlowRowView(items: items, color: theme.primary)
+    }
+}
+
+// MARK: - List Section Header (对应 Android ListGroupName)
+struct ListSectionHeader<Trailing: View>: View {
+    @Environment(HMPTheme.self) private var theme
+    let title: String
+    let subtitle: String
+    let themeColor: Color
+    @ViewBuilder let trailing: () -> Trailing
+
+    init(
+        title: String,
+        subtitle: String,
+        themeColor: Color,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.themeColor = themeColor
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 0) {
+            Text(title)
+                .font(TypographyTokens.titleLarge)
+                .foregroundColor(theme.text)
+            
+            Circle()
+                .fill(themeColor)
+                .frame(width: 8, height: 8)
+                .padding(.horizontal, 8)
+            
+            Text(subtitle)
+                .font(TypographyTokens.titleLarge)
+                .foregroundColor(theme.text)
+            
+            Spacer()
+            
+            trailing()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Label List Group
+struct LabelListGroup<Content: View>: View {
+    @Environment(HMPTheme.self) private var theme
+    let title: String
+    let subtitle: String
+    let themeColor: Color
+    @ViewBuilder let content: () -> Content
+
+    init(
+        title: String,
+        subtitle: String,
+        themeColor: Color,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.themeColor = themeColor
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ListSectionHeader(
+                title: title,
+                subtitle: subtitle,
+                themeColor: themeColor
+            )
+            content()
         }
     }
 }
 
-private let PLAYLIST_CARD_WIDTH: CGFloat = 160
-private let PLAYLIST_CARD_HEIGHT: CGFloat = 200
-
 // MARK: - User Playlist Card
+private let USER_PLAYLIST_CARD_WIDTH: CGFloat = 280
+private let USER_PLAYLIST_CARD_HEIGHT: CGFloat = 360
+
 struct UserPlaylistCard: View {
     @Environment(HMPTheme.self) private var theme
     let playlist: Playlist_
+    let firstSongMusicPath: String?
+
+    @State private var fallbackImage: UIImage? = nil
 
     var body: some View {
-        VStack(spacing: 8) {
-            // 封面图
+        VStack(spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                if let coverUri = playlist.coverUri, !coverUri.isEmpty, let image = CoverCache.shared.get(path: coverUri) {
+                if let image = fallbackImage {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: PLAYLIST_CARD_WIDTH, height: PLAYLIST_CARD_HEIGHT - 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .frame(width: USER_PLAYLIST_CARD_WIDTH, height: USER_PLAYLIST_CARD_HEIGHT - 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else if let coverUri = playlist.coverUri, !coverUri.isEmpty, let image = CoverCache.shared.get(path: coverUri) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: USER_PLAYLIST_CARD_WIDTH, height: USER_PLAYLIST_CARD_HEIGHT - 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 } else {
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(LinearGradient(
                             colors: [theme.primary.opacity(0.2), theme.primary.opacity(0.1)],
                             startPoint: .top,
                             endPoint: .bottom
                         ))
-                        .frame(width: PLAYLIST_CARD_WIDTH, height: PLAYLIST_CARD_HEIGHT - 50)
+                        .frame(width: USER_PLAYLIST_CARD_WIDTH, height: USER_PLAYLIST_CARD_HEIGHT - 50)
                         .overlay {
                             Image(systemName: "music.note.list")
-                                .font(.system(size: 40))
+                                .font(.system(size: 72))
                                 .foregroundColor(theme.primary.opacity(0.6))
                         }
                 }
-                
-                // 渐变遮罩
+
                 LinearGradient(
                     stops: [
                         .init(color: .clear, location: 0),
-                        .init(color: .clear, location: 0.4),
-                        .init(color: .black.opacity(0.7), location: 1)
+                        .init(color: .clear, location: 0.5),
+                        .init(color: .black.opacity(0.8), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(width: PLAYLIST_CARD_WIDTH, height: PLAYLIST_CARD_HEIGHT - 50)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                
-                // 歌单名称（在渐变遮罩上）
-                Text(playlist.name)
-                    .font(TypographyTokens.titleSmall.bold())
-                    .foregroundColor(.white)
-                    .padding(.bottom, 8)
-                    .padding(.leading, 12)
-            }
-            .shadow(color: .black.opacity(0.15), radius: 10)
+                .frame(width: USER_PLAYLIST_CARD_WIDTH, height: USER_PLAYLIST_CARD_HEIGHT - 50)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
 
-            // 统计信息
-            HStack(spacing: 8) {
-                Text("\(playlist.songCount) 首")
-                    .font(TypographyTokens.bodySmall)
-                    .foregroundColor(theme.text.opacity(0.6))
-                
-                if playlist.totalDurationMs > 0 {
-                    let minutes = playlist.totalDurationMs / 60000
-                    if minutes > 0 {
-                        Text("·")
-                            .font(TypographyTokens.bodySmall)
-                            .foregroundColor(theme.text.opacity(0.4))
-                        Text("\(minutes)分钟")
-                            .font(TypographyTokens.bodySmall)
-                            .foregroundColor(theme.text.opacity(0.6))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(playlist.name)
+                        .font(TypographyTokens.titleMedium.bold())
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    if playlist.songCount > 0 || playlist.totalDurationMs > 0 {
+                        let statsText = buildStatsText()
+                        if !statsText.isEmpty {
+                            Text(statsText)
+                                .font(TypographyTokens.bodySmall)
+                                .foregroundColor(.white.opacity(0.8))
+                                .lineLimit(1)
+                        }
                     }
                 }
+                .padding(.bottom, 16)
+                .padding(.leading, 16)
+                .padding(.trailing, 16)
             }
-            .frame(width: PLAYLIST_CARD_WIDTH)
         }
-        .frame(width: PLAYLIST_CARD_WIDTH, height: PLAYLIST_CARD_HEIGHT)
+        .frame(width: USER_PLAYLIST_CARD_WIDTH, height: USER_PLAYLIST_CARD_HEIGHT)
+        .shadow(color: .black.opacity(0.15), radius: 10)
+        .task(id: playlist.coverUri ?? "") { resolveCover() }
+    }
+
+    private func resolveCover() {
+        if let coverUri = playlist.coverUri, !coverUri.isEmpty, CoverCache.shared.get(path: coverUri) != nil {
+            return
+        }
+        guard let musicPath = firstSongMusicPath, !musicPath.isEmpty else { return }
+        if let image = CoverCache.shared.getOrExtractSync(musicPath: musicPath) {
+            fallbackImage = image
+            return
+        }
+        let path = musicPath
+        Task.detached(priority: .utility) {
+            let extractor = ArtworkExtractor()
+            guard let coverPath = extractor.extractAndSave(filePath: path) else { return }
+            if let image = UIImage(contentsOfFile: coverPath) {
+                CoverCache.shared.put(path: coverPath, image: image)
+                await MainActor.run { fallbackImage = image }
+            }
+        }
+    }
+
+    private func buildStatsText() -> String {
+        var parts: [String] = []
+        if playlist.songCount > 0 {
+            parts.append("\(playlist.songCount) 首")
+        }
+        if playlist.totalDurationMs > 0 {
+            let minutes = playlist.totalDurationMs / 60000
+            if minutes > 0 {
+                parts.append("\(minutes) 分钟")
+            }
+        }
+        if playlist.playCount > 0 && parts.count < 2 {
+            parts.append("播放 \(playlist.playCount) 次")
+        }
+        return parts.prefix(2).joined(separator: " · ")
     }
 }
 
-// MARK: - List Banner Card
-struct ListBannerCard: View {
+// MARK: - Common Banner View
+struct CommonBannerView: View {
     @Environment(HMPTheme.self) private var theme
     let title: String
     let icon: String
@@ -194,189 +445,133 @@ struct ListBannerCard: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .font(.system(size: 48))
                 .foregroundColor(accent)
-                .frame(width: 48, height: 48)
+                .frame(width: 100, height: 100)
                 .background(accent.opacity(0.12))
-                .clipShape(Circle())
-            Text(title)
-                .font(TypographyTokens.bodySmall)
-                .foregroundColor(theme.text)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-// MARK: - Category Section
-enum CardStyle {
-    case large   // 场景：大卡片
-    case medium  // 流派：中等卡片
-    case compact // 语言/年代：紧凑卡片
-}
-
-struct CategorySection: View {
-    @Environment(HMPTheme.self) private var theme
-    let title: String
-    let items: [String]
-    let icon: String
-    let cardStyle: CardStyle
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TitleWidget(title: title)
-            if items.isEmpty {
-                Text("暂无数据")
-                    .font(TypographyTokens.bodyMedium)
-                    .foregroundColor(theme.text.opacity(0.4))
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(items, id: \.self) { label in
-                            NavigationLink {
-                                PlaylistScreen(playlistName: label)
-                            } label: {
-                                switch cardStyle {
-                                case .large:
-                                    CategoryCardLarge(title: label, icon: icon, iconName: label)
-                                case .medium:
-                                    CategoryCardMedium(title: label, icon: icon, iconName: label)
-                                case .compact:
-                                    CategoryCardCompact(title: label)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct CategoryCardLarge: View {
-    @Environment(HMPTheme.self) private var theme
-    let title: String
-    let icon: String
-    var iconName: String?
-
-    var body: some View {
-        VStack(spacing: 12) {
-            if let iconName {
-                SharedLabelIcon(iconName: iconName, size: 48)
-            } else {
-                Image(systemName: icon)
-                    .font(.system(size: 40))
-                    .foregroundColor(theme.primary)
-            }
-            Text(title)
-                .font(TypographyTokens.bodyMedium)
-                .foregroundColor(theme.text)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-        }
-        .frame(width: 140, height: 120)
-        .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-}
-
-struct CategoryCardMedium: View {
-    @Environment(HMPTheme.self) private var theme
-    let title: String
-    let icon: String
-    var iconName: String?
-
-    var body: some View {
-        VStack(spacing: 8) {
-            if let iconName {
-                SharedLabelIcon(iconName: iconName, size: 36)
-            } else {
-                Image(systemName: icon)
-                    .font(.system(size: 28))
-                    .foregroundColor(theme.primary)
-            }
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .shadow(color: .black.opacity(0.1), radius: 5)
             Text(title)
                 .font(TypographyTokens.bodySmall)
                 .foregroundColor(theme.text)
                 .lineLimit(1)
         }
-        .frame(width: 110, height: 90)
-        .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(width: 110)
     }
 }
 
-struct CategoryCardCompact: View {
+// MARK: - Scenario Card (对应 Android ScenarioCard)
+struct ScenarioCardView: View {
     @Environment(HMPTheme.self) private var theme
-    let title: String
+    let label: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "tag")
-                .font(.system(size: 14))
-                .foregroundColor(theme.primary)
-            Text(title)
-                .font(TypographyTokens.bodySmall)
-                .foregroundColor(theme.text)
+        ZStack(alignment: .bottomLeading) {
+            SharedLabelIcon(iconName: label, size: 280)
+                .scaledToFill()
+                .frame(width: 280, height: 160)
+                .clipped()
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.4), .black.opacity(0.8)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: 280, height: 160)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label)
+                    .font(TypographyTokens.headlineSmall.bold())
+                    .foregroundColor(.white)
+                Text("适合现在听")
+                    .font(TypographyTokens.bodySmall)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .padding(.bottom, 16)
+            .padding(.leading, 16)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(width: 280, height: 160)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 
-// MARK: - Mood Grid Section (2x2)
-struct MoodGridSection: View {
+// MARK: - Genre Card (对应 Android GenreCard)
+struct GenreCardView: View {
     @Environment(HMPTheme.self) private var theme
-    let title: String
-    let items: [String]
+    let label: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TitleWidget(title: title)
-            if items.isEmpty {
-                Text("暂无数据")
-                    .font(TypographyTokens.bodyMedium)
-                    .foregroundColor(theme.text.opacity(0.4))
-            } else {
-                let displayItems = Array(items.prefix(4))
-                let columns = [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ]
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(displayItems, id: \.self) { label in
+        ZStack(alignment: .bottomLeading) {
+            SharedLabelIcon(iconName: label, size: 160)
+                .scaledToFill()
+                .frame(width: 160, height: 100)
+                .clipped()
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: 160, height: 100)
+
+            Text(label)
+                .font(TypographyTokens.headlineSmall.bold())
+                .foregroundColor(.white)
+                .padding(.bottom, 12)
+                .padding(.leading, 12)
+        }
+        .frame(width: 160, height: 100)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Mood Card (对应 Android MoodCard)
+struct MoodCardView: View {
+    @Environment(HMPTheme.self) private var theme
+    let label: String
+
+    var body: some View {
+        ZStack {
+            SharedLabelIcon(iconName: label, size: 100)
+                .scaledToFill()
+                .frame(width: 100, height: 100)
+                .clipped()
+        }
+        .frame(width: 100, height: 100)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Flow Row View (流式标签云，每行3个自动换行)
+struct FlowRowView: View {
+    @Environment(HMPTheme.self) private var theme
+    let items: [String]
+    let color: Color
+
+    var body: some View {
+        let rows: [[String]] = {
+            var result: [[String]] = []
+            for i in stride(from: 0, to: items.count, by: 3) {
+                result.append(Array(items[i..<min(i + 3, items.count)]))
+            }
+            return result
+        }()
+
+        VStack(spacing: 8) {
+            ForEach(rows, id: \.self) { rowItems in
+                HStack(spacing: 12) {
+                    ForEach(rowItems, id: \.self) { label in
                         NavigationLink {
                             PlaylistScreen(playlistName: label)
                         } label: {
-                            MoodGridItem(title: label)
+                            CapsuleTag(label, color: color)
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.plain)
                     }
                 }
+                .padding(.horizontal, 20)
             }
         }
-    }
-}
-
-struct MoodGridItem: View {
-    @Environment(HMPTheme.self) private var theme
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            SharedLabelIcon(iconName: title, size: 28)
-            Text(title)
-                .font(TypographyTokens.bodyMedium)
-                .foregroundColor(theme.text)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 50)
-        .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

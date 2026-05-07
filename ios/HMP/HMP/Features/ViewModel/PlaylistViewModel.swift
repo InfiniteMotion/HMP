@@ -14,6 +14,9 @@ class PlaylistViewModel {
     var userCustomPlaylists: [Playlist_] = []
     var userPlaylistsState: UiState<[Playlist_]> = .idle
 
+    // First song cover URIs for list screen
+    var userPlaylistFirstSongPaths: [Int64: String] = [:]
+
     // Selected playlist
     var selectedPlaylistMusic: [MusicInfo_] = []
     var selectedPlaylistState: UiState<[MusicInfo_]> = .idle
@@ -23,6 +26,13 @@ class PlaylistViewModel {
     var selectedArtistMusicState: UiState<[MusicInfo_]> = .idle
     var selectedAlbumMusic: [MusicInfo_] = []
     var selectedAlbumMusicState: UiState<[MusicInfo_]> = .idle
+    
+    // Browse categories
+    var artistList: [String] = []
+    var albumList: [String] = []
+    var folderList: [String] = []
+    var labelList: [String] = []
+    var browseState: UiState<([String], [String], [String], [String])> = .idle
 
     private let managePlaylistUseCase: ManagePlaylistUseCase
     private let musicLabelUseCase: MusicLabelUseCase
@@ -84,10 +94,33 @@ class PlaylistViewModel {
         userPlaylistsState = .loading
         Task {
             do {
-                let playlists = try await managePlaylistUseCase.getAllPlaylists()
+                let allPlaylists = try await managePlaylistUseCase.getAllPlaylists()
+                let currentId = try? await settingsRepository.getCurrentPlaylistId()
+                let likedId = try? await settingsRepository.getLikedPlaylistId()
+                let recentId = try? await settingsRepository.getRecentPlaylistId()
+                let systemIds = Set([
+                    currentId?.int64Value,
+                    likedId?.int64Value,
+                    recentId?.int64Value
+                ].compactMap { $0 })
+
+                let filtered = allPlaylists.filter { playlist in
+                    !systemIds.contains(playlist.id)
+                }
+
+                // Load first song paths for each playlist
+                var firstSongPaths: [Int64: String] = [:]
+                for playlist in filtered {
+                    if let musicList = try? await managePlaylistUseCase.getPlaylistById(playlistId: playlist.id),
+                       let firstSong = musicList.first, !firstSong.music.path.isEmpty {
+                        firstSongPaths[playlist.id] = firstSong.music.path
+                    }
+                }
+
                 await MainActor.run {
-                    self.userCustomPlaylists = playlists
-                    self.userPlaylistsState = .success(playlists)
+                    self.userCustomPlaylists = filtered
+                    self.userPlaylistFirstSongPaths = firstSongPaths
+                    self.userPlaylistsState = .success(filtered)
                 }
             } catch {
                 await MainActor.run { self.userPlaylistsState = .error(error.localizedDescription) }
@@ -171,6 +204,7 @@ class PlaylistViewModel {
     func addItemToPlaylist(playlistId: Int64, musicId: Int64, musicPath: String) {
         Task {
             try? await managePlaylistUseCase.addToPlaylist(playlistId: playlistId, musicId: musicId, musicPath: musicPath)
+            loadPlaylistMeta(id: playlistId)
         }
     }
 
@@ -178,6 +212,7 @@ class PlaylistViewModel {
         Task {
             try? await managePlaylistUseCase.removeItemFromPlaylist(musicId: musicId, playlistId: playlistId)
             loadPlaylistById(playlistId)
+            loadPlaylistMeta(id: playlistId)
         }
     }
 
@@ -202,6 +237,7 @@ class PlaylistViewModel {
         Task {
             try? await managePlaylistUseCase.reorderPlaylistItems(playlistId: playlistId, orderedMusicIds: orderedMusicIds.map { KotlinLong(value: $0) })
             loadPlaylistById(playlistId)
+            loadPlaylistMeta(id: playlistId)
         }
     }
 
@@ -211,6 +247,7 @@ class PlaylistViewModel {
                 try? await managePlaylistUseCase.addToPlaylist(playlistId: playlistId, musicId: musicId, musicPath: musicPath)
             }
             loadPlaylistById(playlistId)
+            loadPlaylistMeta(id: playlistId)
         }
     }
 
@@ -262,5 +299,43 @@ class PlaylistViewModel {
                 await MainActor.run { self.selectedAlbumMusicState = .error(error.localizedDescription) }
             }
         }
+    }
+    
+    // MARK: - Browse categories loading
+    func loadBrowseCategories() {
+        browseState = .loading
+        Task {
+            do {
+                let allMusic = try await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")
+                let artists = Array(Set(allMusic.map { $0.music.artist })).filter { !$0.isEmpty }.sorted()
+                let albums = Array(Set(allMusic.map { $0.music.album })).filter { !$0.isEmpty }.sorted()
+                let folders = Array(Set(allMusic.map { ($0.music.path as NSString).deletingLastPathComponent })).sorted()
+                let labels = (genrePlaylistName + moodPlaylistName + scenarioPlaylistName + languagePlaylistName + eraPlaylistName)
+                
+                await MainActor.run {
+                    self.artistList = artists
+                    self.albumList = albums
+                    self.folderList = folders
+                    self.labelList = labels
+                    self.browseState = .success((artists, albums, folders, labels))
+                }
+            } catch {
+                await MainActor.run { 
+                    self.browseState = .error(error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    func loadMusicListByFolder(folderPath: String) -> [MusicInfo_] {
+        Task {
+            do {
+                let allMusic = try await getAllMusicUseCase.invoke(orderBy: "title", orderType: "ASC")
+                return allMusic.filter { ($0.music.path as NSString).deletingLastPathComponent == folderPath }
+            } catch {
+                return []
+            }
+        }
+        return []
     }
 }

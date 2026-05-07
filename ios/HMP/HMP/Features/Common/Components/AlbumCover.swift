@@ -90,7 +90,14 @@ final class CoverCache {
         if let cached = cache.object(forKey: key) {
             return cached
         }
-        if let image = UIImage(contentsOfFile: path) {
+        // 处理 file:// 格式的 URI
+        let filePath: String
+        if path.hasPrefix("file://") {
+            filePath = String(path.dropFirst(7))
+        } else {
+            filePath = path
+        }
+        if let image = UIImage(contentsOfFile: filePath) {
             cache.setObject(image, forKey: key)
             return image
         }

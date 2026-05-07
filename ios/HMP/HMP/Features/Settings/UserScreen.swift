@@ -30,7 +30,7 @@ struct UserScreen: View {
                         .buttonStyle(.plain)
 
                         NavigationLink(value: HMPRoute.audioEffects) {
-                            squareCardContent(title: "音效设置", icon: "music.waveform", accent: .purple)
+                            squareCardContent(title: "音效设置", icon: "waveform", accent: .purple)
                         }
                         .buttonStyle(.plain)
                     }
