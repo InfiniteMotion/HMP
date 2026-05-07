@@ -27,7 +27,7 @@ class MusicPlayerController {
 
     // MARK: - Private
 
-    private let engine: PlayerEngine
+    let engine: PlayerEngine
     private let currentPlaybackUseCase: CurrentPlaybackUseCase
     private let playbackHistoryUseCase: PlaybackHistoryUseCase
     private let timerUseCase: TimerUseCase
@@ -86,6 +86,7 @@ class MusicPlayerController {
         print("[MusicPlayerController] App will terminate, saving playback state")
         persistPlaybackState()
         saveCurrentPosition()
+        HMPMediaSession.shared.onPlaybackStopped()
     }
 
     // MARK: - Engine Callbacks
@@ -97,12 +98,14 @@ class MusicPlayerController {
         engine.onPositionUpdated = { [weak self] pos, dur in
             self?.currentPosition = pos
             self?.duration = dur
+            HMPMediaSession.shared.onPositionUpdated(position: pos, duration: dur)
             if pos % 10000 < 500 {
                 self?.saveCurrentPosition()
             }
         }
         engine.onPlayStateChanged = { [weak self] playing in
             self?.isPlaying = playing
+            HMPMediaSession.shared.onPlaybackStateChanged(isPlaying: playing)
             self?.saveCurrentPosition()
         }
         engine.onError = { [weak self] msg in
@@ -240,6 +243,7 @@ class MusicPlayerController {
         currentPlayingMusic = nil
         isMiniPlayerVisible = false
         engine.stop()
+        HMPMediaSession.shared.onPlaybackStopped()
         Task {
             await persistCurrentPlaylistToDatabaseWithCurrentId()
         }
@@ -264,6 +268,7 @@ class MusicPlayerController {
             if FileManager.default.fileExists(atPath: newPath) {
                 let url = URL(fileURLWithPath: newPath)
                 engine.play(url: url)
+                HMPMediaSession.shared.onTrackChanged(musicInfo: musicInfo)
                 return
             }
         }
@@ -274,13 +279,7 @@ class MusicPlayerController {
         startNewPlaybackSession(musicInfo: musicInfo)
         persistPlaybackState()
 
-        NowPlayingManager.shared.updateNowPlayingInfo(
-            title: musicInfo.music.title,
-            artist: musicInfo.music.artist,
-            album: musicInfo.music.album,
-            duration: Double(musicInfo.music.duration) / 1000.0,
-            elapsedTime: 0
-        )
+        HMPMediaSession.shared.onTrackChanged(musicInfo: musicInfo)
     }
 
     private func loadMetadata(for musicInfo: MusicInfo_) {

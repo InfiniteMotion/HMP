@@ -4,6 +4,7 @@ import AVFoundation
 /// 等价于 Android 的 PlayControl 接口
 class PlayerEngine {
     private var player: AVPlayer?
+    var avPlayer: AVPlayer? { player }
     private var timeObserver: Any?
     private var statusObserver: NSKeyValueObservation?
     private var rateObserver: NSKeyValueObservation?

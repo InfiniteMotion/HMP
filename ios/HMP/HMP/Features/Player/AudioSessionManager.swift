@@ -14,9 +14,10 @@ class AudioSessionManager {
             try AVAudioSession.sharedInstance().setCategory(
                 .playback,
                 mode: .default,
-                options: [.mixWithOthers, .allowAirPlay]
+                options: .allowAirPlay
             )
             try AVAudioSession.sharedInstance().setActive(true)
+            print("[AudioSession] Setup successful: category=playback, options=allowAirPlay, active=true")
         } catch {
             print("[AudioSession] setup failed: \(error)")
         }
