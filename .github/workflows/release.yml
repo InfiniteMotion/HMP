@@ -40,6 +40,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
+
       - name: Create CI settings
         run: |
           cat > settings.gradle.kts << 'EOF'
@@ -69,6 +73,10 @@ jobs:
 
       - name: Build Android Release
         run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename build outputs
         run: |
