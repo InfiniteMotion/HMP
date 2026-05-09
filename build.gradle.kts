@@ -88,6 +88,33 @@ tasks.register("releaseIos") {
     }
 }
 
+// ── Desktop ──────────────────────────────────────────────────────────────
+
+tasks.register("releaseDesktop") {
+    group = "release"
+    description = "构建 Desktop Release 分发包，输出到 releases/desktop/"
+    notCompatibleWithConfigurationCache("release copy task")
+
+    dependsOn(":desktop:app:packageDistributionForCurrentOS")
+
+    doLast {
+        val outDir = projectDirFile.resolve("releases/desktop")
+        outDir.mkdirs()
+
+        val distDir = projectDirFile.resolve("desktop/app/build/compose/binaries/main")
+        if (distDir.exists()) {
+            distDir.listFiles()?.forEach { f ->
+                if (f.isFile && (f.extension == "msi" || f.extension == "dmg" || f.extension == "deb")) {
+                    Files.copy(f.toPath(), outDir.resolve(f.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    println("OK Desktop -> releases/desktop/${f.name}")
+                }
+            }
+        } else {
+            println("!! Desktop distribution not found: $distDir")
+        }
+    }
+}
+
 // ── Storybook ────────────────────────────────────────────────────────────
 
 tasks.register("releaseStorybook") {
@@ -130,7 +157,7 @@ tasks.register("release") {
     description = "构建所有平台 Release 产物"
     notCompatibleWithConfigurationCache("release copy task")
 
-    dependsOn("releaseAndroid", "releaseStorybook")
+    dependsOn("releaseAndroid", "releaseDesktop", "releaseStorybook")
     if (isMacOS) dependsOn("releaseIos")
 
     doLast {
@@ -141,6 +168,7 @@ tasks.register("release") {
         println("=====================================")
         println("  Output:    releases/")
         println("  Android:   releases/android/")
+        println("  Desktop:   releases/desktop/")
         println("  iOS:       releases/ios/${iosNote}")
         println("  Storybook: releases/storybook/")
         println("=====================================")
