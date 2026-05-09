@@ -16,10 +16,14 @@ android {
     // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
     signingConfigs {
         create("unified") {
-            storeFile = file("hmp-unified-key.jks")
-            storePassword = "hmp123456"
-            keyAlias = "hmpkey"
-            keyPassword = "hmp123456"
+            val ksFile = file("hmp-unified-key.jks")
+            val ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: providers.gradleProperty("KEYSTORE_PASSWORD").getOrElse("hmp123456")
+            val kAlias = System.getenv("KEY_ALIAS") ?: "hmpkey"
+            val kPassword = System.getenv("KEY_PASSWORD") ?: providers.gradleProperty("KEY_PASSWORD").getOrElse("hmp123456")
+            storeFile = ksFile
+            storePassword = ksPassword
+            keyAlias = kAlias
+            keyPassword = kPassword
         }
     }
 
