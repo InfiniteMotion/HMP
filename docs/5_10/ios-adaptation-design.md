@@ -427,12 +427,14 @@ class MusicRepositoryImpl(
 
 ### 6.1 Git 分支策略
 
-在现有 main + develop 双分支基础上，通过分支命名约定区分平台：
+> **注意**：v5.10 期间使用 `develop-5.10` 单分支开发。v6.0 起调整为按平台拆分的 develop 分支模式，详见 [docs/VERSIONING.md](../VERSIONING.md)。
+
+v5.10 期间实际使用：
 
 ```
-main ──────────────────────────────────────  (已发布版本)
+master ─────────────────────────────────────  (已发布版本)
   │
-develop ───────────────────────────────────  (下一版本集成)
+develop-5.10 ──────────────────────────────  (5.10 版本集成)
   │
   ├── feature/kmp-shared-xxx               (共享层功能变更)
   ├── feature/android-xxx                  (Android 专属变更)

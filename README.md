@@ -78,16 +78,17 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - **android/core-player**：Android播放核心模块，包含Media3服务和播放控制逻辑
 - **android/feature-ui**：Android UI功能模块，包含Compose页面和组件
 - **ios**：iOS应用模块，包含SwiftUI页面和组件
+- **storybook**：组件展示与文档模块 (Kotlin/Wasm)
 
 ## 📱 系统要求
 
 ### Android
-- Android 12.0 (API 31) 及以上
+- Android 13 (API 33) 及以上
 - 存储空间权限
 - 网络权限 (用于推荐功能)
 
 ### iOS
-- iOS 16.0 及以上
+- iOS 26.0 及以上
 - 存储空间权限
 - 网络权限 (用于推荐功能)
 
@@ -98,8 +99,8 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 #### Android
 - Android Studio Ladybug | 2024.2.1 或更高版本
 - Kotlin 2.2.21 或更高版本
-- Gradle 9.1.0 或更高版本
-- Android SDK 35
+- Gradle 9.0 或更高版本
+- Android SDK 36
 
 #### iOS
 - Xcode 17.0 或更高版本
@@ -184,7 +185,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 
 ## 📝 开发日志
 
-完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v5.9。
+完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v5.10。
 
 ## 🤝 贡献指南
 

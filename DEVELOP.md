@@ -11,21 +11,21 @@
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  UI Layer (Android) │     │ ViewModel Layer │     │   Domain Layer  │
-│  (Jetpack       │────▶│  (Hilt          │────▶│  (Use Cases,    │
+│  (Jetpack       │────▶│  (Koin          │────▶│  (Use Cases,    │
 │   Compose)      │     │   ViewModel)    │     │   Repository)   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                               │                          │
                               ▼                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  UI Layer (iOS)  │     │  Service Layer  │     │  Network Layer  │
-│  (SwiftUI)      │     │  (Media3,       │     │  (Ktor,         │
-│                 │     │   AVFoundation) │     │   Retrofit)     │
+│  (SwiftUI)      │     │  (Media3,       │     │  (Ktor          │
+│                 │     │   AVFoundation) │     │   Client)       │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                               │                          │
                               ▼                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  Data Layer     │     │  Shared Module  │     │  Platform       │
-│  (Room,         │     │  (KMM,          │     │  Specific      │
+│  (Room,         │     │  (KMP,          │     │  Specific      │
 │   DataStore)    │     │   Koin)         │     │  Implementations│
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
@@ -41,6 +41,7 @@
 - **android/core-player**: Android播放核心模块，包含Media3服务和播放控制逻辑
 - **android/feature-ui**: Android UI功能模块，包含Compose页面和组件
 - **ios**: iOS应用模块，包含SwiftUI页面和组件
+- **storybook**: 组件展示与文档模块 (Kotlin/Wasm)
 
 ### 模块间依赖关系
 
@@ -166,12 +167,15 @@ Hearable Music Player/
 │   │   ├── commonMain/               # 共享代码
 │   │   │   └── kotlin/com/hmp/
 │   │   │       ├── data/             # 数据层
-│   │   │       │   ├── repository/   # Repository接口
-│   │   │       └── model/           # 数据模型
+│   │   │       │   ├── database/    # Room 数据库与 DAO
+│   │   │       │   ├── mapper/      # 数据映射器
+│   │   │       │   ├── network/     # Ktor 网络层
+│   │   │       │   └── util/        # 工具类与 expect 声明
 │   │   │       ├── domain/           # 领域层
 │   │   │       │   ├── model/       # 领域模型
 │   │   │       │   └── usecase/     # Use Cases
-│   │   │       └── di/               # 依赖注入配置
+│   │   │       ├── di/               # 依赖注入配置
+│   │   │       └── shared/          # 共享资源加载
 │   │   ├── androidMain/              # Android特定代码
 │   │   │   └── kotlin/com/hmp/
 │   │   │       └── data/
@@ -180,7 +184,6 @@ Hearable Music Player/
 │   │   │   └── kotlin/com/hmp/
 │   │   │       └── data/
 │   │   │           └── repository/   # iOS Repository实现
-│   │   └── test/                    # 测试代码
 │   ├── build.gradle.kts              # 共享模块构建配置
 │   └── shared.podspec               # CocoaPods配置
 ├── android/                          # Android平台代码
@@ -209,9 +212,10 @@ Hearable Music Player/
 │       └── build.gradle.kts
 ├── ios/                              # iOS平台代码
 │   ├── HMP/                          # iOS应用
-│   │   ├── HMP/
-│   │   │   ├── ContentView.swift     # SwiftUI主界面
-│   │   │   └── HMPApp.swift          # iOS应用入口
+│   │   ├── HMP/                      # SwiftUI页面与组件
+│   │   │   ├── HMPApp.swift          # iOS应用入口
+│   │   │   └── Features/            # 按功能组织的Swift文件
+│   │   ├── HMPNowPlaying/           # Live Activity 扩展
 │   │   └── HMP.xcodeproj            # Xcode项目文件
 │   ├── Podfile                       # CocoaPods配置
 │   └── HMP.xcworkspace              # Xcode工作空间
@@ -232,8 +236,8 @@ Hearable Music Player/
 #### Android
 - Android Studio Ladybug | 2024.2.1
 - Kotlin 2.2.21
-- Gradle 9.1.0
-- Android SDK 35
+- Gradle 9.0
+- Android SDK 36
 - AGP (Android Gradle Plugin) 9.0.0
 
 #### iOS
@@ -288,7 +292,7 @@ open HMP.xcworkspace
 - ✅ 本地音乐扫描与Room数据库存储
 - ✅ 多 AI 服务商集成与管理
 - ✅ Jetpack Compose UI界面搭建
-- ✅ Hilt依赖注入配置
+- ✅ Koin 依赖注入配置（已从 Hilt 迁移）
 - ✅ 基本的播放控制功能
 - ✅ 触觉反馈增强用户体验
 - ✅ 动态主题设置与切换
@@ -316,12 +320,12 @@ open HMP.xcworkspace
 - ✅ Room KMP 跨平台数据库配置
 - ✅ Ktor Client 跨平台网络请求
 - ✅ 全平台 Koin 依赖注入迁移
+- ✅ CI/CD 自动发布（GitHub Actions Release 工作流）
 
 #### 进行中
 
 - 🔄 单元测试覆盖
 - 🔄 性能优化与内存泄漏修复
-- 🔄 CI/CD流水线配置
 
 #### 待完成
 
@@ -343,31 +347,26 @@ open HMP.xcworkspace
 
 #### 单元测试
 
-- 使用JUnit 5和MockK进行单元测试
+- 使用JUnit 4进行单元测试
 - 测试Repository、Use Cases和ViewModel
 - 运行命令：`./gradlew test`
 
 #### 仪器测试
 
-- 使用Espresso和Compose Test进行仪器测试
+- 使用AndroidX Test进行仪器测试
 - 测试UI交互和服务功能
 - 运行命令：`./gradlew connectedAndroidTest`
-
-#### 静态检查
-
-- 使用ktlint进行代码风格检查
-- 使用detekt进行代码质量分析
-- 运行命令：`./gradlew ktlintCheck detekt`
 
 ### 版本控制
 
 项目使用Git进行版本控制，采用Git Flow工作流。
 
 **分支策略**（与版本规范一致，详见 [docs/VERSIONING.md](docs/VERSIONING.md) 分支与发版）：
-- `main`: 已发布版本；MINOR/MAJOR 通过从 develop 合并更新，PATCH 可在 main 上直接改并打 tag
-- `develop`: 下一版本的集成分支，MINOR 功能开发在此进行
-- `feature/*`: 功能分支，从 develop 拉出，开发完毕后合并回 develop
-- `bugfix/*`: 修复分支，合并回 develop 或（若仅 PATCH 热修）合并回 main
+- `master`: 已发布版本；MINOR/MAJOR 通过从 release/X.Y 合并更新，PATCH 可在 master 上直接改并打 tag
+- `develop-android` / `develop-ios` / `develop-desktop` / `develop-shared`: 各平台独立开发分支
+- `release/X.Y`: 发版集成分支，各 develop 合入后 PR 到 master
+- `feature/*`: 功能分支，从对应 develop 拉出，开发完毕后合并回
+- `fix/*`: 修复分支，合并回对应 develop 或（若仅 PATCH 热修）合并回 master
 
 ### 构建与发布
 
@@ -376,15 +375,39 @@ open HMP.xcworkspace
 - `debug`: 调试版本，包含调试信息
 - `release`: 发布版本，经过混淆和优化
 
+#### 版本号管理
+
+版本号集中维护在 `gradle.properties` 中：
+
+```properties
+hmp.versionCode=51000
+hmp.versionName=5.10.0
+```
+
+各模块通过 `project.findProperty("hmp.versionCode")` 引用，避免多处手动同步。
+
 #### 发布流程
 
 版本号与发布步骤详见 **[docs/VERSIONING.md](docs/VERSIONING.md)**，摘要如下：
 
-1. **确定版本类型**：按变更内容决定升级 MAJOR / MINOR / PATCH，得到新版本号（如 5.7.0）
-2. **更新构建配置**：在 `app/build.gradle.kts` 中更新 `versionCode` 和 `versionName`
-3. **更新 ROADMAP**：在 [ROADMAP.md](ROADMAP.md) 中新增该版本条目与「当前版本」
-4. 构建发布包：`./gradlew assembleRelease`
-5. 签名 APK 并上传或分发
+1. **确定版本类型**：按变更内容决定升级 MAJOR / MINOR / PATCH，得到新版本号（如 6.0.0）
+2. **创建 release 分支**：从 master 拉出 `release/X.Y`，将各 develop 分支合入
+3. **更新版本号**：在 `gradle.properties` 中更新 `hmp.versionCode` 和 `hmp.versionName`
+4. **更新 ROADMAP**：在 [ROADMAP.md](ROADMAP.md) 中新增该版本条目与「当前版本」
+5. 本地构建发布包：`./gradlew release`（输出到 `releases/` 目录）
+   - `./gradlew releaseAndroid` — 仅 Android（APK + AAB）
+   - `./gradlew releaseIos` — 仅 iOS（需 macOS）
+   - `./gradlew releaseStorybook` — 仅 Storybook 离线包
+6. 将 release/X.Y PR 到 master，CI 自动构建并发布 GitHub Release + 部署 Storybook
+
+#### CI/CD 自动发布
+
+项目配置了 GitHub Actions 自动发布工作流 (`.github/workflows/release.yml`)：
+
+- **触发条件**：`release/*` 分支的 PR 合并到 `master` 时自动触发
+- **release job**：构建 Android APK + AAB，基于上一个 tag 自动生成 changelog，创建 GitHub Release 并上传产物
+- **storybook job**：构建 Storybook WASM 站点
+- **deploy-pages job**：将 Storybook 部署到 GitHub Pages
 
 ## 🎯 关键实现细节
 
@@ -453,7 +476,7 @@ open HMP.xcworkspace
 - [Kotlin官方文档](https://kotlinlang.org/docs/home.html)
 - [Jetpack Compose官方文档](https://developer.android.com/jetpack/compose)
 - [AndroidX Media3官方文档](https://developer.android.com/jetpack/androidx/releases/media3)
-- [Hilt官方文档](https://developer.android.com/training/dependency-injection/hilt-android)
+- [Koin官方文档](https://insert-koin.io/docs/setup/koin)
 - [Kotlin Multiplatform官方文档](https://kotlinlang.org/docs/multiplatform.html)
 - [SwiftUI官方文档](https://developer.apple.com/documentation/swiftui/)
 

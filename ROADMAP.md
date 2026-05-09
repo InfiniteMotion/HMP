@@ -120,14 +120,31 @@
   - 实现音乐详情弹窗的分享功能（支持分享音频文件）
   - 优化「下一首播放」逻辑：若歌曲已存在于播放列表，先移除再插入到下一首位置
 
-### v5.10 (2026-05-10)
+### v5.10 (2026-05-09)
 - **跨平台架构迁移**：
   - 实现Kotlin Multiplatform Mobile (KMM) 架构
   - 迁移core-domain和core-data层到shared模块
   - 配置CocoaPods集成，支持iOS平台
-  - 创建iOS平台特定实现（8个expect/actual接口）
+  - 创建iOS平台特定实现（11个expect/actual声明）
   - 完成iOS应用的构建和基本UI显示
-  - 待实现：iOS端音乐扫描和播放控制功能
+- **iOS 核心功能**：
+  - 播放引擎（AVPlayer + MusicPlayerController 单例 + AudioSessionManager）
+  - 锁屏控制与远程命令（NowPlayingInfoManager + RemoteCommandManager）
+  - Live Activity 与灵动岛（LiveActivityManager + HMPMediaSession 协调器）
+  - 音乐扫描（DeviceMusicScanner + MusicTagParser Bridge）
+  - 音乐仓库完整实现（MusicRepositoryImpl：扫描/增量同步/标签/AI/播放历史/分析）
+  - 8个 ViewModel 实现完毕（Library/Search/SongDetail/Playlist/Settings/AudioEffect/Recommendation/Dialog）
+  - SwiftUI 界面大规模实现：音乐库/播放器/播放列表/设置四大模块
+- **发布流程重构**：
+  - 版本号集中管理到 `gradle.properties`（`hmp.versionCode` / `hmp.versionName`）
+  - 新增 Gradle release 任务（`releaseAndroid` / `releaseIos` / `releaseStorybook` / `release`）
+  - Release 构建启用代码混淆和资源压缩
+  - 图标加载改为 classpath 资源读取，不依赖 Android Context
+- **CI/CD 自动发布**：
+  - 新增 `.github/workflows/release.yml`，PR 合并到 master 时自动构建并发布 GitHub Release
+  - 基于 git tag 自动生成 changelog
+  - 自动构建并部署 Storybook 到 GitHub Pages
+  - 移除旧的 `deploy-storybook.yml` 工作流
 
 ## 🛠️ 关键技术演进
 
@@ -163,7 +180,7 @@
    - 升级Room数据库版本 (Android)
    - 支持分页查询
    - 优化数据访问性能
-   - 集成Core Data (iOS)
+   - 迁移到 Room KMP（跨平台，Android + iOS 共享）
 
 4. **网络**
    - 从Retrofit+OkHttp迁移到Ktor Client（跨平台支持）
@@ -211,15 +228,16 @@
 - ✅ iOS平台基础支持
 - ✅ CocoaPods集成
 - ✅ 跨平台数据层和业务逻辑
-- 🔄 iOS端音乐扫描功能
-- 🔄 iOS端播放控制功能
+- ✅ iOS端音乐扫描功能
+- ✅ iOS端播放控制功能
+- ✅ iOS锁屏控制与Live Activity
+- ✅ CI/CD自动发布（GitHub Actions）
 
 ### 计划中功能
 - 🔄 桌面小组件
 - 🔄 音乐标签编辑
 - 🔄 性能优化
 - 🔄 单元测试覆盖
-- 🔄 CI/CD流水线
 
 ## 📊 开发里程碑
 
@@ -263,29 +281,43 @@
 - CocoaPods集成与Xcode项目配置
 - 跨平台数据层和业务逻辑验证
 - iOS应用构建与运行测试
+- iOS播放引擎与锁屏控制
+- iOS Live Activity 与灵动岛
+- iOS SwiftUI 界面大规模实现
+- 发布流程重构与 CI/CD 自动发布
+
+### 阶段8：iOS 功能补全与双平台对齐 (v6.x)
+- iOS 存根实现替换（SecureStorageHelper / PinyinSortKey / BackupFileRepository）
+- iOS 设置页面后端模拟→真实实现（AI/备份/音乐库/使用数据）
+- iOS 真机验证（锁屏控制 + Live Activity）
+- Repository 通用逻辑提取到 commonMain 共享基类
+- 双平台功能对齐验证
 
 ## 🚀 未来发展方向
 
 **产品边界**：坚持纯本地，不做在线/云同步、不引入账号、不做社交；仅保留用户自填 API 的 AI 推荐。
 
-### 短期目标 (1-2个月)
-1. 完善单元测试覆盖
-2. 优化应用性能
-3. 修复已知bug
+### v6 阶段：iOS 功能补全与双平台对齐
+1. iOS 存根替换为真实实现（SecureStorageHelper / PinyinSortKey / BackupFileRepository）
+2. iOS 设置页面后端模拟→真实 API（AI 配置/备份还原/音乐库管理/使用数据）
+3. iOS 真机验证（锁屏控制 + Live Activity + 后台播放）
+4. Repository 通用逻辑提取到 commonMain 共享基类
+5. 双平台功能完整对齐验证
 
-### 中期目标 (3-6个月)
+### 中期目标
 1. 实现桌面小组件
 2. 添加音乐标签编辑功能
 3. 优化电池续航
+4. 完善单元测试覆盖
 
-### 长期目标 (6-12个月)
+### 长期目标
 1. 发布到应用商店（可选）
 2. 车载/穿戴、播客等扩展（可选）
 
 ---
 
-**最后更新时间**: 2026-05-10
-**当前版本**: v5.10
+**最后更新时间**: 2026-05-09
+**当前版本**: v5.10.0
 
 ---
 

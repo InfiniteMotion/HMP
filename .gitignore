@@ -161,6 +161,11 @@ androidx.datastore/
 *.db
 *.db-journal
 
+# Release builds
+releases/
+*.apk
+*.aab
+
 # Misc
 .env
 .env.local

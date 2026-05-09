@@ -27,16 +27,16 @@ android {
         applicationId = "com.example.hearablemusicplayer"
         minSdk = 33
         targetSdk = 36
-        versionCode = 5
-        versionName = "5.9"
+        versionCode = project.findProperty("hmp.versionCode")?.toString()?.toIntOrNull() ?: 51000
+        versionName = project.findProperty("hmp.versionName")?.toString() ?: "5.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-//            isMinifyEnabled = true
-//            isShrinkResources = true
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

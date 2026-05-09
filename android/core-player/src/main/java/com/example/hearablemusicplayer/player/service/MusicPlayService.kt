@@ -249,7 +249,7 @@ class MusicPlayService : Service(), PlayControl {
     @SuppressLint("RestrictedApi")
     override fun onCreate() {
         super.onCreate()
-        // ExoPlayer 已通过 Hilt 注入,这里只需配置
+        // ExoPlayer 已通过 Koin 注入,这里只需配置
         exoPlayer.apply {
             // 设置重复模式,让系统知道有下一首
             repeatMode = Player.REPEAT_MODE_OFF

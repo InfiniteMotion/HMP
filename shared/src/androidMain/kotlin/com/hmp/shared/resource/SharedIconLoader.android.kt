@@ -10,9 +10,8 @@ actual object SharedIconLoader {
     }
 
     actual suspend fun loadIcon(iconName: String): ByteArray? {
-        val ctx = context ?: return null
         return try {
-            ctx.assets.open("icons/$iconName.png").use { it.readBytes() }
+            javaClass.getResourceAsStream("/icons/$iconName.png")?.use { it.readBytes() }
         } catch (_: Exception) {
             null
         }
