@@ -6,20 +6,27 @@
 
 ### 整体架构
 
-项目采用MVVM（Model-View-ViewModel）架构模式，结合Jetpack Compose和AndroidX组件库，实现了清晰的职责分离和可维护性。
+项目采用MVVM（Model-View-ViewModel）架构模式，结合Kotlin Multiplatform Mobile (KMM)实现跨平台开发，在Android上使用Jetpack Compose，在iOS上使用SwiftUI，实现了清晰的职责分离和可维护性。
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    UI Layer     │     │ ViewModel Layer │     │   Domain Layer  │
-│  (Jetpack       │────▶│  (Hilt          │────▶│  (Use Cases,    │
+│  UI Layer (Android) │     │ ViewModel Layer │     │   Domain Layer  │
+│  (Jetpack       │────▶│  (Koin          │────▶│  (Use Cases,    │
 │   Compose)      │     │   ViewModel)    │     │   Repository)   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                               │                          │
                               ▼                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Data Layer     │     │  Service Layer  │     │  Network Layer  │
-│  (Room,         │     │  (Media3,       │     │  (Retrofit,     │
-│   DataStore)    │     │   MediaSession) │     │   OkHttp)       │
+│  UI Layer (iOS)  │     │  Service Layer  │     │  Network Layer  │
+│  (SwiftUI)      │     │  (Media3,       │     │  (Ktor          │
+│                 │     │   AVFoundation) │     │   Client)       │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                              │                          │
+                              ▼                          ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Data Layer     │     │  Shared Module  │     │  Platform       │
+│  (Room,         │     │  (KMP,          │     │  Specific      │
+│   DataStore)    │     │   Koin)         │     │  Implementations│
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
@@ -29,42 +36,54 @@
 
 #### 核心模块
 
-- **app**: 应用入口模块，包含MainActivity和Application类
-- **core-data**: 数据层模块，包含 Room 数据库、DataStore、网络请求 (Retrofit) 和 AI 服务集成
-- **core-domain**: 领域层模块，包含 Use Cases、领域模型和 Repository 接口定义
-- **core-player**: 播放核心模块，包含Media3服务和播放控制逻辑
-- **feature-ui**: UI功能模块，包含Compose页面和组件
+- **shared**: 跨平台共享模块，包含业务逻辑、数据模型、Repository接口和Koin依赖注入配置
+- **android/app**: Android应用入口模块，包含MainActivity和Application类
+- **android/core-player**: Android播放核心模块，包含Media3服务和播放控制逻辑
+- **android/feature-ui**: Android UI功能模块，包含Compose页面和组件
+- **ios**: iOS应用模块，包含SwiftUI页面和组件
+- **storybook**: 组件展示与文档模块 (Kotlin/Wasm)
 
 ### 模块间依赖关系
 
 ```
-:feature-ui ──▶ :core-player
-:feature-ui ──▶ :core-domain
-:core-player ──▶ :core-domain
-:core-data ──▶ :core-domain (implements)
+:android/feature-ui ──▶ :android/core-player
+:android/feature-ui ──▶ :shared
+:android/core-player ──▶ :shared
+:ios ──▶ :shared (via CocoaPods)
 ```
 
 ### 模块化进展
 
 - ✅ 已完成模块划分和依赖配置
-- ✅ 已将Room/Repository移至core-data
-- ✅ 已将Use Cases移至core-domain
-- ✅ 已将Media3/Service移至core-player
-- ✅ 已将Compose页面组件移至feature-ui
-- ✅ app模块仅依赖feature-ui和核心模块，避免横向耦合
+- ✅ 已创建跨平台shared模块，包含核心业务逻辑和数据模型
+- ✅ 已将Android-specific代码移至android目录下的模块
+- ✅ 已创建iOS模块，包含SwiftUI页面和组件
+- ✅ 已配置CocoaPods集成，实现iOS对shared模块的依赖
+- ✅ 已实现平台特定的Repository实现（Android和iOS）
 
 ### 关键技术决策
 
-#### 1. 依赖注入：Hilt
+#### 1. 跨平台框架：Kotlin Multiplatform Mobile (KMM)
 
-**选择理由**：Hilt与Jetpack组件深度集成，提供了简单易用的API，并且支持测试替换。作为个人项目，我希望通过使用Hilt来学习现代Android开发的最佳实践。
+**选择理由**：KMM允许使用Kotlin编写跨平台代码，在Android和iOS之间共享业务逻辑和数据模型，减少代码重复，提高开发效率。作为个人项目，我希望通过使用KMM来学习跨平台开发的最佳实践。
 
 **实现细节**：
-- MusicApplication标注为@HiltAndroidApp
-- ViewModel使用@HiltViewModel和@Inject构造函数
-- 提供@Module和@Provides方法来创建单例依赖
+- 共享模块使用Kotlin Multiplatform插件
+- 实现平台特定的Repository实现
+- 使用Koin进行跨平台依赖注入
+- 通过CocoaPods将shared模块集成到iOS项目
 
-#### 2. 状态管理：Kotlin Flow/StateFlow
+#### 2. 依赖注入：Koin (跨平台)
+
+**选择理由**：Koin 是一个轻量级的依赖注入框架，完美支持 Kotlin Multiplatform。相比 Hilt，Koin 可以在 Android 和 iOS 之间共享依赖注入配置，减少了平台特定的代码。
+
+**实现细节**：
+- 全平台使用 Koin：从 Android 的 Hilt 迁移至 Koin
+- 共享模块：通过 `koinViewModel()` 获取 ViewModel，使用 `single`/`factory` 创建依赖
+- 平台特定实现通过 `expect/actual` 机制注入
+- iOS 端通过 `AppDelegate` 调用 `KoinKt.doInitKoin()` 初始化
+
+#### 3. 状态管理：Kotlin Flow/StateFlow
 
 **选择理由**：Kotlin Flow和StateFlow提供了一种简洁的方式来管理UI状态，并且支持异步操作和线程切换。作为个人项目，我希望通过使用Flow来学习响应式编程的思想。
 
@@ -73,34 +92,44 @@
 - UI层使用collectAsState()订阅状态变化
 - 所有状态更新都通过Flow进行，避免竞态条件
 
-#### 3. 媒体播放：AndroidX Media3
+#### 5. 媒体播放：AndroidX Media3 (Android) + AVFoundation (iOS)
 
 **选择理由**：AndroidX Media3是Google推出的新一代媒体播放框架，提供了统一的API，支持多种媒体格式和播放场景。作为个人项目，我希望通过使用Media3来学习现代Android媒体播放的最佳实践。
 
 **实现细节**：
-- MusicPlayService管理ExoPlayer和MediaSession
-- 实现音频焦点管理和通知控制
-- 支持耳机插拔、蓝牙控制和来电打断处理
+- Android端：MusicPlayService管理ExoPlayer和MediaSession，实现音频焦点管理和通知控制
+- iOS端：使用AVFoundation框架实现音频播放，支持后台播放和远程控制
+- 平台特定实现通过共享接口统一管理
 
-#### 4. 数据存储：Room + DataStore
+#### 6. 数据存储：Room KMP + DataStore KMP (跨平台)
 
-**选择理由**：Room是Google推出的ORM框架，提供了简单易用的API，并且支持SQLite数据库的所有功能。DataStore是Google推出的新一代偏好设置存储框架，提供了一种安全、可靠的方式来存储应用偏好设置。作为个人项目，我希望通过使用Room和DataStore来学习现代Android数据存储的最佳实践。
-
-**实现细节**：
-- Room数据库版本化管理，支持迁移
-- DataStore存储主题、音量等偏好设置
-- Repository层封装数据访问逻辑
-
-#### 5. 网络请求：Retrofit + OkHttp
-
-**选择理由**：Retrofit是Square推出的网络请求框架，提供了简单易用的API，并且支持多种网络请求方式。OkHttp是Square推出的HTTP客户端，提供了高性能、可靠的网络请求能力。作为个人项目，我希望通过使用Retrofit和OkHttp来学习现代Android网络请求的最佳实践。
+**选择理由**：Room 2.7+ 支持 Kotlin Multiplatform，可以在 Android 和 iOS 之间共享数据库代码。配合 SQLite Bundled 驱动，实现了真正的跨平台数据存储。DataStore KMP 提供了跨平台的偏好设置存储方案。
 
 **实现细节**：
-- Retrofit接口定义API请求
-- OkHttp配置连接、读取和写入超时
+- Room KMP 配置跨平台数据库，使用 `@ConstructedBy` 和 `expect/actual` 模式
+- KSP 代码生成器为各平台生成数据库实现
+- SQLite Bundled 驱动提供跨平台 SQLite 支持
+- DataStore KMP 存储主题、音量等偏好设置
+- Repository 层通过 `expect/actual` 实现平台特定的数据访问
+
+**配置要点**：
+- 参考 [Room KMP 配置文档](docs/ROOM_KMP_SETUP.md)
+- 关键：不要在 `commonMainMetadata` 上运行 KSP
+- 使用 `BundledSQLiteDriver` 作为跨平台驱动
+- iOS 使用 `NSDocumentDirectory` 存储数据库文件
+
+#### 7. 网络请求：Ktor Client (跨平台)
+
+**选择理由**：Ktor Client 是 Kotlin 官方推出的跨平台网络请求框架，支持 Android、iOS 等多个平台。通过使用不同的引擎（Android 使用 OkHttp，iOS 使用 Darwin），实现了真正的跨平台网络请求代码共享。
+
+**实现细节**：
+- 共享模块：使用 Ktor Client 定义 API 接口和请求逻辑
+- Android 端：使用 OkHttp 引擎，支持连接池、拦截器等高级特性
+- iOS 端：使用 Darwin 引擎，基于原生 NSURLSession
+- 统一配置：超时、重试策略、日志记录在 commonMain 中定义
 - 实现失败重试和指数退避策略
 
-#### 6. AI服务集成：多服务商支持
+#### 8. AI服务集成：多服务商支持
 
 **选择理由**：为了提供更灵活的 AI 推荐服务，项目支持多个 AI 服务商（DeepSeek、OpenAI、Claude、通义千问、文心一言）。用户可以根据自己的需求选择不同的服务商。
 
@@ -110,17 +139,16 @@
 - 支持 API 连接测试功能
 - 用户可在配置界面自由切换服务商
 
-#### 7. 导航系统：Navigation 3
+#### 9. 导航系统：Navigation 3 (Android) + SwiftUI Navigation (iOS)
 
 **选择理由**：Navigation 3 提供了类型安全的导航方式，支持编译时路由检查和参数验证。迁移到 Navigation 3 后，消除了字符串路由的潜在错误，提升了导航的可靠性。
 
 **实现细节**：
-- 使用 @Serializable 注解定义路由
-- 集中式路由管理，统一处理导航逻辑
-- 支持类型安全的参数传递
-- 迁移过程中保持向后兼容
+- Android端：使用 @Serializable 注解定义路由，集中式路由管理，支持类型安全的参数传递
+- iOS端：使用SwiftUI NavigationStack和NavigationLink实现导航，支持类型安全的参数传递
+- 平台特定实现，保持各自平台的导航最佳实践
 
-#### 8. 视觉效果：毛玻璃效果
+#### 10. 视觉效果：毛玻璃效果
 
 **选择理由**：毛玻璃效果（Haze）可以提升UI的视觉层次感和现代感，与动态背景结合使用效果更佳。
 
@@ -134,93 +162,63 @@
 
 ```
 Hearable Music Player/
-├── app/
+├── shared/                           # 跨平台共享模块
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   └── MusicApplication.kt
-│   │   │   └── res/                 # Resources
-│   │   └── test/                    # Unit tests
-│   └── build.gradle.kts             # Module build configuration
-├── core-data/
-│   ├── schemas/                     # Room database schemas
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── data/
-│   │   │   │   │   ├── database/    # AppDatabase and entities
-│   │   │   │   │   ├── di/          # Database/Network/Repository modules
-│   │   │   │   │   ├── network/     # DeepSeekAPI and network utilities
-│   │   │   │   │   ├── repository/  # Repository implementations
-│   │   │   │   │   └── util/        # SecureStorage and other utilities
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # Data layer tests
-│   └── build.gradle.kts
-├── core-domain/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── domain/
-│   │   │   │   │   ├── model/       # Domain models
-│   │   │   │   │   ├── repository/  # Repository interfaces
-│   │   │   │   │   └── usecase/     # Use Cases
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # Domain layer tests
-│   └── build.gradle.kts
-├── core-player/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── player/
-│   │   │   │   │   ├── controller/  # MusicController (播放控制)
-│   │   │   │   │   ├── di/          # Player modules
-│   │   │   │   │   └── service/     # MusicPlayService and receiver
-│   │   │   └── res/                 # Player resources
-│   │   └── test/                    # Player layer tests
-│   └── build.gradle.kts
-├── feature-ui/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/hearablemusicplayer/
-│   │   │   │   ├── ui/
-│   │   │   │   │   ├── common/      # 通用组件和基础设施
-│   │   │   │   │   │   ├── components/      # 通用UI组件
-│   │   │   │   │   │   │   └── base/        # 基础组件 (Empty, Loading, Error)
-│   │   │   │   │   │   ├── design/          # 设计系统
-│   │   │   │   │   │   │   ├── animation/   # 动画令牌
-│   │   │   │   │   │   │   ├── colors/      # 颜色令牌
-│   │   │   │   │   │   │   ├── core/        # 设计系统核心
-│   │   │   │   │   │   │   ├── theme/       # 主题管理
-│   │   │   │   │   │   │   └── typography/  # 排版令牌
-│   │   │   │   │   │   ├── dialogs/         # 弹窗组件
-│   │   │   │   │   │   │   ├── base/        # 基础弹窗组件
-│   │   │   │   │   │   │   ├── controller/  # DialogManager
-│   │   │   │   │   │   │   └── viewmodel/   # DialogViewModel, DialogEvent
-│   │   │   │   │   │   ├── navigation/      # Navigation 3 路由
-│   │   │   │   │   │   ├── pages/           # 通用页面
-│   │   │   │   │   │   │   └── base/        # TabScreen, SubScreen
-│   │   │   │   │   │   ├── util/            # UI工具类
-│   │   │   │   │   │   └── viewmodel/       # ThemeViewModel
-│   │   │   │   │   ├── library/     # 音乐库模块
-│   │   │   │   │   │   ├── pages/           # Home, Gallery, Search, Artist, Album, SongDetail
-│   │   │   │   │   │   │   └── components/  # 音乐列表组件
-│   │   │   │   │   │   │       └── musiclist/   # MusicList及相关组件
-│   │   │   │   │   │   └── viewmodel/       # LibraryViewModel, SearchViewModel, SongDetailViewModel
-│   │   │   │   │   ├── player/      # 播放器模块
-│   │   │   │   │   │   ├── components/      # 播放器组件
-│   │   │   │   │   │   ├── pages/           # PlayerScreen, LyricsScreen, PlaylistArea
-│   │   │   │   │   │   └── viewmodel/       # PlaybackViewModel, PlaylistQueueViewModel, PlayControlViewModel
-│   │   │   │   │   ├── playlist/    # 播放列表模块
-│   │   │   │   │   │   ├── pages/           # PlaylistScreen, PlaylistManageScreen
-│   │   │   │   │   │   └── viewmodel/       # PlaylistViewModel
-│   │   │   │   │   └── settings/    # 设置模块
-│   │   │   │   │       ├── pages/           # SettingScreen, AIScreen, UserScreen等
-│   │   │   │   │       ├── components/      # 设置页面组件
-│   │   │   │   │       └── viewmodel/       # SettingsViewModel, AudioEffectViewModel等
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                    # UI tests
-│   └── build.gradle.kts
+│   │   ├── commonMain/               # 共享代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       ├── data/             # 数据层
+│   │   │       │   ├── database/    # Room 数据库与 DAO
+│   │   │       │   ├── mapper/      # 数据映射器
+│   │   │       │   ├── network/     # Ktor 网络层
+│   │   │       │   └── util/        # 工具类与 expect 声明
+│   │   │       ├── domain/           # 领域层
+│   │   │       │   ├── model/       # 领域模型
+│   │   │       │   └── usecase/     # Use Cases
+│   │   │       ├── di/               # 依赖注入配置
+│   │   │       └── shared/          # 共享资源加载
+│   │   ├── androidMain/              # Android特定代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       └── data/
+│   │   │           └── repository/   # Android Repository实现
+│   │   ├── iosMain/                 # iOS特定代码
+│   │   │   └── kotlin/com/hmp/
+│   │   │       └── data/
+│   │   │           └── repository/   # iOS Repository实现
+│   ├── build.gradle.kts              # 共享模块构建配置
+│   └── shared.podspec               # CocoaPods配置
+├── android/                          # Android平台代码
+│   ├── app/                          # Android应用入口
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── java/com/example/hearablemusicplayer/
+│   │   │   │   │   ├── MainActivity.kt
+│   │   │   │   │   └── MusicApplication.kt
+│   │   │   │   └── res/             # 资源文件
+│   │   │   └── test/                # 单元测试
+│   │   └── build.gradle.kts         # 模块构建配置
+│   ├── core-player/                  # 播放核心模块
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── java/com/example/hearablemusicplayer/
+│   │   │   │   │   └── player/      # 播放控制逻辑
+│   │   │   └── test/                # 测试代码
+│   │   └── build.gradle.kts
+│   └── feature-ui/                   # UI功能模块
+│       ├── src/
+│       │   ├── main/
+│       │   │   ├── java/com/example/hearablemusicplayer/
+│       │   │   │   └── ui/          # Compose页面和组件
+│       │   └── test/                # UI测试
+│       └── build.gradle.kts
+├── ios/                              # iOS平台代码
+│   ├── HMP/                          # iOS应用
+│   │   ├── HMP/                      # SwiftUI页面与组件
+│   │   │   ├── HMPApp.swift          # iOS应用入口
+│   │   │   └── Features/            # 按功能组织的Swift文件
+│   │   ├── HMPNowPlaying/           # Live Activity 扩展
+│   │   └── HMP.xcodeproj            # Xcode项目文件
+│   ├── Podfile                       # CocoaPods配置
+│   └── HMP.xcworkspace              # Xcode工作空间
 ├── gradle/
 │   └── wrapper/
 ├── .gitignore
@@ -235,26 +233,54 @@ Hearable Music Player/
 
 ### 开发环境
 
+#### Android
 - Android Studio Ladybug | 2024.2.1
 - Kotlin 2.2.21
-- Gradle 9.1.0
-- Android SDK 35
+- Gradle 9.0
+- Android SDK 36
 - AGP (Android Gradle Plugin) 9.0.0
+
+#### iOS
+- Xcode 17.0 或更高版本
+- Swift 5.0 或更高版本
+- CocoaPods 1.16.0 或更高版本
+- macOS 14.0 或更高版本
 
 ### 构建项目
 
+#### Android
 ```bash
 # 克隆项目
-https://github.com/yourusername/hearable-music-player.git
+git clone https://github.com/InfiniteMotion/HMP.git
 
 # 进入项目目录
-cd hearable-music-player
+cd HMP
 
 # 构建项目
 ./gradlew build
 
 # 运行应用
 ./gradlew installDebug
+```
+
+#### iOS
+```bash
+# 克隆项目（如果尚未克隆）
+git clone https://github.com/InfiniteMotion/HMP.git
+
+# 进入项目目录
+cd HMP
+
+# 生成共享Kotlin框架
+./gradlew :shared:generateDummyFramework
+
+# 安装CocoaPods依赖
+cd ios && pod install
+
+# 使用Xcode打开工作空间
+open HMP.xcworkspace
+
+# 在Xcode中构建并运行应用
 ```
 
 ### 开发进展
@@ -266,7 +292,7 @@ cd hearable-music-player
 - ✅ 本地音乐扫描与Room数据库存储
 - ✅ 多 AI 服务商集成与管理
 - ✅ Jetpack Compose UI界面搭建
-- ✅ Hilt依赖注入配置
+- ✅ Koin 依赖注入配置（已从 Hilt 迁移）
 - ✅ 基本的播放控制功能
 - ✅ 触觉反馈增强用户体验
 - ✅ 动态主题设置与切换
@@ -287,12 +313,19 @@ cd hearable-music-player
 - ✅ 专辑页面功能
 - ✅ 音乐文件分享功能
 - ✅ 毛玻璃视觉效果
+- ✅ Kotlin Multiplatform Mobile (KMM)集成
+- ✅ iOS平台支持
+- ✅ CocoaPods配置与集成
+- ✅ 平台特定Repository实现
+- ✅ Room KMP 跨平台数据库配置
+- ✅ Ktor Client 跨平台网络请求
+- ✅ 全平台 Koin 依赖注入迁移
+- ✅ CI/CD 自动发布（GitHub Actions Release 工作流）
 
 #### 进行中
 
 - 🔄 单元测试覆盖
 - 🔄 性能优化与内存泄漏修复
-- 🔄 CI/CD流水线配置
 
 #### 待完成
 
@@ -314,31 +347,26 @@ cd hearable-music-player
 
 #### 单元测试
 
-- 使用JUnit 5和MockK进行单元测试
+- 使用JUnit 4进行单元测试
 - 测试Repository、Use Cases和ViewModel
 - 运行命令：`./gradlew test`
 
 #### 仪器测试
 
-- 使用Espresso和Compose Test进行仪器测试
+- 使用AndroidX Test进行仪器测试
 - 测试UI交互和服务功能
 - 运行命令：`./gradlew connectedAndroidTest`
-
-#### 静态检查
-
-- 使用ktlint进行代码风格检查
-- 使用detekt进行代码质量分析
-- 运行命令：`./gradlew ktlintCheck detekt`
 
 ### 版本控制
 
 项目使用Git进行版本控制，采用Git Flow工作流。
 
 **分支策略**（与版本规范一致，详见 [docs/VERSIONING.md](docs/VERSIONING.md) 分支与发版）：
-- `main`: 已发布版本；MINOR/MAJOR 通过从 develop 合并更新，PATCH 可在 main 上直接改并打 tag
-- `develop`: 下一版本的集成分支，MINOR 功能开发在此进行
-- `feature/*`: 功能分支，从 develop 拉出，开发完毕后合并回 develop
-- `bugfix/*`: 修复分支，合并回 develop 或（若仅 PATCH 热修）合并回 main
+- `master`: 已发布版本；MINOR/MAJOR 通过从 release/X.Y 合并更新，PATCH 可在 master 上直接改并打 tag
+- `develop-android` / `develop-ios` / `develop-desktop` / `develop-shared`: 各平台独立开发分支
+- `release/X.Y`: 发版集成分支，各 develop 合入后 PR 到 master
+- `feature/*`: 功能分支，从对应 develop 拉出，开发完毕后合并回
+- `fix/*`: 修复分支，合并回对应 develop 或（若仅 PATCH 热修）合并回 master
 
 ### 构建与发布
 
@@ -347,15 +375,39 @@ cd hearable-music-player
 - `debug`: 调试版本，包含调试信息
 - `release`: 发布版本，经过混淆和优化
 
+#### 版本号管理
+
+版本号集中维护在 `gradle.properties` 中：
+
+```properties
+hmp.versionCode=51000
+hmp.versionName=5.10.0
+```
+
+各模块通过 `project.findProperty("hmp.versionCode")` 引用，避免多处手动同步。
+
 #### 发布流程
 
 版本号与发布步骤详见 **[docs/VERSIONING.md](docs/VERSIONING.md)**，摘要如下：
 
-1. **确定版本类型**：按变更内容决定升级 MAJOR / MINOR / PATCH，得到新版本号（如 5.7.0）
-2. **更新构建配置**：在 `app/build.gradle.kts` 中更新 `versionCode` 和 `versionName`
-3. **更新 ROADMAP**：在 [ROADMAP.md](ROADMAP.md) 中新增该版本条目与「当前版本」
-4. 构建发布包：`./gradlew assembleRelease`
-5. 签名 APK 并上传或分发
+1. **确定版本类型**：按变更内容决定升级 MAJOR / MINOR / PATCH，得到新版本号（如 6.0.0）
+2. **创建 release 分支**：从 master 拉出 `release/X.Y`，将各 develop 分支合入
+3. **更新版本号**：在 `gradle.properties` 中更新 `hmp.versionCode` 和 `hmp.versionName`
+4. **更新 ROADMAP**：在 [ROADMAP.md](ROADMAP.md) 中新增该版本条目与「当前版本」
+5. 本地构建发布包：`./gradlew release`（输出到 `releases/` 目录）
+   - `./gradlew releaseAndroid` — 仅 Android（APK + AAB）
+   - `./gradlew releaseIos` — 仅 iOS（需 macOS）
+   - `./gradlew releaseStorybook` — 仅 Storybook 离线包
+6. 将 release/X.Y PR 到 master，CI 自动构建并发布 GitHub Release + 部署 Storybook
+
+#### CI/CD 自动发布
+
+项目配置了 GitHub Actions 自动发布工作流 (`.github/workflows/release.yml`)：
+
+- **触发条件**：`release/*` 分支的 PR 合并到 `master` 时自动触发
+- **release job**：构建 Android APK + AAB，基于上一个 tag 自动生成 changelog，创建 GitHub Release 并上传产物
+- **storybook job**：构建 Storybook WASM 站点
+- **deploy-pages job**：将 Storybook 部署到 GitHub Pages
 
 ## 🎯 关键实现细节
 
@@ -424,13 +476,17 @@ cd hearable-music-player
 - [Kotlin官方文档](https://kotlinlang.org/docs/home.html)
 - [Jetpack Compose官方文档](https://developer.android.com/jetpack/compose)
 - [AndroidX Media3官方文档](https://developer.android.com/jetpack/androidx/releases/media3)
-- [Hilt官方文档](https://developer.android.com/training/dependency-injection/hilt-android)
+- [Koin官方文档](https://insert-koin.io/docs/setup/koin)
+- [Kotlin Multiplatform官方文档](https://kotlinlang.org/docs/multiplatform.html)
+- [SwiftUI官方文档](https://developer.apple.com/documentation/swiftui/)
 
 ### 推荐教程
 
 - [Jetpack Compose Tutorial](https://developer.android.com/codelabs/jetpack-compose-basics)
 - [Android MVVM Architecture](https://developer.android.com/topic/architecture)
 - [Media3 Playback Tutorial](https://developer.android.com/codelabs/media3-getting-started)
+- [Kotlin Multiplatform Mobile Tutorial](https://kotlinlang.org/docs/multiplatform-mobile-getting-started.html)
+- [SwiftUI Tutorial](https://developer.apple.com/tutorials/swiftui/)
 
 ## 🤝 贡献指南
 

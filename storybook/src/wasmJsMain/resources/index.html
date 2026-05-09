@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMP Storybook</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #compose-container { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="compose-container"></div>
+    <script src="storybook.js"></script>
+    <script>
+        // 预加载字体资源，确保 Compose 渲染时字体已就绪
+        window.addEventListener('load', function() {
+            // 给字体加载一点时间
+            setTimeout(function() {
+                // 触发重新渲染
+                if (window.kotlin) {
+                    var event = new Event('resize');
+                    window.dispatchEvent(event);
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

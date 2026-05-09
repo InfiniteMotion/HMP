@@ -13,7 +13,9 @@
 | **TODO**                               | 根目录 [TODO.md](../TODO.md)                                                                     | 可执行任务列表与优先级，用于日常开发跟踪                             | 任务完成或新增时      |
 | <br />                                 | <br />                                                                                        | <br />                                           | <br />        |
 | code\_organization\_optimization\_plan | [docs/5\_9/code\_organization\_optimization\_plan.md](code_organization_optimization_plan.md) | 指导 5.9 版本开发                                      | <br />        |
-| file\_migration\_table                 | [docs/5\_9/file\_migration\_table.md](docs/5_9/file_migration_table.md)                       | 指导文件结构重构                                         | <br />        |
+| file\_migration\_table                 | [docs/5\_9/file\_migration\_table.md](5_9/file_migration_table.md)                       | 指导文件结构重构                                         | <br />        |
+| ios-adaptation-design                  | [docs/5\_10/ios-adaptation-design.md](5_10/ios-adaptation-design.md)                       | iOS 适配技术设计                                        | <br />        |
+| ios-adaptation-plan                    | [docs/5\_10/ios-adaptation-plan.md](5_10/ios-adaptation-plan.md)                         | v5.10 iOS 适配实施计划                                 | <br />        |
 
 ## 📁 docs/ 目录内容
 
@@ -28,7 +30,7 @@
 
 ***
 
-*文档索引最后更新：2026-03-17*
+*文档索引最后更新：2026-05-09*
 
 ***
 

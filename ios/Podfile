@@ -1,0 +1,29 @@
+source 'https://cdn.cocoapods.org'
+platform :ios, '26.3'
+
+use_frameworks!
+
+project 'HMP/HMP.xcodeproj'
+
+target 'HMP' do
+  pod 'shared', :path => '../shared'
+end
+
+post_install do |installer|
+    installer.pods_project.targets.each do |target|
+        if target.name == 'shared'
+            target.build_phases.each do |phase|
+                if phase.name == '[CP-User] Build shared'
+                    phase.shell_script = <<-SCRIPT
+set -ev
+REPO_ROOT="$PODS_TARGET_SRCROOT"
+"$REPO_ROOT/../gradlew" -p "$REPO_ROOT" $KOTLIN_PROJECT_PATH:syncFramework \
+    -Pkotlin.native.cocoapods.platform=$PLATFORM_NAME \
+    -Pkotlin.native.cocoapods.archs="$ARCHS" \
+    -Pkotlin.native.cocoapods.configuration="$CONFIGURATION"
+SCRIPT
+                end
+            end
+        end
+    end
+end

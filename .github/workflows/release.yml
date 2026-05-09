@@ -1,0 +1,213 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from gradle.properties
+        id: version
+        run: |
+          VERSION=$(grep '^hmp.versionName=' gradle.properties | cut -d'=' -f2)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create CI settings
+        run: |
+          cat > settings.gradle.kts << 'EOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":android:app")
+          include(":android:core-player")
+          include(":android:feature-ui")
+          EOF
+
+      - name: Build Android Release
+        run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon
+
+      - name: Rename build outputs
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          cp android/app/build/outputs/apk/release/app-release.apk "HMP-v${VERSION}-release.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "HMP-v${VERSION}-release.aab"
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV=$(git tag --sort=-v:refname | head -1)
+          echo "TAG=$PREV" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=${{ steps.prev_tag.outputs.TAG }}
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log "$PREV_TAG..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            NOTES="- Initial release"
+          fi
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          TAG="v${VERSION}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes "## ${TAG}
+
+          ${{ steps.notes.outputs.NOTES }}
+
+          ---
+          ### Assets
+          - **APK**: \`HMP-v${VERSION}-release.apk\`
+          - **AAB**: \`HMP-v${VERSION}-release.aab\` (Google Play)" \
+            HMP-v${VERSION}-release.apk \
+            HMP-v${VERSION}-release.aab
+
+  storybook:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create CI settings
+        run: |
+          cat > settings.gradle.kts << 'EOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+                  ivy {
+                      name = "Node.js Distributions"
+                      url = uri("https://nodejs.org/dist")
+                      patternLayout {
+                          artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("org.nodejs", "node") }
+                  }
+                  ivy {
+                      name = "Yarn Distributions"
+                      url = uri("https://github.com/yarnpkg/yarn/releases/download")
+                      patternLayout {
+                          artifact("v[revision]/[artifact](-v[revision]).[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("com.yarnpkg", "yarn") }
+                  }
+                  ivy {
+                      name = "Binaryen Distributions"
+                      url = uri("https://github.com/WebAssembly/binaryen/releases/download")
+                      patternLayout {
+                          artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]")
+                      }
+                      metadataSources { artifact() }
+                      content { includeModule("com.github.webassembly", "binaryen") }
+                  }
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":android:app")
+          include(":android:core-player")
+          include(":android:feature-ui")
+          include(":storybook")
+          EOF
+
+      - name: Build Storybook
+        run: ./gradlew :storybook:wasmJsBrowserDistribution --no-daemon
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: storybook/build/dist/wasmJs/productionExecutable
+
+  deploy-pages:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    needs: storybook
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
