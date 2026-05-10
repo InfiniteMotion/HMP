@@ -3,8 +3,10 @@ package com.hmp.desktop.player
 import com.hmp.data.database.currentTimeMillis
 import com.hmp.domain.enum.PlaybackMode
 import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
+import com.hmp.domain.setting.model.AudioEffectSettings
 import com.hmp.domain.setting.usecase.CurrentPlaybackUseCase
 import com.hmp.domain.setting.usecase.PlaybackHistoryUseCase
 import com.hmp.domain.setting.usecase.TimerUseCase
@@ -295,7 +297,7 @@ class DesktopMusicController(
 
     private var seekPositionMs: Long = 0L
 
-    private fun startProgressTracking() {
+    fun startProgressTracking() {
         if (progressJob?.isActive == true) return
 
         progressJob = scope.launch {
@@ -309,7 +311,7 @@ class DesktopMusicController(
         }
     }
 
-    private fun stopProgressTracking() {
+    fun stopProgressTracking() {
         progressJob?.cancel()
         progressJob = null
     }
@@ -453,4 +455,108 @@ class DesktopMusicController(
         persistCurrentPosition(_currentPosition.value)
         audioEngine.release()
     }
+
+    // region Desktop-specific aliases (stubs for compilation)
+
+    fun playOrResume() = play()
+    fun pauseMusic() = pause()
+    fun togglePlaybackModeByOrder() = togglePlaybackMode()
+
+    fun playAt(musicInfo: MusicInfo) {
+        val playlist = _currentPlaylist.value
+        val index = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
+        if (index >= 0) {
+            _currentIndex.value = index
+            playMusic(playlist[index])
+        }
+    }
+
+    fun playWith(musicInfo: MusicInfo) {
+        playMusic(musicInfo)
+    }
+
+    fun addToPlaylist(musicInfo: MusicInfo) {
+        _currentPlaylist.value = _currentPlaylist.value + musicInfo
+    }
+
+    fun removeFromPlaylist(musicInfo: MusicInfo) {
+        _currentPlaylist.value = _currentPlaylist.value.filter { it.music.id != musicInfo.music.id }
+    }
+
+    fun addToNextPlay(musicInfo: MusicInfo) {
+        // TODO: implement add to next play
+    }
+
+    fun clearPlaylist() {
+        _currentPlaylist.value = emptyList()
+        _currentIndex.value = 0
+    }
+
+    fun moveToTop(musicInfo: MusicInfo) {
+        val playlist = _currentPlaylist.value.toMutableList()
+        val index = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
+        if (index >= 0) {
+            val item = playlist.removeAt(index)
+            playlist.add(0, item)
+            _currentPlaylist.value = playlist
+        }
+    }
+
+    fun addAllToPlaylistByShuffle(musicInfoList: List<MusicInfo>) {
+        _currentPlaylist.value = _currentPlaylist.value + musicInfoList.shuffled()
+    }
+
+    fun addAllToPlaylistInOrder(musicInfoList: List<MusicInfo>) {
+        _currentPlaylist.value = _currentPlaylist.value + musicInfoList
+    }
+
+    fun playHeartMode() {
+        // TODO: implement heart mode playback
+        val playlist = _currentPlaylist.value
+        if (playlist.isNotEmpty()) {
+            _currentIndex.value = playlist.indices.random()
+            playlist.getOrNull(_currentIndex.value)?.let { playMusic(it) }
+        }
+    }
+
+    suspend fun getLikedStatus(musicId: Long): Boolean = false
+    fun getCurrentLikedStatus(musicId: Long? = null): Boolean = likeStatus.value
+    fun updateMusicLikedStatus(musicInfo: MusicInfo, isLiked: Boolean) {
+        likeStatus.value = isLiked
+    }
+    fun updateMusicLikedStatus(musicId: Long, isLiked: Boolean) {
+        likeStatus.value = isLiked
+    }
+
+    fun startTimer(minutes: Int) {
+        startTimer(durationMs = minutes.toLong() * 60 * 1000)
+    }
+
+    suspend fun getMusicLabels(musicId: Long): List<MusicLabel?> = emptyList()
+    suspend fun getMusicLyrics(musicId: Long): String? = null
+    val currentMusicLabels: StateFlow<List<MusicLabel?>> = MutableStateFlow(emptyList())
+    val currentMusicLyrics: StateFlow<String?> = MutableStateFlow(null)
+
+    // Audio effects stubs
+    fun initializeAudioEffects() { /* TODO: implement */ }
+    val audioEffectSettings: StateFlow<AudioEffectSettings> = MutableStateFlow(AudioEffectSettings())
+    private val _equalizerBandCount = MutableStateFlow(0)
+    val equalizerBandCount: StateFlow<Int> = _equalizerBandCount.asStateFlow()
+    private val _equalizerBandLevelRange = MutableStateFlow(Pair(0, 0))
+    val equalizerBandLevelRange: StateFlow<Pair<Int, Int>> = _equalizerBandLevelRange.asStateFlow()
+    private val _equalizerPresets = MutableStateFlow<List<String>>(emptyList())
+    val equalizerPresets: StateFlow<List<String>> = _equalizerPresets.asStateFlow()
+    private val _currentEqualizerBandLevels = MutableStateFlow(FloatArray(0))
+    val currentEqualizerBandLevels: StateFlow<FloatArray> = _currentEqualizerBandLevels.asStateFlow()
+    fun getCurrentEqualizerPreset(): Int = 0
+    fun setEqualizerPreset(preset: Int) { /* TODO: implement */ }
+    fun setCustomEqualizer(bandLevels: FloatArray) { /* TODO: implement */ }
+    fun getBassBoostLevel(): Int = 0
+    fun setBassBoost(level: Int) { /* TODO: implement */ }
+    fun getReverbPreset(): Int = 0
+    fun setReverb(preset: Int) { /* TODO: implement */ }
+    fun isSurroundSoundEnabled(): Boolean = false
+    fun setSurroundSound(enabled: Boolean) { /* TODO: implement */ }
+
+    // endregion
 }

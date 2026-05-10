@@ -48,9 +48,9 @@ val desktopPlatformModule = module {
     singleOf(::BackupFileRepositoryImpl) bind BackupFileRepository::class
 }
 
-fun initKoinDesktop(playerModule: org.koin.core.module.Module? = null) {
+fun initKoinDesktop(vararg additionalModules: org.koin.core.module.Module) {
     val modules = mutableListOf(sharedModule, desktopPlatformModule)
-    if (playerModule != null) modules.add(playerModule)
+    modules.addAll(additionalModules)
     startKoin {
         modules(modules)
     }

@@ -1,0 +1,134 @@
+package com.hmp.desktop.ui.settings.pages
+import com.hmp.desktop.ui.common.navigation.NavController
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+
+
+import com.hmp.desktop.generated.resources.*
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.painterResource
+import com.hmp.desktop.ui.common.pages.base.SubScreen
+import com.hmp.desktop.ui.common.navigation.Routes
+import com.hmp.desktop.ui.common.util.rememberHapticFeedback
+
+@Composable
+fun SettingScreen(
+    navController: NavController
+) {
+    SubScreen(
+        onBackClick = { navController.popBackStack() },
+        title = stringResource(Res.string.title_settings)
+    ) {
+        val haptic = rememberHapticFeedback()
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SettingItem(
+                title = stringResource(Res.string.profile_settings),
+                description = stringResource(Res.string.profile_desc),
+                icon = Res.drawable.person,
+                onClick = {
+                    haptic.performClick()
+                    navController.navigate(Routes.Settings.ProfileSettings)
+                }
+            )
+
+            SettingItem(
+                title = stringResource(Res.string.backup_settings),
+                description = stringResource(Res.string.backup_desc),
+                icon = Res.drawable.externaldrive,
+                onClick = {
+                    haptic.performClick()
+                    navController.navigate(Routes.Settings.BackupSettings)
+                }
+            )
+
+            SettingItem(
+                title = stringResource(Res.string.library_settings),
+                description = stringResource(Res.string.library_desc),
+                icon = Res.drawable.music,
+                onClick = {
+                    haptic.performClick()
+                    navController.navigate(Routes.Settings.LibrarySettings)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingItem(
+    title: String,
+    description: String,
+    icon: DrawableResource,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                painter = painterResource(Res.drawable.chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
