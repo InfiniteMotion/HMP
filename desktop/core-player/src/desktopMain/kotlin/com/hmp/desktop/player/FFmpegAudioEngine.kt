@@ -37,26 +37,30 @@ class FFmpegAudioEngine : AudioEngine {
 
     private val ffmpegPath: String
         get() {
-            // Check common locations
-            val candidates = listOf(
-                "ffmpeg",
-                "ffmpeg.exe",
-                "/usr/bin/ffmpeg",
-                "/usr/local/bin/ffmpeg",
-                "${System.getProperty("user.home")}/ffmpeg/bin/ffmpeg"
+            val isWindows = System.getProperty("os.name").lowercase().contains("win")
+            val javaHome = System.getProperty("java.home") ?: ""
+            val ffmpegName = if (isWindows) "ffmpeg.exe" else "ffmpeg"
+
+            // Bundled ffmpeg (inside packaged distribution's runtime/bin)
+            val bundledCandidates = if (javaHome.isNotEmpty()) {
+                listOf(File(javaHome, "bin/$ffmpegName"))
+            } else emptyList()
+
+            // System-installed ffmpeg
+            val systemCandidates = listOf(
+                File("/usr/bin/$ffmpegName"),
+                File("/usr/local/bin/$ffmpegName"),
+                File("${System.getProperty("user.home")}/ffmpeg/bin/$ffmpegName")
             )
-            for (candidate in candidates) {
-                try {
-                    val pb = ProcessBuilder(candidate, "-version")
-                    pb.redirectErrorStream(true)
-                    val p = pb.start()
-                    p.waitFor()
-                    if (p.exitValue() == 0) return candidate
-                } catch (_: Exception) {
-                    // Try next
+
+            for (candidate in bundledCandidates + systemCandidates) {
+                if (candidate.exists() && candidate.canExecute()) {
+                    return candidate.absolutePath
                 }
             }
-            return "ffmpeg" // Fallback to PATH
+
+            // Fallback: try PATH
+            return ffmpegName
         }
 
     override fun play(path: String) {

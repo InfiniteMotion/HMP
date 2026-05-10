@@ -18,6 +18,19 @@ val versionCode: String = findProperty("hmp.versionCode")?.toString() ?: "0"
 val projectDirFile: File = projectDir
 val isMacOS: Boolean = org.gradle.internal.os.OperatingSystem.current().isMacOsX
 
+// ── Helper: copy file to releases/ ──────────────────────────────────────
+
+fun copyToReleases(src: File, destName: String, category: String) {
+    val outDir = projectDirFile.resolve("releases/$category")
+    outDir.mkdirs()
+    if (src.exists()) {
+        Files.copy(src.toPath(), outDir.resolve(destName).toPath(), StandardCopyOption.REPLACE_EXISTING)
+        println("OK -> releases/$category/$destName")
+    } else {
+        println("!! Not found: $src")
+    }
+}
+
 // ── Android ──────────────────────────────────────────────────────────────
 
 tasks.register("releaseAndroid") {
@@ -28,25 +41,29 @@ tasks.register("releaseAndroid") {
     dependsOn(":android:app:assembleRelease", ":android:app:bundleRelease")
 
     doLast {
-        val outDir = projectDirFile.resolve("releases/android")
-        outDir.mkdirs()
+        copyToReleases(
+            projectDirFile.resolve("android/app/build/outputs/apk/release/app-release.apk"),
+            "HMP-v${versionName}-release.apk", "android"
+        )
+        copyToReleases(
+            projectDirFile.resolve("android/app/build/outputs/bundle/release/app-release.aab"),
+            "HMP-v${versionName}-release.aab", "android"
+        )
+    }
+}
 
-        val apkSrc = projectDirFile.resolve("android/app/build/outputs/apk/release/app-release.apk")
-        val aabSrc = projectDirFile.resolve("android/app/build/outputs/bundle/release/app-release.aab")
+tasks.register("copyAndroidDebug") {
+    group = "release"
+    description = "构建 Android Debug APK，输出到 releases/android/"
+    notCompatibleWithConfigurationCache("release copy task")
 
-        if (apkSrc.exists()) {
-            Files.copy(apkSrc.toPath(), outDir.resolve("HMP-v${versionName}-release.apk").toPath(), StandardCopyOption.REPLACE_EXISTING)
-            println("OK APK -> releases/android/HMP-v${versionName}-release.apk")
-        } else {
-            println("!! APK not found: $apkSrc")
-        }
+    dependsOn(":android:app:assembleDebug")
 
-        if (aabSrc.exists()) {
-            Files.copy(aabSrc.toPath(), outDir.resolve("HMP-v${versionName}-release.aab").toPath(), StandardCopyOption.REPLACE_EXISTING)
-            println("OK AAB -> releases/android/HMP-v${versionName}-release.aab")
-        } else {
-            println("!! AAB not found: $aabSrc")
-        }
+    doLast {
+        copyToReleases(
+            projectDirFile.resolve("android/app/build/outputs/apk/debug/app-debug.apk"),
+            "HMP-v${versionName}-debug.apk", "android"
+        )
     }
 }
 
@@ -58,7 +75,7 @@ tasks.register("releaseIos") {
     notCompatibleWithConfigurationCache("release copy task")
 
     if (isMacOS) {
-        dependsOn(":shared:linkReleaseFrameworkIosArm64")
+        dependsOn(":shared:linkPodReleaseFrameworkIosArm64")
 
         doLast {
             val outDir = projectDirFile.resolve("releases/ios")
@@ -98,19 +115,25 @@ tasks.register("releaseDesktop") {
     dependsOn(":desktop:app:packageDistributionForCurrentOS")
 
     doLast {
-        val outDir = projectDirFile.resolve("releases/desktop")
-        outDir.mkdirs()
-
         val distDir = projectDirFile.resolve("desktop/app/build/compose/binaries/main")
-        if (distDir.exists()) {
-            distDir.listFiles()?.forEach { f ->
-                if (f.isFile && (f.extension == "msi" || f.extension == "dmg" || f.extension == "deb")) {
-                    Files.copy(f.toPath(), outDir.resolve(f.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
-                    println("OK Desktop -> releases/desktop/${f.name}")
-                }
-            }
-        } else {
-            println("!! Desktop distribution not found: $distDir")
+        val extensions = setOf("msi", "dmg", "deb", "AppImage")
+        distDir.walk().filter { it.isFile && it.extension in extensions }.forEach { f ->
+            copyToReleases(f, f.name, "desktop")
+        }
+    }
+}
+
+tasks.register("copyDesktopJar") {
+    group = "release"
+    description = "构建 Desktop Uber JAR，输出到 releases/desktop/"
+    notCompatibleWithConfigurationCache("release copy task")
+
+    dependsOn(":desktop:app:packageUberJarForCurrentOS")
+
+    doLast {
+        val jarDir = projectDirFile.resolve("desktop/app/build/compose/jars")
+        jarDir.listFiles()?.firstOrNull { it.extension == "jar" }?.let {
+            copyToReleases(it, "HMP-v${versionName}-desktop.jar", "desktop")
         }
     }
 }

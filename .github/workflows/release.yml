@@ -15,8 +15,173 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  desktop-macos:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create CI settings
+        run: |
+          cat > settings.gradle.kts << 'EOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":desktop:app")
+          include(":desktop:core-player")
+          include(":desktop:feature-ui")
+          EOF
+
+      - name: Build macOS DMG
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: desktop/app/build/compose/binaries/main/dmg/
+
+  desktop-windows:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset -y
+
+      - name: Create CI settings
+        run: |
+          @'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":desktop:app")
+          include(":desktop:core-player")
+          include(":desktop:feature-ui")
+          '@ | Out-File -FilePath settings.gradle.kts -Encoding utf8
+
+      - name: Build Windows MSI
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: desktop/app/build/compose/binaries/main/msi/
+
+  desktop-linux:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot
+
+      - name: Create CI settings
+        run: |
+          cat > settings.gradle.kts << 'EOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "HMP"
+          include(":shared")
+          include(":desktop:app")
+          include(":desktop:core-player")
+          include(":desktop:feature-ui")
+          EOF
+
+      - name: Build Linux DEB + AppImage
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            desktop/app/build/compose/binaries/main/deb/
+            desktop/app/build/compose/binaries/main/appimage/
+
   release:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    needs: [desktop-macos, desktop-windows, desktop-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,6 +208,11 @@ jobs:
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: desktop-artifacts/
 
       - name: Create CI settings
         run: |
@@ -84,6 +254,20 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk "HMP-v${VERSION}-release.apk"
           cp android/app/build/outputs/bundle/release/app-release.aab "HMP-v${VERSION}-release.aab"
 
+          # Rename desktop artifacts
+          for dmg in desktop-artifacts/desktop-macos/*.dmg; do
+            [ -f "$dmg" ] && cp "$dmg" "HMP-v${VERSION}-macos.dmg"
+          done
+          for msi in desktop-artifacts/desktop-windows/*.msi; do
+            [ -f "$msi" ] && cp "$msi" "HMP-v${VERSION}-windows.msi"
+          done
+          for deb in desktop-artifacts/desktop-linux/**/*.deb; do
+            [ -f "$deb" ] && cp "$deb" "HMP-v${VERSION}-linux.deb"
+          done
+          for appimage in desktop-artifacts/desktop-linux/**/*.AppImage; do
+            [ -f "$appimage" ] && cp "$appimage" "HMP-v${VERSION}-linux.AppImage"
+          done
+
       - name: Get previous tag
         id: prev_tag
         run: |
@@ -115,6 +299,16 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
 
+          # Collect all release assets
+          ASSETS=(
+            HMP-v${VERSION}-release.apk
+            HMP-v${VERSION}-release.aab
+          )
+          [ -f "HMP-v${VERSION}-macos.dmg" ] && ASSETS+=("HMP-v${VERSION}-macos.dmg")
+          [ -f "HMP-v${VERSION}-windows.msi" ] && ASSETS+=("HMP-v${VERSION}-windows.msi")
+          [ -f "HMP-v${VERSION}-linux.deb" ] && ASSETS+=("HMP-v${VERSION}-linux.deb")
+          [ -f "HMP-v${VERSION}-linux.AppImage" ] && ASSETS+=("HMP-v${VERSION}-linux.AppImage")
+
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
@@ -124,10 +318,11 @@ jobs:
 
           ---
           ### Assets
-          - **APK**: \`HMP-v${VERSION}-release.apk\`
-          - **AAB**: \`HMP-v${VERSION}-release.aab\` (Google Play)" \
-            HMP-v${VERSION}-release.apk \
-            HMP-v${VERSION}-release.aab
+          - **Android**: \`HMP-v${VERSION}-release.apk\` / \`HMP-v${VERSION}-release.aab\` (Google Play)
+          - **macOS**: \`HMP-v${VERSION}-macos.dmg\`
+          - **Windows**: \`HMP-v${VERSION}-windows.msi\`
+          - **Linux**: \`HMP-v${VERSION}-linux.deb\` / \`HMP-v${VERSION}-linux.AppImage\`" \
+            "${ASSETS[@]}"
 
   storybook:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
