@@ -59,7 +59,7 @@ jobs:
           EOF
 
       - name: Build macOS DMG
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -114,7 +114,7 @@ jobs:
           '@ | Out-File -FilePath settings.gradle.kts -Encoding utf8
 
       - name: Build Windows MSI
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -169,7 +169,7 @@ jobs:
           EOF
 
       - name: Build Linux DEB + AppImage
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4

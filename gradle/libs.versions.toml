@@ -137,6 +137,8 @@ ktor-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 
 # Desktop
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutines" }
+jna = { module = "net.java.dev.jna:jna", version = "5.16.0" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version = "5.16.0" }
 
 # Room KMP
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }

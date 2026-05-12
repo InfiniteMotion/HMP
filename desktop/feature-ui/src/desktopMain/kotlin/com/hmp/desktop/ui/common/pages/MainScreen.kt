@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.VerticalDivider
@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 
 import com.hmp.desktop.ui.common.components.DesktopNavigationRail
+import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
 import com.hmp.desktop.ui.common.pages.TabsHost
 import com.hmp.desktop.ui.common.components.TabPageIndicator
 import com.hmp.desktop.ui.common.layout.WindowSizeInfo
@@ -75,10 +76,8 @@ import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hmp.desktop.ui.common.pages.base.BackgroundStyle
 import com.hmp.desktop.ui.common.pages.base.DynamicBackground
-import com.hmp.desktop.ui.library.viewmodel.LibraryViewModel
 import com.hmp.desktop.ui.player.viewmodel.PlaybackViewModel
 import com.hmp.desktop.ui.player.viewmodel.PlaylistQueueViewModel
-import com.hmp.desktop.ui.playlist.viewmodel.PlaylistViewModel
 import com.hmp.desktop.ui.settings.viewmodel.RecommendationViewModel
 import com.hmp.desktop.ui.settings.viewmodel.SettingsViewModel
 import com.hmp.desktop.ui.common.viewmodel.ThemeViewModel
@@ -87,16 +86,15 @@ import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun MainScreen(
-    libraryViewModel: LibraryViewModel = koinInject(),
     recommendationViewModel: RecommendationViewModel = koinInject(),
     settingsViewModel: SettingsViewModel = koinInject(),
     playbackViewModel: PlaybackViewModel = koinInject(),
     playlistQueueViewModel: PlaylistQueueViewModel = koinInject(),
-    playlistViewModel: PlaylistViewModel = koinInject(),
     themeViewModel: ThemeViewModel = koinInject(),
     dialogManagerViewModel: DialogManagerViewModel = koinInject(),
     dialogViewModel: DialogViewModel = koinInject(),
-    onBackHandlerReady: ((() -> Unit) -> Unit)? = null
+    onBackHandlerReady: ((() -> Unit) -> Unit)? = null,
+    systemIsDark: Boolean = isSystemInDarkTheme()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     // 订阅调色板、当前曲目与播放状态
@@ -132,9 +130,9 @@ fun MainScreen(
     val isDarkTheme = when (customMode) {
         "light" -> false
         "dark" -> true
-        else -> isSystemInDarkTheme()
+        else -> systemIsDark
     }
-    
+
     // 根据播放状态选择主题: 播放时使用动态主题,暂停时使用预置主题
     val colorScheme = if (isPlaying) {
         ThemeExtensionManager.generateDynamicColorScheme(paletteColors, isDarkTheme)
@@ -226,11 +224,11 @@ fun MainScreen(
             settings = hazeRenderSettings
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState)
-            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                ) {
                 // 1. 静态背景层 (始终存在，确保无黑屏)
                 Box(
                     modifier = Modifier
@@ -265,18 +263,16 @@ fun MainScreen(
                 ) {
                     val contentModifier = Modifier
                         .padding(it)
-                        .statusBarsPadding()
+                        .padding(top = TITLE_BAR_HEIGHT)
 
                     // 导航图定义（composable 上下文中创建一次）
                     val navEntryProvider = navigationGraph(
                         navController = navController,
                         pagerState = pagerState,
-                        libraryViewModel = libraryViewModel,
                         recommendationViewModel = recommendationViewModel,
                         settingsViewModel = settingsViewModel,
                         playbackViewModel = playbackViewModel,
                         playlistQueueViewModel = playlistQueueViewModel,
-                        playlistViewModel = playlistViewModel,
                         themeViewModel = themeViewModel,
                         dialogManagerViewModel = dialogManagerViewModel,
                         dialogViewModel = dialogViewModel,

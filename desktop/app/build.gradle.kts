@@ -27,6 +27,8 @@ kotlin {
                 implementation(compose.runtime)
                 implementation(compose.material3)
                 implementation(libs.koin.core)
+                implementation(libs.jna)
+                implementation(libs.jna.platform)
             }
         }
     }
@@ -167,7 +169,23 @@ compose.desktop {
 
         jvmArgs += listOf(
             "-Xmx512m",
-            "-Dfile.encoding=UTF-8"
+            "-Dfile.encoding=UTF-8",
+            // AWT DPI awareness — prevent Windows from applying bitmap upscaling
+            "-Dsun.java2d.dpiaware=true",
+            "-Dsun.java2d.scaling.enabled=false",
+            "-Dsun.java2d.uiScale=1",
+            // Skiko rendering pipeline — GPU-accelerated, sharper output
+            "-Dskiko.renderApi=OPENGL",
+            "-Dskiko.vsync.enabled=false",
+            // HiDPI text rendering
+            "-Dawt.useSystemAAFontSettings=on",
+            "-Dsun.java2d.opengl=true",
+            // Startup optimization: tiered compilation level 1 for faster class loading
+            "-XX:+TieredCompilation",
+            "-XX:TieredStopAtLevel=1",
+            // Required for accessing AWT peer internals (HWND extraction)
+            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/sun.awt.windows=ALL-UNNAMED",
         )
 
         nativeDistributions {
@@ -203,7 +221,12 @@ compose.desktop {
                 iconFile.set(project.file("src/desktopMain/resources/icon.ico"))
                 menu = true
                 dirChooser = true
+                shortcut = true
+                // Consistent UpgradeCode ensures MSI detects previous version for in-place upgrade.
+                // This UUID MUST remain the same across all versions — do NOT change it.
                 upgradeUuid = "6ec556dd-5375-494f-ab38-f19bcdb497e7"
+                // Explicit MSI package version — allows upgrade even if version format changes
+                msiPackageVersion = project.findProperty("hmp.versionName")?.toString() ?: "1.0.0"
             }
 
             linux {

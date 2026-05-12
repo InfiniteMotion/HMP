@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.BufferedInputStream
@@ -71,7 +72,7 @@ class FFmpegAudioEngine : AudioEngine {
         seekPositionMs = 0L
         bytesWritten = 0L
 
-        // First, probe duration
+        // First, probe duration and audio format
         probeDuration(path)
 
         // Start playback
@@ -149,21 +150,26 @@ class FFmpegAudioEngine : AudioEngine {
 
     override fun setVolume(volume: Float) {
         this.volume = volume.coerceIn(0f, 1f)
-        // Volume control via SourceDataLine is limited; we apply gain in the PCM processing
     }
 
     override fun release() {
         stop()
     }
 
+    /**
+     * Probe the audio file's duration, sample rate, and channel count using FFmpeg.
+     * Guarantees process cleanup via try-finally.
+     */
     private fun probeDuration(path: String) {
+        var process: Process? = null
         try {
-            val pb = ProcessBuilder(
+            process = ProcessBuilder(
                 ffmpegPath, "-i", path,
                 "-f", "null", "-"
             )
-            pb.redirectErrorStream(true)
-            val process = pb.start()
+                .redirectErrorStream(true)
+                .start()
+
             val output = process.inputStream.bufferedReader().readText()
             process.waitFor()
 
@@ -177,17 +183,53 @@ class FFmpegAudioEngine : AudioEngine {
                 durationMs = (hours * 3600 + minutes * 60 + seconds) * 1000 + centiseconds * 10
             }
 
-            // Parse sample rate and channels from ffmpeg output
-            val audioRegex = Regex("""(\d+) Hz.*?(mono|stereo)""")
-            audioRegex.find(output)?.let { match ->
-                sampleRate = match.groupValues[1].toFloat()
-                channels = if (match.groupValues[2] == "mono") 1 else 2
+            // Parse sample rate from ffmpeg output: "44100 Hz" or "48000 Hz"
+            val sampleRateRegex = Regex("""(\d+) Hz""")
+            sampleRateRegex.find(output)?.let { match ->
+                val parsed = match.groupValues[1].toFloatOrNull()
+                if (parsed != null && parsed > 0) {
+                    sampleRate = parsed
+                }
+            }
+
+            // Parse channel layout: "stereo", "mono", or "5.1", "7.1" etc.
+            val channelRegex = Regex("""Audio:.*?,\s*(\d+)\s+Hz""")
+            channelRegex.find(output)?.let { match ->
+                val parsed = match.groupValues[1].toFloatOrNull()
+                if (parsed != null && parsed > 0) {
+                    sampleRate = parsed
+                }
+            }
+
+            // Parse channel count from layout string
+            val channelLayoutRegex = Regex("""(mono|stereo|[\d.]+\s*channels?)""")
+            channelLayoutRegex.find(output)?.let { match ->
+                val layout = match.groupValues[1].trim()
+                channels = when {
+                    layout == "mono" -> 1
+                    layout == "stereo" -> 2
+                    layout.contains("channel") -> {
+                        // Extract number: "5.1 channels" -> 6
+                        val numStr = layout.replace("channels", "").trim()
+                        val num = numStr.replace(".", "").toIntOrNull()
+                        num?.coerceIn(1, 8) ?: 2
+                    }
+                    else -> 2
+                }
             }
         } catch (_: Exception) {
             durationMs = 0L
+            // Keep default sampleRate (44100) and channels (2) on probe failure
+        } finally {
+            process?.destroyForcibly()
         }
     }
 
+    /**
+     * Start FFmpeg-based audio playback via Java Sound API.
+     * Uses probed sample rate and channel count from [probeDuration].
+     * Consumes stderr on a separate thread to prevent buffer deadlock.
+     */
     private fun startPlayback(path: String, seekMs: Long) {
         playbackJob = scope.launch {
             try {
@@ -203,8 +245,8 @@ class FFmpegAudioEngine : AudioEngine {
                     "-i", path,
                     "-f", "s16le",
                     "-acodec", "pcm_s16le",
-                    "-ar", "44100",
-                    "-ac", "2",
+                    "-ar", sampleRate.toInt().toString(),
+                    "-ac", channels.toString(),
                     "-"
                 )
 
@@ -213,12 +255,30 @@ class FFmpegAudioEngine : AudioEngine {
                 val process = pb.start()
                 ffmpegProcess = process
 
-                val format = AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100f, 16, 2, 4, 44100f, false)
+                // Consume stderr on a background thread to prevent buffer deadlock
+                val stderrThread = Thread({
+                    try {
+                        process.errorStream.bufferedReader().readText()
+                    } catch (_: Exception) {}
+                }, "ffmpeg-stderr-${path.hashCode()}")
+                stderrThread.isDaemon = true
+                stderrThread.start()
+
+                val frameSize = channels * sampleSizeInBytes
+                val format = AudioFormat(
+                    AudioFormat.Encoding.PCM_SIGNED,
+                    sampleRate,
+                    16,
+                    channels,
+                    frameSize,
+                    sampleRate,
+                    false
+                )
                 val info = DataLine.Info(SourceDataLine::class.java, format)
 
                 if (!AudioSystem.isLineSupported(info)) {
-                    withContext(Dispatchers.Main) {
-                        onError?.invoke(Exception("Audio line not supported"))
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        onError?.invoke(Exception("Audio line not supported for format: ${sampleRate.toInt()}Hz ${channels}ch"))
                     }
                     return@launch
                 }
@@ -228,8 +288,6 @@ class FFmpegAudioEngine : AudioEngine {
                 line.open(format)
                 line.start()
 
-                sampleRate = 44100f
-                channels = 2
                 sampleSizeInBytes = 2
 
                 val buffer = ByteArray(8192)
@@ -237,7 +295,7 @@ class FFmpegAudioEngine : AudioEngine {
 
                 while (isActive && !isStopped) {
                     if (isPaused) {
-                        Thread.sleep(50)
+                        delay(50)
                         continue
                     }
 
@@ -261,13 +319,13 @@ class FFmpegAudioEngine : AudioEngine {
                 process.destroyForcibly()
 
                 if (!isStopped && isActive) {
-                    withContext(Dispatchers.Main) {
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
                         onPlaybackComplete?.invoke()
                     }
                 }
             } catch (e: Exception) {
                 if (!isStopped) {
-                    withContext(Dispatchers.Main) {
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
                         onError?.invoke(e)
                     }
                 }
@@ -290,9 +348,5 @@ class FFmpegAudioEngine : AudioEngine {
     private fun calculateBytesForMs(ms: Long): Long {
         val bytesPerMs = sampleRate * channels * sampleSizeInBytes / 1000.0
         return (ms * bytesPerMs).toLong()
-    }
-
-    private suspend fun <T> withContext(context: kotlin.coroutines.CoroutineContext, block: suspend () -> T): T {
-        return kotlinx.coroutines.withContext(context) { block() }
     }
 }

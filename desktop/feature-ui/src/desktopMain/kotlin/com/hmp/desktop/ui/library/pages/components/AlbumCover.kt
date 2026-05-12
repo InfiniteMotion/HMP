@@ -12,7 +12,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import com.hmp.desktop.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
