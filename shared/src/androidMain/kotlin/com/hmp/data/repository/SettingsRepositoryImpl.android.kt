@@ -16,10 +16,12 @@ import com.hmp.domain.config.LyricsAlignment
 import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.ScanDirectoryConfig
 import com.hmp.domain.backup.AppSettingsSnapshot
 import com.hmp.domain.backup.DailyRecommendationSnapshot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.io.File
 import java.io.IOException
@@ -164,6 +166,8 @@ class SettingsRepositoryImpl(
     override suspend fun saveIsLoadMusic(isLoadMusic: Boolean) {
         dataStore.edit { prefs -> prefs[PreferencesKeys.IS_LOAD_MUSIC] = isLoadMusic }
     }
+    override val scanDirectoryConfig: Flow<ScanDirectoryConfig> = flowOf(ScanDirectoryConfig())
+    override suspend fun saveScanDirectoryConfig(config: ScanDirectoryConfig) { }
     override suspend fun saveThemeMode(themeMode: String) {
         dataStore.edit { prefs -> prefs[PreferencesKeys.THEME_MODE] = themeMode }
     }

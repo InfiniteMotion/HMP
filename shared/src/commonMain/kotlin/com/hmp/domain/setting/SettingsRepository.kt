@@ -5,6 +5,7 @@ import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
 import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.ScanDirectoryConfig
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
@@ -41,6 +42,10 @@ interface SettingsRepository {
 
     val isLoadMusic: Flow<Boolean>
     suspend fun saveIsLoadMusic(isLoadMusic: Boolean)
+
+    // Scan Directory Config
+    val scanDirectoryConfig: Flow<ScanDirectoryConfig>
+    suspend fun saveScanDirectoryConfig(config: ScanDirectoryConfig)
 
     suspend fun saveAvatarUri(uri: String)
     suspend fun getAvatarUri(): String?

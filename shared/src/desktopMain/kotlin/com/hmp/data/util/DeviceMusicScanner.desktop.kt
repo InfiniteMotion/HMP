@@ -10,6 +10,7 @@ actual object DeviceMusicScanner {
     private val musicExtensions = setOf("mp3", "flac", "m4a", "wav", "aac", "ogg", "wma", "alac", "opus")
 
     private val scanDirectories = mutableListOf<File>()
+    private val blockedDirectories = mutableSetOf<String>()
 
     fun addScanDirectory(dir: File) {
         scanDirectories.add(dir)
@@ -18,6 +19,13 @@ actual object DeviceMusicScanner {
     fun setScanDirectories(dirs: List<File>) {
         scanDirectories.clear()
         scanDirectories.addAll(dirs)
+    }
+
+    fun setBlockedDirectories(dirs: List<String>) {
+        blockedDirectories.clear()
+        blockedDirectories.addAll(dirs.map {
+            try { File(it).canonicalPath } catch (_: Exception) { File(it).absolutePath }
+        })
     }
 
     actual fun isScanning(): Boolean = _isScanning.value
@@ -51,6 +59,8 @@ actual object DeviceMusicScanner {
     }
 
     private fun scanDirectory(dir: File, results: MutableList<ScannedMusicFile>) {
+        val canonicalPath = try { dir.canonicalPath } catch (_: Exception) { dir.absolutePath }
+        if (blockedDirectories.any { canonicalPath.startsWith(it) }) return
         dir.listFiles()?.forEach { file ->
             if (file.isDirectory) {
                 scanDirectory(file, results)

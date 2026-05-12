@@ -319,6 +319,14 @@
     <string name="share">Share</string>
     <string name="library_stats">Library Stats</string>
     <string name="incremental_load">Incremental Load</string>
+    <string name="scan_directories">Scan Directories</string>
+    <string name="blocked_directories">Blocked Directories</string>
+    <string name="add_directory">Add Directory</string>
+    <string name="remove_directory">Remove</string>
+    <string name="unblock_directory">Unblock</string>
+    <string name="block_directory">Block</string>
+    <string name="no_scan_directories_hint">Using default directories: ~/Music, ~/Downloads</string>
+    <string name="no_blocked_directories_hint">No directories are blocked</string>
 
     <!-- User Usage Data Screen -->
     <string name="title_user_usage_data">Usage Data</string>

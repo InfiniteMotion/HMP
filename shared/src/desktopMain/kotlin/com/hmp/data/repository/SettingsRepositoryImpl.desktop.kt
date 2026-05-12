@@ -16,6 +16,7 @@ import com.hmp.domain.config.LyricsAlignment
 import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.ScanDirectoryConfig
 import com.hmp.domain.backup.AppSettingsSnapshot
 import com.hmp.domain.backup.DailyRecommendationSnapshot
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +95,7 @@ class SettingsRepositoryImpl(
         val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
         val GALLERY_ORDER_BY = stringPreferencesKey("gallery_order_by")
         val GALLERY_ORDER_TYPE = stringPreferencesKey("gallery_order_type")
+        val SCAN_DIRECTORY_CONFIG = stringPreferencesKey("scan_directory_config")
     }
 
     private fun normalizeHazeMode(mode: String): String {
@@ -118,6 +120,13 @@ class SettingsRepositoryImpl(
     override val hazeTintAlpha: Flow<Float> = dataStore.data.map { prefs -> (prefs[PreferencesKeys.HAZE_TINT_ALPHA] ?: DEFAULT_HAZE_TINT_ALPHA).coerceIn(0f, 1f) }
     override val hazeIntensity: Flow<Float> = dataStore.data.map { prefs -> prefs[PreferencesKeys.HAZE_INTENSITY] ?: 0.6f }
     override val isLoadMusic: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.IS_LOAD_MUSIC] ?: false }
+
+    override val scanDirectoryConfig: Flow<ScanDirectoryConfig> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.SCAN_DIRECTORY_CONFIG]?.let {
+            try { json.decodeFromString<ScanDirectoryConfig>(it) }
+            catch (_: Exception) { ScanDirectoryConfig() }
+        } ?: ScanDirectoryConfig()
+    }
     override val currentMusicId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CURRENT_MUSIC_ID] }
     override val currentPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] }
     override val likedPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.LIKED_PLAYLIST_ID] }
@@ -158,6 +167,7 @@ class SettingsRepositoryImpl(
 
     override suspend fun saveIsFirstLaunch(isFirstLaunch: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.IS_FIRST_LAUNCH] = isFirstLaunch } }
     override suspend fun saveIsLoadMusic(isLoadMusic: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.IS_LOAD_MUSIC] = isLoadMusic } }
+    override suspend fun saveScanDirectoryConfig(config: ScanDirectoryConfig) { dataStore.edit { prefs -> prefs[PreferencesKeys.SCAN_DIRECTORY_CONFIG] = json.encodeToString(ScanDirectoryConfig.serializer(), config) } }
     override suspend fun saveThemeMode(themeMode: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.THEME_MODE] = themeMode } }
     override suspend fun saveBackgroundStyle(style: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.BACKGROUND_STYLE] = style } }
     override suspend fun saveHazeMode(mode: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.HAZE_MODE] = normalizeHazeMode(mode) } }

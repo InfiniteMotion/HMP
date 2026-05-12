@@ -57,6 +57,24 @@ object DesktopFilePicker {
     }
 
     /**
+     * 选择目录（用于扫描目录选择）
+     * @return 选中的目录路径，取消时返回 null
+     */
+    fun pickDirectory(): String? {
+        val chooser = JFileChooser().apply {
+            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+            isMultiSelectionEnabled = false
+        }
+
+        val result = chooser.showOpenDialog(null)
+        return if (result == JFileChooser.APPROVE_OPTION) {
+            chooser.selectedFile.absolutePath
+        } else {
+            null
+        }
+    }
+
+    /**
      * 选择保存路径（用于导出备份）
      * @param defaultName 默认文件名
      * @return 选中的文件路径，取消时返回 null

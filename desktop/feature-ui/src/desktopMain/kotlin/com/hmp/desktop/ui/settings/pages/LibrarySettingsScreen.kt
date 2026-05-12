@@ -50,6 +50,8 @@ import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.library.viewmodel.FolderInfo
 import com.hmp.desktop.ui.library.viewmodel.HiddenFolderInfo
 import com.hmp.desktop.ui.library.viewmodel.LibraryViewModel
+import com.hmp.desktop.ui.common.util.DesktopFilePicker
+import com.hmp.domain.setting.model.ScanDirectoryConfig
 
 @Composable
 fun LibrarySettingsScreen(
@@ -61,6 +63,7 @@ fun LibrarySettingsScreen(
     val scannedFolders by libraryViewModel.scannedFolders.collectAsState()
     val hiddenFolders by libraryViewModel.hiddenFolders.collectAsState()
     val isScanning by libraryViewModel.isScanning.collectAsState(initial = false)
+    val scanDirectoryConfig by libraryViewModel.scanDirectoryConfig.collectAsState()
 
     LaunchedEffect(Unit) {
         libraryViewModel.loadHiddenFolders()
@@ -82,15 +85,29 @@ fun LibrarySettingsScreen(
                 musicCount = musicCount,
                 analyzedCount = analyzedCount
             )
-            
-            // 2. 扫描选项
+
+            // 2. 扫描目录
+            ScanDirectoriesSection(
+                scanDirectories = scanDirectoryConfig.scanDirectories,
+                onAddDirectory = { libraryViewModel.addScanDirectory(it) },
+                onRemoveDirectory = { libraryViewModel.removeScanDirectory(it) }
+            )
+
+            // 3. 已屏蔽目录
+            BlockedDirectoriesSection(
+                blockedDirectories = scanDirectoryConfig.blockedDirectories,
+                onAddDirectory = { libraryViewModel.addBlockedDirectory(it) },
+                onRemoveDirectory = { libraryViewModel.removeBlockedDirectory(it) }
+            )
+
+            // 4. 扫描选项
             ScanOptionsSection(
                 isScanning = isScanning,
                 onIncrementalScan = libraryViewModel::refreshMusicList,
                 onFullRescan = libraryViewModel::fullRescan
             )
-            
-            // 3. 音乐库管理
+
+            // 5. 音乐库管理
             LibraryManagementSection(
                 folders = scannedFolders,
                 hiddenFolders = hiddenFolders,
@@ -98,6 +115,132 @@ fun LibrarySettingsScreen(
                 onUnhideFolder = libraryViewModel::restoreToLibrary
             )
             MiniPlayerSafeSpacer(height = 56.dp)
+        }
+    }
+}
+
+@Composable
+private fun ScanDirectoriesSection(
+    scanDirectories: List<String>,
+    onAddDirectory: (String) -> Unit,
+    onRemoveDirectory: (String) -> Unit
+) {
+    TitleWidget(title = stringResource(Res.string.scan_directories)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (scanDirectories.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.no_scan_directories_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                scanDirectories.forEach { path ->
+                    DirectoryItem(
+                        path = path,
+                        onRemoveClick = { onRemoveDirectory(path) }
+                    )
+                }
+            }
+            TextButton(
+                onClick = {
+                    DesktopFilePicker.pickDirectory()?.let { onAddDirectory(it) }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.plus),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(Res.string.add_directory))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockedDirectoriesSection(
+    blockedDirectories: List<String>,
+    onAddDirectory: (String) -> Unit,
+    onRemoveDirectory: (String) -> Unit
+) {
+    TitleWidget(title = stringResource(Res.string.blocked_directories)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (blockedDirectories.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.no_blocked_directories_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                blockedDirectories.forEach { path ->
+                    DirectoryItem(
+                        path = path,
+                        onRemoveClick = { onRemoveDirectory(path) },
+                        removeLabel = stringResource(Res.string.unblock_directory)
+                    )
+                }
+            }
+            TextButton(
+                onClick = {
+                    DesktopFilePicker.pickDirectory()?.let { onAddDirectory(it) }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.plus),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(Res.string.block_directory))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DirectoryItem(
+    path: String,
+    onRemoveClick: () -> Unit,
+    removeLabel: String = stringResource(Res.string.remove_directory)
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.rectangle_on_rectangle),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = path,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onRemoveClick) {
+                Text(removeLabel, style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
 }

@@ -33,6 +33,7 @@ import com.hmp.domain.enum.LabelName
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.music.MusicRepository
+import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.PlaybackHistory
@@ -44,8 +45,10 @@ import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.domain.setting.model.ListeningDuration as ListeningDurationDomain
 import com.hmp.domain.music.MusicLabel as MusicLabelDomain
 import kotlinx.coroutines.Dispatchers
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -65,7 +68,8 @@ class MusicRepositoryImpl(
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
     private val multiProviderApiAdapter: MultiProviderApiAdapter,
-    private val json: Json
+    private val json: Json,
+    private val settingsRepository: SettingsRepository
 ) : MusicRepository {
 
     private val _isScanning = MutableStateFlow(false)
@@ -179,6 +183,11 @@ class MusicRepositoryImpl(
 
     private suspend fun performMusicScan(): Triple<List<Music>, List<MusicExtra>, List<UserInfo>> =
         withContext(Dispatchers.Default) {
+            val config = settingsRepository.scanDirectoryConfig.first()
+            if (config.scanDirectories.isNotEmpty()) {
+                DeviceMusicScanner.setScanDirectories(config.scanDirectories.map { File(it) })
+            }
+            DeviceMusicScanner.setBlockedDirectories(config.blockedDirectories)
             val scannedFiles = DeviceMusicScanner.scanMusic()
 
             val musicList = mutableListOf<Music>()

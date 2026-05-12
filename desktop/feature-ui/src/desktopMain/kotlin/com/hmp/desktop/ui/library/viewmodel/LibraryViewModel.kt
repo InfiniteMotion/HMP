@@ -9,6 +9,8 @@ import com.hmp.domain.music.usecase.LoadMusicFromDeviceUseCase
 import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
 import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
 import com.hmp.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
+import com.hmp.domain.setting.SettingsRepository
+import com.hmp.domain.setting.model.ScanDirectoryConfig
 
 import com.hmp.desktop.ui.common.util.UiState
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +45,8 @@ class LibraryViewModel(
     private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase,
     private val removeFromLibraryUseCase: RemoveFromLibraryUseCase,
     private val restoreToLibraryUseCase: RestoreToLibraryUseCase,
-    private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase
+    private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _orderBy = MutableStateFlow("title")
@@ -101,6 +104,9 @@ class LibraryViewModel(
 
     private val _hiddenFolders = MutableStateFlow<List<HiddenFolderInfo>>(emptyList())
     val hiddenFolders: StateFlow<List<HiddenFolderInfo>> = _hiddenFolders
+
+    private val _scanDirectoryConfig = MutableStateFlow(ScanDirectoryConfig())
+    val scanDirectoryConfig: StateFlow<ScanDirectoryConfig> = _scanDirectoryConfig
 
     fun loadHiddenFolders() {
         viewModelScope.launch {
@@ -171,5 +177,50 @@ class LibraryViewModel(
 
     init {
         getAllMusic()
+        loadScanDirectoryConfig()
+    }
+
+    private fun loadScanDirectoryConfig() {
+        viewModelScope.launch {
+            settingsRepository.scanDirectoryConfig.collect {
+                _scanDirectoryConfig.value = it
+            }
+        }
+    }
+
+    fun addScanDirectory(path: String) {
+        viewModelScope.launch {
+            val current = _scanDirectoryConfig.value
+            if (path !in current.scanDirectories) {
+                val updated = current.copy(scanDirectories = current.scanDirectories + path)
+                settingsRepository.saveScanDirectoryConfig(updated)
+            }
+        }
+    }
+
+    fun removeScanDirectory(path: String) {
+        viewModelScope.launch {
+            val current = _scanDirectoryConfig.value
+            val updated = current.copy(scanDirectories = current.scanDirectories - path)
+            settingsRepository.saveScanDirectoryConfig(updated)
+        }
+    }
+
+    fun addBlockedDirectory(path: String) {
+        viewModelScope.launch {
+            val current = _scanDirectoryConfig.value
+            if (path !in current.blockedDirectories) {
+                val updated = current.copy(blockedDirectories = current.blockedDirectories + path)
+                settingsRepository.saveScanDirectoryConfig(updated)
+            }
+        }
+    }
+
+    fun removeBlockedDirectory(path: String) {
+        viewModelScope.launch {
+            val current = _scanDirectoryConfig.value
+            val updated = current.copy(blockedDirectories = current.blockedDirectories - path)
+            settingsRepository.saveScanDirectoryConfig(updated)
+        }
     }
 }

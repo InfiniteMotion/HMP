@@ -317,6 +317,14 @@
     <string name="share">分享</string>
     <string name="library_stats">音乐库数据</string>
     <string name="incremental_load">增量加载</string>
+    <string name="scan_directories">扫描目录</string>
+    <string name="blocked_directories">已屏蔽目录</string>
+    <string name="add_directory">添加目录</string>
+    <string name="remove_directory">移除</string>
+    <string name="unblock_directory">取消屏蔽</string>
+    <string name="block_directory">屏蔽</string>
+    <string name="no_scan_directories_hint">使用默认目录：音乐、下载</string>
+    <string name="no_blocked_directories_hint">暂无屏蔽目录</string>
 
     <!-- User Usage Data Screen -->
     <string name="title_user_usage_data">收听数据</string>
