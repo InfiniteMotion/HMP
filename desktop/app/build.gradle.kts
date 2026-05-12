@@ -174,19 +174,17 @@ compose.desktop {
             "-Dsun.java2d.dpiaware=true",
             "-Dsun.java2d.scaling.enabled=false",
             "-Dsun.java2d.uiScale=1",
-            // Skiko rendering pipeline — GPU-accelerated, sharper output
-            "-Dskiko.renderApi=OPENGL",
+            // Skiko rendering pipeline — METAL on macOS, OpenGL elsewhere
+            if (isMacOS) "-Dskiko.renderApi=METAL" else "-Dskiko.renderApi=OPENGL",
             "-Dskiko.vsync.enabled=false",
             // HiDPI text rendering
             "-Dawt.useSystemAAFontSettings=on",
-            "-Dsun.java2d.opengl=true",
             // Startup optimization: tiered compilation level 1 for faster class loading
             "-XX:+TieredCompilation",
             "-XX:TieredStopAtLevel=1",
-            // Required for accessing AWT peer internals (HWND extraction)
-            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED",
-            "--add-opens", "java.desktop/sun.awt.windows=ALL-UNNAMED",
-        )
+            // Required for accessing AWT peer internals (HWND extraction on Windows)
+            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED"
+        ) + (if (!isMacOS) listOf("--add-opens", "java.desktop/sun.awt.windows=ALL-UNNAMED") else emptyList())
 
         nativeDistributions {
             modules += listOf(

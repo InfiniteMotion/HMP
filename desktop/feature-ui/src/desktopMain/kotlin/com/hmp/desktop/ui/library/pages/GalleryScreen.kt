@@ -143,6 +143,7 @@ fun GalleryScreenContent(
         override fun onItemClick(musicInfo: MusicInfo, index: Int) {
             haptic.performClick()
             playWith(musicInfo)
+            navController.navigate(Routes.Player.Player)
         }
         override fun onMenuClick(musicInfo: MusicInfo) {
             val menuConfig = DialogViewModel.MusicDetailMenuConfig(

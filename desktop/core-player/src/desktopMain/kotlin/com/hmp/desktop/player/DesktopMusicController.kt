@@ -83,12 +83,16 @@ class DesktopMusicController(
     private val _currentIndex = MutableStateFlow(0)
     val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
 
+    // Override for playWith() when the song isn't in the current playlist
+    private val _currentPlayingMusicOverride = MutableStateFlow<MusicInfo?>(null)
+
     // Current Music
     val currentPlayingMusic: StateFlow<MusicInfo?> = combine(
+        _currentPlayingMusicOverride,
         currentPlaylist,
         currentIndex
-    ) { playlist, index ->
-        playlist.getOrNull(index)
+    ) { override, playlist, index ->
+        override ?: playlist.getOrNull(index)
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
 
     // Like Status
@@ -193,7 +197,7 @@ class DesktopMusicController(
 
     fun play() {
         val music = currentPlayingMusic.value ?: return
-        if (audioEngine.isLoaded() && !audioEngine.isPlaying()) {
+        if (audioEngine.isLoaded() && !audioEngine.isPlaying() && audioEngine.isPaused()) {
             audioEngine.resume()
             startProgressTracking()
             _isPlaying.value = true
@@ -218,19 +222,25 @@ class DesktopMusicController(
             // Record previous play session
             recordCurrentPlaySession(isCompleted = false)
 
+            // Set currentPlayingMusic: use override if song isn't in the playlist
+            val playlist = _currentPlaylist.value
+            val existingIndex = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
+            if (existingIndex >= 0) {
+                _currentPlayingMusicOverride.value = null
+                _currentIndex.value = existingIndex
+            } else {
+                _currentPlayingMusicOverride.value = musicInfo
+            }
+
             audioEngine.stop()
             audioEngine.play(musicInfo.music.path)
 
             _isPlaying.value = true
             _duration.value = musicInfo.music.duration
             _currentPosition.value = 0L
-            seekPositionMs = 0L
 
             // Save current music ID
             currentPlaybackUseCase.saveCurrentMusicId(musicInfo.music.id)
-
-            // Update index
-            updateCurrentIndex()
 
             startProgressTracking()
             recordPlaybackStart()
@@ -276,7 +286,6 @@ class DesktopMusicController(
     fun seekTo(positionMs: Long) {
         audioEngine.seekTo(positionMs)
         _currentPosition.value = positionMs
-        seekPositionMs = positionMs
     }
 
     fun setVolume(volume: Float) {
@@ -295,8 +304,6 @@ class DesktopMusicController(
 
     // region Progress Tracking
 
-    private var seekPositionMs: Long = 0L
-
     fun startProgressTracking() {
         if (progressJob?.isActive == true) return
 
@@ -306,7 +313,7 @@ class DesktopMusicController(
                 _currentPosition.value = pos
                 persistCurrentPosition(pos)
                 recordListeningDurationPeriodically()
-                delay(500)
+                delay(250)
             }
         }
     }

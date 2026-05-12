@@ -72,6 +72,7 @@ actual object DeviceMusicScanner {
 
     private fun createScannedMusicFile(file: File): ScannedMusicFile {
         val metadata = MusicTagParser.parseMetadata(file.absolutePath)
+        val albumArtUri = metadata?.albumArt?.let { saveAlbumArt(it, file.absolutePath) } ?: ""
         return ScannedMusicFile(
             id = generateStableId(file.absolutePath),
             title = metadata?.title ?: file.nameWithoutExtension,
@@ -79,13 +80,33 @@ actual object DeviceMusicScanner {
             album = metadata?.album ?: "Unknown Album",
             duration = metadata?.duration ?: 0L,
             path = file.absolutePath,
-            albumArtUri = "",
+            albumArtUri = albumArtUri,
             bitRate = metadata?.bitRate,
             sampleRate = metadata?.sampleRate,
             fileSize = file.length(),
             format = metadata?.format ?: file.extension.uppercase(),
             lyrics = metadata?.lyrics
         )
+    }
+
+    private fun getCoversDirectory(): File {
+        val dir = File(System.getProperty("user.home"), ".hmp/covers")
+        if (!dir.exists()) dir.mkdirs()
+        return dir
+    }
+
+    private fun saveAlbumArt(data: ByteArray, filePath: String): String? {
+        return try {
+            val coversDir = getCoversDirectory()
+            val id = generateStableId(filePath)
+            val coverFile = File(coversDir, "cover_$id.jpg")
+            if (!coverFile.exists()) {
+                coverFile.writeBytes(data)
+            }
+            coverFile.absolutePath
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun generateStableId(path: String): Long {

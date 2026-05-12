@@ -10,6 +10,7 @@ interface AudioEngine {
     fun getDuration(): Long
     fun isPlaying(): Boolean
     fun isLoaded(): Boolean
+    fun isPaused(): Boolean
     fun setVolume(volume: Float)
     fun release()
 

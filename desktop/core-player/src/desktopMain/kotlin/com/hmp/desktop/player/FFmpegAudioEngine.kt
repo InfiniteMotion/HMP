@@ -7,6 +7,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
 import java.io.File
 import javax.sound.sampled.AudioFormat
@@ -47,20 +48,36 @@ class FFmpegAudioEngine : AudioEngine {
                 listOf(File(javaHome, "bin/$ffmpegName"))
             } else emptyList()
 
-            // System-installed ffmpeg
-            val systemCandidates = listOf(
-                File("/usr/bin/$ffmpegName"),
-                File("/usr/local/bin/$ffmpegName"),
-                File("${System.getProperty("user.home")}/ffmpeg/bin/$ffmpegName")
-            )
+            // Common install locations
+            val commonCandidates = if (isWindows) {
+                val localAppData = System.getenv("LOCALAPPDATA") ?: ""
+                val programFiles = System.getenv("ProgramFiles") ?: ""
+                val programFilesX86 = System.getenv("ProgramFiles(x86)") ?: ""
+                listOfNotNull(
+                    File("C:/ffmpeg/bin/$ffmpegName"),
+                    if (localAppData.isNotEmpty()) File("$localAppData/ffmpeg/bin/$ffmpegName") else null,
+                    if (programFiles.isNotEmpty()) File("$programFiles/ffmpeg/bin/$ffmpegName") else null,
+                    if (programFilesX86.isNotEmpty()) File("$programFilesX86/ffmpeg/bin/$ffmpegName") else null
+                )
+            } else {
+                listOf(
+                    File("/usr/bin/$ffmpegName"),
+                    File("/usr/local/bin/$ffmpegName"),
+                    File("${System.getProperty("user.home")}/ffmpeg/bin/$ffmpegName")
+                )
+            }
 
-            for (candidate in bundledCandidates + systemCandidates) {
+            // Check PATH environment variable
+            val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
+            val pathCandidates = pathDirs.map { File(it, ffmpegName) }
+
+            for (candidate in bundledCandidates + commonCandidates + pathCandidates) {
                 if (candidate.exists() && candidate.canExecute()) {
                     return candidate.absolutePath
                 }
             }
 
-            // Fallback: try PATH
+            // Fallback: bare name (relies on OS PATH resolution)
             return ffmpegName
         }
 
@@ -72,10 +89,7 @@ class FFmpegAudioEngine : AudioEngine {
         seekPositionMs = 0L
         bytesWritten = 0L
 
-        // First, probe duration and audio format
-        probeDuration(path)
-
-        // Start playback
+        println("[AudioEngine] play: $path, ffmpeg=$ffmpegPath")
         startPlayback(path, 0L)
     }
 
@@ -118,7 +132,8 @@ class FFmpegAudioEngine : AudioEngine {
         if (!wasPlaying) return
 
         seekPositionMs = positionMs
-        bytesWritten = calculateBytesForMs(positionMs)
+        bytesWritten = 0L
+        isPaused = false
 
         // Restart playback from the new position
         sourceLine?.let { line ->
@@ -138,8 +153,8 @@ class FFmpegAudioEngine : AudioEngine {
 
     override fun getCurrentPosition(): Long {
         if (isPaused) return seekPositionMs
-        val bytesPerMs = (sampleRate * channels * sampleSizeInBytes / 1000.0).toLong()
-        return if (bytesPerMs > 0) seekPositionMs + (bytesWritten / bytesPerMs) else 0L
+        val bytesPerMs = sampleRate * channels * sampleSizeInBytes / 1000.0
+        return if (bytesPerMs > 0) seekPositionMs + (bytesWritten / bytesPerMs).toLong() else 0L
     }
 
     override fun getDuration(): Long = durationMs
@@ -147,6 +162,8 @@ class FFmpegAudioEngine : AudioEngine {
     override fun isPlaying(): Boolean = !isStopped && !isPaused && (ffmpegProcess?.isAlive == true)
 
     override fun isLoaded(): Boolean = currentPath != null && !isStopped
+
+    override fun isPaused(): Boolean = isPaused
 
     override fun setVolume(volume: Float) {
         this.volume = volume.coerceIn(0f, 1f)
@@ -158,11 +175,12 @@ class FFmpegAudioEngine : AudioEngine {
 
     /**
      * Probe the audio file's duration, sample rate, and channel count using FFmpeg.
-     * Guarantees process cleanup via try-finally.
+     * Runs on IO dispatcher to avoid blocking the main thread.
      */
-    private fun probeDuration(path: String) {
+    private suspend fun probeDuration(path: String) = withContext(Dispatchers.IO) {
         var process: Process? = null
         try {
+            println("[AudioEngine] probing: $ffmpegPath -i $path")
             process = ProcessBuilder(
                 ffmpegPath, "-i", path,
                 "-f", "null", "-"
@@ -171,7 +189,8 @@ class FFmpegAudioEngine : AudioEngine {
                 .start()
 
             val output = process.inputStream.bufferedReader().readText()
-            process.waitFor()
+            val exitCode = process.waitFor()
+            println("[AudioEngine] probe exit=$exitCode, output: ${output.take(300)}")
 
             // Parse duration from ffmpeg output: Duration: HH:MM:SS.ss
             val durationRegex = Regex("""Duration:\s*(\d+):(\d+):(\d+)\.(\d+)""")
@@ -192,15 +211,6 @@ class FFmpegAudioEngine : AudioEngine {
                 }
             }
 
-            // Parse channel layout: "stereo", "mono", or "5.1", "7.1" etc.
-            val channelRegex = Regex("""Audio:.*?,\s*(\d+)\s+Hz""")
-            channelRegex.find(output)?.let { match ->
-                val parsed = match.groupValues[1].toFloatOrNull()
-                if (parsed != null && parsed > 0) {
-                    sampleRate = parsed
-                }
-            }
-
             // Parse channel count from layout string
             val channelLayoutRegex = Regex("""(mono|stereo|[\d.]+\s*channels?)""")
             channelLayoutRegex.find(output)?.let { match ->
@@ -209,10 +219,15 @@ class FFmpegAudioEngine : AudioEngine {
                     layout == "mono" -> 1
                     layout == "stereo" -> 2
                     layout.contains("channel") -> {
-                        // Extract number: "5.1 channels" -> 6
-                        val numStr = layout.replace("channels", "").trim()
-                        val num = numStr.replace(".", "").toIntOrNull()
-                        num?.coerceIn(1, 8) ?: 2
+                        // "5.1 channels" -> 6, "7.1 channels" -> 8
+                        val numStr = layout.substringBefore("channel").trim()
+                        val num = numStr.toFloatOrNull()
+                        if (num != null) {
+                            // Integer part + 1 for the .1 subwoofer
+                            val base = num.toInt()
+                            val hasSubwoofer = num > base
+                            (base + if (hasSubwoofer) 1 else 0).coerceIn(1, 8)
+                        } else 2
                     }
                     else -> 2
                 }
@@ -227,12 +242,15 @@ class FFmpegAudioEngine : AudioEngine {
 
     /**
      * Start FFmpeg-based audio playback via Java Sound API.
-     * Uses probed sample rate and channel count from [probeDuration].
-     * Consumes stderr on a separate thread to prevent buffer deadlock.
+     * Probes duration first, then starts the decode process.
+     * Checks process exit code and reports errors.
      */
     private fun startPlayback(path: String, seekMs: Long) {
         playbackJob = scope.launch {
             try {
+                // Probe duration/format on IO thread (no longer blocks Main)
+                probeDuration(path)
+
                 val seekArgs = if (seekMs > 0) {
                     listOf("-ss", String.format("%.3f", seekMs / 1000.0))
                 } else {
@@ -250,15 +268,19 @@ class FFmpegAudioEngine : AudioEngine {
                     "-"
                 )
 
+                println("[AudioEngine] command: ${command.joinToString(" ")}")
+
                 val pb = ProcessBuilder(command)
                 pb.redirectErrorStream(false)
                 val process = pb.start()
                 ffmpegProcess = process
+                println("[AudioEngine] process started, alive=${process.isAlive}")
 
-                // Consume stderr on a background thread to prevent buffer deadlock
+                // Capture stderr for error diagnosis
+                var stderrOutput = ""
                 val stderrThread = Thread({
                     try {
-                        process.errorStream.bufferedReader().readText()
+                        stderrOutput = process.errorStream.bufferedReader().readText()
                     } catch (_: Exception) {}
                 }, "ffmpeg-stderr-${path.hashCode()}")
                 stderrThread.isDaemon = true
@@ -275,10 +297,13 @@ class FFmpegAudioEngine : AudioEngine {
                     false
                 )
                 val info = DataLine.Info(SourceDataLine::class.java, format)
+                println("[AudioEngine] format: ${sampleRate.toInt()}Hz ${channels}ch 16bit frameSize=$frameSize")
 
                 if (!AudioSystem.isLineSupported(info)) {
-                    kotlinx.coroutines.withContext(Dispatchers.Main) {
-                        onError?.invoke(Exception("Audio line not supported for format: ${sampleRate.toInt()}Hz ${channels}ch"))
+                    val msg = "Audio line not supported for format: ${sampleRate.toInt()}Hz ${channels}ch"
+                    println("[AudioEngine] ERROR: $msg")
+                    withContext(Dispatchers.Main) {
+                        onError?.invoke(Exception(msg))
                     }
                     return@launch
                 }
@@ -287,11 +312,13 @@ class FFmpegAudioEngine : AudioEngine {
                 sourceLine = line
                 line.open(format)
                 line.start()
+                println("[AudioEngine] SourceDataLine opened and started")
 
                 sampleSizeInBytes = 2
 
                 val buffer = ByteArray(8192)
                 val audioStream = BufferedInputStream(process.inputStream)
+                println("[AudioEngine] reading PCM data, format=${sampleRate.toInt()}Hz ${channels}ch 16bit")
 
                 while (isActive && !isStopped) {
                     if (isPaused) {
@@ -311,21 +338,35 @@ class FFmpegAudioEngine : AudioEngine {
                     bytesWritten += bytesRead
                 }
 
+                println("[AudioEngine] read loop ended, bytesWritten=$bytesWritten, isStopped=$isStopped")
+
                 line.drain()
                 line.stop()
                 line.close()
 
                 audioStream.close()
+                stderrThread.join(1000)
+
+                val exitCode = process.waitFor()
                 process.destroyForcibly()
 
+                println("[AudioEngine] process exited with code $exitCode, stderr: ${stderrOutput.take(300)}")
+
                 if (!isStopped && isActive) {
-                    kotlinx.coroutines.withContext(Dispatchers.Main) {
-                        onPlaybackComplete?.invoke()
+                    if (exitCode != 0 && bytesWritten == 0L) {
+                        withContext(Dispatchers.Main) {
+                            onError?.invoke(Exception("Playback failed (exit $exitCode): ${stderrOutput.take(200)}"))
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            onPlaybackComplete?.invoke()
+                        }
                     }
                 }
             } catch (e: Exception) {
+                println("[AudioEngine] exception: ${e.message}")
                 if (!isStopped) {
-                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         onError?.invoke(e)
                     }
                 }

@@ -128,6 +128,10 @@ fun PlaylistScreen(
             navController.navigate(NavRoutes.Player.Player)
         },
         playWith = playlistQueueViewModel::playWith,
+        onItemClick = { musicInfo ->
+            playlistQueueViewModel.playWith(musicInfo)
+            navController.navigate(NavRoutes.Player.Player)
+        },
         dialogViewModel = dialogViewModel,
         playlistViewModel = playlistViewModel,
         dialogManager = dialogManager,
@@ -197,7 +201,8 @@ fun PlaylistScreenContent(
     onUpdateDescription: (Long, String?) -> Unit,
     onRemoveFromPlaylist: (Long, Long) -> Unit,
     onReorder: (List<Long>) -> Unit,
-    onAddSongsClick: (() -> Unit)? = null
+    onAddSongsClick: (() -> Unit)? = null,
+    onItemClick: (suspend (MusicInfo) -> Unit)? = null
 ) {
     val haptic = rememberHapticFeedback()
     val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
@@ -366,7 +371,13 @@ fun PlaylistScreenContent(
                 }
                 override fun onItemClick(musicInfo: MusicInfo, index: Int) {
                     haptic.performClick()
-                    coroutineScope.launch { playWith(musicInfo) }
+                    coroutineScope.launch {
+                        if (onItemClick != null) {
+                            onItemClick(musicInfo)
+                        } else {
+                            playWith(musicInfo)
+                        }
+                    }
                 }
                 override fun onMenuClick(musicInfo: MusicInfo) {
                     val menuConfig = DialogViewModel.MusicDetailMenuConfig(

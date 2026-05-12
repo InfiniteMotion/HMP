@@ -50,7 +50,8 @@ fun main() {
     System.setProperty("sun.java2d.dpiaware", "true")
     System.setProperty("sun.java2d.scaling.enabled", "false")
     System.setProperty("sun.java2d.uiScale", "1")
-    System.setProperty("skiko.renderApi", "OPENGL")
+    val isMacOS = System.getProperty("os.name", "").lowercase().contains("mac")
+    System.setProperty("skiko.renderApi", if (isMacOS) "METAL" else "OPENGL")
     System.setProperty("awt.useSystemAAFontSettings", "on")
 
     // Single-instance guard: exit immediately if another instance is running
@@ -79,8 +80,8 @@ fun main() {
 
         val backHandler = remember { mutableStateOf<(() -> Unit)?>(null) }
 
-        // Live system dark mode state — updated by DwmHelper registry watcher
-        var systemIsDark by remember { mutableStateOf(DwmHelper.isSystemDark()) }
+        // Live system dark mode state — updated by platform theme watcher
+        var systemIsDark by remember { mutableStateOf(detectSystemDarkMode()) }
 
         // MusicController is null until background pre-warm completes
         var musicController by remember { mutableStateOf<DesktopMusicController?>(null) }
@@ -114,19 +115,28 @@ fun main() {
                 }
             }
         ) {
-            // Extract HWND and set up system theme watcher
+            // Platform-specific: DWM theme watcher on Windows, polling on macOS
             DisposableEffect(Unit) {
                 val awtWindow = java.awt.Window.getWindows().firstOrNull()
-                if (awtWindow != null) {
-                    val hwnd = getHwndFromAwt(awtWindow)
-                    if (hwnd != null) {
-                        DwmHelper.setWindowHandle(hwnd)
+                if (isMacOS) {
+                    // macOS: poll AppleInterfaceStyle for theme changes
+                    val disposeWatcher = watchMacOSTheme { isDark ->
+                        systemIsDark = isDark
                     }
+                    onDispose { disposeWatcher() }
+                } else {
+                    // Windows: extract HWND and set up DWM registry watcher
+                    if (awtWindow != null) {
+                        val hwnd = getHwndFromAwt(awtWindow)
+                        if (hwnd != null) {
+                            DwmHelper.setWindowHandle(hwnd)
+                        }
+                    }
+                    val disposeWatcher = DwmHelper.watchSystemTheme { isDark ->
+                        systemIsDark = isDark
+                    }
+                    onDispose { disposeWatcher() }
                 }
-                val disposeWatcher = DwmHelper.watchSystemTheme { isDark ->
-                    systemIsDark = isDark
-                }
-                onDispose { disposeWatcher() }
             }
 
             // Clip entire window content to rounded corners.
@@ -218,6 +228,51 @@ fun main() {
 
     // Cleanup on normal exit (after application{} returns)
     SingleInstanceGuard.release()
+}
+
+/**
+ * Detect system dark mode setting.
+ * - Windows: reads registry via DwmHelper
+ * - macOS: reads AppleInterfaceStyle via defaults(1)
+ */
+private fun detectSystemDarkMode(): Boolean {
+    val os = System.getProperty("os.name", "").lowercase()
+    return when {
+        os.contains("win") -> {
+            try { DwmHelper.isSystemDark() } catch (_: Throwable) { false }
+        }
+        os.contains("mac") -> {
+            try {
+                val proc = ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start()
+                proc.inputStream.bufferedReader().readText().trim() == "Dark"
+            } catch (_: Throwable) { false }
+        }
+        else -> false
+    }
+}
+
+/**
+ * Poll AppleInterfaceStyle for theme changes on macOS.
+ * Returns a dispose function. Runs on a daemon thread.
+ */
+private fun watchMacOSTheme(intervalMs: Long = 2000, callback: (isDark: Boolean) -> Unit): () -> Unit {
+    val thread = Thread({
+        try {
+            var lastDark = detectSystemDarkMode()
+            callback(lastDark)
+            while (!Thread.currentThread().isInterrupted) {
+                Thread.sleep(intervalMs)
+                val dark = detectSystemDarkMode()
+                if (dark != lastDark) {
+                    lastDark = dark
+                    callback(dark)
+                }
+            }
+        } catch (_: InterruptedException) { /* normal shutdown */ }
+    }, "macos-theme-watcher")
+    thread.isDaemon = true
+    thread.start()
+    return { thread.interrupt() }
 }
 
 /**

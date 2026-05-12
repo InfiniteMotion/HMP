@@ -27,6 +27,7 @@ actual object MusicTagParser {
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tag
             val header = audioFile.audioHeader
+            val artwork = tag?.firstArtwork?.binaryData
             MusicMetadata(
                 title = tag?.getFirst(FieldKey.TITLE),
                 artist = tag?.getFirst(FieldKey.ARTIST),
@@ -37,7 +38,8 @@ actual object MusicTagParser {
                 format = header?.format,
                 lyrics = tag?.getFirst(FieldKey.LYRICS)
                     ?: tag?.getFirst("UNSYNCEDLYRICS")
-                    ?: tag?.getFirst("USLT")
+                    ?: tag?.getFirst("USLT"),
+                albumArt = artwork
             )
         } catch (_: Exception) {
             null
