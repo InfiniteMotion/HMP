@@ -3,17 +3,10 @@ package com.hmp.desktop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,13 +32,16 @@ import com.hmp.desktop.ui.common.design.theme.ThemeExtensionManager
 import com.hmp.desktop.ui.common.pages.MainScreen
 import com.hmp.desktop.DwmHelper
 import com.sun.jna.platform.win32.WinDef
-import kotlinx.coroutines.CompletableDeferred
 import org.koin.core.context.GlobalContext
 import java.awt.EventQueue
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 fun main() {
+    val t0 = System.currentTimeMillis()
+    fun stamp(label: String) = println("[Startup] +${System.currentTimeMillis() - t0}ms — $label")
+
     // HiDPI scaling: must be set before any AWT/Compose class is loaded
     System.setProperty("sun.java2d.dpiaware", "true")
     System.setProperty("sun.java2d.scaling.enabled", "false")
@@ -54,25 +50,46 @@ fun main() {
     System.setProperty("skiko.renderApi", if (isMacOS) "METAL" else "OPENGL")
     System.setProperty("awt.useSystemAAFontSettings", "on")
 
+    stamp("main() entry, HiDPI properties set")
+
     // Single-instance guard: exit immediately if another instance is running
     if (!SingleInstanceGuard.tryAcquire()) {
         println("HMP is already running. Exiting.")
         return
     }
 
+    stamp("single-instance guard passed")
+
     // Register Koin modules (lazy — no instances created yet)
     HmpDesktopApplication.init()
+
+    stamp("Koin init done")
+
+    // Pre-warm JNA native library on background thread so the first
+    // DwmHelper call in detectSystemDarkMode() doesn't pay the DLL load cost.
+    thread(name = "hmp-jna-prewarm", isDaemon = true) {
+        try { DwmHelper.isSystemDark() } catch (_: Throwable) {}
+        stamp("JNA pre-warm done")
+    }
 
     // Pre-warm heavy dependencies on a background thread.
     // This triggers Room database creation, DataStore, and core UseCase resolution
     // so Compose first frame is not blocked by I/O.
-    val appReady = CompletableDeferred<DesktopMusicController>()
+    val prewarmLatch = CountDownLatch(1)
     thread(name = "hmp-prewarm", isDaemon = true) {
-        val controller = GlobalContext.get().get<DesktopMusicController>()
-        appReady.complete(controller)
+        GlobalContext.get().get<DesktopMusicController>()
+        stamp("background pre-warm done (Room+FFmpeg+UseCase resolved)")
+        prewarmLatch.countDown()
     }
 
     application {
+        stamp("compose first frame begin")
+
+        // Pre-warm thread always finishes before compose enters.
+        // Blocking await() returns near-instantly, eliminating the
+        // LaunchedEffect coroutine dispatch delay of ~356ms.
+        prewarmLatch.await()
+        stamp("pre-warm completed, entering composition")
         val state = rememberWindowState(
             size = DpSize(1200.dp, 800.dp),
             position = WindowPosition(Alignment.Center)
@@ -82,9 +99,14 @@ fun main() {
 
         // Live system dark mode state — updated by platform theme watcher
         var systemIsDark by remember { mutableStateOf(detectSystemDarkMode()) }
+        val timed0 = remember { stamp("detectSystemDarkMode() called"); 0 }
 
         // User theme preference ("light" / "dark" / "default")
-        val settingsRepo = remember { GlobalContext.get().get<com.hmp.domain.setting.SettingsRepository>() }
+        val settingsRepo = remember {
+            val r = GlobalContext.get().get<com.hmp.domain.setting.SettingsRepository>()
+            stamp("SettingsRepository resolved")
+            r
+        }
         val themeMode by settingsRepo.themeMode.collectAsState(initial = "default")
 
         // App-level dark mode: respects user override, falls back to system
@@ -94,16 +116,18 @@ fun main() {
             else -> systemIsDark
         }
 
-        // MusicController is null until background pre-warm completes
-        var musicController by remember { mutableStateOf<DesktopMusicController?>(null) }
-
-        LaunchedEffect(Unit) {
-            musicController = appReady.await()
+        // Resolved synchronously — pre-warm thread already finished,
+        // Koin cache hit, no suspension needed.
+        val musicController = remember {
+            stamp("resolving musicController synchronously")
+            GlobalContext.get().get<DesktopMusicController>().also {
+                stamp("musicController ready, rendering MainScreen")
+            }
         }
 
         Window(
             onCloseRequest = {
-                musicController?.release()
+                musicController.release()
                 SystemTrayManager.dispose()
                 SingleInstanceGuard.release()
                 exitApplication()
@@ -126,36 +150,32 @@ fun main() {
                 }
             }
         ) {
-            // Platform-specific: DWM theme watcher on Windows, polling on macOS
-            DisposableEffect(Unit) {
+            val timedContent = remember { stamp("Window content first composition"); 0 }
+
+            // Deferred platform theme setup — runs after first frame, avoiding
+            // ~149ms composition delay for AWT lookup and DWM watcher registration.
+            LaunchedEffect(Unit) {
+                stamp("Deferred platform theme setup — entering")
                 val awtWindow = java.awt.Window.getWindows().firstOrNull()
                 if (isMacOS) {
-                    // macOS: poll AppleInterfaceStyle for theme changes
-                    val disposeWatcher = watchMacOSTheme { isDark ->
-                        systemIsDark = isDark
-                    }
-                    onDispose { disposeWatcher() }
+                    watchMacOSTheme { isDark -> systemIsDark = isDark }
                 } else {
-                    // Windows: extract HWND and set up DWM registry watcher
                     if (awtWindow != null) {
                         val hwnd = getHwndFromAwt(awtWindow)
-                        if (hwnd != null) {
-                            DwmHelper.setWindowHandle(hwnd)
-                        }
+                        if (hwnd != null) DwmHelper.setWindowHandle(hwnd)
                     }
-                    val disposeWatcher = DwmHelper.watchSystemTheme { isDark ->
-                        systemIsDark = isDark
-                    }
-                    onDispose { disposeWatcher() }
+                    DwmHelper.watchSystemTheme { isDark -> systemIsDark = isDark }
                 }
+                stamp("Deferred platform theme setup — done")
             }
 
             // Clip entire window content to rounded corners.
-            // transparent = true makes the window background transparent,
-            // so the clipped shape defines the visible window boundary.
             val cornerRadius = 20.dp
+            val tColorScheme = System.currentTimeMillis()
             val staticColorScheme = ThemeExtensionManager.getColorScheme(appIsDark)
+            stamp("ThemeExtensionManager.getColorScheme() done (took ${System.currentTimeMillis() - tColorScheme}ms)")
             MaterialTheme(colorScheme = staticColorScheme) {
+                val timedMT = remember { stamp("MaterialTheme scope entered (first composition)"); 0 }
                 val shape = RoundedCornerShape(cornerRadius)
                 Box(
                 modifier = Modifier
@@ -165,64 +185,56 @@ fun main() {
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (musicController == null) {
-                        // Lightweight loading screen shown immediately while deps initialize
-                        LoadingScreen()
-                    } else {
-                        val controller = musicController!!
+                    // musicController is already resolved — no LoadingScreen needed
+                    DisposableEffect(Unit) {
+                        onDispose { musicController.release() }
+                    }
 
-                        DisposableEffect(Unit) {
-                            onDispose { controller.release() }
-                        }
-
-                        // Initialize system tray with playback controls
-                        LaunchedEffect(Unit) {
-                            val window = java.awt.Window.getWindows().firstOrNull()
-                            SystemTrayManager.init(
-                                onPlayPause = { controller.togglePlayPause() },
-                                onNext = { controller.playNext() },
-                                onPrev = { controller.playPrevious() },
-                                onShowWindow = {
-                                    EventQueue.invokeLater {
-                                        window?.let {
-                                            it.isVisible = true
-                                            it.toFront()
-                                            it.repaint()
-                                        }
+                    // Initialize system tray with playback controls
+                    LaunchedEffect(Unit) {
+                        val window = java.awt.Window.getWindows().firstOrNull()
+                        SystemTrayManager.init(
+                            onPlayPause = { musicController.togglePlayPause() },
+                            onNext = { musicController.playNext() },
+                            onPrev = { musicController.playPrevious() },
+                            onShowWindow = {
+                                EventQueue.invokeLater {
+                                    window?.let {
+                                        it.isVisible = true
+                                        it.toFront()
+                                        it.repaint()
                                     }
-                                },
-                                onExit = {
-                                    controller.release()
-                                    SystemTrayManager.dispose()
-                                    SingleInstanceGuard.release()
-                                    exitApplication()
                                 }
-                            )
-                        }
-
-                        // Update tray tooltip when current song changes
-                        val currentMusic by controller.currentPlayingMusic.collectAsState()
-                        LaunchedEffect(currentMusic) {
-                            currentMusic?.let { music ->
-                                val title = music.music.title.ifBlank { File(music.music.path).name }
-                                val artist = music.music.artist.ifBlank { "Unknown Artist" }
-                                SystemTrayManager.updateTooltip("$title - $artist")
+                            },
+                            onExit = {
+                                musicController.release()
+                                SystemTrayManager.dispose()
+                                SingleInstanceGuard.release()
+                                exitApplication()
                             }
-                        }
-
-                        // MainScreen fills entire window — background extends behind title bar
-                        MainScreen(
-                            onBackHandlerReady = { handler -> backHandler.value = handler },
-                            systemIsDark = systemIsDark
                         )
                     }
 
+                    // Update tray tooltip when current song changes
+                    val currentMusic by musicController.currentPlayingMusic.collectAsState()
+                    LaunchedEffect(currentMusic) {
+                        currentMusic?.let { music ->
+                            val title = music.music.title.ifBlank { File(music.music.path).name }
+                            val artist = music.music.artist.ifBlank { "Unknown Artist" }
+                            SystemTrayManager.updateTooltip("$title - $artist")
+                        }
+                    }
+
+                    // MainScreen fills entire window — background extends behind title bar
+                    MainScreen(
+                        onBackHandlerReady = { handler -> backHandler.value = handler },
+                        systemIsDark = systemIsDark
+                    )
+
                     // Collect playback state reactively for immersive title bar
                     var isPlaying by remember { mutableStateOf(false) }
-                    if (musicController != null) {
-                        LaunchedEffect(musicController) {
-                            musicController!!.isPlaying.collect { isPlaying = it }
-                        }
+                    LaunchedEffect(musicController) {
+                        musicController.isPlaying.collect { isPlaying = it }
                     }
 
                     // Title bar overlays on top — transparent when playing for immersive look
@@ -234,7 +246,7 @@ fun main() {
                             awtWindow?.let { WindowHelper.minimizeAwt(it) }
                         },
                         onClose = {
-                            musicController?.release()
+                            musicController.release()
                             SystemTrayManager.dispose()
                             SingleInstanceGuard.release()
                             exitApplication()
@@ -331,24 +343,4 @@ private fun findFieldValue(obj: Any, fieldName: String): Any? {
         }
     }
     return null
-}
-
-@Composable
-private fun LoadingScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "HMP",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-    }
 }

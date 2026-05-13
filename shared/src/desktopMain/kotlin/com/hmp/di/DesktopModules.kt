@@ -49,9 +49,13 @@ val desktopPlatformModule = module {
 }
 
 fun initKoinDesktop(vararg additionalModules: org.koin.core.module.Module) {
+    val t = System.currentTimeMillis()
     val modules = mutableListOf(sharedModule, desktopPlatformModule)
     modules.addAll(additionalModules)
+    println("[Startup] +${System.currentTimeMillis() - t}ms — module list assembled")
+    val t2 = System.currentTimeMillis()
     startKoin {
         modules(modules)
     }
+    println("[Startup] +${System.currentTimeMillis() - t2}ms — startKoin {} execution")
 }
