@@ -49,7 +49,7 @@ class PlaylistQueueViewModel(
         initialValue = WeightTemplate.BALANCED
     )
 
-    fun playWith(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playWith(musicInfo) }
+    fun playWith(musicInfo: MusicInfo) = musicController.playWith(musicInfo)
     fun playAt(musicInfo: MusicInfo) = musicController.playAt(musicInfo)
     fun addToPlaylist(musicInfo: MusicInfo) = musicController.addToPlaylist(musicInfo)
     fun removeFromPlaylist(musicInfo: MusicInfo) = musicController.removeFromPlaylist(musicInfo)
@@ -59,9 +59,9 @@ class PlaylistQueueViewModel(
     fun addAllToPlaylistByShuffle(playlist: List<MusicInfo>) = musicController.addAllToPlaylistByShuffle(playlist)
     fun playHeartMode() = musicController.playHeartMode()
     fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) = musicController.updateMusicLikedStatus(musicInfo, liked)
-    suspend fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
-    suspend fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
-    suspend fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
+    fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
+    fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
+    fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
 
     fun generatePlaylist(
         seedMusicId: Long = currentPlayingMusic.value?.music?.id ?: 0

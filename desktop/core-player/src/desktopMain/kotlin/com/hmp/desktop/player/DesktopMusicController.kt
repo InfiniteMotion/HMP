@@ -26,9 +26,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class DesktopMusicController(
     private val audioEngine: AudioEngine,
@@ -98,6 +100,13 @@ class DesktopMusicController(
     // Like Status
     var likeStatus = MutableStateFlow(false)
 
+    // Labels & Lyrics
+    private val _currentMusicLabels = MutableStateFlow<List<MusicLabel?>>(emptyList())
+    val currentMusicLabels: StateFlow<List<MusicLabel?>> = _currentMusicLabels
+
+    private val _currentMusicLyrics = MutableStateFlow<String?>(null)
+    val currentMusicLyrics: StateFlow<String?> = _currentMusicLyrics
+
     // Playback Mode
     private val _playbackMode = MutableStateFlow(PlaybackMode.SEQUENTIAL)
     val playbackMode: StateFlow<PlaybackMode> = _playbackMode.asStateFlow()
@@ -126,7 +135,6 @@ class DesktopMusicController(
     val timerRemaining: StateFlow<Long?> = timerUseCase.timerRemaining
 
     init {
-        // Set up audio engine callbacks
         audioEngine.onPlaybackComplete = {
             onMusicComplete()
         }
@@ -134,13 +142,11 @@ class DesktopMusicController(
             showToast("Playback error: ${e.message}")
         }
 
-        // Initialize playlist and progress
         scope.launch {
             loadPlaylistFromSettings()
             restoreLastPosition()
         }
 
-        // Monitor playlist changes
         scope.launch {
             currentPlayListId
                 .filterNotNull()
@@ -153,7 +159,6 @@ class DesktopMusicController(
                 }
         }
 
-        // Monitor current music changes
         scope.launch {
             currentPlayingMusic
                 .filterNotNull()
@@ -191,6 +196,9 @@ class DesktopMusicController(
 
     fun preloadCurrentMusicInfo(musicInfo: MusicInfo) {
         _duration.value = musicInfo.music.duration
+        getLikedStatus(musicInfo.music.id)
+        getMusicLabels(musicInfo.music.id)
+        getMusicLyrics(musicInfo.music.id)
     }
 
     // region Playback Controls
@@ -199,6 +207,8 @@ class DesktopMusicController(
         val music = currentPlayingMusic.value ?: return
         if (audioEngine.isLoaded() && !audioEngine.isPlaying() && audioEngine.isPaused()) {
             audioEngine.resume()
+            playStartTime = currentTimeMillis()
+            lastDurationRecordTime = playStartTime
             startProgressTracking()
             _isPlaying.value = true
             return
@@ -207,6 +217,16 @@ class DesktopMusicController(
     }
 
     fun pause() {
+        if (playStartTime > 0) {
+            val elapsed = currentTimeMillis() - playStartTime
+            if (elapsed > 0) {
+                scope.launch {
+                    try {
+                        playbackHistoryUseCase.recordListeningDuration(elapsed)
+                    } catch (_: Exception) {}
+                }
+            }
+        }
         audioEngine.pause()
         _isPlaying.value = false
         stopProgressTracking()
@@ -219,10 +239,8 @@ class DesktopMusicController(
 
     fun playMusic(musicInfo: MusicInfo) {
         scope.launch {
-            // Record previous play session
-            recordCurrentPlaySession(isCompleted = false)
+            endCurrentPlaybackSession(isCompleted = false)
 
-            // Set currentPlayingMusic: use override if song isn't in the playlist
             val playlist = _currentPlaylist.value
             val existingIndex = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
             if (existingIndex >= 0) {
@@ -239,11 +257,15 @@ class DesktopMusicController(
             _duration.value = musicInfo.music.duration
             _currentPosition.value = 0L
 
-            // Save current music ID
             currentPlaybackUseCase.saveCurrentMusicId(musicInfo.music.id)
 
+            playStartTime = currentTimeMillis()
+            lastDurationRecordTime = playStartTime
+            totalPlayedDurationInSession = 0L
+
             startProgressTracking()
-            recordPlaybackStart()
+            startNewPlaybackSession(musicInfo.music.id, "direct")
+            addToRecent(musicInfo)
         }
     }
 
@@ -253,7 +275,7 @@ class DesktopMusicController(
 
         val nextIndex = when (_playbackMode.value) {
             PlaybackMode.REPEAT_ONE -> _currentIndex.value
-            PlaybackMode.SHUFFLE -> (playlist.indices).random()
+            PlaybackMode.SHUFFLE -> generateRandomIndex(_currentIndex.value, playlist.size)
             PlaybackMode.SEQUENTIAL -> {
                 val next = _currentIndex.value + 1
                 if (next >= playlist.size) 0 else next
@@ -271,7 +293,7 @@ class DesktopMusicController(
 
         val prevIndex = when (_playbackMode.value) {
             PlaybackMode.REPEAT_ONE -> _currentIndex.value
-            PlaybackMode.SHUFFLE -> (playlist.indices).random()
+            PlaybackMode.SHUFFLE -> generateRandomIndex(_currentIndex.value, playlist.size)
             PlaybackMode.SEQUENTIAL -> {
                 val prev = _currentIndex.value - 1
                 if (prev < 0) playlist.size - 1 else prev
@@ -298,6 +320,15 @@ class DesktopMusicController(
             PlaybackMode.REPEAT_ONE -> PlaybackMode.SHUFFLE
             PlaybackMode.SHUFFLE -> PlaybackMode.SEQUENTIAL
         }
+    }
+
+    private fun generateRandomIndex(currentIdx: Int, size: Int): Int {
+        if (size <= 1) return 0
+        var randomIndex: Int
+        do {
+            randomIndex = kotlin.random.Random.nextInt(size)
+        } while (randomIndex == currentIdx)
+        return randomIndex
     }
 
     // endregion
@@ -353,28 +384,16 @@ class DesktopMusicController(
 
     // region Playback History
 
-    private fun recordPlaybackStart() {
+    private fun startNewPlaybackSession(musicId: Long, source: String?) {
         scope.launch {
             try {
-                val music = currentPlayingMusic.value ?: return@launch
-                val historyId = playbackHistoryUseCase.insertPlayback(
-                    com.hmp.domain.setting.model.PlaybackHistory(
-                        musicId = music.music.id,
-                        playedAt = currentTimeMillis(),
-                        playDuration = 0L,
-                        isCompleted = false,
-                        source = "direct"
-                    )
-                )
+                val historyId = playbackHistoryUseCase.startPlaybackSession(musicId, source)
                 currentPlaybackHistoryId = historyId
-                totalPlayedDurationInSession = 0L
-                playStartTime = currentTimeMillis()
-                lastDurationRecordTime = currentTimeMillis()
             } catch (_: Exception) {}
         }
     }
 
-    private fun recordCurrentPlaySession(isCompleted: Boolean) {
+    private fun endCurrentPlaybackSession(isCompleted: Boolean) {
         val historyId = currentPlaybackHistoryId ?: return
         val music = currentPlayingMusic.value ?: return
 
@@ -408,7 +427,7 @@ class DesktopMusicController(
         scope.launch {
             val music = currentPlayingMusic.value
             if (music != null) {
-                recordCurrentPlaySession(isCompleted = true)
+                endCurrentPlaybackSession(isCompleted = true)
             }
 
             when (_playbackMode.value) {
@@ -449,21 +468,219 @@ class DesktopMusicController(
 
     // endregion
 
+    // region Playlist Management
+
     fun setPlaylist(list: List<MusicInfo>, startIndex: Int = 0) {
         _currentPlaylist.value = list
         _currentIndex.value = startIndex.coerceIn(0, (list.size - 1).coerceAtLeast(0))
+        persistCurrentPlaylistToDatabase()
         val music = list.getOrNull(_currentIndex.value) ?: return
         playMusic(music)
     }
 
+    private fun persistCurrentPlaylistToDatabase() {
+        scope.launch {
+            try {
+                val playlistId = currentPlayListId.filterNotNull().first()
+                managePlaylistUseCase.resetPlaylistItems(playlistId, _currentPlaylist.value)
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun addToRecent(musicInfo: MusicInfo) {
+        scope.launch {
+            try {
+                val recentId = withTimeoutOrNull(1000) {
+                    recentPlayListId.firstOrNull()
+                }
+                if (recentId != null) {
+                    managePlaylistUseCase.addToPlaylist(recentId, musicInfo.music.id, musicInfo.music.path)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun addToPlaylist(musicInfo: MusicInfo) {
+        if (_currentPlaylist.value.none { it.music.id == musicInfo.music.id }) {
+            _currentPlaylist.value = _currentPlaylist.value + musicInfo
+            persistCurrentPlaylistToDatabase()
+        }
+    }
+
+    fun removeFromPlaylist(musicInfo: MusicInfo) {
+        _currentPlaylist.value = _currentPlaylist.value.filter { it.music.id != musicInfo.music.id }
+        persistCurrentPlaylistToDatabase()
+        updateCurrentIndex()
+    }
+
+    fun addToNextPlay(musicInfo: MusicInfo) {
+        val currentIdx = _currentIndex.value
+        val newList = _currentPlaylist.value.toMutableList()
+
+        val existingIndex = newList.indexOfFirst { it.music.id == musicInfo.music.id }
+        if (existingIndex != -1) {
+            newList.removeAt(existingIndex)
+            if (existingIndex <= currentIdx) {
+                _currentIndex.value = (currentIdx - 1).coerceAtLeast(0)
+            }
+        }
+
+        val adjustedCurrentIndex = _currentIndex.value
+        val insertIndex = if (newList.isEmpty()) {
+            0
+        } else {
+            (adjustedCurrentIndex + 1).coerceAtMost(newList.size)
+        }
+
+        newList.add(insertIndex, musicInfo)
+        _currentPlaylist.value = newList
+        persistCurrentPlaylistToDatabase()
+    }
+
+    fun clearPlaylist() {
+        _currentPlaylist.value = emptyList()
+        _currentIndex.value = 0
+        persistCurrentPlaylistToDatabase()
+    }
+
+    fun moveToTop(musicInfo: MusicInfo) {
+        val playlist = _currentPlaylist.value.toMutableList()
+        val index = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
+        if (index > 0) {
+            val item = playlist.removeAt(index)
+            playlist.add(0, item)
+            _currentPlaylist.value = playlist
+            persistCurrentPlaylistToDatabase()
+            updateCurrentIndex()
+            showToast("已置顶：${musicInfo.music.title}")
+        }
+    }
+
+    fun addAllToPlaylistByShuffle(musicInfoList: List<MusicInfo>) {
+        _currentPlaylist.value = musicInfoList.shuffled()
+        _playbackMode.value = PlaybackMode.SHUFFLE
+        _currentIndex.value = 0
+        persistCurrentPlaylistToDatabase()
+        val music = _currentPlaylist.value.firstOrNull() ?: return
+        playMusic(music)
+    }
+
+    fun addAllToPlaylistInOrder(musicInfoList: List<MusicInfo>) {
+        _currentPlaylist.value = musicInfoList
+        _playbackMode.value = PlaybackMode.SEQUENTIAL
+        _currentIndex.value = 0
+        persistCurrentPlaylistToDatabase()
+        val music = musicInfoList.firstOrNull() ?: return
+        playMusic(music)
+    }
+
+    fun playHeartMode() {
+        scope.launch {
+            val currentMusic = currentPlayingMusic.value
+            if (currentMusic != null) {
+                try {
+                    val similarSongs = currentPlaybackUseCase.getSimilarSongsByWeightedLabels(
+                        currentMusic.music.id,
+                        limit = 10
+                    )
+                    if (similarSongs.isNotEmpty()) {
+                        val newList = listOf(currentMusic) + similarSongs
+                        _currentPlaylist.value = newList
+                        _playbackMode.value = PlaybackMode.SEQUENTIAL
+                        _currentIndex.value = 0
+                        persistCurrentPlaylistToDatabase()
+                        playMusic(currentMusic)
+                        showToast("为你推荐${similarSongs.size}首心动歌曲")
+                    } else {
+                        showToast("未找到相似歌曲")
+                    }
+                } catch (_: Exception) {
+                    showToast("心动模式暂不可用")
+                }
+            } else {
+                val playlist = _currentPlaylist.value
+                if (playlist.isNotEmpty()) {
+                    _currentIndex.value = generateRandomIndex(_currentIndex.value, playlist.size)
+                    playlist.getOrNull(_currentIndex.value)?.let { playMusic(it) }
+                }
+            }
+        }
+    }
+
+    // endregion
+
+    // region Now Playing Info
+
+    fun getLikedStatus(musicId: Long) {
+        scope.launch {
+            try {
+                likeStatus.value = currentPlaybackUseCase.getLikedStatus(musicId)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun getCurrentLikedStatus(musicId: Long? = null): Boolean = likeStatus.value
+
+    fun updateMusicLikedStatus(musicInfo: MusicInfo, isLiked: Boolean) {
+        scope.launch {
+            try {
+                currentPlaybackUseCase.updateLikedStatus(musicInfo.music.id, isLiked)
+                val likedId = likedPlayListId.filterNotNull().first()
+                if (isLiked) {
+                    managePlaylistUseCase.addToPlaylist(likedId, musicInfo.music.id, musicInfo.music.path)
+                } else {
+                    managePlaylistUseCase.removeItemFromPlaylist(musicInfo.music.id, likedId)
+                }
+            } catch (_: Exception) {}
+        }
+        likeStatus.value = isLiked
+    }
+
+    fun updateMusicLikedStatus(musicId: Long, isLiked: Boolean) {
+        scope.launch {
+            try {
+                currentPlaybackUseCase.updateLikedStatus(musicId, isLiked)
+                val musicInfo = currentPlayingMusic.value
+                if (musicInfo != null) {
+                    val likedId = likedPlayListId.filterNotNull().first()
+                    if (isLiked) {
+                        managePlaylistUseCase.addToPlaylist(likedId, musicId, musicInfo.music.path)
+                    } else {
+                        managePlaylistUseCase.removeItemFromPlaylist(musicId, likedId)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        likeStatus.value = isLiked
+    }
+
+    fun getMusicLabels(musicId: Long) {
+        scope.launch {
+            try {
+                _currentMusicLabels.value = currentPlaybackUseCase.getMusicLabels(musicId)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun getMusicLyrics(musicId: Long) {
+        scope.launch {
+            try {
+                _currentMusicLyrics.value = currentPlaybackUseCase.getMusicLyrics(musicId)
+            } catch (_: Exception) {}
+        }
+    }
+
+    // endregion
+
     fun release() {
         stopProgressTracking()
-        recordCurrentPlaySession(isCompleted = false)
+        endCurrentPlaybackSession(isCompleted = false)
         persistCurrentPosition(_currentPosition.value)
+        persistCurrentPlaylistToDatabase()
         audioEngine.release()
     }
 
-    // region Desktop-specific aliases (stubs for compilation)
+    // region Desktop-specific aliases
 
     fun playOrResume() = play()
     fun pauseMusic() = pause()
@@ -479,70 +696,13 @@ class DesktopMusicController(
     }
 
     fun playWith(musicInfo: MusicInfo) {
+        addToPlaylist(musicInfo)
         playMusic(musicInfo)
-    }
-
-    fun addToPlaylist(musicInfo: MusicInfo) {
-        _currentPlaylist.value = _currentPlaylist.value + musicInfo
-    }
-
-    fun removeFromPlaylist(musicInfo: MusicInfo) {
-        _currentPlaylist.value = _currentPlaylist.value.filter { it.music.id != musicInfo.music.id }
-    }
-
-    fun addToNextPlay(musicInfo: MusicInfo) {
-        // TODO: implement add to next play
-    }
-
-    fun clearPlaylist() {
-        _currentPlaylist.value = emptyList()
-        _currentIndex.value = 0
-    }
-
-    fun moveToTop(musicInfo: MusicInfo) {
-        val playlist = _currentPlaylist.value.toMutableList()
-        val index = playlist.indexOfFirst { it.music.id == musicInfo.music.id }
-        if (index >= 0) {
-            val item = playlist.removeAt(index)
-            playlist.add(0, item)
-            _currentPlaylist.value = playlist
-        }
-    }
-
-    fun addAllToPlaylistByShuffle(musicInfoList: List<MusicInfo>) {
-        _currentPlaylist.value = _currentPlaylist.value + musicInfoList.shuffled()
-    }
-
-    fun addAllToPlaylistInOrder(musicInfoList: List<MusicInfo>) {
-        _currentPlaylist.value = _currentPlaylist.value + musicInfoList
-    }
-
-    fun playHeartMode() {
-        // TODO: implement heart mode playback
-        val playlist = _currentPlaylist.value
-        if (playlist.isNotEmpty()) {
-            _currentIndex.value = playlist.indices.random()
-            playlist.getOrNull(_currentIndex.value)?.let { playMusic(it) }
-        }
-    }
-
-    suspend fun getLikedStatus(musicId: Long): Boolean = false
-    fun getCurrentLikedStatus(musicId: Long? = null): Boolean = likeStatus.value
-    fun updateMusicLikedStatus(musicInfo: MusicInfo, isLiked: Boolean) {
-        likeStatus.value = isLiked
-    }
-    fun updateMusicLikedStatus(musicId: Long, isLiked: Boolean) {
-        likeStatus.value = isLiked
     }
 
     fun startTimer(minutes: Int) {
         startTimer(durationMs = minutes.toLong() * 60 * 1000)
     }
-
-    suspend fun getMusicLabels(musicId: Long): List<MusicLabel?> = emptyList()
-    suspend fun getMusicLyrics(musicId: Long): String? = null
-    val currentMusicLabels: StateFlow<List<MusicLabel?>> = MutableStateFlow(emptyList())
-    val currentMusicLyrics: StateFlow<String?> = MutableStateFlow(null)
 
     // Audio effects stubs
     fun initializeAudioEffects() { /* TODO: implement */ }

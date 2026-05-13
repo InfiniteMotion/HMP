@@ -177,6 +177,8 @@ compose.desktop {
             // Skiko rendering pipeline — METAL on macOS, OpenGL elsewhere
             if (isMacOS) "-Dskiko.renderApi=METAL" else "-Dskiko.renderApi=OPENGL",
             "-Dskiko.vsync.enabled=false",
+            // FFmpeg path for development (downloaded by downloadFFmpeg task)
+            "-Dhmp.ffmpeg.path=${buildDir}/ffmpeg/$ffmpegFileName",
             // HiDPI text rendering
             "-Dawt.useSystemAAFontSettings=on",
             // Startup optimization: tiered compilation level 1 for faster class loading
@@ -238,4 +240,28 @@ compose.desktop {
 // Wire FFmpeg injection after packaging
 tasks.matching { it.name == "packageDistributionForCurrentOS" }.configureEach {
     finalizedBy(injectFFmpeg)
+}
+
+// Copy FFmpeg to %LOCALAPPDATA%/ffmpeg/bin/ for development (already in engine search path)
+val injectFFmpegForDev by tasks.registering {
+    group = "desktop"
+    description = "Copy FFmpeg binary to %LOCALAPPDATA%/ffmpeg/bin for development run"
+    notCompatibleWithConfigurationCache("uses project object references")
+    dependsOn(downloadFFmpeg)
+
+    doLast {
+        val localAppData = System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home")
+        val targetDir = File(localAppData, "ffmpeg/bin")
+        targetDir.mkdirs()
+        val src = File(ffmpegDir, ffmpegFileName)
+        val dest = File(targetDir, ffmpegFileName)
+        src.copyTo(dest, overwrite = true)
+        dest.setExecutable(true)
+        println("OK Dev FFmpeg -> ${dest.absolutePath}")
+    }
+}
+
+// Wire FFmpeg setup before development run
+tasks.matching { it.name == "run" }.configureEach {
+    dependsOn(injectFFmpegForDev)
 }

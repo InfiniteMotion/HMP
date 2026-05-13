@@ -43,6 +43,12 @@ class FFmpegAudioEngine : AudioEngine {
             val javaHome = System.getProperty("java.home") ?: ""
             val ffmpegName = if (isWindows) "ffmpeg.exe" else "ffmpeg"
 
+            // Explicit system property (set by Gradle during development)
+            System.getProperty("hmp.ffmpeg.path")?.let { path ->
+                val file = File(path)
+                if (file.exists() && file.canExecute()) return file.absolutePath
+            }
+
             // Bundled ffmpeg (inside packaged distribution's runtime/bin)
             val bundledCandidates = if (javaHome.isNotEmpty()) {
                 listOf(File(javaHome, "bin/$ffmpegName"))

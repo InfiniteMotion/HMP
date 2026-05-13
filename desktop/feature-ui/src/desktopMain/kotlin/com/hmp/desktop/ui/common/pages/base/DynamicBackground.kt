@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.runtime.remember
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -170,26 +171,26 @@ fun FluidBackground(
             .clip(RectangleShape)
     ) {
         val density = LocalDensity.current
-        
+        val maxPx = with(density) { maxOf(maxWidth, maxHeight).toPx() }
+
         // 背景底色 - 亮色模式改用极淡灰，增加层次感
         val baseColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF5F5F5)
         Box(modifier = Modifier.fillMaxSize().background(baseColor))
 
         // 动画控制
         val transition = rememberInfiniteTransition(label = "fluidBackground")
-        
+
         // 缓慢的流动曲线
         val flowEasing = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f)
-        
-        // 图层1动画：水平漂移 + 顺时针旋转
-        val offsetX1 by transition.animateFloat(
-            initialValue = -150f, // 增加位移幅度
-            targetValue = 150f,
+
+        // 偏移量改用视口百分比（不再固定像素），窗口缩放时自动适配
+        val offsetFrac1 by transition.animateFloat(
+            initialValue = -0.14f, targetValue = 0.14f,
             animationSpec = infiniteRepeatable(
                 animation = tween(durationMillis = 20000, easing = flowEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "offsetX1"
+            label = "offsetFrac1"
         )
         val rotation1 by transition.animateFloat(
             initialValue = 0f,
@@ -202,14 +203,13 @@ fun FluidBackground(
         )
         
         // 图层2动画：垂直漂移 + 逆时针旋转 (对冲)
-        val offsetY2 by transition.animateFloat(
-            initialValue = -120f, // 增加位移幅度
-            targetValue = 120f,
+        val offsetFrac2 by transition.animateFloat(
+            initialValue = -0.11f, targetValue = 0.11f,
             animationSpec = infiniteRepeatable(
                 animation = tween(durationMillis = 25000, easing = flowEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "offsetY2"
+            label = "offsetFrac2"
         )
         val rotation2 by transition.animateFloat(
             initialValue = 360f,
@@ -232,10 +232,10 @@ fun FluidBackground(
             label = "baseRotation"
         )
 
-        // 缩放呼吸
+        // 缩放呼吸 — 提高到 4.2x 确保旋转+偏移后仍全覆盖
         val scale by transition.animateFloat(
-            initialValue = 3.0f,
-            targetValue = 3.4f,
+            initialValue = 4.2f,
+            targetValue = 4.8f,
             animationSpec = infiniteRepeatable(
                 animation = tween(durationMillis = 30000, easing = flowEasing),
                 repeatMode = RepeatMode.Reverse
@@ -287,7 +287,7 @@ fun FluidBackground(
                     modifier = Modifier
                         .fillMaxSize()
                         .scale(scale)
-                        .offset { IntOffset(offsetX1.roundToInt(), 0) }
+                        .offset { IntOffset((offsetFrac1 * maxPx).roundToInt(), 0) }
                         .graphicsLayer { 
                             rotationZ = baseRotation // 底层独立旋转
                             alpha = imageAlpha
@@ -307,7 +307,7 @@ fun FluidBackground(
                     modifier = Modifier
                         .fillMaxSize()
                         .scale(scale * 1.1f)
-                        .offset { IntOffset(0, offsetY2.roundToInt()) }
+                        .offset { IntOffset(0, (offsetFrac2 * maxPx).roundToInt()) }
                         .graphicsLayer { 
                             rotationZ = rotation1 // 顶层顺时针
                             alpha = imageAlpha * 0.7f
@@ -320,8 +320,10 @@ fun FluidBackground(
 }
 
 /**
- * 2. 沉浸光斑背景 (Immersion Spots)
- * 原有的光斑实现，适合极简风格
+ * 2. 沉浸光斑背景 (Immersive Light Blooms)
+ *
+ * 5 个独立光斑在不同轨道上以可见速度漂移，各自呼吸脉动。
+ * 所有坐标按视口百分比计算——天然适配窗口缩放，永不露边。
  */
 @Composable
 fun SpotsBackground(
@@ -329,101 +331,124 @@ fun SpotsBackground(
     isDarkTheme: Boolean
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        
-        // 背景底色
         val baseBackgroundColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFFFFFFF)
         Box(modifier = Modifier.fillMaxSize().background(baseBackgroundColor))
 
-        // 颜色提取
-        val rawPrimary = if (isDarkTheme) paletteColors.dominantColor else paletteColors.lightVibrantColor
-        val rawSecondary = if (isDarkTheme) paletteColors.darkVibrantColor else paletteColors.vibrantColor
-        val rawTertiary = if (isDarkTheme) paletteColors.darkMutedColor else paletteColors.lightMutedColor
-        
-        // 强制差异化
-        val primaryColor = rawPrimary
-        val secondaryColor = if (rawSecondary == rawPrimary) rawPrimary.shiftHue(60f) else rawSecondary
-        val tertiaryColor = if (rawTertiary == rawPrimary || rawTertiary == rawSecondary) secondaryColor.shiftHue(120f) else rawTertiary
-        val quaternaryColor = primaryColor.shiftHue(180f)
-        
-        // 透明度
-        val alphaPrimary = if (isDarkTheme) 0.40f else 0.30f
-        val alphaSecondary = if (isDarkTheme) 0.35f else 0.25f
-        val alphaTertiary = if (isDarkTheme) 0.30f else 0.20f
-        val alphaQuaternary = if (isDarkTheme) 0.25f else 0.15f
+        // ── 权重驱动：3-7 个光斑 ──────────────────────────────
+        val allPeaks = paletteColors.peaks.ifEmpty { listOf(paletteColors.primary) }
+        val allWeights = paletteColors.peakWeights.ifEmpty { allPeaks.map { 1f / allPeaks.size } }
+        val bloomCount = allPeaks.size.coerceIn(3, 7)
+        val peaks = allPeaks.take(bloomCount)
+        val weights = allWeights.take(bloomCount)
+        val maxW = weights.maxOrNull() ?: 1f
 
-        // 动画
-        val transition = rememberInfiniteTransition(label = "spotsBackground")
-        val breathingEasing = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f)
-        
-        val rotation1 by transition.animateFloat(
-            initialValue = 0f, targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(60000, easing = breathingEasing), RepeatMode.Restart)
-        )
-        val rotation2 by transition.animateFloat(
-            initialValue = 360f, targetValue = 0f,
-            animationSpec = infiniteRepeatable(tween(45000, easing = breathingEasing), RepeatMode.Restart)
-        )
-        val scale by transition.animateFloat(
-            initialValue = 1.0f, targetValue = 1.3f,
-            animationSpec = infiniteRepeatable(tween(20000, easing = breathingEasing), RepeatMode.Reverse)
-        )
-
-        // 绘制
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val widthPx = size.width
-            val heightPx = size.height
-            val maxDim = max(widthPx, heightPx)
-            val minDim = min(widthPx, heightPx)
-            val centerX = widthPx / 2
-            val centerY = heightPx / 2
-            
-            // 光斑 1
-            val angle1 = rotation1 * (PI / 180f)
-            val offset1X = centerX + cos(angle1).toFloat() * (minDim * 0.35f)
-            val offset1Y = centerY + sin(angle1).toFloat() * (minDim * 0.35f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(primaryColor.copy(alpha = alphaPrimary), primaryColor.copy(alpha = alphaPrimary * 0.6f), Transparent),
-                    center = Offset(offset1X, offset1Y), radius = maxDim * 1.0f * scale
-                ),
-                center = Offset(offset1X, offset1Y), radius = maxDim * 1.0f * scale
-            )
-
-            // 光斑 2
-            val angle2 = rotation2 * (PI / 180f)
-            val offset2X = centerX + cos(angle2).toFloat() * (minDim * 0.45f)
-            val offset2Y = centerY + sin(angle2).toFloat() * (minDim * 0.45f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(secondaryColor.copy(alpha = alphaSecondary), secondaryColor.copy(alpha = alphaSecondary * 0.6f), Transparent),
-                    center = Offset(offset2X, offset2Y), radius = maxDim * 0.9f * scale
-                ),
-                center = Offset(offset2X, offset2Y), radius = maxDim * 0.9f * scale
-            )
-
-            // 光斑 3
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(tertiaryColor.copy(alpha = alphaTertiary), Transparent),
-                    center = Offset(centerX, centerY), radius = maxDim * 1.1f * (2.3f - scale)
-                ),
-                center = Offset(centerX, centerY), radius = maxDim * 1.1f
-            )
-
-            // 光斑 4
-            val angle4 = rotation1 * 1.5f * (PI / 180f)
-            val offset4X = centerX + cos(angle4 + PI).toFloat() * (minDim * 0.5f)
-            val offset4Y = centerY + sin(angle4 + PI).toFloat() * (minDim * 0.5f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(quaternaryColor.copy(alpha = alphaQuaternary), quaternaryColor.copy(alpha = alphaQuaternary * 0.5f), Transparent),
-                    center = Offset(offset4X, offset4Y), radius = maxDim * 0.6f * scale
-                ),
-                center = Offset(offset4X, offset4Y), radius = maxDim * 0.6f * scale
-            )
+        val colors = List(bloomCount) { i ->
+            val c = peaks[i]; val gray = (c.red + c.green + c.blue) / 3f
+            val sat = Color((gray + (c.red - gray) * 1.6f).coerceIn(0f, 1f),
+                            (gray + (c.green - gray) * 1.6f).coerceIn(0f, 1f),
+                            (gray + (c.blue - gray) * 1.6f).coerceIn(0f, 1f), 1f)
+            val f = 0.4f + weights[i] / maxW * 0.6f
+            if (f >= 1f) Color(sat.red + (1f - sat.red) * (f - 1f).coerceIn(0f, 1f),
+                               sat.green + (1f - sat.green) * (f - 1f).coerceIn(0f, 1f),
+                               sat.blue + (1f - sat.blue) * (f - 1f).coerceIn(0f, 1f), 1f)
+            else Color(sat.red * f, sat.green * f, sat.blue * f, 1f)
         }
-    }
+
+        data class Bloom(
+            val minX: Float, val maxX: Float, val periodX: Int,
+            val minY: Float, val maxY: Float, val periodY: Int,
+            val radius: Float, val breathePeriodMs: Int
+        )
+
+        val blooms = remember(peaks) {
+            val rng = kotlin.random.Random(peaks.hashCode())
+            val LO = 0.02f; val HI = 0.98f
+            fun span(a: Float, b: Float) = rng.nextFloat() * (b - a) + minOf(a, b)
+
+            List(bloomCount) { i ->
+                val w = weights[i] / maxW
+                val radius = 0.28f + w * 0.82f
+                val cx = 0.5f + (rng.nextFloat() - 0.5f) * (1f - w) * 0.94f
+                val cy = 0.5f + (rng.nextFloat() - 0.5f) * (1f - w) * 0.94f
+                val hsx = 0.06f + (1f - w) * span(0.15f, 0.28f)
+                val hsy = 0.06f + (1f - w) * span(0.15f, 0.28f)
+                val pBase = (20000 + w * 30000).toInt()
+                Bloom(minX = (cx - hsx).coerceIn(LO, HI), maxX = (cx + hsx).coerceIn(LO, HI),
+                    periodX = rng.nextInt(8000) + pBase,
+                    minY = (cy - hsy).coerceIn(LO, HI), maxY = (cy + hsy).coerceIn(LO, HI),
+                    periodY = rng.nextInt(8000) + pBase + 4000,
+                    radius = radius,
+                    breathePeriodMs = rng.nextInt(8000) + (14000 + ((1f - w) * 6000f).toInt()))
+            }
+        }
+
+        val alphas = List(bloomCount) { i ->
+            val a = 0.20f + (weights[i] / maxW) * 0.45f
+            if (isDarkTheme) a else a * 0.75f
+        }
+
+        // ── 动画：X/Y 独立漂移 + 呼吸 ──────────────────────────
+        val transition = rememberInfiniteTransition(label = "spotsCanvas")
+        val ease = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f)
+
+        val startPhases = remember(peaks) {
+            val rng = kotlin.random.Random(peaks.hashCode() + 42)
+            List(bloomCount) { rng.nextFloat() to rng.nextFloat() }
+        }
+        val posX = List(bloomCount) { i ->
+            val min = blooms[i].minX; val max = blooms[i].maxX
+            transition.animateFloat(min + (max - min) * startPhases[i].first, max,
+                infiniteRepeatable(tween(blooms[i].periodX, easing = ease), RepeatMode.Reverse), "px$i")
+        }
+        val posY = List(bloomCount) { i ->
+            val min = blooms[i].minY; val max = blooms[i].maxY
+            transition.animateFloat(min + (max - min) * startPhases[i].second, max,
+                infiniteRepeatable(tween(blooms[i].periodY, easing = ease), RepeatMode.Reverse), "py$i")
+        }
+        val scales = List(bloomCount) { i ->
+            val w = weights[i] / maxW
+            val (minS, maxS) = (0.84f + w * 0.04f) to (1.16f - w * 0.04f)
+            transition.animateFloat(minS, maxS,
+                infiniteRepeatable(tween(blooms[i].breathePeriodMs, easing = ease), RepeatMode.Reverse), "sc$i")
+        }
+        val breatheAlphas = List(bloomCount) { i ->
+            transition.animateFloat(0.88f, 1.0f,
+                infiniteRepeatable(tween(blooms[i].breathePeriodMs, easing = ease), RepeatMode.Reverse), "ba$i")
+        }
+
+        data class NoiseDot(val xf: Float, val yf: Float, val gray: Float, val alpha: Float)
+        val noiseDots = remember(peaks) {
+            val rng = kotlin.random.Random(peaks.hashCode() + 777)
+            List(800) { NoiseDot(rng.nextFloat(), rng.nextFloat(), rng.nextFloat(), rng.nextFloat() * 0.05f) }
+        }
+
+        // ── 绘制：最重光斑先绘（底色），轻的光斑后绘（上层）──
+        Canvas(modifier = Modifier.fillMaxSize().blur(18.dp)) {
+            val w = size.width; val h = size.height; val maxDim = maxOf(w, h)
+            val drawOrder = (0 until bloomCount).sortedByDescending { weights[it] }
+            for (i in drawOrder) {
+                val b = blooms[i]; val cx = posX[i].value * w; val cy = posY[i].value * h
+                val radius = b.radius * maxDim * scales[i].value
+                val a = (alphas[i] * breatheAlphas[i].value).coerceIn(0f, 1f)
+                val c = colors[i]
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(c.copy(alpha = a),
+                            c.copy(alpha = a * 0.92f), c.copy(alpha = a * 0.82f),
+                            c.copy(alpha = a * 0.70f), c.copy(alpha = a * 0.56f),
+                            c.copy(alpha = a * 0.42f), c.copy(alpha = a * 0.30f),
+                            c.copy(alpha = a * 0.20f), c.copy(alpha = a * 0.12f),
+                            c.copy(alpha = a * 0.06f), c.copy(alpha = a * 0.025f),
+                            c.copy(alpha = a * 0.008f), Transparent),
+                        center = Offset(cx, cy), radius = radius),
+                    center = Offset(cx, cy), radius = radius)
+            }
+            // 噪点抖动
+            for (d in noiseDots) {
+                drawCircle(Color(d.gray, d.gray, d.gray, d.alpha),
+                    1.8f, Offset(d.xf * w, d.yf * h))
+            }
+        }    }
 }
 
 /**

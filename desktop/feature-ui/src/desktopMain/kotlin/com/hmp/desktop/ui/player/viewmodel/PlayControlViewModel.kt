@@ -92,10 +92,9 @@ class PlayControlViewModel(
     fun seekTo(position: Long) = musicController.seekTo(position)
     fun togglePlaybackModeByOrder() = musicController.togglePlaybackModeByOrder()
 
-    fun playWith(musicInfo: MusicInfo) =
-        viewModelScope.launch { musicController.playWith(musicInfo) }
+    fun playWith(musicInfo: MusicInfo) = musicController.playWith(musicInfo)
 
-    fun playAt(musicInfo: MusicInfo) = viewModelScope.launch { musicController.playAt(musicInfo) }
+    fun playAt(musicInfo: MusicInfo) = musicController.playAt(musicInfo)
 
     fun addToPlaylist(musicInfo: MusicInfo) = musicController.addToPlaylist(musicInfo)
     fun removeFromPlaylist(musicInfo: MusicInfo) = musicController.removeFromPlaylist(musicInfo)
@@ -111,9 +110,9 @@ class PlayControlViewModel(
     fun updateMusicLikedStatus(musicInfo: MusicInfo, liked: Boolean) =
         musicController.updateMusicLikedStatus(musicInfo, liked)
 
-    suspend fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
-    suspend fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
-    suspend fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
+    fun getLikedStatus(musicId: Long) = musicController.getLikedStatus(musicId)
+    fun getMusicLabels(musicId: Long) = musicController.getMusicLabels(musicId)
+    fun getMusicLyrics(musicId: Long) = musicController.getMusicLyrics(musicId)
 
     fun startTimer(minutes: Int) = musicController.startTimer(minutes)
     fun cancelTimer() = musicController.cancelTimer()

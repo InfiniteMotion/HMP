@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,27 +36,32 @@ import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
  * (JetBrains/compose-multiplatform#3625).
  *
  * @param isDarkTheme Whether the app is in dark theme — affects button styling
+ * @param isPlaying Whether audio is currently playing — title bar becomes transparent
  * @param onMinimize Called to minimize the window
  * @param onClose Called when the close button is clicked
  */
 @Composable
 fun CustomTitleBar(
     isDarkTheme: Boolean,
+    isPlaying: Boolean = false,
     onMinimize: () -> Unit,
     onClose: () -> Unit
 ) {
+    val barBackground = if (isPlaying) Color.Transparent else MaterialTheme.colorScheme.background
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(TITLE_BAR_HEIGHT)
-            .background(MaterialTheme.colorScheme.surface),
+            .background(barBackground),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: App title
+        // Left: App title — dimmed when playing for immersive look
         Text(
             text = "HMP",
             modifier = Modifier.padding(start = 16.dp),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                    else MaterialTheme.colorScheme.primary,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.5.sp
@@ -108,6 +112,7 @@ fun CustomTitleBar(
             WindowControlButton(
                 symbol = "─",
                 isDarkTheme = isDarkTheme,
+                isTransparent = isPlaying,
                 onClick = onMinimize
             )
 
@@ -116,6 +121,7 @@ fun CustomTitleBar(
                 symbol = "✕",
                 isDarkTheme = isDarkTheme,
                 isClose = true,
+                isTransparent = isPlaying,
                 interactionSource = closeInteraction,
                 hoveredOverride = closeHovered,
                 onClick = onClose
@@ -129,6 +135,7 @@ private fun WindowControlButton(
     symbol: String,
     isDarkTheme: Boolean,
     isClose: Boolean = false,
+    isTransparent: Boolean = false,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     hoveredOverride: Boolean? = null,
     onClick: () -> Unit
@@ -136,16 +143,21 @@ private fun WindowControlButton(
     val isHovered = hoveredOverride ?: interactionSource.collectIsHoveredAsState().value
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // When transparent, use a slightly stronger hover/pressed overlay for visibility
+    val hoverAlpha = if (isTransparent) 0.18f else 0.1f
+    val pressedAlpha = if (isTransparent) 0.12f else 0.06f
+
     val bgColor = when {
         isClose && isHovered -> Color(0xFFC42B1C)
         isClose && isPressed -> Color(0xFFB22419)
-        isHovered -> if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.06f)
-        isPressed -> if (isDarkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.1f)
+        isHovered -> if (isDarkTheme) Color.White.copy(alpha = hoverAlpha) else Color.Black.copy(alpha = hoverAlpha * 0.6f)
+        isPressed -> if (isDarkTheme) Color.White.copy(alpha = pressedAlpha) else Color.Black.copy(alpha = pressedAlpha)
         else -> Color.Transparent
     }
 
     val textColor = when {
         isClose && (isHovered || isPressed) -> Color.White
+        isTransparent -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
         else -> MaterialTheme.colorScheme.onSurface
     }
 

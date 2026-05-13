@@ -174,9 +174,7 @@ fun HomeScreen(
                             if (heartbeatList.isNotEmpty()){
                                 FilledIconButton(
                                     onClick = {
-                                        playlistQueueViewModel.clearPlaylist()
                                         playlistQueueViewModel.addAllToPlaylistInOrder(heartbeatList)
-                                        playlistQueueViewModel.playWith(heartbeatList.first())
                                         navController.navigate(NavRoutes.Player.Player)
                                     },
                                     modifier = Modifier

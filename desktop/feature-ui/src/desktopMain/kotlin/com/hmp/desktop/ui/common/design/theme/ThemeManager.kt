@@ -37,31 +37,94 @@ object ThemeManager {
     }
     
     fun generateDynamicColorScheme(paletteColors: PaletteColors, isDarkTheme: Boolean): ColorScheme {
+        val rawPrimary = paletteColors.primary
+        val bg = paletteColors.background
+        val accent = paletteColors.accent
+
+        // 确保 primary 与当前模式的实际背景对比度 ≥ 3:1
+        // 暗色：背景 = cover-derived dark bg；亮色：背景 = #FFFFFF
+        val actualBg = if (isDarkTheme) bg else ColorTokens.LightBackground
+        val primary = ensureContrast(rawPrimary, actualBg, 3.0f)
+
         return if (isDarkTheme) {
             darkColorScheme(
-                primary = paletteColors.vibrantColor,
+                primary = primary,
                 onPrimary = ColorTokens.DarkOnPrimary,
-                primaryContainer = paletteColors.darkVibrantColor,
+                primaryContainer = primary.copy(alpha = 0.15f),
                 onPrimaryContainer = ColorTokens.DarkOnPrimaryContainer,
-                secondary = paletteColors.accentColor,
-                background = paletteColors.darkMutedColor,
-                surface = paletteColors.darkMutedColor,
+                secondary = accent,
+                onSecondary = ColorTokens.DarkOnPrimary,
+                background = bg,
+                surface = bg,
                 error = ColorTokens.DarkError,
-                surfaceTint = paletteColors.vibrantColor,
+                surfaceTint = primary.copy(alpha = 0.06f),
             )
         } else {
             lightColorScheme(
-                primary = paletteColors.vibrantColor,
+                primary = primary,
                 onPrimary = ColorTokens.LightOnPrimary,
-                primaryContainer = paletteColors.lightVibrantColor,
+                primaryContainer = primary.copy(alpha = 0.10f),
                 onPrimaryContainer = ColorTokens.LightOnPrimaryContainer,
-                secondary = paletteColors.accentColor,
+                secondary = accent,
+                onSecondary = ColorTokens.LightOnPrimary,
                 background = ColorTokens.LightBackground,
                 surface = ColorTokens.LightSurface,
                 error = ColorTokens.LightError,
-                surfaceTint = paletteColors.vibrantColor,
+                surfaceTint = primary.copy(alpha = 0.05f),
             )
         }
+    }
+
+    // ── WCAG 对比度辅助 ──────────────────────────────────────────
+    private fun relativeLuminance(r: Int, g: Int, b: Int): Float {
+        fun linearize(c: Int): Double {
+            val s = c / 255.0
+            return if (s <= 0.04045) s / 12.92
+            else Math.pow((s + 0.055) / 1.055, 2.4)
+        }
+        return (0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)).toFloat()
+    }
+
+    private fun colorLuminance(color: androidx.compose.ui.graphics.Color): Float {
+        val r = (color.red * 255).toInt().coerceIn(0, 255)
+        val g = (color.green * 255).toInt().coerceIn(0, 255)
+        val b = (color.blue * 255).toInt().coerceIn(0, 255)
+        return relativeLuminance(r, g, b)
+    }
+
+    private fun contrastRatio(l1: Float, l2: Float): Float {
+        val lighter = maxOf(l1, l2)
+        val darker = minOf(l1, l2)
+        return (lighter + 0.05f) / (darker + 0.05f)
+    }
+
+    /** 朝远离背景方向推进直到对比度 ≥ target */
+    private fun ensureContrast(
+        color: androidx.compose.ui.graphics.Color,
+        background: androidx.compose.ui.graphics.Color,
+        target: Float
+    ): androidx.compose.ui.graphics.Color {
+        var r = (color.red * 255).toInt().coerceIn(0, 255)
+        var g = (color.green * 255).toInt().coerceIn(0, 255)
+        var b = (color.blue * 255).toInt().coerceIn(0, 255)
+        val bgR = (background.red * 255).toInt().coerceIn(0, 255)
+        val bgG = (background.green * 255).toInt().coerceIn(0, 255)
+        val bgB = (background.blue * 255).toInt().coerceIn(0, 255)
+        val bgLum = relativeLuminance(bgR, bgG, bgB)
+
+        for (i in 0 until 15) {
+            val curLum = relativeLuminance(r, g, b)
+            if (contrastRatio(curLum, bgLum) >= target) break
+            val dr = (r - bgR).let { if (it == 0) if (bgR < 128) 1 else -1 else it / 4 }
+            val dg = (g - bgG).let { if (it == 0) if (bgG < 128) 1 else -1 else it / 4 }
+            val db = (b - bgB).let { if (it == 0) if (bgB < 128) 1 else -1 else it / 4 }
+            r = (r + dr).coerceIn(0, 255)
+            g = (g + dg).coerceIn(0, 255)
+            b = (b + db).coerceIn(0, 255)
+        }
+        return androidx.compose.ui.graphics.Color(
+            0xFF000000L or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
+        )
     }
     
     fun getPresetColorScheme(isDarkTheme: Boolean): ColorScheme {

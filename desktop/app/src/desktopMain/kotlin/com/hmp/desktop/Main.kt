@@ -83,6 +83,17 @@ fun main() {
         // Live system dark mode state — updated by platform theme watcher
         var systemIsDark by remember { mutableStateOf(detectSystemDarkMode()) }
 
+        // User theme preference ("light" / "dark" / "default")
+        val settingsRepo = remember { GlobalContext.get().get<com.hmp.domain.setting.SettingsRepository>() }
+        val themeMode by settingsRepo.themeMode.collectAsState(initial = "default")
+
+        // App-level dark mode: respects user override, falls back to system
+        val appIsDark = when (themeMode) {
+            "light" -> false
+            "dark" -> true
+            else -> systemIsDark
+        }
+
         // MusicController is null until background pre-warm completes
         var musicController by remember { mutableStateOf<DesktopMusicController?>(null) }
 
@@ -143,7 +154,7 @@ fun main() {
             // transparent = true makes the window background transparent,
             // so the clipped shape defines the visible window boundary.
             val cornerRadius = 20.dp
-            val staticColorScheme = ThemeExtensionManager.getColorScheme(systemIsDark)
+            val staticColorScheme = ThemeExtensionManager.getColorScheme(appIsDark)
             MaterialTheme(colorScheme = staticColorScheme) {
                 val shape = RoundedCornerShape(cornerRadius)
                 Box(
@@ -206,9 +217,18 @@ fun main() {
                         )
                     }
 
-                    // Title bar overlays on top
+                    // Collect playback state reactively for immersive title bar
+                    var isPlaying by remember { mutableStateOf(false) }
+                    if (musicController != null) {
+                        LaunchedEffect(musicController) {
+                            musicController!!.isPlaying.collect { isPlaying = it }
+                        }
+                    }
+
+                    // Title bar overlays on top — transparent when playing for immersive look
                     CustomTitleBar(
-                        isDarkTheme = systemIsDark,
+                        isDarkTheme = appIsDark,
+                        isPlaying = isPlaying,
                         onMinimize = {
                             val awtWindow = java.awt.Window.getWindows().firstOrNull()
                             awtWindow?.let { WindowHelper.minimizeAwt(it) }
