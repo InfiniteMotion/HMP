@@ -173,7 +173,6 @@ compose.desktop {
             // AWT DPI awareness — prevent Windows from applying bitmap upscaling
             "-Dsun.java2d.dpiaware=true",
             "-Dsun.java2d.scaling.enabled=false",
-            "-Dsun.java2d.uiScale=1",
             // Skiko rendering pipeline — METAL on macOS, OpenGL elsewhere
             if (isMacOS) "-Dskiko.renderApi=METAL" else "-Dskiko.renderApi=OPENGL",
             "-Dskiko.vsync.enabled=false",

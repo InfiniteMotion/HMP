@@ -1,6 +1,7 @@
 package com.hmp.desktop.ui.common.pages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,11 +35,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 
+import com.hmp.desktop.ui.common.components.BottomFusionBar
 import com.hmp.desktop.ui.common.components.DesktopNavigationRail
 import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
 import com.hmp.desktop.ui.common.pages.TabsHost
@@ -236,23 +239,22 @@ fun MainScreen(
                         .background(MaterialTheme.colorScheme.background)
                 )
 
-                // 2. 全局动态背景层 (仅在播放时覆盖在静态背景之上，带过渡动画)
-                AnimatedVisibility(
-                    visible = isPlaying && currentMusic != null,
-                    enter = fadeIn(
-                        animationSpec = tween(durationMillis = 800, easing = AnimationTokens.EASE_IN_OUT)
-                    ),
-                    exit = fadeOut(
-                        animationSpec = tween(durationMillis = 800, easing = AnimationTokens.EASE_IN_OUT)
-                    )
-                ) {
-                    DynamicBackground(
-                        albumArtUri = currentMusic?.music?.albumArtUri,
-                        paletteColors = paletteColors,
-                        isDarkTheme = isDarkTheme,
-                        style = backgroundStyle,
-                        modifier = Modifier
-                    )
+                // 2. 全局动态背景层 (仅在播放时覆盖在静态背景之上)
+                //    使用 animateFloatAsState 与标题栏背景共享完全相同的动画机制
+                val dynamicBgAlpha by animateFloatAsState(
+                    targetValue = if (isPlaying && currentMusic != null) 1f else 0f,
+                    animationSpec = tween(durationMillis = 800, easing = AnimationTokens.EASE_IN_OUT)
+                )
+                if (dynamicBgAlpha > 0f) {
+                    Box(modifier = Modifier.fillMaxSize().graphicsLayer(alpha = dynamicBgAlpha)) {
+                        DynamicBackground(
+                            albumArtUri = currentMusic?.music?.albumArtUri,
+                            paletteColors = paletteColors,
+                            isDarkTheme = isDarkTheme,
+                            style = backgroundStyle,
+                            modifier = Modifier
+                        )
+                    }
                 }
 
                 // 前景页面内容
@@ -281,37 +283,22 @@ fun MainScreen(
 
                     if (windowSizeInfo.isExpanded) {
                         val isInTabs = navController.currentRoute is Routes.Main.Tabs
+                        // 扩展布局：全宽内容 + 底部融合栏
                         if (isInTabs) {
-                            // 扩展布局：左侧 NavigationRail + 右侧 TabsHost
                             Box(modifier = contentModifier.fillMaxSize()) {
-                                DesktopNavigationRail(
-                                    selectedIndex = pagerState.currentPage,
-                                    onTabSelected = { index ->
-                                        coroutineScope.launch {
-                                            pagerState.scrollToPage(index)
-                                        }
-                                    },
-                                    modifier = Modifier.align(Alignment.CenterStart)
+                                TabsHost(
+                                    navController = navController,
+                                    pagerState = pagerState,
+                                    tabHeader = tabHeader,
+                                    recommendationViewModel = recommendationViewModel,
+                                    settingsViewModel = settingsViewModel,
+                                    playbackViewModel = playbackViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
+                                    dialogViewModel = dialogViewModel,
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .padding(start = 80.dp)
-                                        .fillMaxSize()
-                                ) {
-                                    TabsHost(
-                                        navController = navController,
-                                        pagerState = pagerState,
-                                        tabHeader = tabHeader,
-                                        recommendationViewModel = recommendationViewModel,
-                                        settingsViewModel = settingsViewModel,
-                                        playbackViewModel = playbackViewModel,
-                                        playlistQueueViewModel = playlistQueueViewModel,
-                                        dialogViewModel = dialogViewModel,
-                                    )
-                                }
                             }
                         } else {
-                            // 子页面：直接渲染 NavHost，不显示 NavigationRail
+                            // 子页面：直接渲染 NavHost
                             Box(modifier = contentModifier.fillMaxSize()) {
                                 NavHost(
                                     navController = navController,
@@ -380,10 +367,10 @@ fun MainScreen(
                 }
             }
 
-            // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
+            // 紧凑模式：MiniPlayerBar 浮动底部
             val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
             AnimatedVisibility(
-                visible = navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
+                visible = !windowSizeInfo.isExpanded && navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
                     initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
                     animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
@@ -414,6 +401,46 @@ fun MainScreen(
                         onNext = { playbackViewModel.playNext() },
                         onPrev = { playbackViewModel.playPrevious() },
                         onOpenPlayer = { navController.navigate(Routes.Player.Player) }
+                    )
+                }
+            }
+
+            // 扩展模式：底部融合栏（导航 + 播放控制）
+            AnimatedVisibility(
+                visible = windowSizeInfo.isExpanded && navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+            ) {
+                Box(modifier = Modifier.navigationBarsPadding()) {
+                    BottomFusionBar(
+                        musicInfo = currentMusic,
+                        isPlaying = isPlaying,
+                        progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                        selectedTabIndex = pagerState.currentPage,
+                        onTabSelected = { index ->
+                            coroutineScope.launch {
+                                pagerState.scrollToPage(index)
+                            }
+                        },
+                        onPlayPause = {
+                            if (isPlaying) {
+                                playbackViewModel.pauseMusic()
+                            } else {
+                                playbackViewModel.playOrResume()
+                            }
+                        },
+                        onNext = { playbackViewModel.playNext() },
+                        onPrev = { playbackViewModel.playPrevious() },
+                        onOpenPlayer = { navController.navigate(Routes.Player.Player) },
+                        hazeState = hazeState
                     )
                 }
             }

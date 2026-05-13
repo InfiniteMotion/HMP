@@ -45,7 +45,6 @@ fun main() {
     // HiDPI scaling: must be set before any AWT/Compose class is loaded
     System.setProperty("sun.java2d.dpiaware", "true")
     System.setProperty("sun.java2d.scaling.enabled", "false")
-    System.setProperty("sun.java2d.uiScale", "1")
     val isMacOS = System.getProperty("os.name", "").lowercase().contains("mac")
     System.setProperty("skiko.renderApi", if (isMacOS) "METAL" else "OPENGL")
     System.setProperty("awt.useSystemAAFontSettings", "on")
@@ -232,10 +231,8 @@ fun main() {
                     )
 
                     // Collect playback state reactively for immersive title bar
-                    var isPlaying by remember { mutableStateOf(false) }
-                    LaunchedEffect(musicController) {
-                        musicController.isPlaying.collect { isPlaying = it }
-                    }
+                    // Uses collectAsState to stay in sync with MainScreen's same underlying StateFlow
+                    val isPlaying by musicController.isPlaying.collectAsState()
 
                     // Title bar overlays on top — transparent when playing for immersive look
                     CustomTitleBar(

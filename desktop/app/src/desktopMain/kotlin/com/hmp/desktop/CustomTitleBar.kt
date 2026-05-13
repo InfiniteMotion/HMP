@@ -1,5 +1,8 @@
 package com.hmp.desktop
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -8,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -27,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
+import com.hmp.desktop.ui.common.design.animation.AnimationTokens
 
 /**
  * Custom window title bar for undecorated desktop window.
@@ -47,25 +53,44 @@ fun CustomTitleBar(
     onMinimize: () -> Unit,
     onClose: () -> Unit
 ) {
-    val barBackground = if (isPlaying) Color.Transparent else MaterialTheme.colorScheme.background
+    // 背景透明度：与下方动态背景完全相同的动画机制
+    val bgAlpha by animateFloatAsState(
+        targetValue = if (isPlaying) 0f else 1f,
+        animationSpec = tween(800, easing = AnimationTokens.EASE_IN_OUT)
+    )
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(TITLE_BAR_HEIGHT)
-            .background(barBackground),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: App title — dimmed when playing for immersive look
-        Text(
-            text = "HMP",
-            modifier = Modifier.padding(start = 16.dp),
-            color = if (isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
-                    else MaterialTheme.colorScheme.primary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.5.sp
+        // 背景层（alpha 动画）
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(alpha = bgAlpha)
+                .background(MaterialTheme.colorScheme.background)
         )
+
+        // 内容层（始终可见）
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Left: App title — dimmed when playing for immersive look
+            val titleColor by animateColorAsState(
+                targetValue = if (isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                               else MaterialTheme.colorScheme.primary,
+                animationSpec = tween(800, easing = AnimationTokens.EASE_IN_OUT)
+            )
+            Text(
+                text = "HMP",
+                modifier = Modifier.padding(start = 16.dp),
+                color = titleColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
+            )
 
         // Center: Draggable area — uses java.awt.MouseInfo for screen-absolute
         // mouse position. This avoids the Compose coordinate feedback loop that
@@ -127,6 +152,7 @@ fun CustomTitleBar(
                 onClick = onClose
             )
         }
+    }
     }
 }
 
