@@ -59,6 +59,13 @@ private val RowStartPaddingDefault = 10.dp
 private val MoreButtonWidth = 32.dp
 private val RingCheckboxStrokeWidth = 1.5.dp
 
+private fun formatDuration(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "$minutes:${seconds.toString().padStart(2, '0')}"
+}
+
 /**
  * 圆环形复选框：未选为空心圆环，选中为圆环+实心圆心。
  */
@@ -159,16 +166,16 @@ internal fun MusicListItem(
     val rowVisualModifier = Modifier
         .fillMaxWidth()
         .height(height)
-        .clip(RoundedCornerShape(12.dp))
+        .clip(RoundedCornerShape(16.dp))
+        .then(rowClickModifier)
         .padding(vertical = 4.dp)
-    val rowModifier = rowVisualModifier.then(rowClickModifier)
 
     // 编辑模式且启用复选框时，复选框取代序号位；否则有序号则显示序号
     val showIndexSlot = itemConfig.showIndex || (itemConfig.showCheckbox && isEditMode)
     val showIndexAsCheckbox = itemConfig.showCheckbox && isEditMode
 
     Row(
-        modifier = modifier.then(rowModifier).padding(
+        modifier = modifier.then(rowVisualModifier).padding(
             start = if (showIndexSlot) RowStartPaddingWithSlot else RowStartPaddingDefault,
             end = 6.dp,
         ),
@@ -262,19 +269,17 @@ private fun FullRow(
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground,
             )
+            val parts = buildList {
+                add(musicInfo.music.artist)
+                if (musicInfo.music.album.isNotBlank()) add(musicInfo.music.album)
+                if (musicInfo.music.duration > 0) add(formatDuration(musicInfo.music.duration))
+            }
             Text(
-                text = musicInfo.music.artist,
-                style = MaterialTheme.typography.labelSmall,
+                text = parts.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = musicInfo.music.album,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
@@ -399,8 +404,13 @@ private fun CompactRow(
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            val parts = buildList {
+                add(musicInfo.music.artist)
+                if (musicInfo.music.album.isNotBlank()) add(musicInfo.music.album)
+                if (musicInfo.music.duration > 0) add(formatDuration(musicInfo.music.duration))
+            }
             Text(
-                text = musicInfo.music.artist,
+                text = parts.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -537,19 +547,17 @@ private fun GalleryRow(
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground,
             )
+            val parts = buildList {
+                add(musicInfo.music.artist)
+                if (musicInfo.music.album.isNotBlank()) add(musicInfo.music.album)
+                if (musicInfo.music.duration > 0) add(formatDuration(musicInfo.music.duration))
+            }
             Text(
-                text = musicInfo.music.artist,
+                text = parts.joinToString(" · "),
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = musicInfo.music.album,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
         }
         }

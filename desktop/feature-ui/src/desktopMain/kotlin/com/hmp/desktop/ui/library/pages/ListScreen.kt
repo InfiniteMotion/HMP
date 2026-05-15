@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
@@ -358,6 +359,7 @@ private fun GenreCard(
         modifier = Modifier
             .width(160.dp)
             .height(100.dp)
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -404,6 +406,7 @@ private fun MoodCard(
     Card(
         modifier = Modifier
             .size(100.dp)
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -432,6 +435,7 @@ private fun ScenarioCard(
         modifier = Modifier
             .width(280.dp)
             .height(160.dp)
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -491,6 +495,7 @@ fun UserListCard(
         modifier = modifier
             .width(CARD_WIDTH_DP.dp)
             .height(CARD_HEIGHT_DP.dp)
+            .clip(RoundedCornerShape(CORNER_RADIUS_DP.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(CORNER_RADIUS_DP.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)

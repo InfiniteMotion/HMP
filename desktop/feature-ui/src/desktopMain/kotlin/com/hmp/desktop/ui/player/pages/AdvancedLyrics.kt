@@ -99,22 +99,10 @@ fun AdvancedLyrics(
             .fillMaxSize()
             .onSizeChanged { containerHeightPx = it.height }
     ) {
-        // 自动滚动到当前行
+        // 自动滚动到当前行（居中）
         LaunchedEffect(currentIndex, containerHeightPx) {
             if (currentIndex >= 0 && currentIndex < parsedLyrics.size && containerHeightPx > 0) {
-                // 居中逻辑修正：
-                // 由于 LazyColumn 已经设置了 contentPadding = containerHeightPx / 2，
-                // scrollToItem(index) 默认会将项滚动到 Padding 的下边缘，即屏幕中心线。
-                // 我们只需要向上微调半个行高（约 30dp），使项的中心对齐屏幕中心线。
-                // 在 scrollToItem 中，正值偏移量会将项向下方推（远离视口顶部），
-                // 负值偏移量会将项向上方推（进入视口顶部方向）。
-                // 所以我们需要一个负的偏移量来向上提半行高度。
-                val halfItemHeight = with(density) { 30.dp.toPx() }.toInt()
-                
-                scrollState.animateScrollToItem(
-                    index = currentIndex,
-                    scrollOffset = -halfItemHeight
-                )
+                scrollState.animateScrollToItem(index = currentIndex)
             }
         }
 

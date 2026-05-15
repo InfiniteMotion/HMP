@@ -29,7 +29,7 @@ actual object SecureStorageHelper {
         }
 
         return if (keyStore.containsAlias(KEY_ALIAS)) {
-            (keyStore.getEntry(KEY_ALIAS, null) as KeyStore.SecretKeyEntry).secretKey
+            (keyStore.getEntry(KEY_ALIAS, KeyStore.PasswordProtection(KEY_PASSWORD.toCharArray())) as KeyStore.SecretKeyEntry).secretKey
         } else {
             val keyGen = KeyGenerator.getInstance("AES")
             keyGen.init(256)

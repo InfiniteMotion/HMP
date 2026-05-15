@@ -3,26 +3,17 @@ package com.hmp.desktop.ui.common.pages
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,17 +33,13 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 
 import com.hmp.desktop.ui.common.components.BottomFusionBar
-import com.hmp.desktop.ui.common.components.DesktopNavigationRail
 import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
 import com.hmp.desktop.ui.common.pages.TabsHost
-import com.hmp.desktop.ui.common.components.TabPageIndicator
 import com.hmp.desktop.ui.common.layout.WindowSizeInfo
 import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
-import com.hmp.desktop.ui.common.layout.WindowHeightSizeClass
-import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.common.layout.heightSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import kotlinx.coroutines.launch
-import com.hmp.desktop.ui.player.components.MiniPlayerBar
 import com.hmp.desktop.ui.common.dialogs.CreatePlaylistDialog
 import com.hmp.desktop.ui.common.dialogs.base.MessageToast
 import com.hmp.desktop.ui.common.dialogs.MusicDetailDialog
@@ -203,21 +190,7 @@ fun MainScreen(
     LaunchedEffect(pagerState.currentPage) {
         savedTabIndex.intValue = pagerState.currentPage
     }
-    val tabHeader: @Composable () -> Unit = {
-        if (!windowSizeInfo.isExpanded) {
-            TabPageIndicator(
-                currentPage = pagerState.currentPage,
-                totalPages = tabCount,
-                modifier = Modifier
-                    .fillMaxWidth(),
-                onPageSelected = { index ->
-                    coroutineScope.launch {
-                        pagerState.scrollToPage(index)
-                    }
-                }
-            )
-        }
-    }
+    val tabHeader: @Composable () -> Unit = {}
 
     // 应用主题(根据播放状态切换)
     MaterialTheme(
@@ -307,107 +280,21 @@ fun MainScreen(
                             }
                         }
                     } else {
-                        // 紧凑布局
+                        // 紧凑/中等布局
                         Box(modifier = contentModifier) {
                             NavHost(
                                 navController = navController,
                                 entryProvider = navEntryProvider
                             )
-
-                            val isInTabs = navController.size == 1 && navController.lastOrNull() is Routes.Main.Tabs
-                            AnimatedVisibility(
-                                visible = isInTabs,
-                                enter = fadeIn(
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = AnimationTokens.EASE_OUT
-                                    )
-                                ) + scaleIn(
-                                    initialScale = 0.8f,
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = AnimationTokens.EASE_OUT
-                                    )
-                                ) + slideInVertically(
-                                    initialOffsetY = { -it },
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = AnimationTokens.EASE_OUT
-                                    )
-                                ),
-                                exit = fadeOut(
-                                    animationSpec = tween(
-                                        durationMillis = 250,
-                                        easing = AnimationTokens.EASE_IN
-                                    )
-                                ) + scaleOut(
-                                    targetScale = 0.9f,
-                                    animationSpec = tween(
-                                        durationMillis = 250,
-                                        easing = AnimationTokens.EASE_IN
-                                    )
-                                ) + slideOutVertically(
-                                    targetOffsetY = { -it / 2 },
-                                    animationSpec = tween(
-                                        durationMillis = 250,
-                                        easing = AnimationTokens.EASE_IN
-                                    )
-                                )
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(),
-                                    contentAlignment = Alignment.TopCenter
-                                ) {
-                                    tabHeader()
-                                }
-                            }
                         }
                     }
                 }
             }
 
-            // 紧凑模式：MiniPlayerBar 浮动底部
+            // 底部融合栏（导航 + 播放控制）— 所有布局模式共用
             val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
             AnimatedVisibility(
-                visible = !windowSizeInfo.isExpanded && navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
-                enter = slideInVertically(
-                    initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
-                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it }, // 向底部滑出 (偏移量为自身高度)
-                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                ) {
-                    MiniPlayerBar(
-                        musicInfo = currentMusic,
-                        isPlaying = isPlaying,
-                        progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
-                        hazeState = hazeState,
-                        onPlayPause = {
-                            if (isPlaying) {
-                                playbackViewModel.pauseMusic()
-                            } else {
-                                playbackViewModel.playOrResume()
-                            }
-                        },
-                        onNext = { playbackViewModel.playNext() },
-                        onPrev = { playbackViewModel.playPrevious() },
-                        onOpenPlayer = { navController.navigate(Routes.Player.Player) }
-                    )
-                }
-            }
-
-            // 扩展模式：底部融合栏（导航 + 播放控制）
-            AnimatedVisibility(
-                visible = windowSizeInfo.isExpanded && navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
+                visible = navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
@@ -440,7 +327,13 @@ fun MainScreen(
                         onNext = { playbackViewModel.playNext() },
                         onPrev = { playbackViewModel.playPrevious() },
                         onOpenPlayer = { navController.navigate(Routes.Player.Player) },
-                        hazeState = hazeState
+                        hazeState = hazeState,
+                        showNavText = windowSizeInfo.isExpanded,
+                        maxWidth = when (windowSizeInfo.widthSizeClass) {
+                            WindowWidthSizeClass.Compact -> 480.dp
+                            WindowWidthSizeClass.Medium -> 640.dp
+                            WindowWidthSizeClass.Expanded -> null
+                        }
                     )
                 }
             }

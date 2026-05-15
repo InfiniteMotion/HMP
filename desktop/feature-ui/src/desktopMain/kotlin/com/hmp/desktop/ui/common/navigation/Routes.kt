@@ -90,9 +90,6 @@ object Routes {
      * 包含应用设置、个人资料、备份和音乐库设置
      */
     object Settings {
-        /** 设置页路由 */
-        @Serializable object Setting : NavKey
-        
         /** 个人资料设置路由 */
         @Serializable object ProfileSettings : NavKey
         

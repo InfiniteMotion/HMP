@@ -1,24 +1,25 @@
 package com.hmp.desktop.ui.player.pages
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +59,8 @@ import kotlinx.coroutines.delay
 fun LyricsScreen(
     playbackViewModel: PlaybackViewModel = koinInject(),
     playlistQueueViewModel: PlaylistQueueViewModel = koinInject(),
-    settingsViewModel: SettingsViewModel = koinInject()
+    settingsViewModel: SettingsViewModel = koinInject(),
+    navController: com.hmp.desktop.ui.common.navigation.NavController? = null
 ) {
     val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
     val currentPosition by playbackViewModel.currentPosition.collectAsState()
@@ -73,67 +75,66 @@ fun LyricsScreen(
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
-    var isControlsVisible by remember { mutableStateOf(true) }
-    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val haptic = rememberHapticFeedback()
+
+    // 统一悬浮控制：鼠标在页面上时显示，离开 3 秒后隐藏
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val isHovered by hoverInteractionSource.collectIsHoveredAsState()
+    var areControlsVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isHovered) {
+        if (!isHovered) {
+            delay(3000L)
+            areControlsVisible = false
+        } else {
+            areControlsVisible = true
+        }
+    }
+
+    // 设置面板打开时始终显示控件
+    LaunchedEffect(isSettingsPanelVisible) {
+        if (isSettingsPanelVisible) {
+            areControlsVisible = true
+        }
+    }
 
     // 开启播放进度跟踪
     DisposableEffect(Unit) {
         playbackViewModel.startProgressTracking()
         onDispose {
-            // 退出时恢复底部播放栏
             playbackViewModel.setMiniPlayerVisible(true)
         }
     }
 
-    // 自动隐藏逻辑：5秒无操作自动隐藏（桌面端无系统状态栏控制）
-    LaunchedEffect(lastInteractionTime, isSettingsPanelVisible) {
-        if (isSettingsPanelVisible) {
-            // 设置面板打开时，始终显示控件
-            isControlsVisible = true
-        } else {
-            // 设置面板关闭时，5秒后隐藏
-            isControlsVisible = true
-            delay(5000L)
-            isControlsVisible = false
-        }
-    }
-
     // 同步控制 MiniPlayerBar 的显示隐藏
-    LaunchedEffect(isControlsVisible) {
-        playbackViewModel.setMiniPlayerVisible(isControlsVisible)
+    LaunchedEffect(areControlsVisible) {
+        playbackViewModel.setMiniPlayerVisible(areControlsVisible)
     }
-
-    val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
-    val bottomPadding by animateDpAsState(targetValue = if (isControlsVisible) 80.dp else 0.dp)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .hoverable(hoverInteractionSource)
             .pointerInput(Unit) {
-                // 点击屏幕切换显示/隐藏状态
                 awaitPointerEventScope {
                     while (true) {
-                        val event = awaitPointerEvent()
-                        // 任何交互都重置隐藏计时器并显示控件
-                        lastInteractionTime = System.currentTimeMillis()
+                        awaitPointerEvent()
+                        areControlsVisible = true
                     }
                 }
             }
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = bottomPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             // 歌词展示区域
             AdvancedLyrics(
-                modifier = if(!isSettingsPanelVisible) Modifier.weight(1f) else Modifier.padding(bottom = 240.dp),
+                modifier = Modifier.weight(1f),
                 lyrics = lyrics,
                 currentPosition = currentPosition,
-                onSeek = { 
-                    lastInteractionTime = System.currentTimeMillis()
-                    playbackViewModel.seekTo(it) 
+                onSeek = {
+                    areControlsVisible = true
+                    playbackViewModel.seekTo(it)
                 },
                 originalTextSize = originalTextSize,
                 translatedTextSize = translatedTextSize,
@@ -143,56 +144,94 @@ fun LyricsScreen(
                 alignment = alignment
             )
         }
-        // 设置面板（固定在底部）
+        // 悬浮设置面板（右下角，控制卡片上方）
         AnimatedVisibility(
             visible = isSettingsPanelVisible,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 128.dp),
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it }
-        ) {
-            LyricsSettingsPanel(
-                originalTextSize = originalTextSize,
-                translatedTextSize = translatedTextSize,
-                currentTimeTextSize = currentTimeTextSize,
-                lineSpacing = lineSpacing,
-                displayMode = displayMode,
-                alignment = alignment,
-                onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
-                onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
-                onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
-                onLineSpacingChange = { settingsViewModel.saveLyricsLineSpacing(it) },
-                onDisplayModeChange = { settingsViewModel.saveLyricsDisplayMode(it) },
-                onAlignmentChange = { settingsViewModel.saveLyricsAlignment(it) }
-            )
-        }
-
-        // 设置按钮（右下角）
-        AnimatedVisibility(
-            visible = isControlsVisible,
-            modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(bottom = 80.dp)
-                .padding(16.dp),
+                .padding(bottom = 72.dp, end = 16.dp),
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            IconButton(
-                onClick = {
-                    haptic.performLightClick()
-                    isSettingsPanelVisible = !isSettingsPanelVisible
-                    lastInteractionTime = System.currentTimeMillis()
-                },
-                modifier = Modifier.size(32.dp),
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                ),
+                border = BorderStroke(
+                    width = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                modifier = Modifier.size(width = 400.dp, height = 176.dp)
             ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_gallery_search_things),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    contentDescription = stringResource(Res.string.back),
-                    modifier = Modifier.size(28.dp),
+                LyricsSettingsPanel(
+                    originalTextSize = originalTextSize,
+                    translatedTextSize = translatedTextSize,
+                    currentTimeTextSize = currentTimeTextSize,
+                    lineSpacing = lineSpacing,
+                    displayMode = displayMode,
+                    alignment = alignment,
+                    onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
+                    onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
+                    onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
+                    onLineSpacingChange = { settingsViewModel.saveLyricsLineSpacing(it) },
+                    onDisplayModeChange = { settingsViewModel.saveLyricsDisplayMode(it) },
+                    onAlignmentChange = { settingsViewModel.saveLyricsAlignment(it) }
                 )
+            }
+        }
+
+        // 悬浮控制卡片（右下角）
+        AnimatedVisibility(
+            visible = areControlsVisible,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 16.dp, end = 16.dp),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Card(
+                shape = RoundedCornerShape(36.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                ),
+                border = BorderStroke(
+                    width = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    IconButton(
+                        onClick = { navController?.popBackStack() },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.chevron_left),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            contentDescription = stringResource(Res.string.back),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            haptic.performLightClick()
+                            isSettingsPanelVisible = !isSettingsPanelVisible
+                        },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_gallery_search_things),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            contentDescription = "设置",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -225,7 +264,7 @@ private fun LyricsSettingsPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
         VerticalSegmentedControl(

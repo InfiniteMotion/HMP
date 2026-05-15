@@ -23,14 +23,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -206,7 +206,6 @@ fun AIScreenContent(
 /**
  * 每日推荐刷新策略设置
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyRefreshSettings(
     refreshMode: String,
@@ -243,19 +242,19 @@ fun DailyRefreshSettings(
             )
             val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: stringResource(Res.string.refresh_by_time)
             
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
+            Box {
                 TextField(
                     value = currentModeLabel,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(Res.string.refresh_mode_label)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
+                    trailingIcon = {
+                        Icon(
+                            imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Transparent,
                         unfocusedIndicatorColor = Transparent,
@@ -263,7 +262,13 @@ fun DailyRefreshSettings(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
-                ExposedDropdownMenu(
+                // 透明遮罩层捕获点击，避免 readOnly TextField 拦截事件
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { expanded = !expanded }
+                )
+                DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {

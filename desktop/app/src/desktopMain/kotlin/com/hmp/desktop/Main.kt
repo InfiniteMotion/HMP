@@ -35,12 +35,32 @@ import com.sun.jna.platform.win32.WinDef
 import org.koin.core.context.GlobalContext
 import java.awt.EventQueue
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 fun main() {
     val t0 = System.currentTimeMillis()
-    fun stamp(label: String) = println("[Startup] +${System.currentTimeMillis() - t0}ms — $label")
+
+    // File-based startup log for diagnosing installed/packaged builds
+    // where stdout is not visible. Written to %LOCALAPPDATA%\HMP\logs\.
+    val fileLog: File? = try {
+        val logDir = File(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"), "HMP/logs")
+        logDir.mkdirs()
+        val logFile = File(logDir, "startup-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.log")
+        logFile.createNewFile()
+        logFile
+    } catch (e: Throwable) {
+        println("[Startup] Cannot create startup log file: ${e.message}")
+        null
+    }
+
+    fun stamp(label: String) {
+        val line = "[Startup] +${System.currentTimeMillis() - t0}ms — $label"
+        println(line)
+        fileLog?.appendText(line + "\n")
+    }
 
     // HiDPI scaling: must be set before any AWT/Compose class is loaded
     System.setProperty("sun.java2d.dpiaware", "true")

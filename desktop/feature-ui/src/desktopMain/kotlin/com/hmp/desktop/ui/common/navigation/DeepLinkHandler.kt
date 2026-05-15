@@ -187,7 +187,7 @@ class DeepLinkHandler(private val navController: NavController) {
             is DeepLink.Artist -> Routes.Library.Artist(deepLink.name)
             is DeepLink.Album -> Routes.Library.Album(deepLink.name)
             is DeepLink.Search -> Routes.Library.Search
-            DeepLink.Settings -> Routes.Settings.Setting
+            DeepLink.Settings -> Routes.Main.Tabs
             DeepLink.AudioEffects -> Routes.Player.AudioEffects
             DeepLink.AI -> Routes.AI.AI
             DeepLink.UserUsageData -> Routes.UserData.UserUsageData

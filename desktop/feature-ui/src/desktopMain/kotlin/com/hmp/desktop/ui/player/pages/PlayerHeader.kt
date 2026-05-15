@@ -21,8 +21,8 @@ fun PlayerHeader(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = TITLE_BAR_HEIGHT)
-            .padding(bottom = 16.dp),
+            .padding(top = 24.dp)
+            .padding(bottom = 32.dp),
         horizontalArrangement = Arrangement.Center
     ) {
         IconButton(

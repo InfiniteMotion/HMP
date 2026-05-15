@@ -22,7 +22,6 @@ import com.hmp.desktop.ui.playlist.pages.PlaylistScreen
 import com.hmp.desktop.ui.settings.pages.BackupSettingsScreen
 import com.hmp.desktop.ui.settings.pages.LibrarySettingsScreen
 import com.hmp.desktop.ui.settings.pages.ProfileSettingsScreen
-import com.hmp.desktop.ui.settings.pages.SettingScreen
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hmp.desktop.ui.library.viewmodel.LibraryViewModel
@@ -104,10 +103,6 @@ fun navigationGraph(
     }
     
     // Settings 模块
-    entry<Routes.Settings.Setting> {
-        SettingScreen(navController)
-    }
-    
     entry<Routes.Settings.ProfileSettings> {
         ProfileSettingsScreen(navController = navController)
     }
@@ -182,7 +177,7 @@ fun navigationGraph(
     }
     
     entry<Routes.Player.Lyrics> {
-        LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel)
+        LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel, navController = navController)
     }
     
     // AI 模块

@@ -2,7 +2,6 @@ package com.hmp.desktop.ui.common.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
@@ -14,6 +13,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,14 +40,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,18 +66,23 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hmp.desktop.generated.resources.*
+import com.hmp.desktop.generated.resources.Res
+import com.hmp.desktop.generated.resources.backward_end_fill
+import com.hmp.desktop.generated.resources.forward_end_fill
+import com.hmp.desktop.generated.resources.pause
+import com.hmp.desktop.generated.resources.play_fill
 import com.hmp.desktop.ui.common.util.HapticFeedbackHelper
+import com.hmp.desktop.ui.common.util.hazeStyleForIntensity
+import com.hmp.desktop.ui.common.util.hazeTintAlpha
 import com.hmp.desktop.ui.library.pages.components.AlbumCover
 import com.hmp.domain.music.MusicInfo
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
-import com.hmp.desktop.ui.common.util.hazeStyleForIntensity
-import com.hmp.desktop.ui.common.util.hazeTintAlpha
-import org.jetbrains.compose.resources.painterResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
 /** 底部融合栏状态 */
 enum class FusionBarState {
@@ -113,7 +117,9 @@ fun BottomFusionBar(
     onPrev: () -> Unit,
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    showNavText: Boolean = true,
+    maxWidth: Dp? = null
 ) {
     val haptic = remember { HapticFeedbackHelper() }
     var fusionState by remember { mutableStateOf(FusionBarState.NavigationExpanded) }
@@ -150,6 +156,7 @@ fun BottomFusionBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
             .padding(horizontal = 16.dp)
             .padding(bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
@@ -200,7 +207,7 @@ fun BottomFusionBar(
             ) { state ->
                 when (state) {
                     FusionBarState.NavigationExpanded ->
-                        NavigationExpandedContent(selectedTabIndex, onTabSelected, haptic)
+                        NavigationExpandedContent(selectedTabIndex, onTabSelected, haptic, showNavText)
                     FusionBarState.PlaybackExpanded ->
                         NavigationCollapsedContent(
                             selectedTab = bottomTabs[selectedTabIndex]
@@ -255,12 +262,12 @@ fun BottomFusionBar(
                     when (state) {
                         FusionBarState.NavigationExpanded ->
                             PlaybackCollapsedContent(
-                                musicInfo = musicInfo!!,
+                                musicInfo = musicInfo,
                                 isPlaying = isPlaying
                             )
                         FusionBarState.PlaybackExpanded ->
                             PlaybackExpandedContent(
-                                musicInfo = musicInfo!!,
+                                musicInfo = musicInfo,
                                 isPlaying = isPlaying,
                                 progress = progress,
                                 onPlayPause = {
@@ -294,7 +301,8 @@ fun BottomFusionBar(
 private fun NavigationExpandedContent(
     selectedIndex: Int,
     onTabSelected: (Int) -> Unit,
-    haptic: HapticFeedbackHelper
+    haptic: HapticFeedbackHelper,
+    showNavText: Boolean = true
 ) {
     val density = LocalDensity.current
     val glowColor = MaterialTheme.colorScheme.primary
@@ -304,7 +312,7 @@ private fun NavigationExpandedContent(
     val indicatorWidth = remember { Animatable(0f) }
     var indicatorReady by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedIndex, tabBounds.size) {
+    LaunchedEffect(selectedIndex, tabBounds[selectedIndex]) {
         val bounds = tabBounds[selectedIndex] ?: return@LaunchedEffect
         if (!indicatorReady) {
             indicatorLeft.snapTo(bounds.left)
@@ -387,13 +395,15 @@ private fun NavigationExpandedContent(
                         tint = contentColor,
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = tab.label,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = contentColor
-                    )
+                    if (showNavText) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = tab.label,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = contentColor
+                        )
+                    }
                 }
             }
         }

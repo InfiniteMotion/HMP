@@ -1,20 +1,28 @@
 package com.hmp.desktop.ui.player.pages
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,7 +40,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.config.DisplayMode
@@ -45,15 +56,27 @@ import com.hmp.domain.playlist.WeightTemplate
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
-import com.hmp.desktop.ui.library.pages.components.AlbumCover
-import com.hmp.desktop.ui.player.components.DotPager
 import com.hmp.desktop.ui.common.components.base.GeneratePlaylistComboButtons
 import com.hmp.desktop.ui.common.dialogs.TimerDialog
+import com.hmp.desktop.ui.common.layout.widthSizeClass
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
 import com.hmp.desktop.ui.common.util.rememberHapticFeedback
+import com.hmp.desktop.ui.common.util.hazeStyleForIntensity
+import com.hmp.desktop.ui.library.pages.components.AlbumCover
+import com.hmp.desktop.ui.library.pages.components.musiclist.CurrentPlayingConfig
+import com.hmp.desktop.ui.library.pages.components.musiclist.EditConfig
+import com.hmp.desktop.ui.library.pages.components.musiclist.FullItemOptions
+import com.hmp.desktop.ui.library.pages.components.musiclist.HeaderConfig
+import com.hmp.desktop.ui.library.pages.components.musiclist.ItemConfig
+import com.hmp.desktop.ui.library.pages.components.musiclist.ItemVariant
+import com.hmp.desktop.ui.library.pages.components.musiclist.MusicList
+import com.hmp.desktop.ui.library.pages.components.musiclist.MusicListCallbacksAdapter
+import com.hmp.desktop.ui.library.pages.components.musiclist.defaultMusicListConfig
 import com.hmp.desktop.ui.player.viewmodel.LyricsSettingsState
 import com.hmp.desktop.ui.player.viewmodel.PlayerCallbacks
 import com.hmp.desktop.ui.player.viewmodel.PlayerUiState
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 
 // 格式化时间为 mm:ss
@@ -75,9 +98,8 @@ fun PlayContent(
     val haptic = rememberHapticFeedback()
 
     var showTimerDialog by remember { mutableStateOf(false) }
-    var playlistExpanded by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf("lyrics") }
 
-    // 解构状态以便在代码中使用
     val musicInfo = playerUiState.musicInfo
     val isPlaying = playerUiState.isPlaying
     val currentPosition = playerUiState.currentPosition
@@ -98,9 +120,8 @@ fun PlayContent(
     val lyricsDisplayMode = lyricsSettingsState.lyricsDisplayMode
     val lyricsAlignment = lyricsSettingsState.lyricsAlignment
 
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val sizeClass = widthSizeClass(maxWidth)
         val screenHeight = maxHeight
         val scrollState = rememberScrollState()
 
@@ -120,98 +141,235 @@ fun PlayContent(
                         .fillMaxWidth()
                         .height(screenHeight)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .weight(1f) // 使顶部区域占据剩余空间
-                    ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        PlayerHeader({ callbacks.onBackClick() })
-                        Spacer(modifier = Modifier.height(24.dp))
-                        MusicInfo(musicInfo?.music, { callbacks.onArtistClick(it) })
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // 封面区域：使用 weight(1f) 实现弹性缩放
-                        MusicInfoExtra(
-                            musicInfo = musicInfo,
-                            lyrics = lyrics,
-                            currentPosition = currentPosition,
-                            defaultAlgorithmType = defaultAlgorithmType,
-                            defaultTemplate = defaultTemplate,
-                            originalTextSize = lyricsOriginalTextSize,
-                            translatedTextSize = lyricsTranslatedTextSize,
-                            currentTimeTextSize = lyricsCurrentTimeTextSize,
-                            lineSpacing = lyricsLineSpacing,
-                            displayMode = lyricsDisplayMode,
-                            alignment = lyricsAlignment,
-                            onSeek = { callbacks.onSeek(it) },
-                            onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
-                            onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SeekBar(
-                            currentPosition = currentPosition,
-                            duration = duration,
-                            onSeek = { callbacks.onSeek(it) }
-                        )
-                        // 播放控制按钮区
-                        PlaybackControlsButtons(
-                            isPlaying = isPlaying,
-                            playbackMode = playbackMode,
-                            isLike = isLiked,
-                            remainingTime = remainingTime,
-                            playlistExpanded = playlistExpanded,
-                            onPlayPause = {
-                                haptic.performClick()
-                                callbacks.onPlayPause()
-                            },
-                            onNext = {
-                                haptic.performClick()
-                                callbacks.onNext()
-                            },
-                            onPrevious = {
-                                haptic.performClick()
-                                callbacks.onPrevious()
-                            },
-                            onPlaybackModeChange = {
-                                haptic.performContextClick()
-                                callbacks.onPlaybackModeChange()
-                            },
-                            onFavorite = {
-                                haptic.performConfirm()
-                                callbacks.onFavorite()
-                            },
-                            onTimerClick = { callbacks.onShowTimerDialog() },
-                            onHeartMode = {
-                                haptic.performConfirm()
-                                callbacks.onHeartMode()
-                            },
-                            onPlaylistToggle = {
-                                playlistExpanded = !playlistExpanded
+                    when (sizeClass) {
+                        WindowWidthSizeClass.Compact -> {
+                            // ── Compact: 全屏封面展示 ──
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    PlayerHeader({ callbacks.onBackClick() })
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (musicInfo?.music?.title != null) {
+                                    Text(
+                                        text = musicInfo.music.title,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
+                                Spacer(modifier = Modifier.weight(1f))
+                                AlbumCover(
+                                    musicInfo?.music?.albumArtUri,
+                                    280.dp,
+                                    20.dp,
+                                    10.dp
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
                             }
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SeekBar(
+                                    currentPosition = currentPosition,
+                                    duration = duration,
+                                    onSeek = { callbacks.onSeek(it) }
+                                )
+                                PlaybackControlsButtons(
+                                    isPlaying = isPlaying,
+                                    playbackMode = playbackMode,
+                                    isLike = isLiked,
+                                    remainingTime = remainingTime,
+                                    isPlaylistSelected = selectedTab == "playlist",
+                                    onPlayPause = {
+                                        haptic.performClick()
+                                        callbacks.onPlayPause()
+                                    },
+                                    onNext = {
+                                        haptic.performClick()
+                                        callbacks.onNext()
+                                    },
+                                    onPrevious = {
+                                        haptic.performClick()
+                                        callbacks.onPrevious()
+                                    },
+                                    onPlaybackModeChange = {
+                                        haptic.performContextClick()
+                                        callbacks.onPlaybackModeChange()
+                                    },
+                                    onFavorite = {
+                                        haptic.performConfirm()
+                                        callbacks.onFavorite()
+                                    },
+                                    onTimerClick = { callbacks.onShowTimerDialog() },
+                                    onHeartMode = {
+                                        haptic.performConfirm()
+                                        callbacks.onHeartMode()
+                                    },
+                                    onPlaylistToggle = {
+                                        selectedTab = if (selectedTab == "playlist") "lyrics" else "playlist"
+                                    }
+                                )
+                            }
+                        }
+                        else -> {
+                            // ── Medium / Expanded: 双栏布局 ──
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                // 左栏：返回按钮 + 音乐信息 + 封面 + 进度 + 控制
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.4f)
+                                        .fillMaxHeight()
+                                ) {
+                                    PlayerHeader({ callbacks.onBackClick() })
 
-                // 播放列表区域：位于主界面下方
-                PlaylistArea(
-                    expanded = playlistExpanded,
-                    playlist = playlist,
-                    currentIndex = currentIndex,
-                    scrollState = scrollState,
-                    onClearPlaylist = { callbacks.onClearPlaylist() },
-                    onPlayItem = { callbacks.onPlayItem(it) },
-                    onMoveToTop = { callbacks.onMoveToTop(it) },
-                    onRemoveFromPlaylist = { callbacks.onRemoveFromPlaylist(it) }
-                )
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(start = 16.dp, end = 8.dp)
+                                            .padding(vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                    MusicInfo(musicInfo?.music, { callbacks.onArtistClick(it) })
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Box(
+                                        modifier = Modifier.weight(1f),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AlbumCover(
+                                            musicInfo?.music?.albumArtUri,
+                                            220.dp,
+                                            16.dp,
+                                            8.dp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    SeekBar(
+                                        currentPosition = currentPosition,
+                                        duration = duration,
+                                        onSeek = { callbacks.onSeek(it) }
+                                    )
+                                    PlaybackControlsButtons(
+                                        isPlaying = isPlaying,
+                                        playbackMode = playbackMode,
+                                        isLike = isLiked,
+                                        remainingTime = remainingTime,
+                                        isPlaylistSelected = selectedTab == "playlist",
+                                        onPlayPause = {
+                                            haptic.performClick()
+                                            callbacks.onPlayPause()
+                                        },
+                                        onNext = {
+                                            haptic.performClick()
+                                            callbacks.onNext()
+                                        },
+                                        onPrevious = {
+                                            haptic.performClick()
+                                            callbacks.onPrevious()
+                                        },
+                                        onPlaybackModeChange = {
+                                            haptic.performContextClick()
+                                            callbacks.onPlaybackModeChange()
+                                        },
+                                        onFavorite = {
+                                            haptic.performConfirm()
+                                            callbacks.onFavorite()
+                                        },
+                                        onTimerClick = { callbacks.onShowTimerDialog() },
+                                        onHeartMode = {
+                                            haptic.performConfirm()
+                                            callbacks.onHeartMode()
+                                        },
+                                        onPlaylistToggle = {
+                                            selectedTab = if (selectedTab == "playlist") "lyrics" else "playlist"
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                } // 内层 Column 结束
+                            } // 左栏 Column 结束
+
+                            // 分隔线
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .fillMaxHeight()
+                                        .background(MaterialTheme.colorScheme.outlineVariant)
+                                )
+
+                                // 右栏：可切换内容 + 底部胶囊 Tab Bar
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.6f)
+                                        .fillMaxHeight()
+                                        .padding(start = 8.dp, end = 16.dp)
+                                        .padding(vertical = 16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    // 内容区域
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        when (selectedTab) {
+                                            "playlist" -> PlaylistTabContent(
+                                                playlist = playlist,
+                                                currentIndex = currentIndex,
+                                                onPlayItem = { callbacks.onPlayItem(it) },
+                                                onMoveToTop = { callbacks.onMoveToTop(it) },
+                                                onRemoveFromPlaylist = { callbacks.onRemoveFromPlaylist(it) },
+                                                onClearPlaylist = { callbacks.onClearPlaylist() }
+                                            )
+                                            "generate" -> GenerateTabContent(
+                                                seedMusicId = musicInfo?.music?.id,
+                                                defaultAlgorithmType = defaultAlgorithmType,
+                                                defaultTemplate = defaultTemplate,
+                                                onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
+                                                onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }
+                                            )
+                                            "info" -> TechnicalInfoCard(
+                                                extra = musicInfo?.extra,
+                                                modifier = Modifier.padding(16.dp)
+                                            )
+                                            else -> AdvancedLyrics(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .padding(vertical = 16.dp),
+                                                lyrics = lyrics,
+                                                currentPosition = currentPosition,
+                                                onSeek = { callbacks.onSeek(it) },
+                                                originalTextSize = lyricsOriginalTextSize,
+                                                translatedTextSize = lyricsTranslatedTextSize,
+                                                currentTimeTextSize = lyricsCurrentTimeTextSize,
+                                                lineSpacing = lyricsLineSpacing,
+                                                displayMode = lyricsDisplayMode,
+                                                alignment = lyricsAlignment
+                                            )
+                                        }
+
+                                        // 悬浮底部胶囊 Tab Bar
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(bottom = 8.dp)
+                                        ) {
+                                            PlayerTabBar(
+                                                selectedTab = selectedTab,
+                                                onTabSelected = { selectedTab = it },
+                                                hazeState = hazeState
+                                            )
+                                        }
+                                    }
+                                }
+                            } // Row end
+                        }
+                    }
+                }
             }
         }
         if (showTimerDialog) {
@@ -231,6 +389,117 @@ fun PlayContent(
     }
 }
 
+// ── 右栏各标签页内容 ──
+
+@Composable
+private fun PlaylistTabContent(
+    playlist: List<MusicInfo>,
+    currentIndex: Int,
+    onPlayItem: (MusicInfo) -> Unit,
+    onMoveToTop: (MusicInfo) -> Unit,
+    onRemoveFromPlaylist: (MusicInfo) -> Unit,
+    onClearPlaylist: () -> Unit
+) {
+    val haptic = rememberHapticFeedback()
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 32.dp, top = 8.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = { haptic.performLightClick(); onClearPlaylist() }) {
+                Text(
+                    text = stringResource(Res.string.clear),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Text(
+                text = "${currentIndex + 1}/${playlist.size}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+
+        val callbacks = object : MusicListCallbacksAdapter() {
+            override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                haptic.performClick()
+                onPlayItem(musicInfo)
+            }
+            override fun onPinToTop(musicInfo: MusicInfo) {
+                haptic.performConfirm()
+                onMoveToTop(musicInfo)
+            }
+            override fun onRemove(musicInfo: MusicInfo) {
+                haptic.performLightClick()
+                onRemoveFromPlaylist(musicInfo)
+            }
+        }
+        val config = defaultMusicListConfig(callbacks).copy(
+            header = HeaderConfig.None,
+            item = ItemConfig(
+                showIndex = true,
+                variant = ItemVariant.Full,
+                fullOptions = FullItemOptions(
+                    showPinButton = true,
+                    showRemoveButton = true,
+                    showMenuButton = false,
+                ),
+            ),
+            edit = EditConfig(enabled = false),
+            currentPlaying = CurrentPlayingConfig(
+                index = currentIndex.takeIf { it in playlist.indices },
+                autoScrollToCurrent = true,
+            ),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        )
+        MusicList(
+            musicInfoList = playlist,
+            config = config,
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            isPlaying = true,
+        )
+    }
+}
+
+@Composable
+private fun GenerateTabContent(
+    seedMusicId: Long?,
+    defaultAlgorithmType: AlgorithmType?,
+    defaultTemplate: WeightTemplate?,
+    onGeneratePlaylist: (Long) -> Unit,
+    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (seedMusicId != null) {
+            GeneratePlaylistComboButtons(
+                seedMusicId = seedMusicId,
+                defaultAlgorithmType = defaultAlgorithmType,
+                defaultTemplate = defaultTemplate,
+                onGeneratePlaylist = onGeneratePlaylist,
+                onSaveDefaultConfig = onSaveDefaultConfig
+            )
+        } else {
+            Text(
+                text = "暂无歌曲信息",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+}
+
 // 歌曲标题、艺术家、专辑信息
 @Composable
 fun MusicInfo(
@@ -238,7 +507,7 @@ fun MusicInfo(
     onArtistClick: (String) -> Unit
 ) {
     Column(
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(horizontal = 32.dp)
     ) {
         Text(
@@ -270,74 +539,6 @@ fun MusicInfo(
     }
 }
 
-// 标签，专辑封面，歌词
-@Composable
-fun MusicInfoExtra(
-    modifier: Modifier = Modifier,
-    musicInfo: MusicInfo?,
-    lyrics: String?,
-    currentPosition: Long,
-    defaultAlgorithmType: AlgorithmType?,
-    defaultTemplate: WeightTemplate?,
-    originalTextSize: Int = 14,
-    translatedTextSize: Int = 14,
-    currentTimeTextSize: Int = 16,
-    lineSpacing: Int = 6,
-    displayMode: DisplayMode = DisplayMode.DUAL,
-    alignment: LyricsAlignment = LyricsAlignment.CENTER,
-    onSeek: (Long) -> Unit,
-    onGeneratePlaylist: (Long) -> Unit,
-    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
-) {
-    val contents = listOf<@Composable () -> Unit>(
-        {
-            Column(
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                if (musicInfo?.extra != null) {
-                    TechnicalInfoCard(musicInfo.extra, modifier = Modifier.padding(16.dp))
-                }
-                if (musicInfo?.extra?.isGetExtraInfo == true) {
-                    GeneratePlaylistComboButtons(
-                        musicInfo.music.id,
-                        defaultAlgorithmType,
-                        defaultTemplate,
-                        onGeneratePlaylist,
-                        onSaveDefaultConfig
-                    )
-                }
-            }
-        },
-        {
-            AlbumCover(
-                musicInfo?.music?.albumArtUri,
-                300.dp,
-                20.dp,
-                10.dp
-            )
-        },
-        {
-            AdvancedLyrics(
-                modifier = Modifier.padding(vertical = 16.dp),
-                lyrics = lyrics,
-                currentPosition = currentPosition,
-                onSeek = onSeek,
-                originalTextSize = originalTextSize,
-                translatedTextSize = translatedTextSize,
-                currentTimeTextSize = currentTimeTextSize,
-                lineSpacing = lineSpacing,
-                displayMode = displayMode,
-                alignment = alignment
-            )
-        }
-    )
-    DotPager(
-        modifier = modifier.fillMaxWidth(),
-        pageContent = contents,
-        initialPage = 1
-    )
-}
-
 // 音乐进度条和时间显示
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -350,13 +551,11 @@ fun SeekBar(
     var sliderPosition by remember { mutableFloatStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
 
-    // 监听位置变化
     LaunchedEffect(currentPosition) {
         if (!isSeeking && duration > 0) {
             sliderPosition = currentPosition.toFloat() / duration
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -366,7 +565,7 @@ fun SeekBar(
         Slider(
             value = sliderPosition,
             onValueChange = { newValue ->
-                isSeeking = true // 用户开始拖动，设置为true
+                isSeeking = true
                 haptic.performDragStart()
                 sliderPosition = newValue
             },
@@ -374,7 +573,7 @@ fun SeekBar(
                 haptic.performGestureEnd()
                 val seekPosition = (sliderPosition * duration).toLong()
                 onSeek(seekPosition)
-                isSeeking = false // 拖动结束，设置为false
+                isSeeking = false
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -429,7 +628,7 @@ fun PlaybackControlsButtons(
     playbackMode: PlaybackMode,
     isLike: Boolean,
     remainingTime: Long?,
-    playlistExpanded: Boolean,
+    isPlaylistSelected: Boolean,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -445,7 +644,6 @@ fun PlaybackControlsButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 播放控制按钮区域
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -554,12 +752,83 @@ fun PlaybackControlsButtons(
                 }
             ) {
                 Icon(
-                    tint = if (playlistExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    tint = if (isPlaylistSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     painter = painterResource(
-                        if (playlistExpanded) Res.drawable.chevron_up_circle else Res.drawable.music_note_list
+                        if (isPlaylistSelected) Res.drawable.chevron_up_circle else Res.drawable.music_note_list
                     ),
                     contentDescription = stringResource(Res.string.playlist),
                 )
+            }
+        }
+    }
+}
+
+// ── 底部胶囊 Tab Bar（与 BottomFusionBar 一致风格）──
+
+private val tabOptions = listOf(
+    "lyrics" to "歌词",
+    "playlist" to "播放列表",
+    "generate" to "推荐生成",
+    "info" to "文件信息"
+)
+
+@Composable
+private fun PlayerTabBar(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    hazeState: HazeState?
+) {
+    Card(
+        shape = RoundedCornerShape(36.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (hazeState != null) {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = BorderStroke(
+            width = 0.5.dp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(36.dp))
+            .then(
+                if (hazeState != null) Modifier.hazeEffect(
+                    state = hazeState,
+                    style = hazeStyleForIntensity()
+                ) else Modifier
+            )
+    ) {
+        Row(
+            modifier = Modifier.padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            tabOptions.forEach { (id, label) ->
+                val isSelected = id == selectedTab
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else Color.Transparent
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onTabSelected(id) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
