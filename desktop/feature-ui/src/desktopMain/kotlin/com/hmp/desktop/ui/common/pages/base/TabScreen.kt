@@ -56,32 +56,35 @@ fun TabScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = horizontalPadding, end = horizontalPadding, top = 16.dp, bottom = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (title != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(top = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.displayLarge,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
+            // expanded 时隐藏标题行
+            if (sizeClass != WindowWidthSizeClass.Expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = horizontalPadding, end = horizontalPadding, top = 16.dp, bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (title != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(top = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.displayLarge,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
 
-                        if (trailing != null) {
-                            trailing()
-                        }
+                            if (trailing != null) {
+                                trailing()
+                            }
 
-                        if (hasSearchBotton && navController != null) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            SearchButton(navController)
+                            if (hasSearchBotton && navController != null) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                SearchButton(navController)
+                            }
                         }
                     }
                 }

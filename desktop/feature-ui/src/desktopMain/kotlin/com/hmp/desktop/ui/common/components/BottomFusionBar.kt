@@ -36,9 +36,11 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -100,8 +102,8 @@ private data class BottomTabItem(
 
 private val bottomTabs = listOf(
     BottomTabItem("首页", Icons.Filled.Home, Icons.Outlined.Home),
-    BottomTabItem("封面", Icons.Filled.Image, Icons.Outlined.Image),
-    BottomTabItem("列表", Icons.AutoMirrored.Filled.List, Icons.AutoMirrored.Outlined.List),
+    BottomTabItem("乐库", Icons.Filled.LibraryMusic, Icons.Outlined.LibraryMusic),
+    BottomTabItem("歌单", Icons.AutoMirrored.Filled.List, Icons.AutoMirrored.Outlined.List),
     BottomTabItem("我的", Icons.Filled.Person, Icons.Outlined.Person)
 )
 
@@ -119,7 +121,8 @@ fun BottomFusionBar(
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
     showNavText: Boolean = true,
-    maxWidth: Dp? = null
+    maxWidth: Dp? = null,
+    forceExpanded: Boolean = false,
 ) {
     val haptic = remember { HapticFeedbackHelper() }
     var fusionState by remember { mutableStateOf(FusionBarState.NavigationExpanded) }
@@ -133,9 +136,9 @@ fun BottomFusionBar(
         }
     }
 
-    // 播放展开态 5 秒无操作自动回到默认态
+    // 播放展开态 5 秒无操作自动回到默认态（expanded 模式下不自动折叠）
     LaunchedEffect(fusionState, timerKey) {
-        if (fusionState == FusionBarState.PlaybackExpanded) {
+        if (fusionState == FusionBarState.PlaybackExpanded && !forceExpanded) {
             delay(5_000)
             fusionState = FusionBarState.NavigationExpanded
         }
@@ -200,18 +203,22 @@ fun BottomFusionBar(
                     ) else Modifier
                 )
         ) {
-            AnimatedContent(
-                targetState = fusionState,
-                transitionSpec = transitionSpec,
-                label = "NavCapsule"
-            ) { state ->
-                when (state) {
-                    FusionBarState.NavigationExpanded ->
-                        NavigationExpandedContent(selectedTabIndex, onTabSelected, haptic, showNavText)
-                    FusionBarState.PlaybackExpanded ->
-                        NavigationCollapsedContent(
-                            selectedTab = bottomTabs[selectedTabIndex]
-                        )
+            if (forceExpanded) {
+                NavigationExpandedContent(selectedTabIndex, onTabSelected, haptic, showNavText)
+            } else {
+                AnimatedContent(
+                    targetState = fusionState,
+                    transitionSpec = transitionSpec,
+                    label = "NavCapsule"
+                ) { state ->
+                    when (state) {
+                        FusionBarState.NavigationExpanded ->
+                            NavigationExpandedContent(selectedTabIndex, onTabSelected, haptic, showNavText)
+                        FusionBarState.PlaybackExpanded ->
+                            NavigationCollapsedContent(
+                                selectedTab = bottomTabs[selectedTabIndex]
+                            )
+                    }
                 }
             }
         }
@@ -254,40 +261,53 @@ fun BottomFusionBar(
                         ) else Modifier
                     )
             ) {
-                AnimatedContent(
-                    targetState = fusionState,
-                    transitionSpec = transitionSpec,
-                    label = "PlaybackCapsule"
-                ) { state ->
-                    when (state) {
-                        FusionBarState.NavigationExpanded ->
-                            PlaybackCollapsedContent(
-                                musicInfo = musicInfo,
-                                isPlaying = isPlaying
-                            )
-                        FusionBarState.PlaybackExpanded ->
-                            PlaybackExpandedContent(
-                                musicInfo = musicInfo,
-                                isPlaying = isPlaying,
-                                progress = progress,
-                                onPlayPause = {
-                                    resetTimer()
-                                    onPlayPause()
-                                },
-                                onPrev = {
-                                    resetTimer()
-                                    onPrev()
-                                },
-                                onNext = {
-                                    resetTimer()
-                                    onNext()
-                                },
-                                onOpenPlayer = {
-                                    resetTimer()
-                                    onOpenPlayer()
-                                },
-                                haptic = haptic
-                            )
+                if (forceExpanded) {
+                    PlaybackExpandedContent(
+                        musicInfo = musicInfo,
+                        isPlaying = isPlaying,
+                        progress = progress,
+                        onPlayPause = onPlayPause,
+                        onPrev = onPrev,
+                        onNext = onNext,
+                        onOpenPlayer = onOpenPlayer,
+                        haptic = haptic
+                    )
+                } else {
+                    AnimatedContent(
+                        targetState = fusionState,
+                        transitionSpec = transitionSpec,
+                        label = "PlaybackCapsule"
+                    ) { state ->
+                        when (state) {
+                            FusionBarState.NavigationExpanded ->
+                                PlaybackCollapsedContent(
+                                    musicInfo = musicInfo,
+                                    isPlaying = isPlaying
+                                )
+                            FusionBarState.PlaybackExpanded ->
+                                PlaybackExpandedContent(
+                                    musicInfo = musicInfo,
+                                    isPlaying = isPlaying,
+                                    progress = progress,
+                                    onPlayPause = {
+                                        resetTimer()
+                                        onPlayPause()
+                                    },
+                                    onPrev = {
+                                        resetTimer()
+                                        onPrev()
+                                    },
+                                    onNext = {
+                                        resetTimer()
+                                        onNext()
+                                    },
+                                    onOpenPlayer = {
+                                        resetTimer()
+                                        onOpenPlayer()
+                                    },
+                                    haptic = haptic
+                                )
+                        }
                     }
                 }
             }

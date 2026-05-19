@@ -264,7 +264,7 @@ private fun FullRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = musicInfo.music.title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -276,7 +276,7 @@ private fun FullRow(
             }
             Text(
                 text = parts.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
@@ -399,7 +399,7 @@ private fun CompactRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = musicInfo.music.title,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -411,7 +411,7 @@ private fun CompactRow(
             }
             Text(
                 text = parts.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -542,7 +542,7 @@ private fun GalleryRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = musicInfo.music.title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -554,7 +554,7 @@ private fun GalleryRow(
             }
             Text(
                 text = parts.joinToString(" · "),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),

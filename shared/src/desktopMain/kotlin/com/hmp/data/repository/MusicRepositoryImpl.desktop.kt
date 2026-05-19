@@ -49,6 +49,7 @@ import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -276,8 +277,16 @@ class MusicRepositoryImpl(
     override suspend fun getRandomMusicInfoWithMissingExtra(): MusicInfo? =
         musicAllDao.getRandomMusicInfoWithMissingExtra()?.toDomain()
 
-    override suspend fun getRandomMusicInfoWithExtra(): MusicInfo? =
-        musicAllDao.getRandomMusicInfoWithExtra()?.toDomain()
+    override suspend fun getRandomMusicInfoWithExtra(): MusicInfo? {
+        // 手动构建 MusicInfo，绕过 Room @Relation 可能存在的加载问题
+        val ids = musicDao.getAllActiveIds()
+        if (ids.isEmpty()) return null
+        val randomId = ids.random()
+        val music = musicDao.getMusicById(randomId).firstOrNull() ?: return null
+        val extra = musicExtraDao.getExtraFieldsById(randomId)
+        val userInfo = userInfoDao.getUserInfoById(randomId)
+        return MusicInfo(music.toDomain(), extra?.toDomain(), userInfo?.toDomain())
+    }
 
     override suspend fun searchMusic(query: String): List<MusicInfo> =
         musicAllDao.searchMusic("%$query%").map { it.toDomain() }

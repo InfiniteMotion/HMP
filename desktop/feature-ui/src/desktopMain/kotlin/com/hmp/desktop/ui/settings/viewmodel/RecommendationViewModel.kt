@@ -35,6 +35,7 @@ class RecommendationViewModel(
     private val _dailyMusicLabel = MutableStateFlow<List<MusicLabel?>>(emptyList())
     val dailyMusicLabel: StateFlow<List<MusicLabel?>> = _dailyMusicLabel
 
+
     // 心动歌单（相似歌曲）
     private val _heartbeatList = MutableStateFlow<List<MusicInfo>>(emptyList())
     val heartbeatList: StateFlow<List<MusicInfo>> = _heartbeatList
@@ -119,15 +120,34 @@ class RecommendationViewModel(
      */
     fun refreshDailyMusicInfo() {
         viewModelScope.launch {
-            val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
-            dailyMusic.value = recommendation.musicInfo
-            _dailyMusicInfo.value = recommendation.dailyMusicInfo
-            _dailyMusicLabel.value = recommendation.labels
+            try {
+                val recommendation = getDailyRecommendationUseCase.getRandomMusicWithExtra()
+                val musicInfo = recommendation.musicInfo
+                val dailyInfo = recommendation.dailyMusicInfo
+                if (musicInfo != null) {
+                    // 合并 DailyMusicInfo 字段到 MusicExtra，确保描述信息可用
+                    val mergedInfo = if (dailyInfo != null) {
+                        val extra = musicInfo.extra
+                        if (extra != null && (extra.backgroundIntroduce.isNullOrBlank() || extra.description.isNullOrBlank())) {
+                            musicInfo.copy(extra = extra.copy(
+                                backgroundIntroduce = if (extra.backgroundIntroduce.isNullOrBlank()) dailyInfo.backgroundIntroduce.ifBlank { null } else extra.backgroundIntroduce,
+                                description = if (extra.description.isNullOrBlank()) dailyInfo.description.ifBlank { null } else extra.description,
+                            ))
+                        } else musicInfo
+                    } else musicInfo
 
-            recommendation.musicInfo?.music?.id?.let { musicId ->
-                userSettingsUseCase.saveCurrentDailyMusicId(musicId)
+                    dailyMusic.value = mergedInfo
+                    _dailyMusicInfo.value = dailyInfo
+                    _dailyMusicLabel.value = recommendation.labels
+
+                    mergedInfo.music.id.let { musicId ->
+                        userSettingsUseCase.saveCurrentDailyMusicId(musicId)
+                    }
+                    userSettingsUseCase.updateLastDailyRefreshTimestamp()
+                }
+            } catch (e: Exception) {
+                println("[ERR] refreshDailyMusicInfo failed: ${e.message}")
             }
-            userSettingsUseCase.updateLastDailyRefreshTimestamp()
         }
     }
 
@@ -210,6 +230,7 @@ class RecommendationViewModel(
         getDailyRecommendationUseCase.resetProcessingState()
         _isProcessingExtraInfo.value = false
         _processingProgress.value = BatchProcessingProgress()
+        getDailyMusicInfo()
 
         // 监听每日推荐变化，自动获取相似歌曲
         viewModelScope.launch {

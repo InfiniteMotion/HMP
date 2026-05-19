@@ -329,6 +329,7 @@ fun MainScreen(
                         onOpenPlayer = { navController.navigate(Routes.Player.Player) },
                         hazeState = hazeState,
                         showNavText = windowSizeInfo.isExpanded,
+                        forceExpanded = windowSizeInfo.isExpanded,
                         maxWidth = when (windowSizeInfo.widthSizeClass) {
                             WindowWidthSizeClass.Compact -> 480.dp
                             WindowWidthSizeClass.Medium -> 640.dp
