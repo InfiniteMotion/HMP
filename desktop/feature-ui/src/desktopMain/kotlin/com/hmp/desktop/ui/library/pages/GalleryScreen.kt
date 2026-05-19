@@ -15,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import org.koin.compose.koinInject
 
 
@@ -186,6 +188,8 @@ fun GalleryScreenContent(
             showBatchRemoveConfirmDialog = true
         }
     }
+    val density = LocalDensity.current
+    val isExpanded = with(density) { LocalWindowInfo.current.containerSize.width.toDp() } >= 840.dp
     val config = galleryPresetMusicListConfig(callbacks).copy(
         header = HeaderConfig.Full(
             selectedGenre = selectedGenre,
@@ -194,6 +198,7 @@ fun GalleryScreenContent(
             onFilterOrderChange = onFilterOrderChange,
             onOrderPlay = onOrderPlay,
             onShufflePlay = onShufflePlay,
+            singleRowFilter = isExpanded,
         ),
         item = ItemConfig(
             showIndex = true,
@@ -207,7 +212,8 @@ fun GalleryScreenContent(
         ),
         list = ListConfig(
             enableLongPressToEnterEdit = true,
-            bottomSpacerHeight = 88.dp
+            bottomSpacerHeight = 88.dp,
+            columns = if (isExpanded) 2 else 1,
         ),
         edit = EditConfig(enabled = true),
         indexJump = indexJumpConfigForOrderBy(selectedGenre, selectedOrder),

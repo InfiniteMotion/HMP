@@ -24,7 +24,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -135,14 +134,10 @@ fun UserScreen(
     usageDataViewModel: UserUsageDataViewModel = koinInject()
 ) {
 
-    val userName by settingsViewModel.userName.collectAsState("")
-    val avatarUri by settingsViewModel.avatarUri.collectAsState("")
-    val listeningData by recommendationViewModel.recentListeningDurations.collectAsState()
-    val usageState by usageDataViewModel.uiState.collectAsState()
-
-    LaunchedEffect(Unit) {
-        settingsViewModel.getAvatarUri()
-    }
+    val userName by settingsViewModel.userName.collectAsState(settingsViewModel.userName.value)
+    val avatarUri by settingsViewModel.avatarUri.collectAsState(settingsViewModel.avatarUri.value)
+    val listeningData by recommendationViewModel.recentListeningDurations.collectAsState(recommendationViewModel.recentListeningDurations.value)
+    val usageState by usageDataViewModel.uiState.collectAsState(usageDataViewModel.uiState.value)
 
     UserScreenContent(
         userName = userName,

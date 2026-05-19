@@ -55,6 +55,7 @@ internal fun MusicListIndexStrip(
     config: IndexJumpConfig,
     currentPlayingIndex: Int?,
     modifier: Modifier = Modifier,
+    columns: Int = 1,
 ) {
     val scope = rememberCoroutineScope()
     var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
@@ -68,10 +69,10 @@ internal fun MusicListIndexStrip(
     val density = LocalDensity.current
     val verticalPaddingPx = with(density) { IndexStripVerticalPadding.roundToPx() }
 
-    fun scrollToIndexAnimated(idx: Int) {
+    fun scrollToIndexAnimated(flatIndex: Int) {
         lastScrollJob?.cancel()
         lastScrollJob = scope.launch {
-            listState.animateScrollToItem(idx)
+            listState.animateScrollToItem(flatIndex / columns)
             lastScrollJob = null
         }
     }
@@ -90,9 +91,10 @@ internal fun MusicListIndexStrip(
             Pair(rawLabels, rawMap)
         }
         val currentAnchorIndex = remember(anchorToIndexMap, firstVisibleIndex, anchorLabels) {
+            val flatFirstVisible = firstVisibleIndex * columns
             anchorLabels.indices
                 .mapNotNull { i -> anchorToIndexMap[i]?.let { i to it } }
-                .filter { it.second <= firstVisibleIndex }
+                .filter { it.second <= flatFirstVisible }
                 .maxByOrNull { it.second }
                 ?.first
         }
@@ -217,9 +219,10 @@ internal fun MusicListIndexStrip(
         val letterToIndexMap = remember(musicInfoList) { config.letterToIndex(musicInfoList) }
         val letters = config.letters
         val currentLetter = remember(letterToIndexMap, firstVisibleIndex, letters) {
+            val flatFirstVisible = firstVisibleIndex * columns
             letters
                 .mapNotNull { letter -> letterToIndexMap[letter]?.let { letter to it } }
-                .filter { it.second <= firstVisibleIndex }
+                .filter { it.second <= flatFirstVisible }
                 .maxByOrNull { it.second }
                 ?.first
         }

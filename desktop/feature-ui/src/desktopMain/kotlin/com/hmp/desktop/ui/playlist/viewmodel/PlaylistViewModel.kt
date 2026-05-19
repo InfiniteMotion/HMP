@@ -38,19 +38,19 @@ class PlaylistViewModel(
 ) : ViewModel() {
 
     val genrePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.GENRE)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val moodPlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.MOOD)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val scenarioPlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.SCENARIO)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val languagePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.LANGUAGE)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val eraPlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.ERA)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _selectedPlaylistName = MutableStateFlow("")
     val selectedPlaylistName: StateFlow<String> = _selectedPlaylistName
@@ -137,15 +137,10 @@ class PlaylistViewModel(
                     _userCustomPlaylistsState.value = UiState.Error(it.message ?: "Failed to load playlists")
                 }
                 .collect { all ->
-                    val currentId = settingsRepository.getCurrentPlaylistId()
-                    val likedId = settingsRepository.getLikedPlaylistId()
-                    val recentId = settingsRepository.getRecentPlaylistId()
-                    val systemIds = setOfNotNull(currentId, likedId, recentId)
-                    val playlists = all.filter { it.id !in systemIds }
-                    _userCustomPlaylistsState.value = if (playlists.isEmpty()) {
+                    _userCustomPlaylistsState.value = if (all.isEmpty()) {
                         UiState.Empty
                     } else {
-                        UiState.Success(playlists)
+                        UiState.Success(all)
                     }
                 }
         }
@@ -162,10 +157,7 @@ class PlaylistViewModel(
             val meta = managePlaylistUseCase.getPlaylistMeta(playlistId)
             _selectedPlaylistMeta.value = meta
             _selectedPlaylistName.value = meta?.name ?: ""
-            val currentId = settingsRepository.getCurrentPlaylistId()
-            val likedId = settingsRepository.getLikedPlaylistId()
-            val recentId = settingsRepository.getRecentPlaylistId()
-            _isCustomPlaylist.value = playlistId != currentId && playlistId != likedId && playlistId != recentId
+            _isCustomPlaylist.value = true
 
             managePlaylistUseCase.getMusicInfoInPlaylist(playlistId)
                 .catch {
@@ -346,10 +338,7 @@ class PlaylistViewModel(
             }
             if (id != null) {
                 _selectedPlaylistId.value = id
-                val currentId = settingsRepository.getCurrentPlaylistId()
-                val likedId = settingsRepository.getLikedPlaylistId()
-                val recentId = settingsRepository.getRecentPlaylistId()
-                _isCustomPlaylist.value = id != currentId && id != likedId && id != recentId
+                _isCustomPlaylist.value = true
                 _selectedPlaylistMeta.value = managePlaylistUseCase.getPlaylistMeta(id)
 
                 managePlaylistUseCase.getMusicInfoInPlaylist(id)

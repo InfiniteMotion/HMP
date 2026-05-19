@@ -40,6 +40,7 @@ class SettingsViewModel(
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
     val isLoadMusic = userSettingsUseCase.isLoadMusic
     val userName = userSettingsUseCase.userName
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val customMode = userSettingsUseCase.customMode
     val backgroundStyle = userSettingsUseCase.backgroundStyle
         .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), "FLUID")

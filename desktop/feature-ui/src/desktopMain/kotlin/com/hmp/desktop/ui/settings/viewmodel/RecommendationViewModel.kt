@@ -4,6 +4,7 @@ package com.hmp.desktop.ui.settings.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hmp.domain.music.MusicExtra
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.music.usecase.GetAllMusicUseCase
@@ -81,8 +82,10 @@ class RecommendationViewModel(
             userSettingsUseCase.incrementAppLaunchCount()
 
             // 检查是否需要刷新
-            val shouldRefresh = userSettingsUseCase.shouldRefreshDailyRecommendation()
+            var shouldRefresh = userSettingsUseCase.shouldRefreshDailyRecommendation()
             val config = userSettingsUseCase.getDailyRefreshConfig()
+
+            if (dailyMusic.value == null) { shouldRefresh = true }
 
             println("""
                 刷新检查:
@@ -96,20 +99,18 @@ class RecommendationViewModel(
             if (shouldRefresh) {
                 refreshDailyMusicInfo()
             } else {
-                if (dailyMusic.value == null) {
-                    val savedMusicId = userSettingsUseCase.getCurrentDailyMusicId()
-                    if (savedMusicId != null && savedMusicId > 0) {
-                        val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(savedMusicId)
-                        if (recommendation?.musicInfo != null) {
-                            dailyMusic.value = recommendation.musicInfo
-                            _dailyMusicInfo.value = recommendation.dailyMusicInfo
-                            _dailyMusicLabel.value = recommendation.labels
-                        } else {
-                            refreshDailyMusicInfo()
-                        }
+                val savedMusicId = userSettingsUseCase.getCurrentDailyMusicId()
+                if (savedMusicId != null && savedMusicId > 0) {
+                    val recommendation = getDailyRecommendationUseCase.getMusicWithExtraById(savedMusicId)
+                    if (recommendation?.musicInfo != null) {
+                        dailyMusic.value = recommendation.musicInfo
+                        _dailyMusicInfo.value = recommendation.dailyMusicInfo
+                        _dailyMusicLabel.value = recommendation.labels
                     } else {
                         refreshDailyMusicInfo()
                     }
+                } else {
+                    refreshDailyMusicInfo()
                 }
             }
         }
@@ -128,10 +129,16 @@ class RecommendationViewModel(
                     // 合并 DailyMusicInfo 字段到 MusicExtra，确保描述信息可用
                     val mergedInfo = if (dailyInfo != null) {
                         val extra = musicInfo.extra
-                        if (extra != null && (extra.backgroundIntroduce.isNullOrBlank() || extra.description.isNullOrBlank())) {
-                            musicInfo.copy(extra = extra.copy(
-                                backgroundIntroduce = if (extra.backgroundIntroduce.isNullOrBlank()) dailyInfo.backgroundIntroduce.ifBlank { null } else extra.backgroundIntroduce,
-                                description = if (extra.description.isNullOrBlank()) dailyInfo.description.ifBlank { null } else extra.description,
+                        val needBg = extra?.backgroundIntroduce.isNullOrBlank()
+                        val needDesc = extra?.description.isNullOrBlank()
+                        if (extra == null || needBg || needDesc) {
+                            val baseExtra = extra ?: MusicExtra(
+                                id = musicInfo.music.id,
+                                isGetExtraInfo = true
+                            )
+                            musicInfo.copy(extra = baseExtra.copy(
+                                backgroundIntroduce = if (needBg) dailyInfo.backgroundIntroduce.ifBlank { null } else baseExtra.backgroundIntroduce,
+                                description = if (needDesc) dailyInfo.description.ifBlank { null } else baseExtra.description,
                             ))
                         } else musicInfo
                     } else musicInfo
@@ -213,6 +220,10 @@ class RecommendationViewModel(
                     },
                     onComplete = { result ->
                         _processingResult.value = result
+                        // 首页无数据时，后台获取到扩展信息后主动刷新推荐
+                        if (dailyMusic.value == null && result.successCount > 0) {
+                            refreshDailyMusicInfo()
+                        }
                     },
                     delayMillis = 500
                 )

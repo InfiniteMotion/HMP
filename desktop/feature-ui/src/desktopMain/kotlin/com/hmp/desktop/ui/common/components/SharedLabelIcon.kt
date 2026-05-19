@@ -14,6 +14,8 @@ import androidx.compose.ui.layout.ContentScale
 import com.hmp.shared.resource.SharedIconLoader
 import org.jetbrains.skia.Image as SkiaImage
 
+private val iconBitmapCache = mutableMapOf<String, ImageBitmap>()
+
 @Composable
 fun SharedLabelIcon(
     iconName: String,
@@ -21,16 +23,21 @@ fun SharedLabelIcon(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop
 ) {
-    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    val cacheKey = iconName.lowercase()
+    val cachedBitmap = iconBitmapCache[cacheKey]
+    var bitmap by remember { mutableStateOf<ImageBitmap?>(cachedBitmap) }
 
     LaunchedEffect(iconName) {
-        val bytes = SharedIconLoader.loadIcon(iconName.lowercase())
-        if (bytes != null) {
-            try {
-                val skiaImage = SkiaImage.makeFromEncoded(bytes)
-                bitmap = skiaImage.toComposeImageBitmap()
-            } catch (_: Exception) {
-                // Failed to decode icon, show nothing
+        if (cachedBitmap == null) {
+            val bytes = SharedIconLoader.loadIcon(cacheKey)
+            if (bytes != null) {
+                try {
+                    val skiaImage = SkiaImage.makeFromEncoded(bytes)
+                    val imageBitmap = skiaImage.toComposeImageBitmap()
+                    iconBitmapCache[cacheKey] = imageBitmap
+                    bitmap = imageBitmap
+                } catch (_: Exception) {
+                }
             }
         }
     }

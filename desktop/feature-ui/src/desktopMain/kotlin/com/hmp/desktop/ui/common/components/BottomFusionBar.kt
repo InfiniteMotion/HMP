@@ -2,8 +2,11 @@ package com.hmp.desktop.ui.common.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.spring
@@ -123,6 +126,7 @@ fun BottomFusionBar(
     showNavText: Boolean = true,
     maxWidth: Dp? = null,
     forceExpanded: Boolean = false,
+    showNavCapsule: Boolean = true,
 ) {
     val haptic = remember { HapticFeedbackHelper() }
     var fusionState by remember { mutableStateOf(FusionBarState.NavigationExpanded) }
@@ -156,6 +160,8 @@ fun BottomFusionBar(
         ).using(SizeTransform(clip = false))
     }
 
+    val capsuleShape = RoundedCornerShape(36.dp)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -165,8 +171,18 @@ fun BottomFusionBar(
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ── 左侧胶囊：导航 ──
-        val capsuleShape = RoundedCornerShape(36.dp)
+        // ── 左侧胶囊：导航（仅在 tab 页面显示）──
+        AnimatedVisibility(
+            visible = showNavCapsule,
+            enter = expandHorizontally(
+                animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
+                expandFrom = Alignment.Start
+            ) + fadeIn(animationSpec = tween(200)),
+            exit = shrinkHorizontally(
+                animationSpec = tween(200),
+                shrinkTowards = Alignment.Start
+            ) + fadeOut(animationSpec = tween(150))
+        ) {
         Card(
             shape = capsuleShape,
             colors = CardDefaults.cardColors(
@@ -221,6 +237,7 @@ fun BottomFusionBar(
                     }
                 }
             }
+        }
         }
 
         // ── 右侧胶囊：播放控制（仅在有音乐时显示）──

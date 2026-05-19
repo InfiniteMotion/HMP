@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -81,6 +82,7 @@ internal fun MusicListHeader(
             onEditClick = onEditClick,
             listCount = listCount,
             modifier = modifier,
+            singleRowFilter = config.singleRowFilter,
         )
         is HeaderConfig.Custom -> config.content()
     }
@@ -109,7 +111,7 @@ private fun SimpleHeader(
         if (listCount != null) {
             Text(
                 text = "$listCount",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.width(CountLabelWidth),
             )
@@ -174,6 +176,7 @@ private fun FullHeader(
     onEditClick: () -> Unit,
     listCount: Int?,
     modifier: Modifier = Modifier,
+    singleRowFilter: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
@@ -192,7 +195,7 @@ private fun FullHeader(
             if (listCount != null) {
                 Text(
                     text = "$listCount",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.width(CountLabelWidth),
                 )
@@ -281,6 +284,80 @@ private fun FullHeader(
                     stringResource(Res.string.order_asc) to "ASC",
                     stringResource(Res.string.order_desc) to "DESC",
                 )
+                if (singleRowFilter) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.sort),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(end = 16.dp),
+                            )
+                            FlowRow(
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                genres.forEach { (label, value) ->
+                                    FilterChip(
+                                        selected = selectedGenre == value,
+                                        onClick = {
+                                            haptic.performLightClick()
+                                            if (selectedGenre != value) onFilterGenreChange(value)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.titleSmall,
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.width(80.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.order),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(end = 16.dp),
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                orders.forEach { (label, value) ->
+                                    FilterChip(
+                                        selected = selectedOrder == value,
+                                        onClick = {
+                                            haptic.performLightClick()
+                                            if (selectedOrder != value) onFilterOrderChange(value)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.titleSmall,
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
                 Column(
                     modifier = Modifier.padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -353,6 +430,7 @@ private fun FullHeader(
                             }
                         }
                     }
+                }
                 }
             }
         }

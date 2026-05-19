@@ -278,8 +278,8 @@ class MusicRepositoryImpl(
         musicAllDao.getRandomMusicInfoWithMissingExtra()?.toDomain()
 
     override suspend fun getRandomMusicInfoWithExtra(): MusicInfo? {
-        // 手动构建 MusicInfo，绕过 Room @Relation 可能存在的加载问题
-        val ids = musicDao.getAllActiveIds()
+        // 手动构建 MusicInfo，绕过 Room @Relation 在桌面端可能存在的加载问题
+        val ids = musicExtraDao.getIdsWithExtraInfo()
         if (ids.isEmpty()) return null
         val randomId = ids.random()
         val music = musicDao.getMusicById(randomId).firstOrNull() ?: return null
@@ -508,14 +508,15 @@ class MusicRepositoryImpl(
                 "singerIntroduce": "歌手的背景、主要成就、音乐风格和代表作品介绍",
                 "backgroundIntroduce": "歌曲的创作背景、灵感来源、发布时的反响或背后的故事",
                 "description": "歌曲表达的主题、情感、核心内容或想要传达的信息",
-                "relevantMusic": "与该歌曲风格、流派或情感相似的其他知名歌曲",
+                "relevantMusic": "与该歌曲风格、流派或情感相似的其他知名歌曲，用逗号分隔，不可返回数组",
                 "errorInfo": "None"
                 }
 
                 要求：
                 1. 只返回上述JSON格式，不要添加任何markdown标记或解释
-                2. genre、mood、scenario为多选，用逗号分隔
-                3. language和era为单选，直接输出选项值
+                2. genre、mood、scenario 为多选，返回JSON数组，从候选值中选择
+                3. relevantMusic 为多选，用逗号分隔为字符串，禁止返回JSON数组
+                4. language和era为单选，直接输出选项值
                 4. 如果无法确定某字段，回复"UNKNOWN"
                 5. 歌词必须是该歌曲的真实热门歌词，不要编造
                 6. 相似歌曲推荐必须是真正与该歌曲风格相似的知名歌曲

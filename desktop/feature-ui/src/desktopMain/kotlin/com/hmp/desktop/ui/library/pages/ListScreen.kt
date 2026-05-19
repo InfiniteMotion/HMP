@@ -3,15 +3,11 @@ import com.hmp.desktop.ui.common.navigation.NavController
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import org.jetbrains.compose.resources.DrawableResource
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,12 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +49,6 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.Capsule
-import com.hmp.desktop.ui.library.pages.components.ListBanner
 import com.hmp.desktop.ui.library.pages.components.ListGroupName
 import com.hmp.desktop.ui.common.components.base.NewPlaylistButton
 import com.hmp.desktop.ui.common.pages.base.TabScreen
@@ -76,12 +66,12 @@ fun ListScreen(
     dialogViewModel: DialogViewModel = koinInject(),
     navController: NavController
 ) {
-    val genreList by playlistViewModel.genrePlaylistName.collectAsState()
-    val moodList by playlistViewModel.moodPlaylistName.collectAsState()
-    val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState()
-    val languageList by playlistViewModel.languagePlaylistName.collectAsState()
-    val eraList by playlistViewModel.eraPlaylistName.collectAsState()
-    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()
+    val genreList by playlistViewModel.genrePlaylistName.collectAsState(playlistViewModel.genrePlaylistName.value)
+    val moodList by playlistViewModel.moodPlaylistName.collectAsState(playlistViewModel.moodPlaylistName.value)
+    val scenarioList by playlistViewModel.scenarioPlaylistName.collectAsState(playlistViewModel.scenarioPlaylistName.value)
+    val languageList by playlistViewModel.languagePlaylistName.collectAsState(playlistViewModel.languagePlaylistName.value)
+    val eraList by playlistViewModel.eraPlaylistName.collectAsState(playlistViewModel.eraPlaylistName.value)
+    val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState(playlistViewModel.userCustomPlaylistsState.value)
     val userCustomPlaylists = (userCustomPlaylistsState as? UiState.Success)?.data ?: emptyList()
 
     ListScreenContent(
@@ -112,13 +102,22 @@ fun ListScreenContent(
 ) {
     val haptic = rememberHapticFeedback()
 
-    // 与列表管理页一致：置顶优先，再按最近播放、更新时间
+    val stableGenreList = remember(genreList) { genreList }
+    val stableMoodList = remember(moodList) { moodList }
+    val stableScenarioList = remember(scenarioList) { scenarioList }
+    val stableLanguageList = remember(languageList) { languageList }
+    val stableEraList = remember(eraList) { eraList }
+    val stableLanguageEraList = remember(stableLanguageList, stableEraList) { stableLanguageList + stableEraList }
+
+    // 与列表管理页一致：置顶优先，再按最近播放、更新时间；过滤空歌单
     val sortedUserPlaylists = remember(userCustomPlaylists) {
-        userCustomPlaylists.sortedWith(
-            compareByDescending<Playlist> { it.isPinned }
-                .thenByDescending { it.lastPlayedAt ?: 0L }
-                .thenByDescending { it.updatedAt }
-        )
+        userCustomPlaylists
+            .filter { it.songCount > 0 }
+            .sortedWith(
+                compareByDescending<Playlist> { it.isPinned }
+                    .thenByDescending { it.lastPlayedAt ?: 0L }
+                    .thenByDescending { it.updatedAt }
+            )
     }
 
     TabScreen(
@@ -136,9 +135,11 @@ fun ListScreenContent(
             )
         }
     ) {
+        key("list_main") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -163,12 +164,13 @@ fun ListScreenContent(
                         }
                     }
                 )
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(sortedUserPlaylists) { playlist ->
+                    sortedUserPlaylists.forEach { playlist ->
                         UserListCard(
                             playlist = playlist,
                             onClick = {
@@ -180,53 +182,20 @@ fun ListScreenContent(
                 }
             }
 
-            // 常用列表 (Common Playlists) - 保留原有样式
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(Res.string.banner_daily_A),
-                    bannerNameS = stringResource(Res.string.banner_daily_AA),
-                    themeColor = Color(0xFFE53935)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    ListBanner(
-                        listName = stringResource(Res.string.banner_default),
-                        listCoverUri = Res.drawable.defaultlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(Res.string.banner_heart),
-                        listCoverUri = Res.drawable.heartlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(Res.string.banner_history),
-                        listCoverUri = Res.drawable.historylist,
-                        navController = navController
-                    )
-                }
-            }
-
             // 适用场景 (Scenario) - 沉浸推荐
             LabelListGroup(
-                data = scenarioList,
+                data = stableScenarioList,
                 bannerNameF = stringResource(Res.string.banner_daily_D),
                 bannerNameS = stringResource(Res.string.banner_daily_DD),
                 themeColor = Color(0xFF43A047)
             ) { list ->
-                val scenarioListState = rememberLazyListState()
-                val scenarioFlingBehavior = rememberSnapFlingBehavior(lazyListState = scenarioListState)
-
-                LazyRow(
-                    state = scenarioListState,
-                    flingBehavior = scenarioFlingBehavior,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 ) {
-                    items(list) { label ->
+                    list.forEach { label ->
                         ScenarioCard(
                             label = label,
                             onClick = {
@@ -240,21 +209,18 @@ fun ListScreenContent(
 
             // 风格流派 (Genre) - 横向画廊
             LabelListGroup(
-                data = genreList,
+                data = stableGenreList,
                 bannerNameF = stringResource(Res.string.banner_daily_B),
                 bannerNameS = stringResource(Res.string.banner_daily_BB),
                 themeColor = Color(0xFF1976D2)
             ) { list ->
-                val genreListState = rememberLazyListState()
-                val genreFlingBehavior = rememberSnapFlingBehavior(lazyListState = genreListState)
-                
-                LazyRow(
-                    state = genreListState,
-                    flingBehavior = genreFlingBehavior,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 ) {
-                    items(list) { label ->
+                    list.forEach { label ->
                         GenreCard(
                             label = label,
                             onClick = {
@@ -268,35 +234,32 @@ fun ListScreenContent(
 
             // 音乐情绪 (Mood) - 网格探索
             LabelListGroup(
-                data = moodList,
+                data = stableMoodList,
                 bannerNameF = stringResource(Res.string.banner_daily_C),
                 bannerNameS = stringResource(Res.string.banner_daily_CC),
                 themeColor = Color(0xFFFF9800)
             ) { list ->
-                Box(modifier = Modifier.height(220.dp)) {
-                    LazyHorizontalGrid(
-                        rows = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(list) { label ->
-                            MoodCard(
-                                label = label,
-                                onClick = {
-                                    haptic.performClick()
-                                    navController.navigate(Routes.Playlist.Playlist(label.name))
-                                }
-                            )
-                        }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                ) {
+                    list.forEach { label ->
+                        MoodCard(
+                            label = label,
+                            onClick = {
+                                haptic.performClick()
+                                navController.navigate(Routes.Playlist.Playlist(label.name))
+                            }
+                        )
                     }
                 }
             }
 
             // 探索更多 (Language & Era) - 标签云
             LabelListGroup(
-                data = languageList + eraList,
+                data = stableLanguageEraList,
                 bannerNameF = stringResource(Res.string.explore),
                 bannerNameS = stringResource(Res.string.more),
                 themeColor = Color(0xFF6200EE)
@@ -324,6 +287,7 @@ fun ListScreenContent(
                 }
             }
             Spacer(modifier = Modifier.height(72.dp))
+        }
         }
     }
 }
@@ -433,8 +397,8 @@ private fun ScenarioCard(
 ) {
     Card(
         modifier = Modifier
-            .width(280.dp)
-            .height(160.dp)
+            .width(208.dp)
+            .height(117.dp)
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
@@ -481,8 +445,8 @@ private fun ScenarioCard(
     }
 }
 
-private const val CARD_WIDTH_DP = 280
-private const val CARD_HEIGHT_DP = 360
+private const val CARD_WIDTH_DP = 192
+private const val CARD_HEIGHT_DP = 256
 private const val CORNER_RADIUS_DP = 20
 
 @Composable

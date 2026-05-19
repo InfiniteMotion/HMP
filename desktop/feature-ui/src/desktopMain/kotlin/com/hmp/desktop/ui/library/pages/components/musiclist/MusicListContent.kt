@@ -3,6 +3,7 @@ package com.hmp.desktop.ui.library.pages.components.musiclist
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,16 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
-import com.hmp.desktop.ui.common.layout.widthSizeClass
-import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
 import com.hmp.domain.music.MusicInfo
 
 /**
@@ -46,50 +40,53 @@ internal fun MusicListContent(
         return
     }
 
-    val windowInfo = LocalWindowInfo.current
-    val density = LocalDensity.current
-    val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val isExpanded = widthSizeClass(windowWidthDp) == WindowWidthSizeClass.Expanded
+    val columns = config.list.columns
 
-    if (isExpanded) {
-        // expanded 模式：双栏网格布局
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = modifier.fillMaxSize(),
-            contentPadding = config.contentPadding,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            gridItemsIndexed(
-                items = musicInfoList,
-                key = { index, item -> config.list.key(index, item) },
-            ) { index, musicInfo ->
-                MusicListItem(
-                    musicInfo = musicInfo,
-                    index = index,
-                    itemConfig = config.item,
-                    isCurrentPlaying = isCurrentPlaying(index),
-                    selected = state.selectedIds.contains(musicInfo.music.id),
-                    onSelectedChange = { checked ->
-                        state.setSelected(musicInfo.music.id, checked)
-                        config.callbacks.onSelectionChange(state.selectedIds)
-                    },
-                    callbacks = config.callbacks,
-                    enableLongPressToEnterEdit = config.list.enableLongPressToEnterEdit,
-                    editEnabled = config.edit.enabled,
-                    isEditMode = state.isEditMode,
-                )
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = config.contentPadding,
+    ) {
+        if (columns > 1) {
+            val rows = musicInfoList.chunked(columns)
+            itemsIndexed(
+                items = rows,
+                key = { rowIndex, row ->
+                    row.firstOrNull()?.let { config.list.key(rowIndex * columns, it) } ?: rowIndex
+                },
+            ) { rowIndex, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    row.forEachIndexed { colIndex, musicInfo ->
+                        val flatIndex = rowIndex * columns + colIndex
+                        Box(modifier = Modifier.weight(1f)) {
+                            MusicListItem(
+                                musicInfo = musicInfo,
+                                index = flatIndex,
+                                itemConfig = config.item,
+                                isCurrentPlaying = isCurrentPlaying(flatIndex),
+                                selected = state.selectedIds.contains(musicInfo.music.id),
+                                onSelectedChange = { checked ->
+                                    state.setSelected(musicInfo.music.id, checked)
+                                    config.callbacks.onSelectionChange(state.selectedIds)
+                                },
+                                callbacks = config.callbacks,
+                                enableLongPressToEnterEdit = config.list.enableLongPressToEnterEdit,
+                                editEnabled = config.edit.enabled,
+                                isEditMode = state.isEditMode,
+                            )
+                        }
+                    }
+                    if (row.size < columns) {
+                        repeat(columns - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
-            item {
-                Spacer(modifier = Modifier.height(config.list.bottomSpacerHeight))
-            }
-        }
-    } else {
-        // 非 expanded 模式：单栏列表布局
-        LazyColumn(
-            state = listState,
-            modifier = modifier.fillMaxSize(),
-            contentPadding = config.contentPadding,
-        ) {
+        } else {
             itemsIndexed(
                 items = musicInfoList,
                 key = { index, item -> config.list.key(index, item) },
@@ -110,9 +107,9 @@ internal fun MusicListContent(
                     isEditMode = state.isEditMode,
                 )
             }
-            item {
-                Spacer(modifier = Modifier.height(config.list.bottomSpacerHeight))
-            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(config.list.bottomSpacerHeight))
         }
     }
 }
