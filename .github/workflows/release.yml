@@ -161,12 +161,10 @@ jobs:
           for msi in desktop-artifacts/desktop-windows/*.msi; do
             [ -f "$msi" ] && cp "$msi" "HMP-v${VERSION}-windows.msi"
           done
-          for deb in desktop-artifacts/desktop-linux/**/*.deb; do
-            [ -f "$deb" ] && cp "$deb" "HMP-v${VERSION}-linux.deb"
-          done
-          for appimage in desktop-artifacts/desktop-linux/**/*.AppImage; do
-            [ -f "$appimage" ] && cp "$appimage" "HMP-v${VERSION}-linux.AppImage"
-          done
+          deb_file=$(find desktop-artifacts/desktop-linux -name "*.deb" 2>/dev/null | head -1)
+          if [ -n "$deb_file" ]; then cp "$deb_file" "HMP-v${VERSION}-linux.deb"; fi
+          appimage_file=$(find desktop-artifacts/desktop-linux -name "*.AppImage" 2>/dev/null | head -1)
+          if [ -n "$appimage_file" ]; then cp "$appimage_file" "HMP-v${VERSION}-linux.AppImage"; fi
 
       - name: Get previous tag
         id: prev_tag
