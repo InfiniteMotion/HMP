@@ -1,6 +1,6 @@
 # Hearable Music Player
 
-一款现代化的跨平台本地音乐播放器，基于Jetpack Compose和SwiftUI构建，提供流畅的用户体验和丰富的音乐播放功能。
+一款现代化的跨平台本地音乐播放器，基于Jetpack Compose、Compose Multiplatform和SwiftUI构建，支持Android、Desktop和iOS三大平台。
 
 ## 🎯 项目介绍
 
@@ -14,7 +14,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - 已实现核心音乐播放功能
 - 已集成DeepSeek API实现AI推荐
 - 已实现基本的UI界面和交互
-- 已支持Android和iOS双平台
+- 已支持Android、Desktop和iOS三平台
 - 正在进行架构优化和性能提升
 
 ## ✨ 核心功能
@@ -48,9 +48,10 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 ### 核心技术
 
 - **开发语言**：Kotlin, Swift
-- **跨平台框架**：Kotlin Multiplatform Mobile (KMM)
+- **跨平台框架**：Kotlin Multiplatform (KMP) + Compose Multiplatform
 - **UI框架**：
   - Android: Jetpack Compose
+  - Desktop: Compose Multiplatform
   - iOS: SwiftUI
 - **架构模式**：MVVM
 - **依赖注入**：Koin (跨平台，已从 Hilt 迁移)
@@ -60,13 +61,14 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
   - SQLite Bundled (跨平台 SQLite 驱动)
 - **媒体播放**：
   - Android: AndroidX Media3 (ExoPlayer)
+  - Desktop: FFmpeg + JNA 自研音频引擎
   - iOS: AVFoundation
 - **网络请求**：Ktor Client (跨平台，Android 使用 OkHttp 引擎，iOS 使用 Darwin 引擎)
 - **JSON解析**：Kotlinx Serialization (跨平台)
 - **音乐标签解析**：Jaudiotagger (Android) / AVAsset (iOS)
 - **AI集成**：多服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）
 - **安全存储**：API 密钥加密存储
-- **导航系统**：Navigation 3 (类型安全导航) - Android
+- **导航系统**：Navigation 3 (类型安全导航) - Android，自研导航系统 - Desktop
 - **构建工具**：Gradle 9.0, CocoaPods (iOS)
 
 ### 模块化架构
@@ -77,6 +79,9 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - **android/app**：Android应用入口模块，包含MainActivity和Application类
 - **android/core-player**：Android播放核心模块，包含Media3服务和播放控制逻辑
 - **android/feature-ui**：Android UI功能模块，包含Compose页面和组件
+- **desktop/app**：Desktop应用入口模块，包含窗口管理和应用生命周期
+- **desktop/core-player**：Desktop播放核心模块，包含FFmpeg音频引擎
+- **desktop/feature-ui**：Desktop UI功能模块，包含Compose Multiplatform页面和组件
 - **ios**：iOS应用模块，包含SwiftUI页面和组件
 - **storybook**：组件展示与文档模块 (Kotlin/Wasm)
 
@@ -84,6 +89,11 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 
 ### Android
 - Android 13 (API 33) 及以上
+- 存储空间权限
+- 网络权限 (用于推荐功能)
+
+### Desktop
+- macOS 14+ / Windows 10+ / Ubuntu 22.04+
 - 存储空间权限
 - 网络权限 (用于推荐功能)
 
@@ -107,6 +117,11 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - Swift 5.0 或更高版本
 - CocoaPods 1.16.0 或更高版本
 - macOS 14.0 或更高版本
+
+#### Desktop
+- JDK 21 或更高版本
+- Gradle 9.0 或更高版本
+- FFmpeg（构建时自动下载）
 
 ### 安装步骤
 
@@ -151,6 +166,21 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 
 7. 扫描完成后，您可以在主界面浏览和播放音乐
 
+#### Desktop
+1. 克隆项目代码
+   ```bash
+   git clone https://github.com/InfiniteMotion/HMP.git
+   ```
+
+2. 运行桌面应用
+   ```bash
+   cd HMP && ./gradlew :desktop:app:run
+   ```
+
+3. 首次启动时，在设置中选择音乐扫描目录
+
+4. 扫描完成后，您可以在主界面浏览和播放音乐
+
 ## 🎨 界面展示
 
 - **主界面**：音乐分类和推荐内容
@@ -185,7 +215,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 
 ## 📝 开发日志
 
-完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v5.10。
+完整版本历史与变更日志见 **[ROADMAP](ROADMAP.md)**。当前版本：v6.10。
 
 ## 🤝 贡献指南
 
