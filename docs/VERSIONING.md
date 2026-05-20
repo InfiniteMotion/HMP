@@ -30,8 +30,8 @@
 版本号集中维护在 `gradle.properties`：
 
 ```properties
-hmp.versionCode=51000
-hmp.versionName=5.10.0
+hmp.versionCode=61000
+hmp.versionName=6.10.0
 ```
 
 - **versionName**：与三位版本号一致，如 `"6.0.0"`。`android/app/build.gradle.kts` 通过 `project.findProperty("hmp.versionName")` 引用。

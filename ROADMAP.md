@@ -146,6 +146,24 @@
   - 自动构建并部署 Storybook 到 GitHub Pages
   - 移除旧的 `deploy-storybook.yml` 工作流
 
+### v6.10 (2026-05-20)
+- **桌面端平台** (Compose Multiplatform)：
+  - 新模块 `desktop:app` / `desktop:core-player` / `desktop:feature-ui`
+  - 自研音频引擎（FFmpeg 解码 + JNA 绑定）
+  - 响应式布局系统（Compact/Expanded 模式、多面板导航）
+  - NavigationRail + BottomFusionBar 自适应导航组件
+  - 无边框窗口（标题栏、拖拽、圆角阴影、主题集成）
+  - 键盘快捷键支持
+  - 动态背景重构与主题系统优化
+  - 冷启动优化（同步预加载、JNA 预热）
+- **Android 增强**：
+  - BottomFusionBar 组件（底部融合栏替代 MiniPlayerBar）
+  - 动态背景取色算法重构
+- **构建与 CI**：
+  - `settings.gradle.kts` 条件化模块包含（`HMP_BUILD_TARGET` 环境变量）
+  - CI 自动构建桌面三平台安装包（macOS DMG / Windows MSI / Linux DEB+AppImage）
+  - GitHub Release 同发 Android + Desktop 六种产物
+
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -164,6 +182,10 @@
    - 平台特定UI实现（Android: Jetpack Compose, iOS: SwiftUI）
    - 平台特定播放引擎（Android: Media3, iOS: AVFoundation）
    - Monorepo结构，统一版本管理
+
+4. **桌面端平台** (v6.10+)
+   - Compose Multiplatform 桌面端（JVM）
+   - 自研音频引擎替代 Media3（桌面环境适配）
 
 ### 技术栈升级
 1. **播放引擎**
@@ -316,8 +338,8 @@
 
 ---
 
-**最后更新时间**: 2026-05-09
-**当前版本**: v5.10.0
+**最后更新时间**: 2026-05-20
+**当前版本**: v6.10.0
 
 ---
 
