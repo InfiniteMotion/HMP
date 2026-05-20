@@ -2,6 +2,7 @@ package com.hmp.desktop.ui.settings.pages
 import com.hmp.desktop.ui.common.navigation.NavController
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,8 @@ import org.koin.compose.koinInject
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.player.components.MiniPlayerSafeSpacer
 import com.hmp.desktop.ui.common.components.base.TitleWidget
 import com.hmp.desktop.ui.common.dialogs.controller.DialogManager
@@ -61,6 +66,11 @@ fun BackupSettingsScreen(
         onBackClick = { navController.popBackStack() },
         title = stringResource(Res.string.backup_settings)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -68,26 +78,53 @@ fun BackupSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 1. 生成备份
-            ExportBackupSection(
-                onExportBackup = settingsViewModel::exportBackup,
-                dialogManager = dialogManager
-            )
-            
-            // 2. 导入备份
-            ImportBackupSection(
-                onRestoreBackup = settingsViewModel::restoreBackup,
-                dialogManager = dialogManager
-            )
-            
-            // 3. 备份管理
-            ManageBackupsSection(
-                localBackups = localBackups,
-                onRestoreBackup = settingsViewModel::restoreBackup,
-                onDeleteBackup = settingsViewModel::deleteLocalBackup,
-                onRefreshBackups = settingsViewModel::loadLocalBackups,
-                dialogManager = dialogManager
-            )
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        ExportBackupSection(
+                            onExportBackup = settingsViewModel::exportBackup,
+                            dialogManager = dialogManager
+                        )
+                        ImportBackupSection(
+                            onRestoreBackup = settingsViewModel::restoreBackup,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Column(Modifier.weight(1f)) {
+                        ManageBackupsSection(
+                            localBackups = localBackups,
+                            onRestoreBackup = settingsViewModel::restoreBackup,
+                            onDeleteBackup = settingsViewModel::deleteLocalBackup,
+                            onRefreshBackups = settingsViewModel::loadLocalBackups,
+                            dialogManager = dialogManager
+                        )
+                    }
+                }
+            } else {
+                ExportBackupSection(
+                    onExportBackup = settingsViewModel::exportBackup,
+                    dialogManager = dialogManager
+                )
+
+                ImportBackupSection(
+                    onRestoreBackup = settingsViewModel::restoreBackup,
+                    dialogManager = dialogManager
+                )
+
+                ManageBackupsSection(
+                    localBackups = localBackups,
+                    onRestoreBackup = settingsViewModel::restoreBackup,
+                    onDeleteBackup = settingsViewModel::deleteLocalBackup,
+                    onRefreshBackups = settingsViewModel::loadLocalBackups,
+                    dialogManager = dialogManager
+                )
+            }
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }

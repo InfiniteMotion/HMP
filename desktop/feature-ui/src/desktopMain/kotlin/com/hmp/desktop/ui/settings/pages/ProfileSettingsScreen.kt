@@ -2,6 +2,7 @@ package com.hmp.desktop.ui.settings.pages
 import com.hmp.desktop.ui.common.navigation.NavController
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -42,6 +45,8 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.Avatar
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.player.components.MiniPlayerSafeSpacer
 import com.hmp.desktop.ui.common.components.base.TitleWidget
 import com.hmp.desktop.ui.common.dialogs.controller.DialogManager
@@ -63,6 +68,11 @@ fun ProfileSettingsScreen(
         onBackClick = { navController.popBackStack() },
         title = stringResource(Res.string.profile_settings)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -70,15 +80,36 @@ fun ProfileSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            UpdateAvatar(
-                avatarUri = avatarUri,
-                updateAvatar = settingsViewModel::saveAvatarUri,
-                dialogManager = dialogManager
-            )
-            UpdateUserName(
-                userName = userName,
-                updateUserName = settingsViewModel::saveUserName
-            )
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        UpdateAvatar(
+                            avatarUri = avatarUri,
+                            updateAvatar = settingsViewModel::saveAvatarUri,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Box(Modifier.weight(1f)) {
+                        UpdateUserName(
+                            userName = userName,
+                            updateUserName = settingsViewModel::saveUserName
+                        )
+                    }
+                }
+            } else {
+                UpdateAvatar(
+                    avatarUri = avatarUri,
+                    updateAvatar = settingsViewModel::saveAvatarUri,
+                    dialogManager = dialogManager
+                )
+                UpdateUserName(
+                    userName = userName,
+                    updateUserName = settingsViewModel::saveUserName
+                )
+            }
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }

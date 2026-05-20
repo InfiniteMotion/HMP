@@ -37,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.geometry.Offset
@@ -50,6 +52,8 @@ import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.player.components.MiniPlayerSafeSpacer
 import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.common.navigation.Routes
@@ -76,6 +80,11 @@ fun UserUsageDataScreen(
         onBackClick = { navController.popBackStack() },
         title = stringResource(Res.string.title_user_usage_data),
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -89,26 +98,56 @@ fun UserUsageDataScreen(
                 }
                 is UiState.Success -> {
                     val analytics = state.data
-                    OverviewCard(analytics = analytics)
-                    Spacer(modifier = Modifier.height(20.dp))
+                    val hasTasteCard = analytics.topGenres.isNotEmpty() || analytics.topMoods.isNotEmpty() || analytics.topScenarios.isNotEmpty()
 
-                    if (analytics.topGenres.isNotEmpty() || analytics.topMoods.isNotEmpty() || analytics.topScenarios.isNotEmpty()) {
-                        TasteCard(analytics = analytics)
+                    if (sizeClass == WindowWidthSizeClass.Expanded) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                OverviewCard(analytics = analytics)
+                                if (hasTasteCard) {
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                    TasteCard(analytics = analytics)
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                RankingAndHistoryCard(
+                                    analytics = analytics,
+                                    navController = navController,
+                                    haptic = haptic
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                RecentHistoryBlock(
+                                    analytics = analytics,
+                                    navController = navController,
+                                    haptic = haptic
+                                )
+                            }
+                        }
+                    } else {
+                        OverviewCard(analytics = analytics)
                         Spacer(modifier = Modifier.height(20.dp))
+
+                        if (hasTasteCard) {
+                            TasteCard(analytics = analytics)
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+
+                        RankingAndHistoryCard(
+                            analytics = analytics,
+                            navController = navController,
+                            haptic = haptic
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        RecentHistoryBlock(
+                            analytics = analytics,
+                            navController = navController,
+                            haptic = haptic
+                        )
                     }
-
-                    RankingAndHistoryCard(
-                        analytics = analytics,
-                        navController = navController,
-                        haptic = haptic
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    RecentHistoryBlock(
-                        analytics = analytics,
-                        navController = navController,
-                        haptic = haptic
-                    )
                 }
                 is UiState.Error -> {
                     Column(

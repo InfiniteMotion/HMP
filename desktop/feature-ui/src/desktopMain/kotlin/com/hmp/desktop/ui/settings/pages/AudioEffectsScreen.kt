@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 
@@ -45,6 +46,8 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.base.TitleWidget
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.common.util.rememberHapticFeedback
 import com.hmp.desktop.ui.settings.viewmodel.AudioEffectViewModel
@@ -100,63 +103,131 @@ fun AudioEffectsScreenContent(
         onBackClick = onBackClick,
         title = stringResource(Res.string.audio_effects_settings)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            TitleWidget(
-                title = stringResource(Res.string.preset_equalizer)
-            ) {
-                EqualizerPresetSelector(
-                    presets = equalizerPresets,
-                    currentPreset = audioEffectSettings.equalizerPreset,
-                    onPresetSelected = onSetEqualizerPreset
-                )
-            }
-
-            TitleWidget(
-                title = stringResource(Res.string.audio_effects_settings)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    BassBoostSlider(
-                        currentLevel = audioEffectSettings.bassBoostLevel,
-                        onLevelChanged = onSetBassBoost
-                    )
-                    SurroundSoundToggle(
-                        isEnabled = audioEffectSettings.isSurroundSoundEnabled,
-                        onToggle = onSetSurroundSound
-                    )
-                    ReverbSettings(
-                        currentPreset = audioEffectSettings.reverbPreset,
-                        onPresetChanged = onSetReverb
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        TitleWidget(
+                            title = stringResource(Res.string.preset_equalizer)
+                        ) {
+                            EqualizerPresetSelector(
+                                presets = equalizerPresets,
+                                currentPreset = audioEffectSettings.equalizerPreset,
+                                onPresetSelected = onSetEqualizerPreset
+                            )
+                        }
+                        TitleWidget(
+                            title = stringResource(Res.string.audio_effects_settings)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                BassBoostSlider(
+                                    currentLevel = audioEffectSettings.bassBoostLevel,
+                                    onLevelChanged = onSetBassBoost
+                                )
+                                SurroundSoundToggle(
+                                    isEnabled = audioEffectSettings.isSurroundSoundEnabled,
+                                    onToggle = onSetSurroundSound
+                                )
+                                ReverbSettings(
+                                    currentPreset = audioEffectSettings.reverbPreset,
+                                    onPresetChanged = onSetReverb
+                                )
+                            }
+                        }
+                    }
+                    Column(Modifier.weight(1f)) {
+                        TitleWidget(
+                            title = stringResource(Res.string.custom_equalizer)
+                        ) {
+                            CustomEqualizer(
+                                bandCount = equalizerBandCount,
+                                bandLevelRange = equalizerBandLevelRange,
+                                currentBandLevels = currentEqualizerBandLevels,
+                                onBandLevelChanged = { index, level ->
+                                    val newLevels = currentEqualizerBandLevels.copyOf()
+                                    newLevels[index] = level
+                                    onSetCustomEqualizer(newLevels)
+                                },
+                                onResetAll = {
+                                    val resetLevels = FloatArray(equalizerBandCount)
+                                    onSetCustomEqualizer(resetLevels)
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                TitleWidget(
+                    title = stringResource(Res.string.preset_equalizer)
+                ) {
+                    EqualizerPresetSelector(
+                        presets = equalizerPresets,
+                        currentPreset = audioEffectSettings.equalizerPreset,
+                        onPresetSelected = onSetEqualizerPreset
                     )
                 }
-            }
 
-            TitleWidget(
-                title = stringResource(Res.string.custom_equalizer)
-            ) {
-                CustomEqualizer(
-                    bandCount = equalizerBandCount,
-                    bandLevelRange = equalizerBandLevelRange,
-                    currentBandLevels = currentEqualizerBandLevels,
-                    onBandLevelChanged = { index, level ->
-                        val newLevels = currentEqualizerBandLevels.copyOf()
-                        newLevels[index] = level
-                        onSetCustomEqualizer(newLevels)
-                    },
-                    onResetAll = {
-                        // 重置所有频段到0
-                        val resetLevels = FloatArray(equalizerBandCount)
-                        onSetCustomEqualizer(resetLevels)
+                TitleWidget(
+                    title = stringResource(Res.string.audio_effects_settings)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        BassBoostSlider(
+                            currentLevel = audioEffectSettings.bassBoostLevel,
+                            onLevelChanged = onSetBassBoost
+                        )
+                        SurroundSoundToggle(
+                            isEnabled = audioEffectSettings.isSurroundSoundEnabled,
+                            onToggle = onSetSurroundSound
+                        )
+                        ReverbSettings(
+                            currentPreset = audioEffectSettings.reverbPreset,
+                            onPresetChanged = onSetReverb
+                        )
                     }
-                )
+                }
+
+                TitleWidget(
+                    title = stringResource(Res.string.custom_equalizer)
+                ) {
+                    CustomEqualizer(
+                        bandCount = equalizerBandCount,
+                        bandLevelRange = equalizerBandLevelRange,
+                        currentBandLevels = currentEqualizerBandLevels,
+                        onBandLevelChanged = { index, level ->
+                            val newLevels = currentEqualizerBandLevels.copyOf()
+                            newLevels[index] = level
+                            onSetCustomEqualizer(newLevels)
+                        },
+                        onResetAll = {
+                            val resetLevels = FloatArray(equalizerBandCount)
+                            onSetCustomEqualizer(resetLevels)
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(64.dp))

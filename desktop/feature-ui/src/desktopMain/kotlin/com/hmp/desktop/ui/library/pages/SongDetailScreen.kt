@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +58,8 @@ import com.hmp.desktop.ui.library.pages.components.AlbumCover
 import com.hmp.desktop.ui.common.components.SegmentedControl
 import com.hmp.desktop.ui.common.components.SegmentedOption
 import com.hmp.desktop.ui.common.components.base.TitleWidget
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.player.pages.TechnicalInfoCard
 import com.hmp.desktop.ui.common.navigation.Routes
@@ -87,6 +92,11 @@ fun SongDetailScreen(
         onBackClick = { navController.popBackStack() },
         title = title,
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -100,22 +110,45 @@ fun SongDetailScreen(
                 }
                 is UiState.Success -> {
                     val data = state.data
-                    SongDetailPoster(
-                        artist = data.musicInfo.music.artist,
-                        album = data.musicInfo.music.album,
-                        albumArtUri = data.musicInfo.music.albumArtUri,
-                        musicExtra = data.musicInfo.extra,
-                        onOpenPlayer = {
-                            haptic.performClick()
-                            navController.navigate(Routes.Player.Player)
-                        }
-                    )
-                    SongDetailInfo(
-                        musicInfo = data.musicInfo,
-                        dailyMusicInfo = data.dailyMusicInfo,
-                        labels = data.labels,
-                        playbackHistory = data.playbackHistory
-                    )
+                    val music = data.musicInfo.music
+                    val userInfo = data.musicInfo.userInfo
+                    val extra = data.musicInfo.extra
+                    val dailyInfo = data.dailyMusicInfo
+                    val validLabels = data.labels.filterNotNull().filter { it.label.name.isNotBlank() }
+
+                    if (sizeClass == WindowWidthSizeClass.Expanded) {
+                        SongDetailExpanded(
+                            onOpenPlayer = {
+                                haptic.performClick()
+                                navController.navigate(Routes.Player.Player)
+                            },
+                            artist = music.artist,
+                            album = music.album,
+                            albumArtUri = music.albumArtUri,
+                            musicExtra = extra,
+                            userInfo = userInfo,
+                            playbackHistory = data.playbackHistory,
+                            dailyMusicInfo = dailyInfo,
+                            validLabels = validLabels,
+                        )
+                    } else {
+                        SongDetailPoster(
+                            artist = music.artist,
+                            album = music.album,
+                            albumArtUri = music.albumArtUri,
+                            musicExtra = extra,
+                            onOpenPlayer = {
+                                haptic.performClick()
+                                navController.navigate(Routes.Player.Player)
+                            }
+                        )
+                        SongDetailInfo(
+                            musicInfo = data.musicInfo,
+                            dailyMusicInfo = dailyInfo,
+                            labels = data.labels,
+                            playbackHistory = data.playbackHistory
+                        )
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
                 is UiState.Error -> {
@@ -143,7 +176,325 @@ fun SongDetailScreen(
 
 }
 
+@Composable
+private fun SongDetailExpanded(
+    onOpenPlayer: () -> Unit,
+    artist: String,
+    album: String,
+    albumArtUri: String?,
+    musicExtra: MusicExtra?,
+    userInfo: com.hmp.domain.music.UserInfo?,
+    playbackHistory: List<PlaybackHistory>,
+    dailyMusicInfo: DailyMusicInfo?,
+    validLabels: List<MusicLabel>,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // 左栏：封面 + 技术信息 + 个人统计 + 最近播放
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(25.dp))
+                        .clickable(onClick = onOpenPlayer)
+                ) {
+                    AlbumCover(
+                        albumArtUri,
+                        200.dp,
+                        corner = 25.dp,
+                        shadow = 15.dp
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = artist,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.86f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = album,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                TechnicalInfoCard(extra = musicExtra)
+            }
 
+            // 个人统计
+            TitleWidget(title = stringResource(Res.string.personal_stats)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatItem(
+                            label = stringResource(Res.string.sort_play_count),
+                            value = (userInfo?.playCount ?: 0).toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatItem(
+                            label = stringResource(Res.string.skipped_count),
+                            value = (userInfo?.skippedCount ?: 0).toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatItem(
+                            label = stringResource(Res.string.playlist_count),
+                            value = (userInfo?.inCustomPlaylistCount ?: 0).toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatItem(
+                            label = stringResource(Res.string.user_rating),
+                            value = (userInfo?.userRating ?: 0).toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatItem(
+                            label = stringResource(Res.string.last_played),
+                            value = formatLastPlayed(userInfo?.lastPlayed),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatItem(
+                            label = stringResource(Res.string.liked_status),
+                            value = userInfo?.liked?.let { if (it) stringResource(Res.string.liked_yes) else stringResource(Res.string.liked_no) } ?: stringResource(Res.string.liked_no),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // 标签
+            if (validLabels.isNotEmpty()) {
+                TitleWidget(title = stringResource(Res.string.labels)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        itemVerticalAlignment = Alignment.CenterVertically
+                    ) {
+                        validLabels.forEach { label ->
+                            AssistChip(
+                                onClick = { },
+                                label = { Text(label.label.name) },
+                                border = null,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 最近播放历史
+            if (playbackHistory.isNotEmpty()) {
+                TitleWidget(title = stringResource(Res.string.recent_history)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        playbackHistory.forEach { history ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "${stringResource(Res.string.duration)}: ${formatDuration(history.playDuration)}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        history.source?.let {
+                                            Text(
+                                                text = it,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = formatTimestamp(history.playedAt),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = if (history.isCompleted) stringResource(Res.string.completed) else stringResource(Res.string.incomplete),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (history.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                TitleWidget(title = stringResource(Res.string.recent_history)) {
+                    Text(
+                        text = stringResource(Res.string.song_detail_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // 中栏：完整歌词
+        Column(Modifier.weight(1f)) {
+            val lyricsFull = (musicExtra?.lyrics ?: "None Full Lyrics")
+                .replace(Regex("\\[.*?]"), "")
+                .lines()
+                .filter { it.isNotBlank() }
+                .joinToString("\n")
+                .trim()
+
+            if (lyricsFull.isNotBlank() && lyricsFull != "None Full Lyrics") {
+                TitleWidget(title = stringResource(Res.string.lyrics)) {
+                    Text(
+                        text = lyricsFull,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                    )
+                }
+            }
+        }
+
+        // 右栏：歌曲介绍 + 精选歌词
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            if (dailyMusicInfo == null) {
+                return@Column
+            }
+            if (dailyMusicInfo.errorInfo != "None") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Text(
+                        text = dailyMusicInfo.errorInfo,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                return@Column
+            }
+
+            val hasIntroContent = (dailyMusicInfo.backgroundIntroduce.isNotBlank() && dailyMusicInfo.backgroundIntroduce != "None")
+                    || (dailyMusicInfo.description.isNotBlank() && dailyMusicInfo.description != "None")
+                    || (dailyMusicInfo.singerIntroduce.isNotBlank() && dailyMusicInfo.singerIntroduce != "None")
+                    || (dailyMusicInfo.rewards.isNotBlank() && dailyMusicInfo.rewards != "None")
+
+            if (hasIntroContent) {
+                TitleWidget(title = stringResource(Res.string.song_description)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (dailyMusicInfo.backgroundIntroduce.isNotBlank() && dailyMusicInfo.backgroundIntroduce != "None") {
+                            Text(
+                                text = dailyMusicInfo.backgroundIntroduce,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
+                        if (dailyMusicInfo.description.isNotBlank() && dailyMusicInfo.description != "None") {
+                            Text(
+                                text = dailyMusicInfo.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
+                        if (dailyMusicInfo.singerIntroduce.isNotBlank() && dailyMusicInfo.singerIntroduce != "None") {
+                            Text(
+                                text = dailyMusicInfo.singerIntroduce,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
+                        if (dailyMusicInfo.rewards.isNotBlank() && dailyMusicInfo.rewards != "None") {
+                            Text(
+                                text = dailyMusicInfo.rewards,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                            )
+                        }
+                    }
+                }
+            }
+            if (dailyMusicInfo.relevantMusic.isNotBlank() && dailyMusicInfo.relevantMusic != "None") {
+                TitleWidget(title = stringResource(Res.string.similar_music)) {
+                    Text(
+                        text = dailyMusicInfo.relevantMusic,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                    )
+                }
+            }
+
+            if (dailyMusicInfo.lyric.isNotBlank() && dailyMusicInfo.lyric != "None") {
+                TitleWidget(title = stringResource(Res.string.popular_lyrics)) {
+                    Text(
+                        text = dailyMusicInfo.lyric,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SongDetailPoster(

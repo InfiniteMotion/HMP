@@ -3,6 +3,7 @@ import com.hmp.desktop.ui.common.navigation.NavController
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +47,8 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.player.components.MiniPlayerSafeSpacer
 import com.hmp.desktop.ui.common.components.base.TitleWidget
 import com.hmp.desktop.ui.common.pages.base.SubScreen
@@ -73,6 +78,11 @@ fun LibrarySettingsScreen(
         onBackClick = { navController.popBackStack() },
         title = stringResource(Res.string.library_settings)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -80,40 +90,78 @@ fun LibrarySettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 1. 音乐库统计
-            LibraryStatsSection(
-                musicCount = musicCount,
-                analyzedCount = analyzedCount
-            )
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        LibraryStatsSection(
+                            musicCount = musicCount,
+                            analyzedCount = analyzedCount
+                        )
+                        LibraryManagementSection(
+                            folders = scannedFolders,
+                            hiddenFolders = hiddenFolders,
+                            onHideFolder = libraryViewModel::hideFolder,
+                            onUnhideFolder = libraryViewModel::restoreToLibrary
+                        )
+                    }
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        ScanOptionsSection(
+                            isScanning = isScanning,
+                            onIncrementalScan = libraryViewModel::refreshMusicList,
+                            onFullRescan = libraryViewModel::fullRescan
+                        )
+                        ScanDirectoriesSection(
+                            scanDirectories = scanDirectoryConfig.scanDirectories,
+                            onAddDirectory = { libraryViewModel.addScanDirectory(it) },
+                            onRemoveDirectory = { libraryViewModel.removeScanDirectory(it) }
+                        )
+                        BlockedDirectoriesSection(
+                            blockedDirectories = scanDirectoryConfig.blockedDirectories,
+                            onAddDirectory = { libraryViewModel.addBlockedDirectory(it) },
+                            onRemoveDirectory = { libraryViewModel.removeBlockedDirectory(it) }
+                        )
+                    }
+                }
+            } else {
+                LibraryStatsSection(
+                    musicCount = musicCount,
+                    analyzedCount = analyzedCount
+                )
 
-            // 2. 扫描目录
-            ScanDirectoriesSection(
-                scanDirectories = scanDirectoryConfig.scanDirectories,
-                onAddDirectory = { libraryViewModel.addScanDirectory(it) },
-                onRemoveDirectory = { libraryViewModel.removeScanDirectory(it) }
-            )
+                ScanDirectoriesSection(
+                    scanDirectories = scanDirectoryConfig.scanDirectories,
+                    onAddDirectory = { libraryViewModel.addScanDirectory(it) },
+                    onRemoveDirectory = { libraryViewModel.removeScanDirectory(it) }
+                )
 
-            // 3. 已屏蔽目录
-            BlockedDirectoriesSection(
-                blockedDirectories = scanDirectoryConfig.blockedDirectories,
-                onAddDirectory = { libraryViewModel.addBlockedDirectory(it) },
-                onRemoveDirectory = { libraryViewModel.removeBlockedDirectory(it) }
-            )
+                BlockedDirectoriesSection(
+                    blockedDirectories = scanDirectoryConfig.blockedDirectories,
+                    onAddDirectory = { libraryViewModel.addBlockedDirectory(it) },
+                    onRemoveDirectory = { libraryViewModel.removeBlockedDirectory(it) }
+                )
 
-            // 4. 扫描选项
-            ScanOptionsSection(
-                isScanning = isScanning,
-                onIncrementalScan = libraryViewModel::refreshMusicList,
-                onFullRescan = libraryViewModel::fullRescan
-            )
+                ScanOptionsSection(
+                    isScanning = isScanning,
+                    onIncrementalScan = libraryViewModel::refreshMusicList,
+                    onFullRescan = libraryViewModel::fullRescan
+                )
 
-            // 5. 音乐库管理
-            LibraryManagementSection(
-                folders = scannedFolders,
-                hiddenFolders = hiddenFolders,
-                onHideFolder = libraryViewModel::hideFolder,
-                onUnhideFolder = libraryViewModel::restoreToLibrary
-            )
+                LibraryManagementSection(
+                    folders = scannedFolders,
+                    hiddenFolders = hiddenFolders,
+                    onHideFolder = libraryViewModel::hideFolder,
+                    onUnhideFolder = libraryViewModel::restoreToLibrary
+                )
+            }
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }

@@ -293,6 +293,7 @@ fun MainScreen(
 
             // 底部融合栏（导航 + 播放控制）— 所有布局模式共用
             val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
+            val isOnTabPage = navController.currentRoute is Routes.Main.Tabs
             AnimatedVisibility(
                 visible = navController.none { it is Routes.Player.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
@@ -330,6 +331,7 @@ fun MainScreen(
                         hazeState = hazeState,
                         showNavText = windowSizeInfo.isExpanded,
                         forceExpanded = windowSizeInfo.isExpanded,
+                        showNavCapsule = isOnTabPage,
                         maxWidth = when (windowSizeInfo.widthSizeClass) {
                             WindowWidthSizeClass.Compact -> 480.dp
                             WindowWidthSizeClass.Medium -> 640.dp

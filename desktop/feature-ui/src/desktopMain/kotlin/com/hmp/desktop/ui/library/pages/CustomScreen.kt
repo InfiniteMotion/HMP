@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 
 
@@ -40,6 +42,8 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.base.TitleWidget
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.hmp.desktop.ui.common.util.DEFAULT_HAZE_MATERIAL_PRESET
@@ -113,34 +117,72 @@ fun CustomScreenContent(
         onBackClick = onBackClick,
         title = stringResource(Res.string.theme_customization)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            SetThemeMode(
-                customMode = customMode,
-                setCustomMode = setCustomMode
-            )
-
-            SetBackgroundStyle(
-                backgroundStyle = backgroundStyle,
-                setBackgroundStyle = setBackgroundStyle
-            )
-            SetHazeIntensity(
-                hazeMode = hazeMode,
-                hazeMaterialPreset = hazeMaterialPreset,
-                hazeBlurRadius = hazeBlurRadius,
-                hazeNoiseFactor = hazeNoiseFactor,
-                hazeTintAlpha = hazeTintAlpha,
-                setHazeMode = setHazeMode,
-                applyHazeMaterialPreset = applyHazeMaterialPreset,
-                setHazeBlurRadius = setHazeBlurRadius,
-                setHazeNoiseFactor = setHazeNoiseFactor,
-                setHazeTintAlpha = setHazeTintAlpha
-            )
-
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        SetThemeMode(
+                            customMode = customMode,
+                            setCustomMode = setCustomMode
+                        )
+                        SetBackgroundStyle(
+                            backgroundStyle = backgroundStyle,
+                            setBackgroundStyle = setBackgroundStyle
+                        )
+                    }
+                    Column(Modifier.weight(1f)) {
+                        SetHazeIntensity(
+                            hazeMode = hazeMode,
+                            hazeMaterialPreset = hazeMaterialPreset,
+                            hazeBlurRadius = hazeBlurRadius,
+                            hazeNoiseFactor = hazeNoiseFactor,
+                            hazeTintAlpha = hazeTintAlpha,
+                            setHazeMode = setHazeMode,
+                            applyHazeMaterialPreset = applyHazeMaterialPreset,
+                            setHazeBlurRadius = setHazeBlurRadius,
+                            setHazeNoiseFactor = setHazeNoiseFactor,
+                            setHazeTintAlpha = setHazeTintAlpha
+                        )
+                    }
+                }
+            } else {
+                SetThemeMode(
+                    customMode = customMode,
+                    setCustomMode = setCustomMode
+                )
+                SetBackgroundStyle(
+                    backgroundStyle = backgroundStyle,
+                    setBackgroundStyle = setBackgroundStyle
+                )
+                SetHazeIntensity(
+                    hazeMode = hazeMode,
+                    hazeMaterialPreset = hazeMaterialPreset,
+                    hazeBlurRadius = hazeBlurRadius,
+                    hazeNoiseFactor = hazeNoiseFactor,
+                    hazeTintAlpha = hazeTintAlpha,
+                    setHazeMode = setHazeMode,
+                    applyHazeMaterialPreset = applyHazeMaterialPreset,
+                    setHazeBlurRadius = setHazeBlurRadius,
+                    setHazeNoiseFactor = setHazeNoiseFactor,
+                    setHazeTintAlpha = setHazeTintAlpha
+                )
+            }
             Spacer(modifier = Modifier.height(64.dp))
         }
     }

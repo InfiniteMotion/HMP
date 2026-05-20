@@ -46,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -60,6 +62,8 @@ import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.base.TitleWidget
+import com.hmp.desktop.ui.common.layout.WindowWidthSizeClass
+import com.hmp.desktop.ui.common.layout.widthSizeClass
 import com.hmp.desktop.ui.common.dialogs.controller.DialogManager
 import com.hmp.desktop.ui.common.pages.base.SubScreen
 import com.hmp.desktop.ui.library.viewmodel.LibraryViewModel
@@ -154,49 +158,101 @@ fun AIScreenContent(
         onBackClick = onBackClick,
         title = stringResource(Res.string.title_ai)
     ) {
+        val windowInfo = LocalWindowInfo.current
+        val density = LocalDensity.current
+        val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val sizeClass = widthSizeClass(windowWidthDp)
+
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 服务商配置组件
-            AiProviderConfig(
-                currentProvider = currentProvider,
-                currentConfig = currentConfig,
-                isTestingApi = isTestingApi,
-                apiTestResult = apiTestResult,
-                onProviderChange = onProviderChange,
-                onTestConnection = onTestConnection,
-                onSaveConfig = onSaveConfig,
-                onClearTestResult = onClearTestResult,
-                dialogManager = dialogManager
-            )
+            if (sizeClass == WindowWidthSizeClass.Expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        AiProviderConfig(
+                            currentProvider = currentProvider,
+                            currentConfig = currentConfig,
+                            isTestingApi = isTestingApi,
+                            apiTestResult = apiTestResult,
+                            onProviderChange = onProviderChange,
+                            onTestConnection = onTestConnection,
+                            onSaveConfig = onSaveConfig,
+                            onClearTestResult = onClearTestResult,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        LoadMusicExtraInfo(
+                            pendingCount = pendingCount,
+                            musicWithExtraCount = musicWithExtraCount,
+                            progress = progress,
+                            isConfigured = currentConfig?.isConfigured == true,
+                            autoBatchProcess = autoBatchProcess,
+                            onAutoBatchProcessChange = onAutoBatchProcessChange,
+                            startAutoProcessExtraInfo = startAutoProcessExtraInfo,
+                            pauseProcess = pauseProcess,
+                            resumeProcess = resumeProcess,
+                            cancelProcess = cancelProcess,
+                            dialogManager = dialogManager
+                        )
 
-            LoadMusicExtraInfo(
-                pendingCount = pendingCount,
-                musicWithExtraCount = musicWithExtraCount,
-                progress = progress,
-                isConfigured = currentConfig?.isConfigured == true,
-                autoBatchProcess = autoBatchProcess,
-                onAutoBatchProcessChange = onAutoBatchProcessChange,
-                startAutoProcessExtraInfo = startAutoProcessExtraInfo,
-                pauseProcess = pauseProcess,
-                resumeProcess = resumeProcess,
-                cancelProcess = cancelProcess,
-                dialogManager = dialogManager
-            )
+                        DailyRefreshSettings(
+                            refreshMode = refreshMode,
+                            refreshHours = refreshHours,
+                            startupCount = startupCount,
+                            onSaveRefreshMode = onSaveDailyRefreshMode,
+                            onSaveRefreshHours = onSaveDailyRefreshHours,
+                            onSaveStartupCount = onSaveDailyRefreshStartupCount,
+                            dialogManager = dialogManager
+                        )
+                    }
+                }
+            } else {
+                AiProviderConfig(
+                    currentProvider = currentProvider,
+                    currentConfig = currentConfig,
+                    isTestingApi = isTestingApi,
+                    apiTestResult = apiTestResult,
+                    onProviderChange = onProviderChange,
+                    onTestConnection = onTestConnection,
+                    onSaveConfig = onSaveConfig,
+                    onClearTestResult = onClearTestResult,
+                    dialogManager = dialogManager
+                )
 
-            // 每日推荐刷新策略
-            DailyRefreshSettings(
-                refreshMode = refreshMode,
-                refreshHours = refreshHours,
-                startupCount = startupCount,
-                onSaveRefreshMode = onSaveDailyRefreshMode,
-                onSaveRefreshHours = onSaveDailyRefreshHours,
-                onSaveStartupCount = onSaveDailyRefreshStartupCount,
-                dialogManager = dialogManager
-            )
+                LoadMusicExtraInfo(
+                    pendingCount = pendingCount,
+                    musicWithExtraCount = musicWithExtraCount,
+                    progress = progress,
+                    isConfigured = currentConfig?.isConfigured == true,
+                    autoBatchProcess = autoBatchProcess,
+                    onAutoBatchProcessChange = onAutoBatchProcessChange,
+                    startAutoProcessExtraInfo = startAutoProcessExtraInfo,
+                    pauseProcess = pauseProcess,
+                    resumeProcess = resumeProcess,
+                    cancelProcess = cancelProcess,
+                    dialogManager = dialogManager
+                )
+
+                DailyRefreshSettings(
+                    refreshMode = refreshMode,
+                    refreshHours = refreshHours,
+                    startupCount = startupCount,
+                    onSaveRefreshMode = onSaveDailyRefreshMode,
+                    onSaveRefreshHours = onSaveDailyRefreshHours,
+                    onSaveStartupCount = onSaveDailyRefreshStartupCount,
+                    dialogManager = dialogManager
+                )
+            }
 
             Spacer(modifier = Modifier.height(64.dp))
         }
