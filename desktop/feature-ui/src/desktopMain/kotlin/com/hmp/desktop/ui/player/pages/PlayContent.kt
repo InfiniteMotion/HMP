@@ -1,12 +1,23 @@
 package com.hmp.desktop.ui.player.pages
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -30,11 +41,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,7 +66,9 @@ import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
 import com.hmp.domain.enum.PlaybackMode
 import com.hmp.domain.music.Music
+import com.hmp.domain.music.MusicExtra
 import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.UserInfo
 import com.hmp.domain.playlist.AlgorithmType
 import com.hmp.domain.playlist.ExtensionConfig
 import com.hmp.domain.playlist.WeightTemplate
@@ -72,10 +91,14 @@ import com.hmp.desktop.ui.library.pages.components.musiclist.ItemVariant
 import com.hmp.desktop.ui.library.pages.components.musiclist.MusicList
 import com.hmp.desktop.ui.library.pages.components.musiclist.MusicListCallbacksAdapter
 import com.hmp.desktop.ui.library.pages.components.musiclist.defaultMusicListConfig
+import com.hmp.desktop.ui.library.viewmodel.SongDetailData
+import com.hmp.desktop.ui.library.viewmodel.SongDetailViewModel
 import com.hmp.desktop.ui.player.viewmodel.LyricsSettingsState
 import com.hmp.desktop.ui.player.viewmodel.PlayerCallbacks
+import com.hmp.desktop.ui.common.util.UiState
 import com.hmp.desktop.ui.player.viewmodel.PlayerUiState
 import dev.chrisbanes.haze.HazeState
+import org.koin.compose.koinInject
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 
@@ -99,6 +122,11 @@ fun PlayContent(
 
     var showTimerDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("lyrics") }
+    var contentPage by remember { mutableIntStateOf(1) }
+    var slideDirection by remember { mutableIntStateOf(1) }
+    var playlistExpanded by remember { mutableStateOf(false) }
+    val songDetailViewModel: SongDetailViewModel = koinInject()
+    val songDetailState by songDetailViewModel.uiState.collectAsState()
 
     val musicInfo = playerUiState.musicInfo
     val isPlaying = playerUiState.isPlaying
@@ -113,6 +141,11 @@ fun PlayContent(
     val defaultAlgorithmType = playerUiState.defaultAlgorithmType
     val defaultTemplate = playerUiState.defaultTemplate
 
+    // 加载歌曲详情数据（供文件信息/歌曲详情 Tab 使用）
+    LaunchedEffect(musicInfo?.music?.id) {
+        musicInfo?.music?.id?.let { songDetailViewModel.loadSongDetail(it) }
+    }
+
     val lyricsOriginalTextSize = lyricsSettingsState.lyricsOriginalTextSize
     val lyricsTranslatedTextSize = lyricsSettingsState.lyricsTranslatedTextSize
     val lyricsCurrentTimeTextSize = lyricsSettingsState.lyricsCurrentTimeTextSize
@@ -124,6 +157,11 @@ fun PlayContent(
         val sizeClass = widthSizeClass(maxWidth)
         val screenHeight = maxHeight
         val scrollState = rememberScrollState()
+        val coverSize = when (sizeClass) {
+            WindowWidthSizeClass.Compact -> minOf(maxWidth * 0.65f, 280.dp)
+            WindowWidthSizeClass.Medium,
+            WindowWidthSizeClass.Expanded -> minOf(maxWidth * 0.35f, 260.dp.coerceAtMost(maxHeight * 0.5f))
+        }
 
         Box(
             modifier = Modifier
@@ -143,38 +181,129 @@ fun PlayContent(
                 ) {
                     when (sizeClass) {
                         WindowWidthSizeClass.Compact -> {
-                            // ── Compact: 全屏封面展示 ──
+                            // ── Compact: 全屏展示（封面/歌词/信息三页切换 + PlaylistArea）──
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
                             ) {
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     PlayerHeader({ callbacks.onBackClick() })
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                if (musicInfo?.music?.title != null) {
-                                    Text(
-                                        text = musicInfo.music.title,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                MusicInfo(musicInfo?.music, { callbacks.onArtistClick(it) })
+
+                                // 可切换内容区域：info+generate / 封面 / 歌词（带动画滑动切换）
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // 左箭头
+                                    IconButton(
+                                        onClick = {
+                                            slideDirection = -1
+                                            contentPage = (contentPage - 1 + 3) % 3
+                                        },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterStart)
+                                            .size(36.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.chevron_left),
+                                            contentDescription = "上一页",
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    // 内容主体（滑动切换动画）
+                                    AnimatedContent(
+                                        targetState = contentPage,
+                                        modifier = Modifier.padding(horizontal = 48.dp),
+                                        transitionSpec = {
+                                            val direction = slideDirection
+                                            if (direction > 0) {
+                                                (slideInHorizontally(animationSpec = tween(250)) { it } + fadeIn(animationSpec = tween(250))) togetherWith
+                                                (slideOutHorizontally(animationSpec = tween(250)) { -it } + fadeOut(animationSpec = tween(250)))
+                                            } else {
+                                                (slideInHorizontally(animationSpec = tween(250)) { -it } + fadeIn(animationSpec = tween(250))) togetherWith
+                                                (slideOutHorizontally(animationSpec = tween(250)) { it } + fadeOut(animationSpec = tween(250)))
+                                            }.using(SizeTransform(clip = false))
+                                        },
+                                        label = "CompactContent"
+                                    ) { page ->
+                                        when (page) {
+                                            0 -> {
+                                                // 文件信息 + 推荐生成
+                                                Column(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    if (musicInfo?.extra != null) {
+                                                        TechnicalInfoCard(
+                                                            extra = musicInfo.extra,
+                                                            modifier = Modifier.padding(vertical = 8.dp)
+                                                        )
+                                                    }
+                                                    if (musicInfo?.extra?.isGetExtraInfo == true) {
+                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        GeneratePlaylistComboButtons(
+                                                            seedMusicId = musicInfo.music.id,
+                                                            defaultAlgorithmType = defaultAlgorithmType,
+                                                            defaultTemplate = defaultTemplate,
+                                                            onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
+                                                            onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            1 -> {
+                                                // 封面（默认页）
+                                                AlbumCover(
+                                                    musicInfo?.music?.albumArtUri,
+                                                    coverSize,
+                                                    20.dp,
+                                                    10.dp
+                                                )
+                                            }
+                                            2 -> {
+                                                // 歌词
+                                                AdvancedLyrics(
+                                                    modifier = Modifier,
+                                                    lyrics = lyrics,
+                                                    currentPosition = currentPosition,
+                                                    onSeek = { callbacks.onSeek(it) },
+                                                    originalTextSize = lyricsOriginalTextSize,
+                                                    translatedTextSize = lyricsTranslatedTextSize,
+                                                    currentTimeTextSize = lyricsCurrentTimeTextSize,
+                                                    lineSpacing = lyricsLineSpacing,
+                                                    displayMode = lyricsDisplayMode,
+                                                    alignment = lyricsAlignment
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // 右箭头
+                                    IconButton(
+                                        onClick = {
+                                            slideDirection = 1
+                                            contentPage = (contentPage + 1) % 3
+                                        },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .size(36.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.chevron_right),
+                                            contentDescription = "下一页",
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
-                                Spacer(modifier = Modifier.weight(1f))
-                                AlbumCover(
-                                    musicInfo?.music?.albumArtUri,
-                                    280.dp,
-                                    20.dp,
-                                    10.dp
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
                             }
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                                 SeekBar(
                                     currentPosition = currentPosition,
                                     duration = duration,
@@ -185,7 +314,7 @@ fun PlayContent(
                                     playbackMode = playbackMode,
                                     isLike = isLiked,
                                     remainingTime = remainingTime,
-                                    isPlaylistSelected = selectedTab == "playlist",
+                                    isPlaylistSelected = playlistExpanded,
                                     onPlayPause = {
                                         haptic.performClick()
                                         callbacks.onPlayPause()
@@ -212,7 +341,7 @@ fun PlayContent(
                                         callbacks.onHeartMode()
                                     },
                                     onPlaylistToggle = {
-                                        selectedTab = if (selectedTab == "playlist") "lyrics" else "playlist"
+                                        playlistExpanded = !playlistExpanded
                                     }
                                 )
                             }
@@ -247,7 +376,7 @@ fun PlayContent(
                                     ) {
                                         AlbumCover(
                                             musicInfo?.music?.albumArtUri,
-                                            220.dp,
+                                            280.dp,
                                             16.dp,
                                             8.dp
                                         )
@@ -310,7 +439,7 @@ fun PlayContent(
                                     modifier = Modifier
                                         .weight(0.6f)
                                         .fillMaxHeight()
-                                        .padding(start = 8.dp, end = 16.dp)
+                                        .padding(start = 16.dp, end = 24.dp)
                                         .padding(vertical = 16.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -320,21 +449,20 @@ fun PlayContent(
                                             "playlist" -> PlaylistTabContent(
                                                 playlist = playlist,
                                                 currentIndex = currentIndex,
+                                                seedMusicId = musicInfo?.music?.id,
+                                                defaultAlgorithmType = defaultAlgorithmType,
+                                                defaultTemplate = defaultTemplate,
+                                                onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
+                                                onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) },
                                                 onPlayItem = { callbacks.onPlayItem(it) },
                                                 onMoveToTop = { callbacks.onMoveToTop(it) },
                                                 onRemoveFromPlaylist = { callbacks.onRemoveFromPlaylist(it) },
                                                 onClearPlaylist = { callbacks.onClearPlaylist() }
                                             )
-                                            "generate" -> GenerateTabContent(
-                                                seedMusicId = musicInfo?.music?.id,
-                                                defaultAlgorithmType = defaultAlgorithmType,
-                                                defaultTemplate = defaultTemplate,
-                                                onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
-                                                onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }
-                                            )
-                                            "info" -> TechnicalInfoCard(
-                                                extra = musicInfo?.extra,
-                                                modifier = Modifier.padding(16.dp)
+                                            "info" -> SongDetailInfoTab(
+                                                songDetailState = songDetailState,
+                                                musicExtra = musicInfo?.extra,
+                                                userInfo = musicInfo?.userInfo
                                             )
                                             else -> AdvancedLyrics(
                                                 modifier = Modifier
@@ -370,6 +498,19 @@ fun PlayContent(
                         }
                     }
                 }
+                // Compact 模式下播放列表区域（展开/收起动画）
+                if (sizeClass == WindowWidthSizeClass.Compact) {
+                    PlaylistArea(
+                        expanded = playlistExpanded,
+                        playlist = playlist,
+                        currentIndex = currentIndex,
+                        scrollState = scrollState,
+                        onClearPlaylist = { callbacks.onClearPlaylist() },
+                        onPlayItem = { callbacks.onPlayItem(it) },
+                        onMoveToTop = { callbacks.onMoveToTop(it) },
+                        onRemoveFromPlaylist = { callbacks.onRemoveFromPlaylist(it) }
+                    )
+                }
             }
         }
         if (showTimerDialog) {
@@ -395,6 +536,11 @@ fun PlayContent(
 private fun PlaylistTabContent(
     playlist: List<MusicInfo>,
     currentIndex: Int,
+    seedMusicId: Long? = null,
+    defaultAlgorithmType: AlgorithmType? = null,
+    defaultTemplate: WeightTemplate? = null,
+    onGeneratePlaylist: ((Long) -> Unit)? = null,
+    onSaveDefaultConfig: ((AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit)? = null,
     onPlayItem: (MusicInfo) -> Unit,
     onMoveToTop: (MusicInfo) -> Unit,
     onRemoveFromPlaylist: (MusicInfo) -> Unit,
@@ -403,99 +549,245 @@ private fun PlaylistTabContent(
     val haptic = rememberHapticFeedback()
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp)
+        modifier = Modifier.fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 32.dp, top = 8.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = { haptic.performLightClick(); onClearPlaylist() }) {
-                Text(
-                    text = stringResource(Res.string.clear),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Text(
-                text = "${currentIndex + 1}/${playlist.size}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-
-        val callbacks = object : MusicListCallbacksAdapter() {
-            override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                haptic.performClick()
-                onPlayItem(musicInfo)
-            }
-            override fun onPinToTop(musicInfo: MusicInfo) {
-                haptic.performConfirm()
-                onMoveToTop(musicInfo)
-            }
-            override fun onRemove(musicInfo: MusicInfo) {
-                haptic.performLightClick()
-                onRemoveFromPlaylist(musicInfo)
-            }
-        }
-        val config = defaultMusicListConfig(callbacks).copy(
-            header = HeaderConfig.None,
-            item = ItemConfig(
-                showIndex = true,
-                variant = ItemVariant.Full,
-                fullOptions = FullItemOptions(
-                    showPinButton = true,
-                    showRemoveButton = true,
-                    showMenuButton = false,
-                ),
-            ),
-            edit = EditConfig(enabled = false),
-            currentPlaying = CurrentPlayingConfig(
-                index = currentIndex.takeIf { it in playlist.indices },
-                autoScrollToCurrent = true,
-            ),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-        )
-        MusicList(
-            musicInfoList = playlist,
-            config = config,
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            isPlaying = true,
-        )
-    }
-}
-
-@Composable
-private fun GenerateTabContent(
-    seedMusicId: Long?,
-    defaultAlgorithmType: AlgorithmType?,
-    defaultTemplate: WeightTemplate?,
-    onGeneratePlaylist: (Long) -> Unit,
-    onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center
-    ) {
-        if (seedMusicId != null) {
+        // 推荐生成区域（在卡片外部）
+        if (seedMusicId != null && onGeneratePlaylist != null) {
             GeneratePlaylistComboButtons(
                 seedMusicId = seedMusicId,
                 defaultAlgorithmType = defaultAlgorithmType,
                 defaultTemplate = defaultTemplate,
                 onGeneratePlaylist = onGeneratePlaylist,
-                onSaveDefaultConfig = onSaveDefaultConfig
+                onSaveDefaultConfig = onSaveDefaultConfig ?: { _, _, _ -> },
+                horizontalLayout = true
             )
-        } else {
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // 播放列表卡片（无标题，统一风格）
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(RoundedCornerShape(20.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+            color = Transparent
+        ) {
+            Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { haptic.performLightClick(); onClearPlaylist() }) {
+                        Text(
+                            text = stringResource(Res.string.clear),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        text = "${currentIndex + 1}/${playlist.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+
+                val callbacks = object : MusicListCallbacksAdapter() {
+                    override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                        haptic.performClick()
+                        onPlayItem(musicInfo)
+                    }
+                    override fun onPinToTop(musicInfo: MusicInfo) {
+                        haptic.performConfirm()
+                        onMoveToTop(musicInfo)
+                    }
+                    override fun onRemove(musicInfo: MusicInfo) {
+                        haptic.performLightClick()
+                        onRemoveFromPlaylist(musicInfo)
+                    }
+                }
+                val config = defaultMusicListConfig(callbacks).copy(
+                    header = HeaderConfig.None,
+                    item = ItemConfig(
+                        showIndex = true,
+                        variant = ItemVariant.Full,
+                        fullOptions = FullItemOptions(
+                            showPinButton = true,
+                            showRemoveButton = true,
+                            showMenuButton = false,
+                        ),
+                    ),
+                    edit = EditConfig(enabled = false),
+                    currentPlaying = CurrentPlayingConfig(
+                        index = currentIndex.takeIf { it in playlist.indices },
+                        autoScrollToCurrent = true,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                )
+                MusicList(
+                    musicInfoList = playlist,
+                    config = config,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    isPlaying = true,
+                )
+            }
+        }
+    }
+}
+
+// ── 文件信息/歌曲详情 Tab ──
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SongDetailInfoTab(
+    songDetailState: UiState<SongDetailData>,
+    musicExtra: MusicExtra?,
+    userInfo: UserInfo?
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 32.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 技术信息卡片
+        TechnicalInfoCard(extra = musicExtra, modifier = Modifier.fillMaxWidth())
+
+        if (songDetailState is UiState.Success) {
+            val data = songDetailState.data
+            val dailyInfo = data.dailyMusicInfo
+
+            // 相关信息卡片（AI 内容）
+            if (dailyInfo != null && (
+                    (dailyInfo.backgroundIntroduce.isNotBlank() && dailyInfo.backgroundIntroduce != "None") ||
+                    (dailyInfo.description.isNotBlank() && dailyInfo.description != "None") ||
+                    (dailyInfo.singerIntroduce.isNotBlank() && dailyInfo.singerIntroduce != "None") ||
+                    (dailyInfo.rewards.isNotBlank() && dailyInfo.rewards != "None")
+                )
+            ) {
+                InfoCard(title = "相关信息") {
+                    if (dailyInfo.backgroundIntroduce.isNotBlank() && dailyInfo.backgroundIntroduce != "None") {
+                        InfoRow(label = stringResource(Res.string.creative_background), value = dailyInfo.backgroundIntroduce)
+                    }
+                    if (dailyInfo.description.isNotBlank() && dailyInfo.description != "None") {
+                        InfoRow(label = stringResource(Res.string.song_description), value = dailyInfo.description)
+                    }
+                    if (dailyInfo.singerIntroduce.isNotBlank() && dailyInfo.singerIntroduce != "None") {
+                        InfoRow(label = stringResource(Res.string.artist_introduction), value = dailyInfo.singerIntroduce)
+                    }
+                    if (dailyInfo.rewards.isNotBlank() && dailyInfo.rewards != "None") {
+                        InfoRow(label = stringResource(Res.string.song_achievements), value = dailyInfo.rewards)
+                    }
+                }
+            }
+
+            // 用户信息卡片
+            if (userInfo != null) {
+                InfoCard(title = stringResource(Res.string.personal_stats)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatCell(stringResource(Res.string.sort_play_count), userInfo.playCount?.toString() ?: "0", Modifier.weight(1f))
+                        StatCell(stringResource(Res.string.skipped_count), userInfo.skippedCount?.toString() ?: "0", Modifier.weight(1f))
+                        StatCell(stringResource(Res.string.playlist_count), userInfo.inCustomPlaylistCount?.toString() ?: "0", Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatCell(stringResource(Res.string.user_rating), userInfo.userRating?.toString() ?: "0", Modifier.weight(1f))
+                        StatCell(stringResource(Res.string.liked_status), if (userInfo.liked) "♥" else "♡", Modifier.weight(1f))
+                    }
+                }
+            }
+
+            // 标签卡片
+            val validLabels = data.labels.filterNotNull().filter { it.label.name.isNotBlank() }
+            if (validLabels.isNotEmpty()) {
+                InfoCard(title = stringResource(Res.string.labels)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        validLabels.forEach { label ->
+                            AssistChip(
+                                onClick = { },
+                                label = { Text(label.label.name, style = MaterialTheme.typography.labelSmall) },
+                                border = null
+                            )
+                        }
+                    }
+                }
+            }
+        } else if (songDetailState is UiState.Loading) {
+            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+        }
+    }
+}
+
+// ── 统一信息卡片样式（与 TechnicalInfoCard 一致）──
+
+@Composable
+private fun InfoCard(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+        color = androidx.compose.ui.graphics.Color.Companion.Transparent
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text(
-                text = "暂无歌曲信息",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun StatCell(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -514,8 +806,9 @@ fun MusicInfo(
             text = music?.title ?: "Music Title",
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -768,7 +1061,6 @@ fun PlaybackControlsButtons(
 private val tabOptions = listOf(
     "lyrics" to "歌词",
     "playlist" to "播放列表",
-    "generate" to "推荐生成",
     "info" to "文件信息"
 )
 

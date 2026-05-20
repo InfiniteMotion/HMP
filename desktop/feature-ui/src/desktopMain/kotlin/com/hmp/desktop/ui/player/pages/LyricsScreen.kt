@@ -1,8 +1,12 @@
 package com.hmp.desktop.ui.player.pages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -150,8 +154,8 @@ fun LyricsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 72.dp, end = 16.dp),
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom)
         ) {
             Card(
                 shape = RoundedCornerShape(24.dp),
@@ -188,8 +192,8 @@ fun LyricsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 16.dp, end = 16.dp),
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it }
         ) {
             Card(
                 shape = RoundedCornerShape(36.dp),

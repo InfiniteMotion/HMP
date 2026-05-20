@@ -2,29 +2,25 @@
 package com.hmp.desktop.ui.player.pages
 import com.hmp.desktop.ui.common.navigation.NavController
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import org.koin.compose.koinInject
 
 
 
 import com.hmp.desktop.ui.common.navigation.Routes
-import com.hmp.desktop.ui.common.util.rememberHapticFeedback
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hmp.desktop.ui.player.viewmodel.LyricsSettingsState
 import com.hmp.desktop.ui.player.viewmodel.PlayerCallbacks
@@ -51,11 +47,6 @@ fun PlayerScreen(
     dialogViewModel: DialogViewModel = koinInject(),
     navController: NavController
 ) {
-    val density = LocalDensity.current
-    val dismissThreshold = with(density) { 220.dp.toPx() }
-    val offsetY = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    val haptic = rememberHapticFeedback()
     val hazeState = rememberHazeState()
 
     // 预加载当前播放音乐信息
@@ -154,26 +145,20 @@ fun PlayerScreen(
         }
     }
 
-    // 嵌套滚动处理
-    val nestedScrollConnection = rememberPlayerScreenNestedScroll(
-        dismissThreshold = dismissThreshold,
-        offsetY = offsetY,
-        scope = scope,
-        haptic = { haptic.performLightClick() },
-        onDismiss = { 
-            navController.popBackStack()
-            haptic.performGestureEnd()
-        }
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .offset { IntOffset(0, offsetY.value.toInt()) }
-            .graphicsLayer {
-                alpha = 1f - (offsetY.value / (2 * dismissThreshold)).coerceIn(0f, 1f)
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.Spacebar -> { playerCallbacks.onPlayPause(); true }
+                        Key.DirectionLeft -> { playerCallbacks.onPrevious(); true }
+                        Key.DirectionRight -> { playerCallbacks.onNext(); true }
+                        Key.L -> { playerCallbacks.onHeartMode(); true }
+                        else -> false
+                    }
+                } else false
             }
-            .nestedScroll(nestedScrollConnection) // 添加嵌套滚动支持
     ) {
         PlayContent(
             playerUiState = playerUiState,

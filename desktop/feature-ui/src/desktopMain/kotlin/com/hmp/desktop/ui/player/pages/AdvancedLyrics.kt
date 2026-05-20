@@ -31,10 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,7 +68,6 @@ fun AdvancedLyrics(
 
     val parsedLyrics = remember(lyrics) { EnhancedLyricsParser.parse(lyrics) }
     val scrollState = rememberLazyListState()
-    val hapticFeedback = LocalHapticFeedback.current
     val density = LocalDensity.current
 
     var containerHeightPx by remember { mutableIntStateOf(0) }
@@ -110,7 +107,7 @@ fun AdvancedLyrics(
             state = scrollState,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = lazyColumnHorizontalAlignment,
-            contentPadding = PaddingValues(vertical = with(density) { (containerHeightPx / 2).let { if(it > 0) it.toDp() else 300.dp } })
+            contentPadding = PaddingValues(vertical = with(density) { (containerHeightPx * 0.3f).toInt().let { if(it > 0) it.toDp() else 200.dp } })
         ) {
             itemsIndexed(
                 items = parsedLyrics,
@@ -127,7 +124,6 @@ fun AdvancedLyrics(
                     lineSpacing = lineSpacing,
                     alignment = alignment,
                     onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSeek(lyricLine.timestamp)
                     }
                 )

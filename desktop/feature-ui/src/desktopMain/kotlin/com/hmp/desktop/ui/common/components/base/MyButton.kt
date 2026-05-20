@@ -11,10 +11,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -369,99 +372,154 @@ fun GeneratePlaylistComboButtons(
     defaultAlgorithmType: AlgorithmType?,
     defaultTemplate: WeightTemplate?,
     onGeneratePlaylist: (Long) -> Unit,
-    onSaveDefaultConfig: ((AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit)
+    onSaveDefaultConfig: ((AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit),
+    horizontalLayout: Boolean = false
 ) {
     val haptic = rememberHapticFeedback()
     var selectedAlgorithm by remember { mutableStateOf(defaultAlgorithmType?: AlgorithmType.OPTIMIZED_SIMILARITY) }
     var selectedTemplate by remember { mutableStateOf(defaultTemplate?: WeightTemplate.BALANCED) }
     val weightOptions = listOf(
-        SegmentedOption(
-            id = WeightTemplate.BALANCED.name,
-            label = "平衡"
-        ),
-        SegmentedOption(
-            id = WeightTemplate.GENRE_FOCUS.name,
-            label = "风格"
-        ),
-        SegmentedOption(
-            id = WeightTemplate.MOOD_FOCUS.name,
-            label = "情绪"
-        ),
-        SegmentedOption(
-            id = WeightTemplate.SCENARIO_FOCUS.name,
-            label = "场景"
-        ),
-        SegmentedOption(
-            id = WeightTemplate.ERA_FOCUS.name,
-            label = "年代"
-        )
+        SegmentedOption(id = WeightTemplate.BALANCED.name, label = "平衡"),
+        SegmentedOption(id = WeightTemplate.GENRE_FOCUS.name, label = "风格"),
+        SegmentedOption(id = WeightTemplate.MOOD_FOCUS.name, label = "情绪"),
+        SegmentedOption(id = WeightTemplate.SCENARIO_FOCUS.name, label = "场景"),
+        SegmentedOption(id = WeightTemplate.ERA_FOCUS.name, label = "年代")
     )
     val algorithmOptions = listOf(
-        SegmentedOption(
-            id = AlgorithmType.OPTIMIZED_SIMILARITY.name,
-            label = "相似"
-        ),
-        SegmentedOption(
-            id = AlgorithmType.CHAIN_SIMILARITY.name,
-            label = "心动"
-        )
+        SegmentedOption(id = AlgorithmType.OPTIMIZED_SIMILARITY.name, label = "相似"),
+        SegmentedOption(id = AlgorithmType.CHAIN_SIMILARITY.name, label = "心动")
     )
-    Column(
-        modifier = Modifier
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        SegmentedControl(
-            modifier = Modifier,
-            options = weightOptions,
-            selectedOption = selectedTemplate.name,
-            onOptionSelected = { optionId ->
-                WeightTemplate.entries.find { it.name == optionId }?.let {
-                    selectedTemplate = it
-                }
-                onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
-                haptic.performClick()
-            },
-            showIcons = false
-        )
 
-        SegmentedControl(
-            modifier = Modifier,
-            options = algorithmOptions,
-            selectedOption = selectedAlgorithm.name,
-            onOptionSelected = { optionId ->
-                AlgorithmType.entries.find { it.name == optionId }?.let {
-                    selectedAlgorithm = it
-                }
-                onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
-                haptic.performClick()
-            },
-            showIcons = false
-        )
-
+    if (horizontalLayout) {
+        // Expanded 两列布局：左侧算法配置，右侧正方形生成按钮
         Row(
-            modifier = Modifier.height(48.dp)
+            modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
-                .clickable { onGeneratePlaylist(seedMusicId) },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(Res.drawable.lightbulb),
-                tint = MaterialTheme.colorScheme.primary,
-                contentDescription = "generate Button",
-                modifier = Modifier.size(16.dp)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SegmentedControl(
+                    modifier = Modifier,
+                    options = weightOptions,
+                    selectedOption = selectedTemplate.name,
+                    onOptionSelected = { optionId ->
+                        WeightTemplate.entries.find { it.name == optionId }?.let {
+                            selectedTemplate = it
+                        }
+                        onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
+                        haptic.performClick()
+                    },
+                    showIcons = false
+                )
+                SegmentedControl(
+                    modifier = Modifier,
+                    options = algorithmOptions,
+                    selectedOption = selectedAlgorithm.name,
+                    onOptionSelected = { optionId ->
+                        AlgorithmType.entries.find { it.name == optionId }?.let {
+                            selectedAlgorithm = it
+                        }
+                        onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
+                        haptic.performClick()
+                    },
+                    showIcons = false
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // 右侧正方形生成按钮（高度与左侧两行控件一致）
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                    .clickable { onGeneratePlaylist(seedMusicId) },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.lightbulb),
+                        tint = MaterialTheme.colorScheme.primary,
+                        contentDescription = "generate Button",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "生成推荐列表",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    } else {
+        // 默认纵向布局
+        Column(
+            modifier = Modifier,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            SegmentedControl(
+                modifier = Modifier,
+                options = weightOptions,
+                selectedOption = selectedTemplate.name,
+                onOptionSelected = { optionId ->
+                    WeightTemplate.entries.find { it.name == optionId }?.let {
+                        selectedTemplate = it
+                    }
+                    onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
+                    haptic.performClick()
+                },
+                showIcons = false
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "生成推荐列表",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
+
+            SegmentedControl(
+                modifier = Modifier,
+                options = algorithmOptions,
+                selectedOption = selectedAlgorithm.name,
+                onOptionSelected = { optionId ->
+                    AlgorithmType.entries.find { it.name == optionId }?.let {
+                        selectedAlgorithm = it
+                    }
+                    onSaveDefaultConfig(selectedAlgorithm, selectedTemplate, ExtensionConfig())
+                    haptic.performClick()
+                },
+                showIcons = false
             )
+
+            Row(
+                modifier = Modifier
+                    .height(48.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                    .clickable { onGeneratePlaylist(seedMusicId) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.lightbulb),
+                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = "generate Button",
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "生成推荐列表",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
