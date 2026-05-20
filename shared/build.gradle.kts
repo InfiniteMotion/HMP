@@ -13,6 +13,8 @@ kotlin {
         compileSdk { version = release(36) }
     }
 
+    jvm("desktop")
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -57,11 +59,19 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.darwin)
         }
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.ktor.java)
+                implementation(libs.jaudiotagger)
+                implementation(libs.kotlinx.coroutines.swing)
+            }
+        }
     }
 }
 
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
+    add("kspDesktop", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
     add("kspIosX64", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)

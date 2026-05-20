@@ -33,7 +33,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
@@ -42,8 +44,8 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.hearablemusicplayer.ui.common.components.BottomFusionBar
 import com.example.hearablemusicplayer.ui.common.components.TabPageIndicator
-import com.example.hearablemusicplayer.ui.player.components.MiniPlayerBar
 import com.example.hearablemusicplayer.ui.common.dialogs.CreatePlaylistDialog
 import com.example.hearablemusicplayer.ui.common.dialogs.base.MessageToast
 import com.example.hearablemusicplayer.ui.common.dialogs.MusicDetailDialog
@@ -416,16 +418,17 @@ fun MainScreen(
                 }
             }
 
-            // 使用 AnimatedVisibility 包裹 MiniPlayerBar 实现滑入滑出动画
+            // BottomFusionBar 底部融合栏（导航Tab + 播放控制）
             val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
+            val coroutineScope = rememberCoroutineScope()
             AnimatedVisibility(
                 visible = navController.none { it is NavRoutes.Player.Player } && isMiniPlayerVisible,
                 enter = slideInVertically(
-                    initialOffsetY = { it }, // 从底部滑入 (偏移量为自身高度)
+                    initialOffsetY = { it },
                     animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
                 ),
                 exit = slideOutVertically(
-                    targetOffsetY = { it }, // 向底部滑出 (偏移量为自身高度)
+                    targetOffsetY = { it },
                     animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
                 ),
                 modifier = Modifier
@@ -435,11 +438,18 @@ fun MainScreen(
                     modifier = Modifier
                         .navigationBarsPadding()
                 ) {
-                    MiniPlayerBar(
+                    BottomFusionBar(
                         musicInfo = currentMusic,
                         isPlaying = isPlaying,
                         progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                        selectedTabIndex = pagerState.currentPage,
+                        onTabSelected = { index ->
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
                         hazeState = hazeState,
+                        showNavText = false,
                         onPlayPause = {
                             if (isPlaying) {
                                 playbackViewModel.pauseMusic()

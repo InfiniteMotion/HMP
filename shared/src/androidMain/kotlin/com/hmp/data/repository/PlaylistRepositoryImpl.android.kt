@@ -10,7 +10,6 @@ import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.PlaylistItem
 import com.hmp.domain.playlist.PlaylistRepository
-import com.hmp.domain.setting.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -18,15 +17,7 @@ class PlaylistRepositoryImpl(
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
     private val musicAllDao: MusicAllDao,
-    private val settingsRepository: SettingsRepository
 ) : PlaylistRepository {
-
-    private suspend fun isCustomPlaylist(playlistId: Long): Boolean {
-        val currentId = settingsRepository.getCurrentPlaylistId()
-        val likedId = settingsRepository.getLikedPlaylistId()
-        val recentId = settingsRepository.getRecentPlaylistId()
-        return playlistId != currentId && playlistId != likedId && playlistId != recentId
-    }
 
     override suspend fun createPlaylist(name: String): Long {
         val now = System.currentTimeMillis()
@@ -84,10 +75,8 @@ class PlaylistRepositoryImpl(
         val totalDurationMs = list.sumOf { it.music.duration }
         playlistDao.updateStats(playlistId, songCount, totalDurationMs, System.currentTimeMillis())
 
-        if (isCustomPlaylist(playlistId)) {
-            val firstSongCover = list.firstOrNull()?.music?.albumArtUri
-            playlistDao.updateCover(playlistId, firstSongCover, System.currentTimeMillis())
-        }
+        val firstSongCover = list.firstOrNull()?.music?.albumArtUri
+        playlistDao.updateCover(playlistId, firstSongCover, System.currentTimeMillis())
     }
 
     override suspend fun addToPlaylist(playlistId: Long, musicId: Long, musicPath: String) {

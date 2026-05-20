@@ -1,0 +1,210 @@
+package com.hmp.desktop
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
+import com.hmp.desktop.ui.common.design.animation.AnimationTokens
+
+/**
+ * Custom window title bar for undecorated desktop window.
+ * Provides window dragging via WindowDraggableArea and minimize/close controls.
+ *
+ * Maximize is intentionally omitted due to a known Compose Multiplatform bug
+ * (JetBrains/compose-multiplatform#3625).
+ *
+ * @param isDarkTheme Whether the app is in dark theme — affects button styling
+ * @param isPlaying Whether audio is currently playing — title bar becomes transparent
+ * @param onMinimize Called to minimize the window
+ * @param onClose Called when the close button is clicked
+ */
+@Composable
+fun CustomTitleBar(
+    isDarkTheme: Boolean,
+    isPlaying: Boolean = false,
+    onMinimize: () -> Unit,
+    onClose: () -> Unit
+) {
+    // 背景透明度：与下方动态背景完全相同的动画机制
+    val bgAlpha by animateFloatAsState(
+        targetValue = if (isPlaying) 0f else 1f,
+        animationSpec = tween(800, easing = AnimationTokens.EASE_IN_OUT)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(TITLE_BAR_HEIGHT)
+    ) {
+        // 背景层（alpha 动画）
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(alpha = bgAlpha)
+                .background(MaterialTheme.colorScheme.background)
+        )
+
+        // 内容层（始终可见）
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Left: App title — dimmed when playing for immersive look
+            val titleColor by animateColorAsState(
+                targetValue = if (isPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                               else MaterialTheme.colorScheme.primary,
+                animationSpec = tween(800, easing = AnimationTokens.EASE_IN_OUT)
+            )
+            Text(
+                text = "HMP",
+                modifier = Modifier.padding(start = 16.dp),
+                color = titleColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
+            )
+
+        // Center: Draggable area — uses java.awt.MouseInfo for screen-absolute
+        // mouse position. This avoids the Compose coordinate feedback loop that
+        // causes jitter when using detectDragGestures.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(TITLE_BAR_HEIGHT)
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val down = awaitPointerEvent(PointerEventPass.Initial)
+                            if (!down.changes.any { it.pressed }) continue
+                            down.changes.first().consume()
+
+                            val awtWindow = java.awt.Window.getWindows().firstOrNull() ?: continue
+                            val startMouse = java.awt.MouseInfo.getPointerInfo().location
+                            val startWin = awtWindow.locationOnScreen
+
+                            while (true) {
+                                val move = awaitPointerEvent(PointerEventPass.Initial)
+                                if (!move.changes.any { it.pressed }) break
+                                move.changes.first().consume()
+
+                                val mouse = java.awt.MouseInfo.getPointerInfo().location
+                                awtWindow.location = java.awt.Point(
+                                    startWin.x + mouse.x - startMouse.x,
+                                    startWin.y + mouse.y - startMouse.y
+                                )
+                            }
+                        }
+                    }
+                }
+        )
+
+        // Right: Window control buttons
+        val closeInteraction = remember { MutableInteractionSource() }
+        val closeHovered by closeInteraction.collectIsHoveredAsState()
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Minimize button
+            WindowControlButton(
+                symbol = "─",
+                isDarkTheme = isDarkTheme,
+                isTransparent = isPlaying,
+                onClick = onMinimize
+            )
+
+            // Close button — red highlight on hover
+            WindowControlButton(
+                symbol = "✕",
+                isDarkTheme = isDarkTheme,
+                isClose = true,
+                isTransparent = isPlaying,
+                interactionSource = closeInteraction,
+                hoveredOverride = closeHovered,
+                onClick = onClose
+            )
+        }
+    }
+    }
+}
+
+@Composable
+private fun WindowControlButton(
+    symbol: String,
+    isDarkTheme: Boolean,
+    isClose: Boolean = false,
+    isTransparent: Boolean = false,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    hoveredOverride: Boolean? = null,
+    onClick: () -> Unit
+) {
+    val isHovered = hoveredOverride ?: interactionSource.collectIsHoveredAsState().value
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // When transparent, use a slightly stronger hover/pressed overlay for visibility
+    val hoverAlpha = if (isTransparent) 0.18f else 0.1f
+    val pressedAlpha = if (isTransparent) 0.12f else 0.06f
+
+    val bgColor = when {
+        isClose && isHovered -> Color(0xFFC42B1C)
+        isClose && isPressed -> Color(0xFFB22419)
+        isHovered -> if (isDarkTheme) Color.White.copy(alpha = hoverAlpha) else Color.Black.copy(alpha = hoverAlpha * 0.6f)
+        isPressed -> if (isDarkTheme) Color.White.copy(alpha = pressedAlpha) else Color.Black.copy(alpha = pressedAlpha)
+        else -> Color.Transparent
+    }
+
+    val textColor = when {
+        isClose && (isHovered || isPressed) -> Color.White
+        isTransparent -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    Box(
+        modifier = Modifier
+            .size(46.dp, TITLE_BAR_HEIGHT)
+            .hoverable(interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .background(bgColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = symbol,
+            color = textColor,
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Normal
+        )
+    }
+}

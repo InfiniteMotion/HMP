@@ -6,23 +6,23 @@
 
 ### 整体架构
 
-项目采用MVVM（Model-View-ViewModel）架构模式，结合Kotlin Multiplatform Mobile (KMM)实现跨平台开发，在Android上使用Jetpack Compose，在iOS上使用SwiftUI，实现了清晰的职责分离和可维护性。
+项目采用MVVM（Model-View-ViewModel）架构模式，结合Kotlin Multiplatform (KMP) 实现跨平台开发，在Android上使用Jetpack Compose，Desktop上使用Compose Multiplatform，在iOS上使用SwiftUI，实现了清晰的职责分离和可维护性。
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  UI Layer (Android) │     │ ViewModel Layer │     │   Domain Layer  │
-│  (Jetpack       │────▶│  (Koin          │────▶│  (Use Cases,    │
-│   Compose)      │     │   ViewModel)    │     │   Repository)   │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                              │                          │
-                              ▼                          ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  UI Layer (iOS)  │     │  Service Layer  │     │  Network Layer  │
-│  (SwiftUI)      │     │  (Media3,       │     │  (Ktor          │
-│                 │     │   AVFoundation) │     │   Client)       │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                              │                          │
-                              ▼                          ▼
+│  UI Layer       │     │ ViewModel Layer │     │   Domain Layer  │
+│  (Android:      │────▶│  (Koin          │────▶│  (Use Cases,    │
+│   Jetpack       │     │   ViewModel)    │     │   Repository)   │
+│   Compose,      │     └─────────────────┘     └─────────────────┘
+│  Desktop: CMP,  │                                   │
+│  iOS: SwiftUI)  │                                   ▼
+└─────────────────┘     ┌─────────────────┐     ┌─────────────────┐
+                         │  Service Layer  │     │  Network Layer  │
+                         │  (Media3,       │     │  (Ktor          │
+                         │   FFmpeg/JNA,   │     │   Client)       │
+                         │   AVFoundation) │     └─────────────────┘
+                         └─────────────────┘              │
+                                                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  Data Layer     │     │  Shared Module  │     │  Platform       │
 │  (Room,         │     │  (KMP,          │     │  Specific      │
@@ -40,6 +40,9 @@
 - **android/app**: Android应用入口模块，包含MainActivity和Application类
 - **android/core-player**: Android播放核心模块，包含Media3服务和播放控制逻辑
 - **android/feature-ui**: Android UI功能模块，包含Compose页面和组件
+- **desktop/app**: Desktop应用入口模块，包含窗口管理、系统托盘和应用生命周期
+- **desktop/core-player**: Desktop播放核心模块，包含FFmpeg音频引擎和播放控制逻辑
+- **desktop/feature-ui**: Desktop UI功能模块，包含Compose Multiplatform页面和组件
 - **ios**: iOS应用模块，包含SwiftUI页面和组件
 - **storybook**: 组件展示与文档模块 (Kotlin/Wasm)
 
@@ -49,6 +52,11 @@
 :android/feature-ui ──▶ :android/core-player
 :android/feature-ui ──▶ :shared
 :android/core-player ──▶ :shared
+:desktop/feature-ui ──▶ :desktop/core-player
+:desktop/feature-ui ──▶ :shared
+:desktop/core-player ──▶ :shared
+:desktop/app ──▶ :desktop/feature-ui
+:desktop/app ──▶ :desktop/core-player
 :ios ──▶ :shared (via CocoaPods)
 ```
 
@@ -57,9 +65,12 @@
 - ✅ 已完成模块划分和依赖配置
 - ✅ 已创建跨平台shared模块，包含核心业务逻辑和数据模型
 - ✅ 已将Android-specific代码移至android目录下的模块
+- ✅ 已创建Desktop模块，包含Compose Multiplatform页面和组件
 - ✅ 已创建iOS模块，包含SwiftUI页面和组件
 - ✅ 已配置CocoaPods集成，实现iOS对shared模块的依赖
-- ✅ 已实现平台特定的Repository实现（Android和iOS）
+- ✅ 已实现平台特定的Repository实现（Android、Desktop和iOS）
+- ✅ 已实现桌面端自研音频引擎（FFmpeg + JNA）
+- ✅ 已实现桌面端响应式布局系统（Compact/Expanded模式）
 
 ### 关键技术决策
 
@@ -139,12 +150,13 @@
 - 支持 API 连接测试功能
 - 用户可在配置界面自由切换服务商
 
-#### 9. 导航系统：Navigation 3 (Android) + SwiftUI Navigation (iOS)
+#### 9. 导航系统：Navigation 3 (Android) + 自研导航 (Desktop) + SwiftUI Navigation (iOS)
 
-**选择理由**：Navigation 3 提供了类型安全的导航方式，支持编译时路由检查和参数验证。迁移到 Navigation 3 后，消除了字符串路由的潜在错误，提升了导航的可靠性。
+**选择理由**：Navigation 3 提供了类型安全的导航方式，支持编译时路由检查和参数验证。Desktop 端实现了自研的导航系统（NavController + NavigationGraph + 深度链接），适配桌面端的响应式布局需求。
 
 **实现细节**：
 - Android端：使用 @Serializable 注解定义路由，集中式路由管理，支持类型安全的参数传递
+- Desktop端：自研 NavController + NavigationGraph 实现多面板路由，支持 Compact/Expanded 布局切换
 - iOS端：使用SwiftUI NavigationStack和NavigationLink实现导航，支持类型安全的参数传递
 - 平台特定实现，保持各自平台的导航最佳实践
 
@@ -210,6 +222,29 @@ Hearable Music Player/
 │       │   │   │   └── ui/          # Compose页面和组件
 │       │   └── test/                # UI测试
 │       └── build.gradle.kts
+├── desktop/                           # Desktop平台代码
+│   ├── app/                           # Desktop应用入口
+│   │   ├── src/desktopMain/kotlin/com/hmp/desktop/
+│   │   │   ├── Main.kt               # 应用入口
+│   │   │   ├── CustomTitleBar.kt     # 无边框窗口标题栏
+│   │   │   ├── SystemTrayManager.kt  # 系统托盘管理
+│   │   │   └── WindowHelper.kt       # 窗口工具
+│   │   └── build.gradle.kts
+│   ├── core-player/                   # 桌面播放核心模块
+│   │   ├── src/desktopMain/kotlin/com/hmp/desktop/player/
+│   │   │   ├── FFmpegAudioEngine.kt   # FFmpeg音频引擎
+│   │   │   └── DesktopMusicController.kt # 播放控制器
+│   │   └── build.gradle.kts
+│   └── feature-ui/                    # 桌面UI模块 (Compose Multiplatform)
+│       ├── src/
+│       │   ├── commonMain/composeResources/  # 共享资源
+│       │   └── desktopMain/kotlin/com/hmp/desktop/ui/
+│       │       ├── common/            # 通用组件、主题、导航
+│       │       ├── library/           # 音乐库页面
+│       │       ├── player/            # 播放页面
+│       │       ├── playlist/          # 播放列表页面
+│       │       └── settings/          # 设置页面
+│       └── build.gradle.kts
 ├── ios/                              # iOS平台代码
 │   ├── HMP/                          # iOS应用
 │   │   ├── HMP/                      # SwiftUI页面与组件
@@ -246,6 +281,11 @@ Hearable Music Player/
 - CocoaPods 1.16.0 或更高版本
 - macOS 14.0 或更高版本
 
+#### Desktop
+- JDK 21 或更高版本
+- Gradle 9.0
+- FFmpeg（构建时自动下载）
+
 ### 构建项目
 
 #### Android
@@ -281,6 +321,21 @@ cd ios && pod install
 open HMP.xcworkspace
 
 # 在Xcode中构建并运行应用
+```
+
+#### Desktop
+```bash
+# 运行桌面应用
+./gradlew :desktop:app:run
+
+# 构建 macOS DMG（需 macOS）
+./gradlew :desktop:app:packageDistributionForCurrentOS
+
+# 构建 Windows MSI（需 Windows）
+./gradlew :desktop:app:packageDistributionForCurrentOS
+
+# 构建 Linux DEB + AppImage（需 Linux）
+./gradlew :desktop:app:packageDistributionForCurrentOS
 ```
 
 ### 开发进展
@@ -321,6 +376,9 @@ open HMP.xcworkspace
 - ✅ Ktor Client 跨平台网络请求
 - ✅ 全平台 Koin 依赖注入迁移
 - ✅ CI/CD 自动发布（GitHub Actions Release 工作流）
+- ✅ 桌面端平台支持（Compose Multiplatform + FFmpeg 音频引擎）
+- ✅ 桌面端响应式布局（Compact/Expanded 模式、多面板导航）
+- ✅ 桌面端三平台打包（macOS DMG / Windows MSI / Linux DEB+AppImage）
 
 #### 进行中
 
@@ -380,8 +438,8 @@ open HMP.xcworkspace
 版本号集中维护在 `gradle.properties` 中：
 
 ```properties
-hmp.versionCode=51000
-hmp.versionName=5.10.0
+hmp.versionCode=61000
+hmp.versionName=6.10.0
 ```
 
 各模块通过 `project.findProperty("hmp.versionCode")` 引用，避免多处手动同步。
@@ -405,7 +463,8 @@ hmp.versionName=5.10.0
 项目配置了 GitHub Actions 自动发布工作流 (`.github/workflows/release.yml`)：
 
 - **触发条件**：`release/*` 分支的 PR 合并到 `master` 时自动触发
-- **release job**：构建 Android APK + AAB，基于上一个 tag 自动生成 changelog，创建 GitHub Release 并上传产物
+- **desktop-macos / desktop-windows / desktop-linux job**：并行构建桌面三平台安装包
+- **release job**：构建 Android APK + AAB，汇总桌面产物，基于上一个 tag 自动生成 changelog，创建 GitHub Release 并上传所有产物
 - **storybook job**：构建 Storybook WASM 站点
 - **deploy-pages job**：将 Storybook 部署到 GitHub Pages
 
