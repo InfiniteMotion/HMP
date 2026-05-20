@@ -7,11 +7,9 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -224,40 +222,3 @@ jobs:
           - **Linux**: \`HMP-v${VERSION}-linux.deb\` / \`HMP-v${VERSION}-linux.AppImage\`" \
             "${ASSETS[@]}"
 
-  storybook:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    runs-on: ubuntu-latest
-    env:
-      HMP_BUILD_TARGET: storybook
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: jetbrains
-          java-version: 21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Build Storybook
-        run: ./gradlew :storybook:wasmJsBrowserDistribution --no-daemon
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: storybook/build/dist/wasmJs/productionExecutable
-
-  deploy-pages:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    needs: storybook
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
