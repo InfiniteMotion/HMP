@@ -34,7 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build macOS DMG
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -64,7 +64,7 @@ jobs:
         run: choco install wixtoolset -y
 
       - name: Build Windows MSI
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -94,7 +94,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot
 
       - name: Build Linux DEB + AppImage
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
@@ -142,7 +142,7 @@ jobs:
           path: desktop-artifacts/
 
       - name: Build Android Release
-        run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon
+        run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon --no-configuration-cache
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
