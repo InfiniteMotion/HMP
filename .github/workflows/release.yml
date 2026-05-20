@@ -18,6 +18,8 @@ jobs:
   release:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
+    env:
+      HMP_BUILD_TARGET: android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,33 +45,6 @@ jobs:
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
-
-      - name: Create CI settings
-        run: |
-          cat > settings.gradle.kts << 'EOF'
-          pluginManagement {
-              repositories {
-                  gradlePluginPortal()
-                  google()
-                  mavenCentral()
-              }
-          }
-          plugins {
-              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "HMP"
-          include(":shared")
-          include(":android:app")
-          include(":android:core-player")
-          include(":android:feature-ui")
-          EOF
 
       - name: Build Android Release
         run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon
@@ -132,6 +107,8 @@ jobs:
   storybook:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
+    env:
+      HMP_BUILD_TARGET: storybook
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -144,61 +121,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-
-      - name: Create CI settings
-        run: |
-          cat > settings.gradle.kts << 'EOF'
-          pluginManagement {
-              repositories {
-                  gradlePluginPortal()
-                  google()
-                  mavenCentral()
-              }
-          }
-          plugins {
-              id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-              repositories {
-                  google()
-                  mavenCentral()
-                  ivy {
-                      name = "Node.js Distributions"
-                      url = uri("https://nodejs.org/dist")
-                      patternLayout {
-                          artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
-                      }
-                      metadataSources { artifact() }
-                      content { includeModule("org.nodejs", "node") }
-                  }
-                  ivy {
-                      name = "Yarn Distributions"
-                      url = uri("https://github.com/yarnpkg/yarn/releases/download")
-                      patternLayout {
-                          artifact("v[revision]/[artifact](-v[revision]).[ext]")
-                      }
-                      metadataSources { artifact() }
-                      content { includeModule("com.yarnpkg", "yarn") }
-                  }
-                  ivy {
-                      name = "Binaryen Distributions"
-                      url = uri("https://github.com/WebAssembly/binaryen/releases/download")
-                      patternLayout {
-                          artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]")
-                      }
-                      metadataSources { artifact() }
-                      content { includeModule("com.github.webassembly", "binaryen") }
-                  }
-              }
-          }
-          rootProject.name = "HMP"
-          include(":shared")
-          include(":android:app")
-          include(":android:core-player")
-          include(":android:feature-ui")
-          include(":storybook")
-          EOF
 
       - name: Build Storybook
         run: ./gradlew :storybook:wasmJsBrowserDistribution --no-daemon
