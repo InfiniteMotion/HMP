@@ -142,6 +142,9 @@ interface MusicExtraDao {
     @Query("SELECT COUNT(*) FROM musicExtra WHERE isGetExtraInfo = true")
     fun getExtraInfoNum(): Flow<Int>
 
+    @Query("SELECT id FROM musicExtra WHERE isGetExtraInfo = 1 AND isDeleted = 0")
+    suspend fun getIdsWithExtraInfo(): List<Long>
+
     @Query("""
         UPDATE musicExtra SET
             isGetExtraInfo = true,

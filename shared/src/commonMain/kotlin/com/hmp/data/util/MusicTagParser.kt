@@ -13,5 +13,6 @@ data class MusicMetadata(
     val bitRate: Int? = null,
     val sampleRate: Int? = null,
     val format: String? = null,
-    val lyrics: String? = null
+    val lyrics: String? = null,
+    val albumArt: ByteArray? = null
 )
