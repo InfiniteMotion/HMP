@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Hearable Music Player — 纯本地、跨平台音乐播放器。听见你的音乐。">
-<meta name="theme-color" content="#121212">
 <title>HMP — Hearable Music Player</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23002FA7'/><stop offset='100%25' style='stop-color:%2390CAF9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-family='system-ui'>♪</text></svg>">
+<meta name="description" content="Hearable Music Player — 纯粹的跨平台本地音乐播放器。听见你的音乐。" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
 
@@ -29,6 +27,7 @@
 <span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; Built by WLYB</span>
 
 <div class="layout">
+  <!-- Left: Hero -->
   <aside class="hero-panel">
     <div class="hero-panel-inner">
       <div class="hero-badge">HMP v6.10.0</div>
@@ -41,11 +40,12 @@
     </div>
   </aside>
 
-  <main class="features-panel">
-    <div class="feature-slides">
+  <!-- Right: Feature pages -->
+  <main class="features-panel" id="featuresPanel">
+    <div class="feature-slides" id="featureSlides">
 
       <!-- Page 1: 沉浸氛围 -->
-      <div class="feature-page active">
+      <div class="feature-page active" data-index="0">
         <div class="feature-card glass">
           <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden;">
             <div style="position:absolute; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(201,44,44,0.6), transparent 70%); top:10%; left:15%; filter:blur(30px); animation: orbA 6s ease-in-out infinite;"></div>
@@ -68,7 +68,7 @@
       </div>
 
       <!-- Page 2: 通透质感 -->
-      <div class="feature-page">
+      <div class="feature-page" data-index="1">
         <div class="feature-card glass">
           <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:12px; padding:20px;">
             <div style="position:absolute; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle, rgba(0,47,167,0.3), transparent 70%); top:5%; right:10%; filter:blur(30px);"></div>
@@ -76,7 +76,9 @@
               <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg, var(--red), #e94560);"></div>
               <div style="width:50%; height:6px; border-radius:3px; background:rgba(255,255,255,0.12);"></div>
             </div>
-            <div class="glass" style="width:65%; padding:14px 18px; border-radius:20px; text-align:center; font-size:0.7rem; opacity:0.7;">毛玻璃卡片</div>
+            <div class="glass" style="width:65%; padding:14px 18px; border-radius:20px; text-align:center; font-size:0.7rem; opacity:0.7;">
+              毛玻璃卡片
+            </div>
             <div class="glass" style="width:55%; padding:6px 14px; border-radius:24px; display:flex; align-items:center; gap:8px; opacity:0.5;">
               <div style="width:16px; height:16px; border-radius:50%; background:rgba(255,255,255,0.2);"></div>
               <div style="width:60%; height:4px; border-radius:2px; background:rgba(255,255,255,0.1);"></div>
@@ -96,7 +98,7 @@
       </div>
 
       <!-- Page 3: 智能推荐 -->
-      <div class="feature-page">
+      <div class="feature-page" data-index="2">
         <div class="feature-card glass">
           <div class="feature-card-visual" style="background:#121218; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -130,22 +132,28 @@
       </div>
 
       <!-- Page 4: 自适应布局 -->
-      <div class="feature-page">
+      <div class="feature-page" data-index="3">
         <div class="feature-card glass">
           <div class="feature-card-visual" style="background:#121218; display:flex; align-items:center; justify-content:center; gap:40px; padding:20px;">
+            <!-- 竖屏 -->
             <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
               <div style="width:60px; aspect-ratio:9/16; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; padding:6px 4px; gap:4px;">
                 <div style="height:8px; border-radius:4px; background:rgba(255,255,255,0.10);"></div>
                 <div style="flex:1; display:flex; flex-direction:column; gap:3px;">
-                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div><div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div><div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
                 </div>
                 <div style="height:10px; border-radius:5px; background:rgba(255,255,255,0.12); display:flex; gap:2px; padding:2px 4px;">
-                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div><div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
+                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
+                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
                 </div>
               </div>
               <span style="font-size:0.55rem; opacity:0.35;">竖屏 / 窄窗</span>
             </div>
+            <!-- 箭头 -->
             <span style="font-size:1.2rem; opacity:0.3;">↔</span>
+            <!-- 横屏 -->
             <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
               <div style="width:110px; aspect-ratio:16/10; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; padding:4px; gap:4px;">
                 <div style="width:18px; border-radius:4px; background:rgba(255,255,255,0.06); display:flex; flex-direction:column; padding:4px 2px; gap:3px;">
@@ -197,8 +205,11 @@ function goToPage(index) {
   if (locked) return;
   index = ((index % totalPages) + totalPages) % totalPages;
   if (index === currentPage) return;
+
   locked = true;
-  document.querySelectorAll('.feature-page').forEach((p,i) => p.classList.toggle('active', i === index));
+  const pages = document.querySelectorAll('.feature-page');
+  pages[currentPage].classList.remove('active');
+  pages[index].classList.add('active');
   currentPage = index;
   resetAutoPlay();
   setTimeout(() => { locked = false; }, 350);
@@ -206,9 +217,12 @@ function goToPage(index) {
 
 function resetAutoPlay() {
   clearTimeout(autoPlayTimer);
-  autoPlayTimer = setTimeout(() => goToPage(currentPage + 1), 3000);
+  autoPlayTimer = setTimeout(() => {
+    goToPage(currentPage + 1);
+  }, 3000);
 }
 
+// Pause on card hover
 document.querySelectorAll('.feature-card').forEach(card => {
   card.addEventListener('mouseenter', () => clearTimeout(autoPlayTimer));
   card.addEventListener('mouseleave', () => resetAutoPlay());
@@ -220,6 +234,17 @@ document.addEventListener('wheel', (e) => {
 }, { passive: true });
 
 resetAutoPlay();
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    goToPage(Math.min(currentPage + 1, totalPages - 1));
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    goToPage(Math.max(currentPage - 1, 0));
+  }
+});
 </script>
 </body>
 </html>
