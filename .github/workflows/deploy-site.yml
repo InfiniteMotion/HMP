@@ -1,8 +1,9 @@
 name: Deploy Site
 
 on:
-  push:
-    branches: [develop-site]
+  workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
