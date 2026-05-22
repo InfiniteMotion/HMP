@@ -150,9 +150,9 @@ fun LyricsScreen(
                 modifier = if(!isSettingsPanelVisible) Modifier.weight(1f) else Modifier.padding(bottom = 240.dp),
                 lyrics = lyrics,
                 currentPosition = currentPosition,
-                onSeek = { 
+                onSeek = {
                     lastInteractionTime = System.currentTimeMillis()
-                    playbackViewModel.seekTo(it) 
+                    playbackViewModel.seekTo(it)
                 },
                 originalTextSize = originalTextSize,
                 translatedTextSize = translatedTextSize,

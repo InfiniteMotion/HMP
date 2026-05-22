@@ -48,7 +48,8 @@ interface PlayControl {
     fun prepareMusic(music: Music)
     fun isMusicLoaded(path: String): Boolean
     fun proceedMusic()
-    
+    fun updateLyricLine(lyric: String?)
+
     // 音效控制方法
     fun setEqualizerPreset(preset: Int)
     fun setBassBoost(level: Int)
@@ -128,6 +129,11 @@ class MusicPlayService : Service(), PlayControl {
 
     private var isReceiverRegistered = false
     
+    // 歌词替换：缓存原始歌曲信息
+    private var originalTitle: String? = null
+    private var originalArtist: String? = null
+    private var currentLyricLine: String? = null
+
     // 音效管理器
     private val audioEffectManager = AudioEffectManager()
     
@@ -183,7 +189,8 @@ class MusicPlayService : Service(), PlayControl {
     private fun buildNotification(
         music: Music,
         albumArtBitmap: Bitmap?,
-        mainActivityClass: Class<*>
+        mainActivityClass: Class<*>,
+        lyricLine: String? = null
     ): Notification {
         val mainPendingIntent = PendingIntent.getActivity(
             this, 0, Intent(this, mainActivityClass),
@@ -208,9 +215,21 @@ class MusicPlayService : Service(), PlayControl {
         )
         val isPlaying = exoPlayer.isPlaying
 
+        val title = lyricLine ?: music.title
+        val artist = if (lyricLine != null) {
+            val songInfo = buildString {
+                append(originalTitle ?: music.title)
+                append(" — ")
+                append(originalArtist ?: music.artist)
+            }
+            songInfo
+        } else {
+            music.artist
+        }
+
         val builder = NotificationCompat.Builder(this, "music_channel")
-            .setContentTitle(music.title)
-            .setContentText(music.artist)
+            .setContentTitle(title)
+            .setContentText(artist)
             .setSmallIcon(R.drawable.player_d)
             .setContentIntent(mainPendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -396,6 +415,9 @@ class MusicPlayService : Service(), PlayControl {
 
     // 播放指定音乐
     override fun prepareMusic(music: Music) {
+        originalTitle = music.title
+        originalArtist = music.artist
+        currentLyricLine = null
         val mediaItem = MediaItem.Builder()
             .setUri(music.path)
             .setMediaId(music.id.toString()) // 用id作为唯一标识
@@ -526,16 +548,46 @@ class MusicPlayService : Service(), PlayControl {
     private fun updateNotificationPlaybackState(music: Music) {
         CoroutineScope(Dispatchers.Main).launch {
             val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            val notification = buildNotification(music, currentAlbumArtBitmap, mainActivityClass ?: return@launch)
+            val notification = buildNotification(music, currentAlbumArtBitmap, mainActivityClass ?: return@launch, currentLyricLine)
             manager.notify(1, notification)
         }
+    }
+
+    // 更新歌词行 → 通知 + MediaItem metadata
+    override fun updateLyricLine(lyric: String?) {
+        currentLyricLine = lyric
+        val music = getCurrentPlayingMusic() ?: return
+
+        // 更新通知（轻量，直接刷新）
+        CoroutineScope(Dispatchers.Main).launch {
+            val notification = buildNotification(music, currentAlbumArtBitmap, mainActivityClass ?: return@launch, lyric)
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(1, notification)
+        }
+
+        // 更新 MediaItem metadata（锁屏 / 蓝牙 / 车载）
+        val currentItem = exoPlayer.currentMediaItem ?: return
+        val newTitle = lyric ?: (originalTitle ?: music.title)
+        val newArtist = if (lyric != null) {
+            "${originalTitle ?: music.title} — ${originalArtist ?: music.artist}"
+        } else {
+            originalArtist ?: music.artist
+        }
+        val newItem = currentItem.buildUpon()
+            .setMediaMetadata(
+                currentItem.mediaMetadata.buildUpon()
+                    .setTitle(newTitle)
+                    .setArtist(newArtist)
+                    .build()
+            ).build()
+        exoPlayer.replaceMediaItem(exoPlayer.currentMediaItemIndex, newItem)
     }
 
     private var currentAlbumArtBitmap: Bitmap? = null
     // 刷新通知(重新加载封面)
     private fun updateNotificationWithCover(music: Music) {
         // 先显示默认封面
-        val notification = buildNotification(music, null, mainActivityClass ?: return)
+        val notification = buildNotification(music, null, mainActivityClass ?: return, currentLyricLine)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 1,
@@ -558,7 +610,7 @@ class MusicPlayService : Service(), PlayControl {
             if (bitmap != null) {
                 CoroutineScope(Dispatchers.Main).launch {
                     currentAlbumArtBitmap = bitmap // 缓存封面
-                    val updatedNotification = buildNotification(music, bitmap, mainActivityClass ?: return@launch)
+                    val updatedNotification = buildNotification(music, bitmap, mainActivityClass ?: return@launch, currentLyricLine)
                     val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                     manager.notify(1, updatedNotification)
                 }

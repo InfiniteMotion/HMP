@@ -8,6 +8,9 @@ import android.os.IBinder
 import android.util.Log
 import androidx.media3.common.util.UnstableApi
 import com.hmp.domain.enum.PlaybackMode
+import com.hmp.domain.lyrics.LrcParser
+import com.hmp.domain.lyrics.LyricLineData
+import com.hmp.domain.lyrics.findCurrentLyricIndex
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
@@ -166,6 +169,10 @@ class MusicController(
     private val _currentMusicLyrics = MutableStateFlow<String?>(null)
     val currentMusicLyrics: StateFlow<String?> = _currentMusicLyrics
 
+    // 歌词追踪：在 Controller 层解析 LRC + 判定当前行，不依赖 UI
+    private val parsedLyrics = mutableListOf<LyricLineData>()
+    private var lastLyricCheckIndex = -1
+
     // Playback Mode
     private val _playbackMode = MutableStateFlow(PlaybackMode.SEQUENTIAL)
     val playbackMode: StateFlow<PlaybackMode> = _playbackMode.asStateFlow()
@@ -237,6 +244,18 @@ class MusicController(
                 .collectLatest { musicInfo ->
                     preloadCurrentMusicInfo(musicInfo)
                 }
+        }
+
+        // 监听播放位置变化 → 判定当前歌词行 → 推送到锁屏/通知
+        scope.launch {
+            _currentPosition.collect { position ->
+                if (parsedLyrics.isEmpty()) return@collect
+                val index = findCurrentLyricIndex(parsedLyrics, position)
+                if (index != lastLyricCheckIndex) {
+                    lastLyricCheckIndex = index
+                    playControl?.updateLyricLine(parsedLyrics[index].originalText)
+                }
+            }
         }
     }
 
@@ -398,6 +417,10 @@ class MusicController(
             }
             playControl?.seekTo(position)
         }
+    }
+
+    fun updateLyricLine(lyric: String?) {
+        playControl?.updateLyricLine(lyric)
     }
 
     private fun togglePlaybackMode(newMode: PlaybackMode) {
@@ -717,7 +740,17 @@ class MusicController(
 
     fun getMusicLyrics(musicId: Long) {
         scope.launch {
-            _currentMusicLyrics.value = currentPlaybackUseCase.getMusicLyrics(musicId)
+            // 切歌时先清除旧歌词
+            parsedLyrics.clear()
+            lastLyricCheckIndex = -1
+            playControl?.updateLyricLine(null)
+
+            val lyricsText = currentPlaybackUseCase.getMusicLyrics(musicId)
+            _currentMusicLyrics.value = lyricsText
+
+            if (lyricsText != null) {
+                parsedLyrics.addAll(LrcParser.parse(lyricsText))
+            }
         }
     }
 
