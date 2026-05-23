@@ -1,5 +1,6 @@
 package com.example.hearablemusicplayer.ui.common.pages
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -10,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.media3.common.util.UnstableApi
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -31,6 +33,7 @@ fun rememberTabsPagerState(
     initialPage: Int = 0
 ): PagerState = rememberPagerState(initialPage = initialPage) { pageCount }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun TabsHost(
     navController: NavBackStack<NavKey>,
@@ -47,14 +50,14 @@ fun TabsHost(
     ) {
         val haptic = rememberHapticFeedback()
         var previousPage by remember { mutableIntStateOf(pagerState.currentPage) }
-        
+
         LaunchedEffect(pagerState.currentPage) {
             if (pagerState.currentPage != previousPage) {
                 haptic.performClick()
                 previousPage = pagerState.currentPage
             }
         }
-        
+
         HorizontalPager(
             state = pagerState,
             beyondViewportPageCount = 3

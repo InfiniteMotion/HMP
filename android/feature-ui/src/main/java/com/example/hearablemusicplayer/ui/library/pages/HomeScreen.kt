@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,14 +42,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 import coil.compose.AsyncImage
-import com.hmp.domain.music.MusicInfo
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
+import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass
+import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
+import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.CurrentPlayingConfig
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.EditConfig
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.FixedMusicList
@@ -58,13 +62,13 @@ import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.Ite
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.ItemVariant
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.MusicListCallbacksAdapter
 import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.defaultMusicListConfig
-import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
-import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaybackViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
+import com.hmp.domain.music.MusicInfo
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -80,6 +84,8 @@ fun HomeScreen(
     val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     val haptic = rememberHapticFeedback()
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
+    val sizeClass = LocalWindowSizeInfo.current.widthSizeClass
 
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -101,6 +107,10 @@ fun HomeScreen(
                 }
             ) {
                 if (dailyMusic == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -126,7 +136,57 @@ fun HomeScreen(
                         }
                         Spacer(modifier = Modifier.height(32.dp))
                     }
+                    } // Box
+                } else if (isLandscape) {
+                    // ── Expanded: 横向布局 ──
+                    key(dailyMusic!!.music.id) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 32.dp),
+                            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        ) {
+                            // 左侧：标题 + HeroCard
+                            Column(modifier = Modifier.weight(0.4f)) {
+                                Text(
+                                    text = stringResource(R.string.today_recommendation),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                )
+                                DailyHeroCard(
+                                    music = dailyMusic!!,
+                                    onPlay = {
+                                        haptic.performClick()
+                                        scope.launch {
+                                            playlistQueueViewModel.playWith(dailyMusic!!)
+                                            navController.add(NavRoutes.Player.Player)
+                                        }
+                                    },
+                                    onDetail = {
+                                        haptic.performClick()
+                                        navController.add(NavRoutes.Library.SongDetail(dailyMusic!!.music.id))
+                                    },
+                                    sizeClass = sizeClass,
+                                )
+                            }
+                            // 右侧：标题 + 推荐列表
+                            Column(modifier = Modifier.weight(0.6f)) {
+                                HeartbeatSection(
+                                    recommendationViewModel = recommendationViewModel,
+                                    playlistQueueViewModel = playlistQueueViewModel,
+                                    dialogViewModel = dialogViewModel,
+                                    currentPlayingMusic = currentPlayingMusic,
+                                    isPlaying = isPlaying,
+                                    haptic = haptic,
+                                    scope = scope,
+                                    navController = navController
+                                )
+                            }
+                        }
+                    }
                 } else {
+                    // ── Compact / Medium: 纵向堆叠 ──
                     Column(
                         modifier = Modifier.verticalScroll(rememberScrollState())
                             .padding(bottom = 16.dp)
@@ -143,117 +203,29 @@ fun HomeScreen(
                             onPlay = {
                                 haptic.performClick()
                                 scope.launch {
-                                        playlistQueueViewModel.playWith(dailyMusic!!)
-                                        navController.add(NavRoutes.Player.Player)
-                                    }
+                                    playlistQueueViewModel.playWith(dailyMusic!!)
+                                    navController.add(NavRoutes.Player.Player)
+                                }
                             },
                             onDetail = {
                                 haptic.performClick()
                                 navController.add(NavRoutes.Library.SongDetail(dailyMusic!!.music.id))
-                            }
+                            },
+                            sizeClass = sizeClass,
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Section 2: Heartbeat Playlist (Music List)
-                        val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.today_heartbeat_playlist),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                            )
-                            if (heartbeatList.isNotEmpty()){
-                                FilledIconButton(
-                                    onClick = {
-                                        playlistQueueViewModel.clearPlaylist()
-                                        playlistQueueViewModel.addAllToPlaylistInOrder(heartbeatList)
-                                        playlistQueueViewModel.playWith(heartbeatList.first())
-                                        navController.add(NavRoutes.Player.Player)
-                                    },
-                                    modifier = Modifier
-                                        .size(24.dp),
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
-                                    ),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.music_note_list),
-                                        contentDescription = stringResource(R.string.play_heartbeat_playlist),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        if (heartbeatList.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(100.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.generating_heartbeat_playlist),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        } else {
-                            val currentPlayingIndex = heartbeatList.indexOfFirst { it.music.id == currentPlayingMusic?.music?.id }.takeIf { it >= 0 }
-                            val callbacks = object : MusicListCallbacksAdapter() {
-                                override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                                    haptic.performClick()
-                                    scope.launch {
-                                    playlistQueueViewModel.playWith(musicInfo)
-                                }
-                                }
-                                override fun onMenuClick(musicInfo: MusicInfo) {
-                                    val menuConfig = DialogViewModel.MusicDetailMenuConfig(
-                                        showAddToPlaylist = true,
-                                        showAddToSpecificPlaylist = true,
-                                        showShare = true,
-                                        showViewDetail = true,
-                                        showPlayNext = false,
-                                        showRemoveFromCurrentPlaylist = false,
-                                        showDelete = false
-                                    )
-                                    dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
-                                }
-                            }
-                            val config = defaultMusicListConfig(callbacks).copy(
-                                header = HeaderConfig.None,
-                                item = ItemConfig(
-                                    variant = ItemVariant.Full,
-                                    showIndex = true,
-                                    fullOptions = FullItemOptions(
-                                        showPinButton = false,
-                                        showRemoveButton = false,
-                                        showMenuButton = true
-                                    ),
-                                ),
-                                edit = EditConfig(enabled = false),
-                                currentPlaying = CurrentPlayingConfig(
-                                    index = currentPlayingIndex,
-                                    autoScrollToCurrent = false
-                                ),
-                            )
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                FixedMusicList(
-                                    musicInfoList = heartbeatList,
-                                    config = config,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    isPlaying = isPlaying,
-                                )
-                            }
-                        }
+                        HeartbeatSection(
+                            recommendationViewModel = recommendationViewModel,
+                            playlistQueueViewModel = playlistQueueViewModel,
+                            dialogViewModel = dialogViewModel,
+                            currentPlayingMusic = currentPlayingMusic,
+                            isPlaying = isPlaying,
+                            haptic = haptic,
+                            scope = scope,
+                            navController = navController
+                        )
                     }
                 }
             }
@@ -261,19 +233,137 @@ fun HomeScreen(
     }
 }
 
- 
+@OptIn(UnstableApi::class)
+@Composable
+private fun HeartbeatSection(
+    recommendationViewModel: RecommendationViewModel,
+    playlistQueueViewModel: PlaylistQueueViewModel,
+    dialogViewModel: DialogViewModel,
+    currentPlayingMusic: MusicInfo?,
+    isPlaying: Boolean,
+    haptic: com.example.hearablemusicplayer.ui.common.util.HapticFeedbackHelper,
+    scope: kotlinx.coroutines.CoroutineScope,
+    navController: NavBackStack<NavKey>
+) {
+    val heartbeatList by recommendationViewModel.heartbeatList.collectAsState()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.today_heartbeat_playlist),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+        if (heartbeatList.isNotEmpty()) {
+            FilledIconButton(
+                onClick = {
+                    playlistQueueViewModel.clearPlaylist()
+                    playlistQueueViewModel.addAllToPlaylistInOrder(heartbeatList)
+                    playlistQueueViewModel.playWith(heartbeatList.first())
+                    navController.add(NavRoutes.Player.Player)
+                },
+                modifier = Modifier.size(24.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.music_note_list),
+                    contentDescription = stringResource(R.string.play_heartbeat_playlist),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+
+    if (heartbeatList.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.generating_heartbeat_playlist),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        val currentPlayingIndex = heartbeatList.indexOfFirst {
+            it.music.id == currentPlayingMusic?.music?.id
+        }.takeIf { it >= 0 }
+        val callbacks = object : MusicListCallbacksAdapter() {
+            override fun onItemClick(musicInfo: MusicInfo, index: Int) {
+                haptic.performClick()
+                scope.launch {
+                    playlistQueueViewModel.playWith(musicInfo)
+                }
+            }
+            override fun onMenuClick(musicInfo: MusicInfo) {
+                val menuConfig = DialogViewModel.MusicDetailMenuConfig(
+                    showAddToPlaylist = true,
+                    showAddToSpecificPlaylist = true,
+                    showShare = true,
+                    showViewDetail = true,
+                    showPlayNext = false,
+                    showRemoveFromCurrentPlaylist = false,
+                    showDelete = false
+                )
+                dialogViewModel.showMusicDetailDialog(musicInfo, menuConfig)
+            }
+        }
+        val config = defaultMusicListConfig(callbacks).copy(
+            header = HeaderConfig.None,
+            item = ItemConfig(
+                variant = ItemVariant.Full,
+                showIndex = true,
+                fullOptions = FullItemOptions(
+                    showPinButton = false,
+                    showRemoveButton = false,
+                    showMenuButton = true
+                ),
+            ),
+            edit = EditConfig(enabled = false),
+            currentPlaying = CurrentPlayingConfig(
+                index = currentPlayingIndex,
+                autoScrollToCurrent = false
+            ),
+        )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            FixedMusicList(
+                musicInfoList = heartbeatList,
+                config = config,
+                modifier = Modifier.fillMaxWidth(),
+                isPlaying = isPlaying,
+            )
+        }
+    }
+}
+
+
 
 @Composable
 fun DailyHeroCard(
     music: MusicInfo,
     onPlay: () -> Unit,
-    onDetail: () -> Unit
+    onDetail: () -> Unit,
+    sizeClass: WindowWidthSizeClass,
 ) {
+    val dimens = LocalHMPDimens.current
+    val aspectRatioMod = when (sizeClass) {
+        WindowWidthSizeClass.Compact -> Modifier.aspectRatio(1f)
+        WindowWidthSizeClass.Medium -> Modifier.aspectRatio(2f)
+        WindowWidthSizeClass.Expanded -> Modifier
+    }
     Card(
         modifier = Modifier
-            .padding(horizontal = 32.dp, vertical = 16.dp)
+            .padding(horizontal = dimens.spacing.xl, vertical = dimens.spacing.md)
             .fillMaxWidth()
-            .aspectRatio(1f)
+            .then(aspectRatioMod)
             .clickable(onClick = onDetail),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -304,7 +394,7 @@ fun DailyHeroCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp)
+                    .padding(dimens.spacing.lg)
             ) {
                 Column(
                     modifier = Modifier.align(Alignment.BottomStart)
@@ -331,7 +421,7 @@ fun DailyHeroCard(
                     onClick = onPlay,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(48.dp), // Larger touch target
+                        .size(dimens.component.xs),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -340,7 +430,7 @@ fun DailyHeroCard(
                     Icon(
                         painter = painterResource(id = R.drawable.media_center),
                         contentDescription = "Play",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(dimens.icon.lg)
                     )
                 }
             }

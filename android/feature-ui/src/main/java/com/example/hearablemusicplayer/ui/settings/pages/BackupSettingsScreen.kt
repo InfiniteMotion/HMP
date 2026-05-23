@@ -45,6 +45,7 @@ import com.example.hearablemusicplayer.ui.player.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
 import java.io.File
@@ -66,6 +67,7 @@ fun BackupSettingsScreen(
         onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.backup_settings)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -73,6 +75,32 @@ fun BackupSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        ExportBackupSection(
+                            onExportBackup = settingsViewModel::exportBackup,
+                            dialogManager = dialogManager
+                        )
+                        ImportBackupSection(
+                            onRestoreBackup = settingsViewModel::restoreBackup,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        ManageBackupsSection(
+                            localBackups = localBackups,
+                            onRestoreBackup = settingsViewModel::restoreBackup,
+                            onDeleteBackup = settingsViewModel::deleteLocalBackup,
+                            onRefreshBackups = settingsViewModel::loadLocalBackups,
+                            dialogManager = dialogManager
+                        )
+                    }
+                }
+            } else {
             // 1. 生成备份
             ExportBackupSection(
                 onExportBackup = settingsViewModel::exportBackup,
@@ -93,6 +121,7 @@ fun BackupSettingsScreen(
                 onRefreshBackups = settingsViewModel::loadLocalBackups,
                 dialogManager = dialogManager
             )
+            } // else
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }

@@ -55,6 +55,7 @@ internal fun MusicListIndexStrip(
     config: IndexJumpConfig,
     currentPlayingIndex: Int?,
     modifier: Modifier = Modifier,
+    columns: Int = 1,
 ) {
     val scope = rememberCoroutineScope()
     var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
@@ -62,6 +63,7 @@ internal fun MusicListIndexStrip(
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect { firstVisibleIndex = it }
     }
+    val flatFirstVisible = firstVisibleIndex * columns
     var stripSize by remember { mutableStateOf(IntSize.Zero) }
     var lastScrollJob by remember { mutableStateOf<Job?>(null) }
     val haptic = rememberHapticFeedback()
@@ -71,7 +73,7 @@ internal fun MusicListIndexStrip(
     fun scrollToIndexAnimated(idx: Int) {
         lastScrollJob?.cancel()
         lastScrollJob = scope.launch {
-            listState.animateScrollToItem(idx)
+            listState.animateScrollToItem(idx / columns)
             lastScrollJob = null
         }
     }
@@ -89,10 +91,10 @@ internal fun MusicListIndexStrip(
         } else {
             Pair(rawLabels, rawMap)
         }
-        val currentAnchorIndex = remember(anchorToIndexMap, firstVisibleIndex, anchorLabels) {
+        val currentAnchorIndex = remember(anchorToIndexMap, flatFirstVisible, anchorLabels) {
             anchorLabels.indices
                 .mapNotNull { i -> anchorToIndexMap[i]?.let { i to it } }
-                .filter { it.second <= firstVisibleIndex }
+                .filter { it.second <= flatFirstVisible }
                 .maxByOrNull { it.second }
                 ?.first
         }
@@ -216,10 +218,10 @@ internal fun MusicListIndexStrip(
     } else {
         val letterToIndexMap = remember(musicInfoList) { config.letterToIndex(musicInfoList) }
         val letters = config.letters
-        val currentLetter = remember(letterToIndexMap, firstVisibleIndex, letters) {
+        val currentLetter = remember(letterToIndexMap, flatFirstVisible, letters) {
             letters
                 .mapNotNull { letter -> letterToIndexMap[letter]?.let { letter to it } }
-                .filter { it.second <= firstVisibleIndex }
+                .filter { it.second <= flatFirstVisible }
                 .maxByOrNull { it.second }
                 ?.first
         }

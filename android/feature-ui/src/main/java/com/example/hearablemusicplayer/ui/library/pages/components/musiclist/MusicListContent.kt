@@ -1,7 +1,9 @@
 package com.example.hearablemusicplayer.ui.library.pages.components.musiclist
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,10 +14,12 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.hmp.domain.music.MusicInfo
 
 /**
  * 列表主体：空占位 / LazyColumn（itemsIndexed + 底部 Spacer）。可选滚动条与索引条在 [MusicList] 中叠加。
+ * 当 config.list.columns > 1 时，按行 chunked 排列，每行 Row 内 weight(1f) 分列。
  */
 @Composable
 internal fun MusicListContent(
@@ -36,30 +40,74 @@ internal fun MusicListContent(
         }
         return
     }
+
+    val columns = config.list.columns
+
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
         contentPadding = config.contentPadding,
     ) {
-        itemsIndexed(
-            items = musicInfoList,
-            key = { index, item -> config.list.key(index, item) },
-        ) { index, musicInfo ->
-            MusicListItem(
-                musicInfo = musicInfo,
-                index = index,
-                itemConfig = config.item,
-                isCurrentPlaying = isCurrentPlaying(index),
-                selected = state.selectedIds.contains(musicInfo.music.id),
-                onSelectedChange = { checked ->
-                    state.setSelected(musicInfo.music.id, checked)
-                    config.callbacks.onSelectionChange(state.selectedIds)
+        if (columns > 1) {
+            val rows = musicInfoList.chunked(columns)
+            itemsIndexed(
+                items = rows,
+                key = { rowIndex, row ->
+                    row.firstOrNull()?.let { config.list.key(rowIndex * columns, it) } ?: rowIndex
                 },
-                callbacks = config.callbacks,
-                enableLongPressToEnterEdit = config.list.enableLongPressToEnterEdit,
-                editEnabled = config.edit.enabled,
-                isEditMode = state.isEditMode,
-            )
+            ) { rowIndex, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    row.forEachIndexed { colIndex, musicInfo ->
+                        val flatIndex = rowIndex * columns + colIndex
+                        Box(modifier = Modifier.weight(1f)) {
+                            MusicListItem(
+                                musicInfo = musicInfo,
+                                index = flatIndex,
+                                itemConfig = config.item,
+                                isCurrentPlaying = isCurrentPlaying(flatIndex),
+                                selected = state.selectedIds.contains(musicInfo.music.id),
+                                onSelectedChange = { checked ->
+                                    state.setSelected(musicInfo.music.id, checked)
+                                    config.callbacks.onSelectionChange(state.selectedIds)
+                                },
+                                callbacks = config.callbacks,
+                                enableLongPressToEnterEdit = config.list.enableLongPressToEnterEdit,
+                                editEnabled = config.edit.enabled,
+                                isEditMode = state.isEditMode,
+                            )
+                        }
+                    }
+                    if (row.size < columns) {
+                        repeat(columns - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        } else {
+            itemsIndexed(
+                items = musicInfoList,
+                key = { index, item -> config.list.key(index, item) },
+            ) { index, musicInfo ->
+                MusicListItem(
+                    musicInfo = musicInfo,
+                    index = index,
+                    itemConfig = config.item,
+                    isCurrentPlaying = isCurrentPlaying(index),
+                    selected = state.selectedIds.contains(musicInfo.music.id),
+                    onSelectedChange = { checked ->
+                        state.setSelected(musicInfo.music.id, checked)
+                        config.callbacks.onSelectionChange(state.selectedIds)
+                    },
+                    callbacks = config.callbacks,
+                    enableLongPressToEnterEdit = config.list.enableLongPressToEnterEdit,
+                    editEnabled = config.edit.enabled,
+                    isEditMode = state.isEditMode,
+                )
+            }
         }
         item {
             Spacer(modifier = Modifier.height(config.list.bottomSpacerHeight))

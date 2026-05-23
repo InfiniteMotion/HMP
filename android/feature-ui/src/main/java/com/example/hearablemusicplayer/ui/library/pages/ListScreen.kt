@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,25 +47,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.hmp.domain.enum.LabelName
-import com.hmp.domain.playlist.Playlist
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.Capsule
-import com.example.hearablemusicplayer.ui.library.pages.components.ListBanner
-import com.example.hearablemusicplayer.ui.library.pages.components.ListGroupName
-import com.example.hearablemusicplayer.ui.common.components.base.NewPlaylistButton
-import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
-import com.example.hearablemusicplayer.ui.common.navigation.Routes
-import com.example.hearablemusicplayer.ui.common.util.UiState
 import com.example.hearablemusicplayer.ui.common.components.SharedLabelIcon
+import com.example.hearablemusicplayer.ui.common.components.base.NewPlaylistButton
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
+import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass
+import com.example.hearablemusicplayer.ui.common.navigation.Routes
+import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
+import com.example.hearablemusicplayer.ui.common.util.UiState
 import com.example.hearablemusicplayer.ui.common.util.iconName
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
-import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.library.pages.components.ListGroupName
 import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
+import com.hmp.domain.enum.LabelName
+import com.hmp.domain.playlist.Playlist
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ListScreen(
@@ -109,6 +110,14 @@ fun ListScreenContent(
     navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
+    val sizeClass = LocalWindowSizeInfo.current.widthSizeClass
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
+    val dimens = LocalHMPDimens.current
+    val contentHorizontalPadding = when (sizeClass) {
+        WindowWidthSizeClass.Expanded -> 32.dp
+        WindowWidthSizeClass.Medium -> 24.dp
+        WindowWidthSizeClass.Compact -> 20.dp
+    }
 
     // 与列表管理页一致：置顶优先，再按最近播放、更新时间
     val sortedUserPlaylists = remember(userCustomPlaylists) {
@@ -138,7 +147,7 @@ fun ListScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(dimens.spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 用户自定义播放列表
@@ -163,8 +172,8 @@ fun ListScreenContent(
                 )
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(horizontal = contentHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md)
                 ) {
                     items(sortedUserPlaylists) { playlist ->
                         UserListCard(
@@ -172,39 +181,10 @@ fun ListScreenContent(
                             onClick = {
                                 haptic.performClick()
                                 navController.add(Routes.Playlist.CustomPlaylist(playlist.id))
-                            }
+                            },
+                            sizeClass = sizeClass,
                         )
                     }
-                }
-            }
-
-            // 常用列表 (Common Playlists) - 保留原有样式
-            Column {
-                ListGroupName(
-                    bannerNameF = stringResource(R.string.banner_daily_A),
-                    bannerNameS = stringResource(R.string.banner_daily_AA),
-                    themeColorResId = R.color.HDRed
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    ListBanner(
-                        listName = stringResource(R.string.banner_default),
-                        listCoverUri = R.drawable.defaultlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(R.string.banner_heart),
-                        listCoverUri = R.drawable.heartlist,
-                        navController = navController
-                    )
-                    ListBanner(
-                        listName = stringResource(R.string.banner_history),
-                        listCoverUri = R.drawable.historylist,
-                        navController = navController
-                    )
                 }
             }
 
@@ -221,8 +201,8 @@ fun ListScreenContent(
                 LazyRow(
                     state = scenarioListState,
                     flingBehavior = scenarioFlingBehavior,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(horizontal = contentHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md)
                 ) {
                     items(list) { label ->
                         ScenarioCard(
@@ -230,7 +210,8 @@ fun ListScreenContent(
                             onClick = {
                                 haptic.performClick()
                                 navController.add(Routes.Playlist.Playlist(label.name))
-                            }
+                            },
+                            sizeClass = sizeClass,
                         )
                     }
                 }
@@ -249,8 +230,8 @@ fun ListScreenContent(
                 LazyRow(
                     state = genreListState,
                     flingBehavior = genreFlingBehavior,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(horizontal = contentHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md)
                 ) {
                     items(list) { label ->
                         GenreCard(
@@ -271,12 +252,12 @@ fun ListScreenContent(
                 bannerNameS = stringResource(R.string.banner_daily_CC),
                 themeColorResId = R.color.HDOrange
             ) { list ->
-                Box(modifier = Modifier.height(220.dp)) {
+                Box(modifier = Modifier.height(dimens.component.lg)) {
                     LazyHorizontalGrid(
                         rows = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(horizontal = contentHorizontalPadding),
+                        horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(dimens.spacing.md),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(list) { label ->
@@ -300,10 +281,10 @@ fun ListScreenContent(
                 themeColorResId = R.color.HDPurple
             ) { list ->
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(dimens.spacing.md),
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 20.dp)
+                        .padding(horizontal = contentHorizontalPadding)
                 ) {
                     list.forEach { label ->
                         Box(
@@ -353,10 +334,11 @@ private fun GenreCard(
     label: LabelName,
     onClick: () -> Unit
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier
-            .width(160.dp)
-            .height(100.dp)
+            .width(dimens.component.md)
+            .height(dimens.component.sm)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -389,7 +371,7 @@ private fun GenreCard(
                 color = Color.White,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(12.dp)
+                    .padding(dimens.spacing.md)
                 )
         }
     }
@@ -400,9 +382,10 @@ private fun MoodCard(
     label: LabelName,
     onClick: () -> Unit
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier
-            .size(100.dp)
+            .size(dimens.component.sm)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -425,12 +408,14 @@ private fun MoodCard(
 @Composable
 private fun ScenarioCard(
     label: LabelName,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    sizeClass: WindowWidthSizeClass,
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier
-            .width(280.dp)
-            .height(160.dp)
+            .width(dimens.component.xl)
+            .height(dimens.component.md)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -458,14 +443,14 @@ private fun ScenarioCard(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp)
+                    .padding(dimens.spacing.md)
             ) {
                 Text(
                     text = label.name,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(dimens.spacing.xs))
                 Text(
                     text = stringResource(R.string.suitable_for_now),
                     style = MaterialTheme.typography.bodySmall,
@@ -476,22 +461,20 @@ private fun ScenarioCard(
     }
 }
 
-private const val CARD_WIDTH_DP = 280
-private const val CARD_HEIGHT_DP = 360
-private const val CORNER_RADIUS_DP = 20
-
 @Composable
 fun UserListCard(
     playlist: Playlist,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sizeClass: WindowWidthSizeClass,
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = modifier
-            .width(CARD_WIDTH_DP.dp)
-            .height(CARD_HEIGHT_DP.dp)
+            .width(dimens.component.xl)
+            .height(dimens.component.xxl)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(CORNER_RADIUS_DP.dp),
+        shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -520,8 +503,7 @@ fun UserListCard(
                         painter = painterResource(R.drawable.music_note_list),
                         contentDescription = null,
                         modifier = Modifier
-                            .width(72.dp)
-                            .height(72.dp),
+                            .size(dimens.component.sm),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
@@ -543,7 +525,7 @@ fun UserListCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(dimens.spacing.md)
             ) {
                 Text(
                     text = playlist.name,
@@ -573,7 +555,7 @@ fun UserListCard(
                             color = Color.White.copy(alpha = 0.8f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = dimens.spacing.xs)
                         )
                     }
                 }

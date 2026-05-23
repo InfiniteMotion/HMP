@@ -39,6 +39,7 @@ import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_MATERIAL_PRESET
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_MODE
@@ -111,34 +112,38 @@ fun CustomScreenContent(
         onBackClick = onBackClick,
         title = stringResource(R.string.theme_customization)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            SetThemeMode(
-                customMode = customMode,
-                setCustomMode = setCustomMode
-            )
-
-            SetBackgroundStyle(
-                backgroundStyle = backgroundStyle,
-                setBackgroundStyle = setBackgroundStyle
-            )
-            SetHazeIntensity(
-                hazeMode = hazeMode,
-                hazeMaterialPreset = hazeMaterialPreset,
-                hazeBlurRadius = hazeBlurRadius,
-                hazeNoiseFactor = hazeNoiseFactor,
-                hazeTintAlpha = hazeTintAlpha,
-                setHazeMode = setHazeMode,
-                applyHazeMaterialPreset = applyHazeMaterialPreset,
-                setHazeBlurRadius = setHazeBlurRadius,
-                setHazeNoiseFactor = setHazeNoiseFactor,
-                setHazeTintAlpha = setHazeTintAlpha
-            )
-
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        SetThemeMode(customMode = customMode, setCustomMode = setCustomMode)
+                        SetBackgroundStyle(backgroundStyle = backgroundStyle, setBackgroundStyle = setBackgroundStyle)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        SetHazeIntensity(
+                            hazeMode = hazeMode, hazeMaterialPreset = hazeMaterialPreset,
+                            hazeBlurRadius = hazeBlurRadius, hazeNoiseFactor = hazeNoiseFactor,
+                            hazeTintAlpha = hazeTintAlpha, setHazeMode = setHazeMode,
+                            applyHazeMaterialPreset = applyHazeMaterialPreset,
+                            setHazeBlurRadius = setHazeBlurRadius, setHazeNoiseFactor = setHazeNoiseFactor,
+                            setHazeTintAlpha = setHazeTintAlpha
+                        )
+                    }
+                }
+            } else {
+                SetThemeMode(customMode = customMode, setCustomMode = setCustomMode)
+                SetBackgroundStyle(backgroundStyle = backgroundStyle, setBackgroundStyle = setBackgroundStyle)
+                SetHazeIntensity(hazeMode = hazeMode, hazeMaterialPreset = hazeMaterialPreset, hazeBlurRadius = hazeBlurRadius, hazeNoiseFactor = hazeNoiseFactor, hazeTintAlpha = hazeTintAlpha, setHazeMode = setHazeMode, applyHazeMaterialPreset = applyHazeMaterialPreset, setHazeBlurRadius = setHazeBlurRadius, setHazeNoiseFactor = setHazeNoiseFactor, setHazeTintAlpha = setHazeTintAlpha)
+            }
             Spacer(modifier = Modifier.height(64.dp))
         }
     }
@@ -165,6 +170,7 @@ fun SetHazeIntensity(
     val haptic = rememberHapticFeedback()
 
     TitleWidget(title = stringResource(R.string.haze_intensity_title)) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -455,6 +461,7 @@ fun SetBackgroundStyle(
     TitleWidget(
         title = stringResource(R.string.set_background_style),
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .fillMaxWidth()

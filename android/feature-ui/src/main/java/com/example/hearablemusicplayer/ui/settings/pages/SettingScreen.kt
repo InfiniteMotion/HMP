@@ -28,6 +28,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.navigation.Routes
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
 
@@ -40,6 +41,7 @@ fun SettingScreen(
         title = stringResource(R.string.title_settings)
     ) {
         val haptic = rememberHapticFeedback()
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -47,35 +49,72 @@ fun SettingScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingItem(
-                title = stringResource(R.string.profile_settings),
-                description = stringResource(R.string.profile_desc),
-                icon = R.drawable.person,
-                onClick = {
-                    haptic.performClick()
-                    navController.add(Routes.Settings.ProfileSettings)
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        SettingItem(
+                            title = stringResource(R.string.profile_settings),
+                            description = stringResource(R.string.profile_desc),
+                            icon = R.drawable.person,
+                            onClick = {
+                                haptic.performClick()
+                                navController.add(Routes.Settings.ProfileSettings)
+                            }
+                        )
+                        SettingItem(
+                            title = stringResource(R.string.backup_settings),
+                            description = stringResource(R.string.backup_desc),
+                            icon = R.drawable.externaldrive,
+                            onClick = {
+                                haptic.performClick()
+                                navController.add(Routes.Settings.BackupSettings)
+                            }
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        SettingItem(
+                            title = stringResource(R.string.library_settings),
+                            description = stringResource(R.string.library_desc),
+                            icon = R.drawable.music,
+                            onClick = {
+                                haptic.performClick()
+                                navController.add(Routes.Settings.LibrarySettings)
+                            }
+                        )
+                    }
                 }
-            )
-
-            SettingItem(
-                title = stringResource(R.string.backup_settings),
-                description = stringResource(R.string.backup_desc),
-                icon = R.drawable.externaldrive,
-                onClick = {
-                    haptic.performClick()
-                    navController.add(Routes.Settings.BackupSettings)
-                }
-            )
-
-            SettingItem(
-                title = stringResource(R.string.library_settings),
-                description = stringResource(R.string.library_desc),
-                icon = R.drawable.music,
-                onClick = {
-                    haptic.performClick()
-                    navController.add(Routes.Settings.LibrarySettings)
-                }
-            )
+            } else {
+                SettingItem(
+                    title = stringResource(R.string.profile_settings),
+                    description = stringResource(R.string.profile_desc),
+                    icon = R.drawable.person,
+                    onClick = {
+                        haptic.performClick()
+                        navController.add(Routes.Settings.ProfileSettings)
+                    }
+                )
+                SettingItem(
+                    title = stringResource(R.string.backup_settings),
+                    description = stringResource(R.string.backup_desc),
+                    icon = R.drawable.externaldrive,
+                    onClick = {
+                        haptic.performClick()
+                        navController.add(Routes.Settings.BackupSettings)
+                    }
+                )
+                SettingItem(
+                    title = stringResource(R.string.library_settings),
+                    description = stringResource(R.string.library_desc),
+                    icon = R.drawable.music,
+                    onClick = {
+                        haptic.performClick()
+                        navController.add(Routes.Settings.LibrarySettings)
+                    }
+                )
+            }
         }
     }
 }

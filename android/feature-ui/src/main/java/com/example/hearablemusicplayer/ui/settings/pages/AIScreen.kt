@@ -64,6 +64,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
@@ -156,50 +157,65 @@ fun AIScreenContent(
         onBackClick = onBackClick,
         title = stringResource(R.string.title_ai)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 服务商配置组件
-            AiProviderConfig(
-                currentProvider = currentProvider,
-                currentConfig = currentConfig,
-                isTestingApi = isTestingApi,
-                apiTestResult = apiTestResult,
-                onProviderChange = onProviderChange,
-                onTestConnection = onTestConnection,
-                onSaveConfig = onSaveConfig,
-                onClearTestResult = onClearTestResult,
-                dialogManager = dialogManager
-            )
-
-            LoadMusicExtraInfo(
-                pendingCount = pendingCount,
-                musicWithExtraCount = musicWithExtraCount,
-                progress = progress,
-                isConfigured = currentConfig?.isConfigured == true,
-                autoBatchProcess = autoBatchProcess,
-                onAutoBatchProcessChange = onAutoBatchProcessChange,
-                startAutoProcessExtraInfo = startAutoProcessExtraInfo,
-                pauseProcess = pauseProcess,
-                resumeProcess = resumeProcess,
-                cancelProcess = cancelProcess,
-                dialogManager = dialogManager
-            )
-
-            // 每日推荐刷新策略
-            DailyRefreshSettings(
-                refreshMode = refreshMode,
-                refreshHours = refreshHours,
-                startupCount = startupCount,
-                onSaveRefreshMode = onSaveDailyRefreshMode,
-                onSaveRefreshHours = onSaveDailyRefreshHours,
-                onSaveStartupCount = onSaveDailyRefreshStartupCount,
-                dialogManager = dialogManager
-            )
-
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        AiProviderConfig(
+                            currentProvider = currentProvider, currentConfig = currentConfig,
+                            isTestingApi = isTestingApi, apiTestResult = apiTestResult,
+                            onProviderChange = onProviderChange, onTestConnection = onTestConnection,
+                            onSaveConfig = onSaveConfig, onClearTestResult = onClearTestResult,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        LoadMusicExtraInfo(
+                            pendingCount = pendingCount, musicWithExtraCount = musicWithExtraCount,
+                            progress = progress, isConfigured = currentConfig?.isConfigured == true,
+                            autoBatchProcess = autoBatchProcess, onAutoBatchProcessChange = onAutoBatchProcessChange,
+                            startAutoProcessExtraInfo = startAutoProcessExtraInfo,
+                            pauseProcess = pauseProcess, resumeProcess = resumeProcess,
+                            cancelProcess = cancelProcess, dialogManager = dialogManager
+                        )
+                        DailyRefreshSettings(
+                            refreshMode = refreshMode, refreshHours = refreshHours, startupCount = startupCount,
+                            onSaveRefreshMode = onSaveDailyRefreshMode, onSaveRefreshHours = onSaveDailyRefreshHours,
+                            onSaveStartupCount = onSaveDailyRefreshStartupCount, dialogManager = dialogManager
+                        )
+                    }
+                }
+            } else {
+                AiProviderConfig(
+                    currentProvider = currentProvider, currentConfig = currentConfig,
+                    isTestingApi = isTestingApi, apiTestResult = apiTestResult,
+                    onProviderChange = onProviderChange, onTestConnection = onTestConnection,
+                    onSaveConfig = onSaveConfig, onClearTestResult = onClearTestResult,
+                    dialogManager = dialogManager
+                )
+                LoadMusicExtraInfo(
+                    pendingCount = pendingCount, musicWithExtraCount = musicWithExtraCount,
+                    progress = progress, isConfigured = currentConfig?.isConfigured == true,
+                    autoBatchProcess = autoBatchProcess, onAutoBatchProcessChange = onAutoBatchProcessChange,
+                    startAutoProcessExtraInfo = startAutoProcessExtraInfo,
+                    pauseProcess = pauseProcess, resumeProcess = resumeProcess,
+                    cancelProcess = cancelProcess, dialogManager = dialogManager
+                )
+                DailyRefreshSettings(
+                    refreshMode = refreshMode, refreshHours = refreshHours, startupCount = startupCount,
+                    onSaveRefreshMode = onSaveDailyRefreshMode, onSaveRefreshHours = onSaveDailyRefreshHours,
+                    onSaveStartupCount = onSaveDailyRefreshStartupCount, dialogManager = dialogManager
+                )
+            }
             Spacer(modifier = Modifier.height(64.dp))
         }
     }

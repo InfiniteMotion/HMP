@@ -76,6 +76,11 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.materials)
 
+    // Material3 Adaptive
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.adaptive.layout)
+    implementation(libs.androidx.material3.adaptive.navigation)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

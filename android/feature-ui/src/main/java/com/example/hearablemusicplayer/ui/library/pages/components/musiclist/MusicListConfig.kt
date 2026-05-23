@@ -48,6 +48,7 @@ sealed class HeaderConfig {
         val onFilterOrderChange: (String) -> Unit,
         val onOrderPlay: () -> Unit,
         val onShufflePlay: () -> Unit,
+        val singleRowFilter: Boolean = false,
     ) : HeaderConfig()
     data class Custom(
         val content: @Composable () -> Unit,
@@ -115,6 +116,7 @@ data class ListConfig(
     val key: (Int, MusicInfo) -> Any = { i, m -> "${m.music.id}_$i" },
     val bottomSpacerHeight: Dp = 88.dp,
     val enableLongPressToEnterEdit: Boolean = false,
+    val columns: Int = 1,
 )
 
 // ---------- Edit ----------

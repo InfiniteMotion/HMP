@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.hearablemusicplayer.ui.common.components.base.BackButton
 import com.example.hearablemusicplayer.ui.common.design.animation.AnimationTokens
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass
 
 @Composable
 fun SubScreen(
@@ -35,6 +37,11 @@ fun SubScreen(
     trailingContent: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ){
+    val horizontalPadding = when (LocalWindowSizeInfo.current.widthSizeClass) {
+        WindowWidthSizeClass.Expanded -> 48.dp
+        WindowWidthSizeClass.Medium -> 32.dp
+        WindowWidthSizeClass.Compact -> 16.dp
+    }
     var visible by rememberSaveable { mutableStateOf(false) }
 
     val currentContent by rememberUpdatedState(content)
@@ -69,7 +76,7 @@ fun SubScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalPadding)
                     .fillMaxWidth(),
             ) {
                 // 返回按钮（与右侧按钮垂直居中对齐）

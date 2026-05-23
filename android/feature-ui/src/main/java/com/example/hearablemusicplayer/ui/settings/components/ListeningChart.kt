@@ -21,8 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
 import java.time.LocalDate
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -30,6 +29,7 @@ import java.time.LocalDate
 fun ListeningChart(
     data: List<Int>,
 ) {
+    val dimens = LocalHMPDimens.current
     val (gridData, weekLabels) = remember(data) {
         val totalDays = 35 // 5周 x 7天
         val today = LocalDate.now()
@@ -64,8 +64,8 @@ fun ListeningChart(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = dimens.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(dimens.spacing.xs)
     ) {
         // 星期表头
         Row(
@@ -79,7 +79,7 @@ fun ListeningChart(
                 ) {
                     Text(
                         text = label,
-                        fontSize = 10.sp,
+                        fontSize = dimens.type.xs,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
@@ -87,7 +87,7 @@ fun ListeningChart(
             }
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(dimens.spacing.xs))
 
         // 数据网格: 5行 x 7列
         val rows = 5
@@ -96,11 +96,10 @@ fun ListeningChart(
         for (row in 0 until rows) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacing.xs)
             ) {
                 for (col in 0 until cols) {
                     val index = row * cols + col
-                    // 调整宽高比，稍微扁一点点或者保持正方形但整体变小
                     val weightModifier = Modifier.weight(1f).aspectRatio(1.5f)
 
                     if (index < gridData.size) {
@@ -109,7 +108,7 @@ fun ListeningChart(
 
                         Box(
                             modifier = weightModifier
-                                .clip(RoundedCornerShape(5.dp)) // 减小圆角 4.dp -> 3.dp
+                                .clip(RoundedCornerShape(dimens.corner.xs))
                                 .background(color)
                         )
                     } else {

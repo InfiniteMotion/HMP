@@ -89,7 +89,7 @@ fun navigationGraph(
             dialogViewModel = dialogViewModel,
         )
     }
-    
+
     entry<Routes.Library.SongDetail> { route ->
         SongDetailScreen(
             navController = navController,

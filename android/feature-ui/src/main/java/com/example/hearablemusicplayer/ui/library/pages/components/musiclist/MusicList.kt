@@ -135,6 +135,7 @@ fun MusicList(
                         .align(Alignment.CenterEnd)
                         .width(indexStripWidth)
                         .fillMaxHeight(),
+                    columns = config.list.columns,
                 )
             }
         }

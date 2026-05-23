@@ -137,11 +137,7 @@ class PlaylistViewModel(
                     _userCustomPlaylistsState.value = UiState.Error(it.message ?: "Failed to load playlists")
                 }
                 .collect { all ->
-                    val currentId = settingsRepository.getCurrentPlaylistId()
-                    val likedId = settingsRepository.getLikedPlaylistId()
-                    val recentId = settingsRepository.getRecentPlaylistId()
-                    val systemIds = setOfNotNull(currentId, likedId, recentId)
-                    val playlists = all.filter { it.id !in systemIds }
+                    val playlists = all.filter { it.songCount > 0 }
                     _userCustomPlaylistsState.value = if (playlists.isEmpty()) {
                         UiState.Empty
                     } else {

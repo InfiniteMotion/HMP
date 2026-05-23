@@ -81,6 +81,7 @@ internal fun MusicListHeader(
             onEditClick = onEditClick,
             listCount = listCount,
             modifier = modifier,
+            singleRowFilter = config.singleRowFilter,
         )
         is HeaderConfig.Custom -> config.content()
     }
@@ -174,6 +175,7 @@ private fun FullHeader(
     onEditClick: () -> Unit,
     listCount: Int?,
     modifier: Modifier = Modifier,
+    singleRowFilter: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()

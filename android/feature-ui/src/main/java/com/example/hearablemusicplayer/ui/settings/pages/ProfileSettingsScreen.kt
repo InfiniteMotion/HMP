@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,8 @@ import com.example.hearablemusicplayer.ui.player.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
 import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
 import java.io.File
@@ -68,22 +71,45 @@ fun ProfileSettingsScreen(
         onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.profile_settings)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
+        val dimens = LocalHMPDimens.current
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
                 .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(dimens.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(dimens.spacing.lg)
         ) {
-            UpdateAvatar(
-                avatarUri = avatarUri,
-                updateAvatar = settingsViewModel::saveAvatarUri,
-                dialogManager = dialogManager
-            )
-            UpdateUserName(
-                userName = userName,
-                updateUserName = settingsViewModel::saveUserName
-            )
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.lg)
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        UpdateAvatar(
+                            avatarUri = avatarUri,
+                            updateAvatar = settingsViewModel::saveAvatarUri,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Box(Modifier.weight(1f)) {
+                        UpdateUserName(
+                            userName = userName,
+                            updateUserName = settingsViewModel::saveUserName
+                        )
+                    }
+                }
+            } else {
+                UpdateAvatar(
+                    avatarUri = avatarUri,
+                    updateAvatar = settingsViewModel::saveAvatarUri,
+                    dialogManager = dialogManager
+                )
+                UpdateUserName(
+                    userName = userName,
+                    updateUserName = settingsViewModel::saveUserName
+                )
+            }
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }
@@ -96,13 +122,14 @@ private fun UpdateAvatar(
     updateAvatar: (String) -> Unit,
     dialogManager: DialogManager
 ){
+    val dimens = LocalHMPDimens.current
     TitleWidget(
         title = stringResource(R.string.avatar),
     ) {
         Column (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(dimens.spacing.md),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -134,18 +161,18 @@ private fun UpdateAvatar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(dimens.spacing.md))
                 // 如果 uriImg 有值（用户刚选了新图），优先显示预览
                 // 否则显示当前的 avatarUri
                 val displayUri = if (uriImg.value.isNotEmpty()) uriImg.value else avatarUri
-                Avatar(128, displayUri)
-                Spacer(modifier = Modifier.height(16.dp))
+                Avatar(dimens.component.md.value.toInt(), displayUri)
+                Spacer(modifier = Modifier.height(dimens.spacing.md))
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(dimens.spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
@@ -163,10 +190,10 @@ private fun UpdateAvatar(
                         model = uriImg.value,
                         contentDescription = "User Avatar",
                         modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(dimens.component.xs)
+                            .clip(RoundedCornerShape(dimens.corner.sm))
                     )
-                    Spacer(modifier = Modifier.width(32.dp))
+                    Spacer(modifier = Modifier.width(dimens.spacing.xl))
                     Button(
                         onClick = {
                             updateAvatar(uriImg.value)
@@ -194,13 +221,14 @@ private fun UpdateUserName(
     userName: String?,
     updateUserName: (String) -> Unit,
 ){
+    val dimens = LocalHMPDimens.current
     TitleWidget(
         title = stringResource(R.string.user_name),
     ) {
         Column (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(dimens.spacing.md),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -208,7 +236,8 @@ private fun UpdateUserName(
             Text(
                 text = userName?:stringResource(R.string.user_name),
                 style = MaterialTheme.typography.displayLarge,
-                modifier = Modifier.padding(16.dp),
+                fontSize = dimens.type.xl,
+                modifier = Modifier.padding(dimens.spacing.md),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Row(
@@ -230,13 +259,13 @@ private fun UpdateUserName(
                         unfocusedIndicatorColor = Transparent, // 未聚焦时下划线颜色
                         disabledIndicatorColor = Transparent // 禁用时下划线颜色
                     ),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(dimens.corner.lg),
                     modifier = Modifier.width(300.dp)
-                        .padding(vertical = 16.dp)
+                        .padding(vertical = dimens.spacing.md)
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimens.spacing.md))
 
             Button(
                 modifier = Modifier.width(200.dp),

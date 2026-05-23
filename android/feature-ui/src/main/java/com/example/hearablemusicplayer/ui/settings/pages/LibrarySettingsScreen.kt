@@ -45,6 +45,7 @@ import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.player.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.library.viewmodel.FolderInfo
 import com.example.hearablemusicplayer.ui.library.viewmodel.HiddenFolderInfo
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
@@ -68,6 +69,7 @@ fun LibrarySettingsScreen(
         onBackClick = { navController.removeLastOrNull() },
         title = stringResource(R.string.library_settings)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -75,6 +77,12 @@ fun LibrarySettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             // 1. 音乐库统计
             LibraryStatsSection(
                 musicCount = musicCount,
@@ -87,14 +95,19 @@ fun LibrarySettingsScreen(
                 onIncrementalScan = libraryViewModel::refreshMusicList,
                 onFullRescan = libraryViewModel::fullRescan
             )
-            
-            // 3. 音乐库管理
-            LibraryManagementSection(
-                folders = scannedFolders,
-                hiddenFolders = hiddenFolders,
-                onHideFolder = libraryViewModel::hideFolder,
-                onUnhideFolder = libraryViewModel::restoreToLibrary
-            )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        LibraryManagementSection(
+                            folders = scannedFolders, hiddenFolders = hiddenFolders,
+                            onHideFolder = libraryViewModel::hideFolder, onUnhideFolder = libraryViewModel::restoreToLibrary
+                        )
+                    }
+                }
+            } else {
+                LibraryStatsSection(musicCount = musicCount, analyzedCount = analyzedCount)
+                ScanOptionsSection(isScanning = isScanning, onIncrementalScan = libraryViewModel::refreshMusicList, onFullRescan = libraryViewModel::fullRescan)
+                LibraryManagementSection(folders = scannedFolders, hiddenFolders = hiddenFolders, onHideFolder = libraryViewModel::hideFolder, onUnhideFolder = libraryViewModel::restoreToLibrary)
+            }
             MiniPlayerSafeSpacer(height = 56.dp)
         }
     }
@@ -109,6 +122,7 @@ private fun LibraryManagementSection(
 ) {
     var folderToHide by remember { mutableStateOf<String?>(null) }
     TitleWidget(title = stringResource(R.string.library_management)) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -294,6 +308,7 @@ private fun StatsCard(
         shape = RoundedCornerShape(16.dp),
         modifier = modifier
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -330,6 +345,7 @@ private fun ScanOptionsSection(
     var showFullRescanDialog by remember { mutableStateOf(false) }
 
     TitleWidget(title = stringResource(R.string.scan_options)) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -426,6 +442,7 @@ private fun ScanOptionCard(
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier
                 .padding(16.dp)

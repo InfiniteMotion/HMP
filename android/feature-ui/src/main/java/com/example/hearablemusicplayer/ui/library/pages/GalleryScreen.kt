@@ -37,6 +37,7 @@ import com.example.hearablemusicplayer.ui.library.pages.components.musiclist.ind
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
 import com.example.hearablemusicplayer.ui.common.dialogs.base.ConfirmDialog
 import com.example.hearablemusicplayer.ui.common.pages.base.TabScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.navigation.Routes
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
@@ -135,6 +136,8 @@ fun GalleryScreenContent(
     navController: NavBackStack<NavKey>
 ) {
     val haptic = rememberHapticFeedback()
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
+    
     var showRemoveConfirmDialog by remember { mutableStateOf(false) }
     var pendingRemoveMusicInfo by remember { mutableStateOf<MusicInfo?>(null) }
     var showBatchRemoveConfirmDialog by remember { mutableStateOf(false) }
@@ -195,6 +198,7 @@ fun GalleryScreenContent(
             onFilterOrderChange = onFilterOrderChange,
             onOrderPlay = onOrderPlay,
             onShufflePlay = onShufflePlay,
+            singleRowFilter = isLandscape,
         ),
         item = ItemConfig(
             showIndex = true,
@@ -208,7 +212,8 @@ fun GalleryScreenContent(
         ),
         list = ListConfig(
             enableLongPressToEnterEdit = true,
-            bottomSpacerHeight = 88.dp
+            bottomSpacerHeight = 88.dp,
+            columns = if (isLandscape) 2 else 1
         ),
         edit = EditConfig(enabled = true),
         indexJump = indexJumpConfigForOrderBy(selectedGenre, selectedOrder),

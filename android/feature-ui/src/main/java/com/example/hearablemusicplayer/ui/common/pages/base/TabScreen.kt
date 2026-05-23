@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.example.hearablemusicplayer.ui.common.components.base.SearchButton
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass
 
 
 val LocalTabHeaderContent = staticCompositionLocalOf<(@Composable () -> Unit)?> { null }
@@ -31,6 +33,12 @@ fun TabScreen(
     trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
+    val horizontalPadding = when (LocalWindowSizeInfo.current.widthSizeClass) {
+        WindowWidthSizeClass.Expanded -> 32.dp
+        WindowWidthSizeClass.Medium -> 24.dp
+        WindowWidthSizeClass.Compact -> 16.dp
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -40,10 +48,11 @@ fun TabScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
+            if (!isLandscape) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 16.dp),
+                    .padding(start = horizontalPadding, end = horizontalPadding, top = 16.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (title != null) {
@@ -58,17 +67,14 @@ fun TabScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.weight(1f))
-
-                        if (trailing != null) {
-                            trailing()
-                        }
-
+                        if (trailing != null) trailing()
                         if (hasSearchBotton && navController != null) {
                             Spacer(modifier = Modifier.width(8.dp))
                             SearchButton(navController)
                         }
                     }
                 }
+            }
             }
             content()
         }

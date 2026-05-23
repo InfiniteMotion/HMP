@@ -50,6 +50,8 @@ import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.player.components.MiniPlayerSafeSpacer
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.navigation.Routes
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import com.example.hearablemusicplayer.ui.common.components.SegmentedControl
@@ -69,6 +71,8 @@ fun UserUsageDataScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptic = rememberHapticFeedback()
+    val dimens = LocalHMPDimens.current
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
 
     SubScreen(
         onBackClick = { navController.removeLastOrNull() },
@@ -78,7 +82,7 @@ fun UserUsageDataScreen(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = dimens.spacing.xl, vertical = dimens.spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (val state = uiState) {
@@ -87,26 +91,51 @@ fun UserUsageDataScreen(
                 }
                 is UiState.Success -> {
                     val analytics = state.data
-                    OverviewCard(analytics = analytics)
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    if (analytics.topGenres.isNotEmpty() || analytics.topMoods.isNotEmpty() || analytics.topScenarios.isNotEmpty()) {
-                        TasteCard(analytics = analytics)
-                        Spacer(modifier = Modifier.height(20.dp))
+                    if (isLandscape) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(dimens.spacing.lg)
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                OverviewCard(analytics = analytics)
+                                Spacer(modifier = Modifier.height(dimens.spacing.lg))
+                                if (analytics.topGenres.isNotEmpty() || analytics.topMoods.isNotEmpty() || analytics.topScenarios.isNotEmpty()) {
+                                    TasteCard(analytics = analytics)
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                RankingAndHistoryCard(
+                                    analytics = analytics,
+                                    navController = navController,
+                                    haptic = haptic
+                                )
+                                Spacer(modifier = Modifier.height(dimens.spacing.lg))
+                                RecentHistoryBlock(
+                                    analytics = analytics,
+                                    navController = navController,
+                                    haptic = haptic
+                                )
+                            }
+                        }
+                    } else {
+                        OverviewCard(analytics = analytics)
+                        Spacer(modifier = Modifier.height(dimens.spacing.lg))
+                        if (analytics.topGenres.isNotEmpty() || analytics.topMoods.isNotEmpty() || analytics.topScenarios.isNotEmpty()) {
+                            TasteCard(analytics = analytics)
+                            Spacer(modifier = Modifier.height(dimens.spacing.lg))
+                        }
+                        RankingAndHistoryCard(
+                            analytics = analytics,
+                            navController = navController,
+                            haptic = haptic
+                        )
+                        Spacer(modifier = Modifier.height(dimens.spacing.lg))
+                        RecentHistoryBlock(
+                            analytics = analytics,
+                            navController = navController,
+                            haptic = haptic
+                        )
                     }
-
-                    RankingAndHistoryCard(
-                        analytics = analytics,
-                        navController = navController,
-                        haptic = haptic
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    RecentHistoryBlock(
-                        analytics = analytics,
-                        navController = navController,
-                        haptic = haptic
-                    )
                 }
                 is UiState.Error -> {
                     Column(
@@ -119,7 +148,7 @@ fun UserUsageDataScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(dimens.spacing.md))
                         Button(onClick = { viewModel.load() }) {
                             Text(stringResource(R.string.refresh))
                         }
@@ -135,10 +164,11 @@ fun UserUsageDataScreen(
 
 @Composable
 private fun SectionHeader(title: String) {
+    val dimens = LocalHMPDimens.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = dimens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -148,10 +178,11 @@ private fun SectionHeader(title: String) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(MaterialTheme.colorScheme.primary)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimens.spacing.md))
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
+            fontSize = dimens.type.md,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -160,27 +191,28 @@ private fun SectionHeader(title: String) {
 
 @Composable
 private fun OverviewCard(analytics: UserUsageAnalytics) {
+    val dimens = LocalHMPDimens.current
     val weekTrendPct = if (analytics.lastWeekMinutes > 0) {
         ((analytics.thisWeekMinutes - analytics.lastWeekMinutes).toFloat() / analytics.lastWeekMinutes * 100).toInt()
     } else null
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(dimens.corner.md),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(dimens.spacing.lg)) {
             Text(
                 text = stringResource(R.string.listening_insights),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimens.spacing.md))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -219,7 +251,7 @@ private fun OverviewCard(analytics: UserUsageAnalytics) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacing.sm)
             ) {
                 InsightPill(
                     modifier = Modifier.weight(1f),
@@ -232,10 +264,10 @@ private fun OverviewCard(analytics: UserUsageAnalytics) {
                     value = "${analytics.lastWeekMinutes}"
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimens.spacing.sm))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacing.sm)
             ) {
                 InsightPill(
                     modifier = Modifier.weight(1f),
@@ -254,9 +286,9 @@ private fun OverviewCard(analytics: UserUsageAnalytics) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimens.spacing.md))
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(dimens.spacing.sm)) {
                 RateProgressRow(
                     label = stringResource(R.string.completion_rate),
                     rate = analytics.completionRate,
@@ -286,16 +318,17 @@ private fun OverviewCard(analytics: UserUsageAnalytics) {
 
 @Composable
 private fun TasteCard(analytics: UserUsageAnalytics) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(dimens.corner.md),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(dimens.spacing.lg)) {
             Text(
                 text = stringResource(R.string.taste_card),
                 style = MaterialTheme.typography.titleMedium,
@@ -311,7 +344,7 @@ private fun TasteCard(analytics: UserUsageAnalytics) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(dimens.spacing.xs))
                 LabelStackedBarWithLegend(entries = analytics.topGenres)
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -322,7 +355,7 @@ private fun TasteCard(analytics: UserUsageAnalytics) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(dimens.spacing.xs))
                 LabelStackedBarWithLegend(entries = analytics.topMoods)
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -333,7 +366,7 @@ private fun TasteCard(analytics: UserUsageAnalytics) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(dimens.spacing.xs))
                 LabelStackedBarWithLegend(entries = analytics.topScenarios)
             }
         }
@@ -346,6 +379,7 @@ private fun RankingAndHistoryCard(
     navController: NavBackStack<NavKey>,
     haptic: HapticFeedbackHelper
 ) {
+    val dimens = LocalHMPDimens.current
     var selectedTab by rememberSaveable { mutableStateOf("top_played") }
     val tabs = listOf(
         SegmentedOption("top_played", stringResource(R.string.top_played)),
@@ -354,14 +388,14 @@ private fun RankingAndHistoryCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(dimens.corner.md),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(dimens.spacing.lg)) {
             Text(
                 text = stringResource(R.string.ranking_and_history),
                 style = MaterialTheme.typography.titleMedium,
@@ -433,8 +467,9 @@ private fun RecentHistoryBlock(
     navController: NavBackStack<NavKey>,
     haptic: HapticFeedbackHelper
 ) {
+    val dimens = LocalHMPDimens.current
     SectionHeader(title = stringResource(R.string.recent_history))
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(dimens.spacing.sm))
     if (analytics.recentPlaybackWithTitle.isEmpty()) {
         Text(
             text = stringResource(R.string.usage_data_empty),
@@ -465,6 +500,7 @@ private fun RateProgressRow(
     valueLabel: String,
     isPositive: Boolean
 ) {
+    val dimens = LocalHMPDimens.current
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -498,9 +534,10 @@ private fun RateProgressRow(
 
 @Composable
 private fun InsightPill(modifier: Modifier, label: String, value: String) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(dimens.corner.sm),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         ),
@@ -531,6 +568,7 @@ private fun InsightPill(modifier: Modifier, label: String, value: String) {
 /** 播放来源：饼状图 + 图例 */
 @Composable
 private fun PlaySourcePieChart(entries: List<Map.Entry<String, Int>>) {
+    val dimens = LocalHMPDimens.current
     val total = entries.sumOf { it.value }.coerceAtLeast(1)
     val colors = listOf(
         MaterialTheme.colorScheme.primary,
@@ -545,8 +583,8 @@ private fun PlaySourcePieChart(entries: List<Map.Entry<String, Int>>) {
     ) {
         Canvas(
             modifier = Modifier
-                .size(160.dp)
-                .padding(8.dp)
+                .size(dimens.component.md)
+                .padding(dimens.spacing.sm)
         ) {
             val side = size.minDimension
             val left = (size.width - side) / 2
@@ -567,7 +605,7 @@ private fun PlaySourcePieChart(entries: List<Map.Entry<String, Int>>) {
                 }
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(dimens.spacing.sm))
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             entries.forEachIndexed { index, (source, count) ->
                 val pct = count.toFloat() / total
@@ -575,7 +613,7 @@ private fun PlaySourcePieChart(entries: List<Map.Entry<String, Int>>) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.sm)
                 ) {
                     Box(
                         modifier = Modifier
@@ -608,6 +646,7 @@ private fun PlaySourcePieChart(entries: List<Map.Entry<String, Int>>) {
 private fun LabelStackedBarWithLegend(
     entries: List<LabelCountEntry>
 ) {
+    val dimens = LocalHMPDimens.current
     val total = entries.sumOf { it.count }.coerceAtLeast(1)
     val colors = listOf(
         MaterialTheme.colorScheme.primary,
@@ -620,7 +659,7 @@ private fun LabelStackedBarWithLegend(
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(dimens.corner.sm))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         if (total > 0) {
@@ -636,7 +675,7 @@ private fun LabelStackedBarWithLegend(
             }
         }
     }
-    Spacer(modifier = Modifier.height(10.dp))
+    Spacer(modifier = Modifier.height(dimens.spacing.sm))
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         entries.forEachIndexed { index, entry ->
             val pct = entry.count.toFloat() / total
@@ -644,7 +683,7 @@ private fun LabelStackedBarWithLegend(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacing.sm)
             ) {
                 Box(
                     modifier = Modifier
@@ -679,9 +718,10 @@ private fun UsageListItem(
     trailing: String,
     onClick: () -> Unit
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(dimens.corner.sm),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
                 alpha = if (rank in 1..3) 0.35f else 0.25f
@@ -694,13 +734,13 @@ private fun UsageListItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (rank > 0) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(dimens.icon.lg)
                         .clip(CircleShape)
                         .background(
                             if (rank <= 3) MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
@@ -746,7 +786,7 @@ private fun UsageListItem(
             )
         }
     }
-    Spacer(modifier = Modifier.height(6.dp))
+    Spacer(modifier = Modifier.height(dimens.spacing.xs))
 }
 
 private fun formatDuration(ms: Long): String {
@@ -771,9 +811,10 @@ private fun RecentPlaybackItem(
     isCompleted: Boolean,
     onClick: () -> Unit
 ) {
+    val dimens = LocalHMPDimens.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(dimens.corner.sm),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         ),
@@ -784,7 +825,7 @@ private fun RecentPlaybackItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -815,7 +856,7 @@ private fun RecentPlaybackItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacing.md)
                 ) {
                     Text(
                         text = formatDuration(playDuration),
@@ -831,7 +872,7 @@ private fun RecentPlaybackItem(
             }
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(dimens.corner.sm))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
@@ -844,14 +885,15 @@ private fun RecentPlaybackItem(
             }
         }
     }
-    Spacer(modifier = Modifier.height(6.dp))
+    Spacer(modifier = Modifier.height(dimens.spacing.xs))
 }
 
 @Composable
 private fun UsageDataLoading() {
+    val dimens = LocalHMPDimens.current
     Card(
-        modifier = Modifier.fillMaxWidth().height(220.dp),
-        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth().height(dimens.component.lg),
+        shape = RoundedCornerShape(dimens.corner.lg),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         ),

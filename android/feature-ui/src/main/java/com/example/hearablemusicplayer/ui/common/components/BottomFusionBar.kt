@@ -3,8 +3,11 @@ package com.example.hearablemusicplayer.ui.common.components
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -107,33 +110,36 @@ fun BottomFusionBar(
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
     showNavText: Boolean = true,
+    showNavCapsule: Boolean = true,
     maxWidth: Dp? = null
 ) {
     val haptic = rememberHapticFeedback()
-    var fusionState by remember { mutableStateOf(FusionBarState.NavigationExpanded) }
+    var initialFusionState = if (showNavCapsule) FusionBarState.NavigationExpanded else FusionBarState.PlaybackExpanded
+    var fusionState by remember { mutableStateOf(initialFusionState) }
     var timerKey by remember { mutableIntStateOf(0) }
     val hasMusic = musicInfo != null
 
-    // 播放开始时立即展开播放胶囊，暂停时启动 5s 延迟
-    LaunchedEffect(hasMusic, isPlaying) {
-        if (hasMusic && isPlaying) {
-            fusionState = FusionBarState.PlaybackExpanded
-            timerKey++ // 重置计时器
-        } else if (hasMusic) {
-            // 暂停时启动 5s 延时，不立即切换
-            timerKey++
+    // 胶囊数量或播放状态变化时立即切换
+    LaunchedEffect(showNavCapsule, hasMusic, isPlaying) {
+        fusionState = if (!showNavCapsule || (hasMusic && isPlaying)) {
+            FusionBarState.PlaybackExpanded
+        } else {
+            FusionBarState.NavigationExpanded
+        }
+        if (showNavCapsule && hasMusic) timerKey++
+    }
+
+    // 切换 Tab 页面时展开导航胶囊（仅双胶囊模式）
+    LaunchedEffect(selectedTabIndex) {
+        if (showNavCapsule) {
+            fusionState = FusionBarState.NavigationExpanded
         }
     }
 
-    // 切换 Tab 页面时展开导航胶囊
-    LaunchedEffect(selectedTabIndex) {
-        fusionState = FusionBarState.NavigationExpanded
-    }
-
-    // 用户手动切换后 5 秒无操作回到默认展开态
+    // 用户手动交互后 5 秒无操作回到默认态（仅双胶囊模式）
     LaunchedEffect(fusionState, timerKey) {
+        if (!showNavCapsule) return@LaunchedEffect
         delay(5_000)
-        // 默认态：播放时展开播放胶囊，否则展开导航胶囊
         fusionState = if (hasMusic && isPlaying) {
             FusionBarState.PlaybackExpanded
         } else {
@@ -200,6 +206,11 @@ fun BottomFusionBar(
                     ) else Modifier
                 )
         ) {
+            AnimatedVisibility(
+                visible = showNavCapsule,
+                enter = expandHorizontally(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
+                exit = shrinkHorizontally(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)),
+            ) {
             AnimatedContent(
                 targetState = fusionState,
                 transitionSpec = transitionSpec,
@@ -213,6 +224,7 @@ fun BottomFusionBar(
                             selectedTab = bottomTabs[selectedTabIndex]
                         )
                 }
+            }
             }
         }
 

@@ -47,6 +47,7 @@ import com.hmp.domain.setting.model.AudioEffectSettings
 import com.example.hearablemusicplayer.ui.R
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.util.rememberHapticFeedback
 import com.example.hearablemusicplayer.ui.settings.viewmodel.AudioEffectViewModel
 import kotlin.math.abs
@@ -101,12 +102,19 @@ fun AudioEffectsScreenContent(
         onBackClick = onBackClick,
         title = stringResource(R.string.audio_effects_settings)
     ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp))  {
             TitleWidget(
                 title = stringResource(R.string.preset_equalizer)
             ) {
@@ -139,6 +147,8 @@ fun AudioEffectsScreenContent(
                     )
                 }
             }
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
 
             TitleWidget(
                 title = stringResource(R.string.custom_equalizer)
@@ -159,12 +169,29 @@ fun AudioEffectsScreenContent(
                     }
                 )
             }
-
+                    }
+                }
+            } else {
+                TitleWidget(title = stringResource(R.string.preset_equalizer)) {
+                    EqualizerPresetSelector(presets = equalizerPresets, currentPreset = audioEffectSettings.equalizerPreset, onPresetSelected = onSetEqualizerPreset)
+                }
+                TitleWidget(title = stringResource(R.string.audio_effects_settings)) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        BassBoostSlider(currentLevel = audioEffectSettings.bassBoostLevel, onLevelChanged = onSetBassBoost)
+                        SurroundSoundToggle(isEnabled = audioEffectSettings.isSurroundSoundEnabled, onToggle = onSetSurroundSound)
+                        ReverbSettings(currentPreset = audioEffectSettings.reverbPreset, onPresetChanged = onSetReverb)
+                    }
+                }
+                TitleWidget(title = stringResource(R.string.custom_equalizer)) {
+                    CustomEqualizer(bandCount = equalizerBandCount, bandLevelRange = equalizerBandLevelRange, currentBandLevels = currentEqualizerBandLevels,
+                        onBandLevelChanged = { index, level -> val n = currentEqualizerBandLevels.copyOf(); n[index] = level; onSetCustomEqualizer(n) },
+                        onResetAll = { val r = FloatArray(equalizerBandCount); onSetCustomEqualizer(r) })
+                }
+            }
             Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }
-
 
 // 音效预设选择器组件
 @Composable
@@ -297,6 +324,7 @@ fun ReverbSettings(
             modifier = Modifier.padding(bottom = 8.dp),
             color = MaterialTheme.colorScheme.onSurface
         )
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)

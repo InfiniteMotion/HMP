@@ -3,8 +3,8 @@ package com.example.hearablemusicplayer.ui.common.pages
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.core.content.FileProvider
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -18,15 +18,16 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,50 +36,57 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
-import org.koin.androidx.compose.koinViewModel
+import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.common.components.BottomFusionBar
+import com.example.hearablemusicplayer.ui.common.components.FusionSidebar
 import com.example.hearablemusicplayer.ui.common.components.TabPageIndicator
+import com.example.hearablemusicplayer.ui.common.design.animation.AnimationTokens
+import com.example.hearablemusicplayer.ui.common.design.dimens.LocalHMPDimens
+import com.example.hearablemusicplayer.ui.common.design.dimens.rememberHMPDimens
+import com.example.hearablemusicplayer.ui.common.design.theme.ThemeExtensionManager
 import com.example.hearablemusicplayer.ui.common.dialogs.CreatePlaylistDialog
-import com.example.hearablemusicplayer.ui.common.dialogs.base.MessageToast
 import com.example.hearablemusicplayer.ui.common.dialogs.MusicDetailDialog
 import com.example.hearablemusicplayer.ui.common.dialogs.MusicPickerDialog
 import com.example.hearablemusicplayer.ui.common.dialogs.PlaylistPickerDialog
 import com.example.hearablemusicplayer.ui.common.dialogs.TimerDialog
+import com.example.hearablemusicplayer.ui.common.dialogs.base.MessageToast
+import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogEvent
+import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogManagerViewModel
+import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
+import com.example.hearablemusicplayer.ui.common.layout.LocalWindowSizeInfo
+import com.example.hearablemusicplayer.ui.common.layout.rememberAppWindowSizeInfo
 import com.example.hearablemusicplayer.ui.common.navigation.DeepLinkHandler
 import com.example.hearablemusicplayer.ui.common.navigation.navigationGraph
 import com.example.hearablemusicplayer.ui.common.navigation.rememberRouter
-import com.example.hearablemusicplayer.ui.common.design.animation.AnimationTokens
-import com.example.hearablemusicplayer.ui.common.design.theme.ThemeExtensionManager
+import com.example.hearablemusicplayer.ui.common.pages.base.BackgroundStyle
+import com.example.hearablemusicplayer.ui.common.pages.base.DynamicBackground
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_INTENSITY
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_MATERIAL_PRESET
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_MODE
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_NOISE_FACTOR
 import com.example.hearablemusicplayer.ui.common.util.DEFAULT_HAZE_TINT_ALPHA
-import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogEvent
 import com.example.hearablemusicplayer.ui.common.util.HazeRenderSettings
 import com.example.hearablemusicplayer.ui.common.util.ProvideHazeRenderSettings
-import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogManagerViewModel
-import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
-import com.example.hearablemusicplayer.ui.common.pages.base.BackgroundStyle
-import com.example.hearablemusicplayer.ui.common.pages.base.DynamicBackground
+import com.example.hearablemusicplayer.ui.common.viewmodel.ThemeViewModel
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaybackViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaylistQueueViewModel
 import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
-import com.example.hearablemusicplayer.ui.common.viewmodel.ThemeViewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 
 @SuppressLint("ContextCastToActivity")
@@ -219,6 +227,11 @@ fun MainScreen(
         )
     }
 
+    val windowSizeInfo = rememberAppWindowSizeInfo()
+    LaunchedEffect(windowSizeInfo) {
+        Log.d("AdaptiveLayout", "widthClass=${windowSizeInfo.widthSizeClass}, useFusionSidebar=${windowSizeInfo.useFusionSidebar}")
+    }
+
     // 应用主题(根据播放状态切换)
     MaterialTheme(
         colorScheme = colorScheme
@@ -226,6 +239,13 @@ fun MainScreen(
         ProvideHazeRenderSettings(
             settings = hazeRenderSettings
         ) {
+            CompositionLocalProvider(
+                LocalWindowSizeInfo provides windowSizeInfo
+            ) {
+                val dimens = rememberHMPDimens()
+                CompositionLocalProvider(
+                    LocalHMPDimens provides dimens
+                ) {
             Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -267,9 +287,10 @@ fun MainScreen(
                     val contentModifier = Modifier
                         .padding(it)
                         .statusBarsPadding()
-                    Box(
-                        modifier = contentModifier
-                    ) {
+
+                    val coroutineScope = rememberCoroutineScope()
+
+                    val navContent: @Composable () -> Unit = {
                         NavDisplay(
                             backStack = navController,
                             onBack = { navController.removeLastOrNull() },
@@ -364,103 +385,125 @@ fun MainScreen(
                                 tabHeader = tabHeader
                             )
                         )
-                        
-                        // 在导航宿主之上显示固定的 TabPageIndicator
+
+                        // TabPageIndicator
                         val isInTabs = navController.size == 1 && navController.lastOrNull() is NavRoutes.Main.Tabs
                         AnimatedVisibility(
-                            visible = isInTabs,
+                            visible = isInTabs && !windowSizeInfo.useFusionSidebar && !windowSizeInfo.isLandscape,
                             enter = fadeIn(
-                                animationSpec = tween(
-                                    durationMillis = 300,
-                                    easing = AnimationTokens.EASE_OUT
-                                )
+                                animationSpec = tween(300, easing = AnimationTokens.EASE_OUT)
                             ) + scaleIn(
                                 initialScale = 0.8f,
-                                animationSpec = tween(
-                                    durationMillis = 300,
-                                    easing = AnimationTokens.EASE_OUT
-                                )
+                                animationSpec = tween(300, easing = AnimationTokens.EASE_OUT)
                             ) + slideInVertically(
                                 initialOffsetY = { -it },
-                                animationSpec = tween(
-                                    durationMillis = 300,
-                                    easing = AnimationTokens.EASE_OUT
-                                )
+                                animationSpec = tween(300, easing = AnimationTokens.EASE_OUT)
                             ),
                             exit = fadeOut(
-                                animationSpec = tween(
-                                    durationMillis = 250,
-                                    easing = AnimationTokens.EASE_IN
-                                )
+                                animationSpec = tween(250, easing = AnimationTokens.EASE_IN)
                             ) + scaleOut(
                                 targetScale = 0.9f,
-                                animationSpec = tween(
-                                    durationMillis = 250,
-                                    easing = AnimationTokens.EASE_IN
-                                )
+                                animationSpec = tween(250, easing = AnimationTokens.EASE_IN)
                             ) + slideOutVertically(
                                 targetOffsetY = { -it / 2 },
-                                animationSpec = tween(
-                                    durationMillis = 250,
-                                    easing = AnimationTokens.EASE_IN
-                                )
+                                animationSpec = tween(250, easing = AnimationTokens.EASE_IN)
                             )
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 tabHeader()
                             }
                         }
                     }
+                    val isOnTabPage = navController.size == 1 && navController.lastOrNull() is NavRoutes.Main.Tabs
+
+                    if (windowSizeInfo.useFusionSidebar) {
+                        // Medium 手机横屏：左侧融合侧边栏 + 右侧内容（侧边栏仅在Tab页面显示）
+                        Row(modifier = contentModifier) {
+                            if (isOnTabPage) {
+                                FusionSidebar(
+                                    selectedTabIndex = pagerState.currentPage,
+                                    currentMusic = currentMusic,
+                                    isPlaying = isPlaying,
+                                    onTabSelected = { index ->
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                    },
+                                    onPlayPause = {
+                                        if (isPlaying) playbackViewModel.pauseMusic()
+                                        else playbackViewModel.playOrResume()
+                                    },
+                                    onNext = { playbackViewModel.playNext() },
+                                    onPrev = { playbackViewModel.playPrevious() },
+                                    onOpenPlayer = { navController.add(NavRoutes.Player.Player) }
+                                )
+                            }
+                            Box(Modifier.weight(1f).fillMaxSize()) {
+                                navContent()
+                            }
+                        }
+                    } else {
+                        // Compact / Expanded：单列布局
+                        Box(modifier = contentModifier) {
+                            navContent()
+                        }
+                    }
                 }
             }
 
             // BottomFusionBar 底部融合栏（导航Tab + 播放控制）
-            val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
-            val coroutineScope = rememberCoroutineScope()
-            AnimatedVisibility(
-                visible = navController.none { it is NavRoutes.Player.Player } && isMiniPlayerVisible,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-            ) {
-                Box(
+            // 非 Medium 模式始终渲染，Medium 模式仅在子页面渲染（Tab 页面由 FusionSidebar 处理）
+            val bfbIsOnTabPage = navController.size == 1 && navController.lastOrNull() is NavRoutes.Main.Tabs
+            if (!windowSizeInfo.useFusionSidebar || !bfbIsOnTabPage) {
+                val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
+                val bfbScope = rememberCoroutineScope()
+                AnimatedVisibility(
+                    visible = navController.none { it is NavRoutes.Player.Player } && isMiniPlayerVisible,
+                    enter = slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
+                    ),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)
+                    ),
                     modifier = Modifier
-                        .navigationBarsPadding()
+                        .align(Alignment.BottomCenter)
                 ) {
-                    BottomFusionBar(
-                        musicInfo = currentMusic,
-                        isPlaying = isPlaying,
-                        progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
-                        selectedTabIndex = pagerState.currentPage,
-                        onTabSelected = { index ->
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        hazeState = hazeState,
-                        showNavText = false,
-                        onPlayPause = {
-                            if (isPlaying) {
-                                playbackViewModel.pauseMusic()
-                            } else {
-                                playbackViewModel.playOrResume()
-                            }
-                        },
-                        onNext = { playbackViewModel.playNext() },
-                        onPrev = { playbackViewModel.playPrevious() },
-                        onOpenPlayer = { navController.add(NavRoutes.Player.Player) }
-                    )
+                    Box {
+                        BottomFusionBar(
+                            musicInfo = currentMusic,
+                            isPlaying = isPlaying,
+                            progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                            selectedTabIndex = pagerState.currentPage,
+                            onTabSelected = { index ->
+                                bfbScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            hazeState = hazeState,
+                            showNavText = windowSizeInfo.isLandscape,
+                            showNavCapsule = bfbIsOnTabPage,
+                            maxWidth = when (windowSizeInfo.widthSizeClass) {
+                                com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass.Compact -> 480.dp
+                                com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass.Medium -> 640.dp
+                                com.example.hearablemusicplayer.ui.common.layout.WindowWidthSizeClass.Expanded -> null
+                            },
+                            onPlayPause = {
+                                if (isPlaying) {
+                                    playbackViewModel.pauseMusic()
+                                } else {
+                                    playbackViewModel.playOrResume()
+                                }
+                            },
+                            onNext = { playbackViewModel.playNext() },
+                            onPrev = { playbackViewModel.playPrevious() },
+                            onOpenPlayer = { navController.add(NavRoutes.Player.Player) }
+                        )
+                    }
                 }
             }
 
@@ -533,8 +576,10 @@ fun MainScreen(
                 )
             }
         }
+                } // CompositionLocalProvider HMPDimens
+            } // CompositionLocalProvider
+        }
     }
-}
 }
 
 
