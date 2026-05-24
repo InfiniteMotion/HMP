@@ -24,6 +24,7 @@ import com.example.hearablemusicplayer.ui.settings.pages.BackupSettingsScreen
 import com.example.hearablemusicplayer.ui.settings.pages.LibrarySettingsScreen
 import com.example.hearablemusicplayer.ui.settings.pages.ProfileSettingsScreen
 import com.example.hearablemusicplayer.ui.settings.pages.SettingScreen
+import com.example.hearablemusicplayer.ui.settings.pages.LyricsSettingsPage
 import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.example.hearablemusicplayer.ui.common.dialogs.viewmodel.DialogViewModel
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
@@ -33,6 +34,8 @@ import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
 import com.example.hearablemusicplayer.ui.common.viewmodel.ThemeViewModel
+import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
+import org.koin.compose.koinInject
 
 /**
  * 导航图定义
@@ -125,6 +128,14 @@ fun navigationGraph(
     entry<Routes.Settings.LibrarySettings> {
         LibrarySettingsScreen(navController = navController)
     }
+
+    entry<Routes.Settings.LyricsSettings> {
+        val useCase: LyricsSettingsUseCase = koinInject()
+        LyricsSettingsPage(
+            lyricsSettingsUseCase = useCase,
+            onBack = { navController.removeLastOrNull() }
+        )
+    }
     
     // Library 模块
     entry<Routes.Library.Search> {
@@ -186,7 +197,11 @@ fun navigationGraph(
     }
     
     entry<Routes.Player.Lyrics> {
-        LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel)
+        LyricsScreen(
+            playbackViewModel = playbackViewModel,
+            playlistQueueViewModel = playlistQueueViewModel,
+            onNavigateToSettings = { navController.add(Routes.Settings.LyricsSettings) }
+        )
     }
     
     // AI 模块

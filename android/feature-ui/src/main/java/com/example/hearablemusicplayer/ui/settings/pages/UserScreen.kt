@@ -65,6 +65,7 @@ private val settingsItems = listOf(
     SettingsEntry(R.string.theme_customization, R.drawable.slider_vertical_3, Routes.Custom.Custom),
     SettingsEntry(R.string.audio_effects, R.drawable.identify_song, Routes.Player.AudioEffects),
     SettingsEntry(R.string.ai_services, R.drawable.icloud, Routes.AI.AI),
+    SettingsEntry(R.string.lyrics_settings, R.drawable.music_note_list, Routes.Settings.LyricsSettings),
     SettingsEntry(R.string.backup_settings, R.drawable.externaldrive, Routes.Settings.BackupSettings),
     SettingsEntry(R.string.library_settings, R.drawable.music, Routes.Settings.LibrarySettings),
 )

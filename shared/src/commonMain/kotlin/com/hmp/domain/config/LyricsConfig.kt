@@ -1,5 +1,7 @@
 package com.hmp.domain.config
 
+import kotlinx.serialization.Serializable
+
 /**
  * 歌词配置数据模型
  * 包含用户可自定义的歌词显示参数
@@ -23,6 +25,7 @@ data class LyricsConfig(
 /**
  * 显示模式枚举
  */
+@Serializable
 enum class DisplayMode {
     LANG1,  // 只显示语言一
     LANG2,  // 只显示语言二
@@ -32,6 +35,7 @@ enum class DisplayMode {
 /**
  * 歌词对齐方式枚举
  */
+@Serializable
 enum class LyricsAlignment {
     LEFT,   // 左对齐
     CENTER, // 居中对齐

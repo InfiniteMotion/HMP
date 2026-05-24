@@ -143,6 +143,8 @@
     <string name="creative_background">创作背景</string>
     <string name="popular_lyrics">热门歌词</string>
     <string name="lyrics">歌词</string>
+    <string name="lyrics_settings">歌词设置</string>
+    <string name="lyrics_settings_desc">播放页、全屏、悬浮歌词单独调整或共享配置</string>
     <string name="labels">标签</string>
     <string name="song_achievements">歌曲成就</string>
     <string name="similar_music">类似音乐</string>

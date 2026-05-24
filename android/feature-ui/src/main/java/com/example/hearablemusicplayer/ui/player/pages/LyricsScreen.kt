@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +41,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -66,7 +68,8 @@ import kotlinx.coroutines.delay
 fun LyricsScreen(
     playbackViewModel: PlaybackViewModel = koinViewModel(),
     playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel()
+    settingsViewModel: SettingsViewModel = koinViewModel(),
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
     val currentPosition by playbackViewModel.currentPosition.collectAsState()
@@ -233,7 +236,8 @@ private fun LyricsSettingsPanel(
     onCurrentTimeTextSizeChange: (Int) -> Unit,
     onLineSpacingChange: (Int) -> Unit,
     onDisplayModeChange: (DisplayMode) -> Unit,
-    onAlignmentChange: (LyricsAlignment) -> Unit
+    onAlignmentChange: (LyricsAlignment) -> Unit,
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val haptic = rememberHapticFeedback()
     Box(
@@ -313,6 +317,23 @@ private fun LyricsSettingsPanel(
             maxValue = 20,
             onValueChange = onLineSpacingChange
         )
+
+		// 更多设置入口
+		TextButton(
+			onClick = {
+				haptic.performLightClick()
+				onNavigateToSettings()
+			},
+			modifier = Modifier.weight(1f)
+		) {
+			Text(
+				"更多设置\n→",
+				style = MaterialTheme.typography.labelMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				textAlign = TextAlign.Center
+			)
+		}
+
 
         }
     }

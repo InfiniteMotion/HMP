@@ -80,13 +80,17 @@ import com.example.hearablemusicplayer.ui.common.viewmodel.ThemeViewModel
 import com.example.hearablemusicplayer.ui.library.viewmodel.LibraryViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaybackViewModel
 import com.example.hearablemusicplayer.ui.player.viewmodel.PlaylistQueueViewModel
+import com.example.hearablemusicplayer.ui.player.floating.FloatingLyricsService
 import com.example.hearablemusicplayer.ui.playlist.viewmodel.PlaylistViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.RecommendationViewModel
 import com.example.hearablemusicplayer.ui.settings.viewmodel.SettingsViewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
 import com.example.hearablemusicplayer.ui.common.navigation.Routes as NavRoutes
 
 @SuppressLint("ContextCastToActivity")
@@ -152,6 +156,16 @@ fun MainScreen(
     val hazeState = rememberHazeState()
     val messageToShowState = remember { mutableStateOf<DialogEvent.Message?>(null) }
     val activity = LocalContext.current as ComponentActivity
+
+    // 启动时按配置启动悬浮歌词
+    val lyricsSettingsUseCase: LyricsSettingsUseCase = koinInject()
+    LaunchedEffect(Unit) {
+        try {
+            if (lyricsSettingsUseCase.floatingLyricsEnabled.first() && android.provider.Settings.canDrawOverlays(activity)) {
+                activity.startService(Intent(activity, FloatingLyricsService::class.java))
+            }
+        } catch (_: Exception) {}
+    }
 
     LaunchedEffect(dialogEvent) {
         when (dialogEvent) {
