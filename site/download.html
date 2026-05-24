@@ -171,14 +171,24 @@
   <div class="preview-layout">
     <div class="preview-group">
     <div class="preview-video">
-      <div class="device-frame" style="height:340px;width:440px;background:var(--surface);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9rem;">截图待补充</div>
+      <div class="device-frame" style="border-radius:14px;">
+        <video autoplay muted loop playsinline preload="metadata" id="desktopVideo" style="height:340px;width:auto;">
+          <source src="assets/demo-desktop.mp4" type="video/mp4">
+        </video>
+      </div>
     </div>
     <div class="preview-detail">
       <div class="preview-nav" id="desktopNav">
-        <button class="preview-nav-item active" style="cursor:default;"><span>预览</span></button>
+        <button class="preview-nav-item active" data-src="assets/screenshots/screenshot-home-desktop.jpg"><span>首页</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-gallery-desktop.jpg"><span>音乐库</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-player-desktop.jpg"><span>播放器</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-list-desktop.jpg"><span>播放列表</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-user-desktop.jpg"><span>个人中心</span></button>
       </div>
-      <div class="preview-screen">
-        <div class="device-frame" style="height:340px;width:440px;background:var(--surface);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9rem;">截图待补充</div>
+      <div class="preview-screen" id="desktopScreen">
+        <div class="device-frame" style="border-radius:14px;">
+          <img src="assets/screenshots/screenshot-home-desktop.jpg" alt="界面截图" id="desktopImg" style="height:340px;width:auto;">
+        </div>
       </div>
     </div>
     </div>
@@ -218,6 +228,25 @@ function switchTab(platform) {
 (function(){
   var nav = document.getElementById('androidNav');
   var img = document.getElementById('androidImg');
+  if (!nav || !img) return;
+  nav.addEventListener('click', function(e) {
+    var item = e.target.closest('.preview-nav-item');
+    if (!item || !item.dataset.src) return;
+    nav.querySelectorAll('.preview-nav-item').forEach(function(b){ b.classList.remove('active'); });
+    item.classList.add('active');
+    var newSrc = item.getAttribute('data-src');
+    if (img.src.indexOf(newSrc) !== -1) return;
+    img.classList.add('switching');
+    setTimeout(function(){
+      img.src = newSrc;
+      img.classList.remove('switching');
+    }, 150);
+  });
+})();
+// Preview nav switching (Desktop tab)
+(function(){
+  var nav = document.getElementById('desktopNav');
+  var img = document.getElementById('desktopImg');
   if (!nav || !img) return;
   nav.addEventListener('click', function(e) {
     var item = e.target.closest('.preview-nav-item');
