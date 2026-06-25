@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -160,7 +161,7 @@ fun PlayContent(
             if (isPhoneLandscape) {
                 // 手机横屏：左栏封面，右栏 tabs
                 var selectedTab by remember { mutableStateOf("controls") }
-                Row(modifier = Modifier.fillMaxSize()) {
+                Row(modifier = Modifier.fillMaxSize().displayCutoutPadding()) {
                     Box(Modifier.weight(0.35f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                         AlbumCover(musicInfo?.music?.albumArtUri, minOf(containerWidth * 0.5f, 240.dp), 16.dp, 8.dp)
                     }
