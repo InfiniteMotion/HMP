@@ -35,6 +35,16 @@ android {
         versionName = project.findProperty("hmp.versionName")?.toString() ?: "5.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 内置 AI API Key（免费体验 / 付费模式共用）
+        // 本地开发: 在 gradle.properties 中填写（不提交 Git）
+        // CI 构建: GitHub Actions secrets 自动注入
+        val builtInEndpoint = providers.gradleProperty("BUILT_IN_AI_ENDPOINT").getOrElse("https://api.deepseek.com/v1")
+        val builtInKey = providers.gradleProperty("BUILT_IN_AI_API_KEY").getOrElse("")
+        val builtInModel = providers.gradleProperty("BUILT_IN_AI_MODEL").getOrElse("deepseek-chat")
+        buildConfigField("String", "BUILT_IN_AI_ENDPOINT", "\"$builtInEndpoint\"")
+        buildConfigField("String", "BUILT_IN_AI_API_KEY", "\"$builtInKey\"")
+        buildConfigField("String", "BUILT_IN_AI_MODEL", "\"$builtInModel\"")
     }
 
     buildTypes {
@@ -65,6 +75,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

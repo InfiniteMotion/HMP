@@ -27,7 +27,7 @@ import com.hmp.data.mapper.toDomain
 import com.hmp.data.mapper.toEntity
 import com.hmp.data.util.stringToPinyinSortKey
 import com.hmp.data.network.AiApiResult
-import com.hmp.data.network.MultiProviderApiAdapter
+import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.dto.MusicInfoResponse
 import com.hmp.domain.setting.model.ArtistCountEntry
 import com.hmp.domain.setting.model.LabelCountEntry
@@ -40,7 +40,7 @@ import com.hmp.domain.backup.MusicExtraUserSnapshot
 import com.hmp.domain.backup.MusicLabelSnapshot
 import com.hmp.domain.backup.MusicUserStateSnapshot
 import com.hmp.domain.backup.UserInfoSnapshot
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicRepository
@@ -70,7 +70,7 @@ class MusicRepositoryImpl(
     private val listeningDurationDao: ListeningDurationDao,
     private val playlistDao: PlaylistDao,
     private val playlistItemDao: PlaylistItemDao,
-    private val multiProviderApiAdapter: MultiProviderApiAdapter,
+    private val openAiCompatibleAdapter: OpenAiCompatibleAdapter,
     private val json: Json,
     private val context: Context
 ) : MusicRepository {
@@ -262,13 +262,13 @@ class MusicRepositoryImpl(
     }
 
     override suspend fun fetchMusicExtraInfoWithProvider(
-        providerConfig: AiProviderConfig,
+        config: AiEndpointConfig,
         title: String,
         artist: String
     ): kotlin.Result<DailyMusicInfo> {
         val prompt = buildMusicInfoPrompt(title, artist)
 
-        return when (val result = multiProviderApiAdapter.callChatApi(providerConfig, prompt)) {
+        return when (val result = openAiCompatibleAdapter.callChatApi(config, prompt)) {
             is AiApiResult.Success -> {
                 try {
                     val response = json.decodeFromString<MusicInfoResponse>(result.data)
@@ -297,9 +297,16 @@ class MusicRepositoryImpl(
         }
     }
 
-    override suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): kotlin.Result<Boolean> {
-        return when (val result = multiProviderApiAdapter.testConnection(providerConfig)) {
+    override suspend fun validateProviderApiKey(config: AiEndpointConfig): kotlin.Result<Boolean> {
+        return when (val result = openAiCompatibleAdapter.testConnection(config)) {
             is AiApiResult.Success -> kotlin.Result.success(true)
+            is AiApiResult.Error -> kotlin.Result.failure(Exception(result.error.toDisplayMessage()))
+        }
+    }
+
+    override suspend fun fetchAvailableModels(config: AiEndpointConfig): kotlin.Result<List<String>> {
+        return when (val result = openAiCompatibleAdapter.fetchModels(config)) {
+            is AiApiResult.Success -> kotlin.Result.success(result.data)
             is AiApiResult.Error -> kotlin.Result.failure(Exception(result.error.toDisplayMessage()))
         }
     }
