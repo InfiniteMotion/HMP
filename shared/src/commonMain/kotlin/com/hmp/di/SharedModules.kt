@@ -1,6 +1,6 @@
 package com.hmp.data.di
 
-import com.hmp.data.network.MultiProviderApiAdapter
+import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.createHttpClient
 import com.hmp.data.network.createJson
 import com.hmp.domain.music.usecase.GetAllMusicUseCase
@@ -36,7 +36,7 @@ val sharedModule = module {
 
     single { createHttpClient(get()) }
 
-    singleOf(::MultiProviderApiAdapter)
+    singleOf(::OpenAiCompatibleAdapter)
 
     // Use Cases
     single { GetAllMusicUseCase(get()) }

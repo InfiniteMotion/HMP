@@ -3,8 +3,8 @@ package com.hmp.domain.setting
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
-import com.hmp.domain.enum.AiProviderType
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.ScanDirectoryConfig
 import kotlinx.coroutines.flow.Flow
 
@@ -71,23 +71,22 @@ interface SettingsRepository {
 
     suspend fun getCurrentPlaylistId(): Long?
 
-    // AI Provider Config
-    val currentAiProvider: Flow<AiProviderType>
-    suspend fun getCurrentProvider(): AiProviderType
-    suspend fun setCurrentProvider(provider: AiProviderType)
+    // AI Access Mode
+    val aiAccessMode: Flow<AiAccessMode>
+    suspend fun getAiAccessMode(): AiAccessMode
+    suspend fun saveAiAccessMode(mode: AiAccessMode)
 
-    suspend fun getProviderApiKey(provider: AiProviderType): String
-    suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String)
+    // Custom AI Config (user-provided endpoint + key + model)
+    suspend fun getCustomAiConfig(): AiEndpointConfig
+    suspend fun saveCustomAiConfig(config: AiEndpointConfig)
 
-    suspend fun getProviderModel(provider: AiProviderType): String
-    suspend fun setProviderModel(provider: AiProviderType, model: String)
+    // Active AI Config (returns config based on current mode)
+    suspend fun getActiveAiConfig(): AiEndpointConfig
 
-    suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig
-    suspend fun getCurrentProviderConfig(): AiProviderConfig
-    suspend fun saveProviderConfig(config: AiProviderConfig)
-
-    suspend fun isProviderConfigured(provider: AiProviderType): Boolean
-    suspend fun getConfiguredProviders(): List<AiProviderType>
+    // Free Trial Quota
+    val aiFreeTrialRemainingCount: Flow<Int>
+    suspend fun getAiFreeTrialRemainingCount(): Int
+    suspend fun decrementAiFreeTrialCount()
 
     // Audio Effects
     val equalizerPreset: Flow<Int>

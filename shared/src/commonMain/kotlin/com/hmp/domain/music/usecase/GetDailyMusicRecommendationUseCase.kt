@@ -1,6 +1,6 @@
 package com.hmp.domain.music.usecase
 
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiAccessMode
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.music.MusicInfo
@@ -106,8 +106,17 @@ class GetDailyMusicRecommendationUseCase(
         musicLabelUseCase.addMusicLabels(musicId, labels)
     }
 
-    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Boolean {
-        return musicRepository.validateProviderApiKey(providerConfig).getOrDefault(false)
+    suspend fun validateProviderApiKey(): Boolean {
+        val config = settingsRepository.getActiveAiConfig()
+        return musicRepository.validateProviderApiKey(config).getOrDefault(false)
+    }
+
+    suspend fun validateProviderApiKey(config: com.hmp.domain.setting.model.AiEndpointConfig): Boolean {
+        return musicRepository.validateProviderApiKey(config).getOrDefault(false)
+    }
+
+    suspend fun fetchModels(config: com.hmp.domain.setting.model.AiEndpointConfig): kotlin.Result<List<String>> {
+        return musicRepository.fetchAvailableModels(config)
     }
 
     suspend fun autoProcessMissingExtraInfoWithCurrentProvider(
@@ -117,9 +126,9 @@ class GetDailyMusicRecommendationUseCase(
     ) {
         resetProcessingState()
 
-        val providerConfig = settingsRepository.getCurrentProviderConfig()
+        val activeConfig = settingsRepository.getActiveAiConfig()
 
-        if (!providerConfig.isConfigured) {
+        if (!activeConfig.isConfigured) {
             println("[WRN] No AI provider configured, skipping auto process")
             onComplete(ProcessingResult())
             return
@@ -173,14 +182,23 @@ class GetDailyMusicRecommendationUseCase(
     }
 
     private suspend fun getMusicExtraInfoWithCurrentProviderAndResult(input: MusicInfo): ExtraInfoResult {
-        val providerConfig = settingsRepository.getCurrentProviderConfig()
+        val activeConfig = settingsRepository.getActiveAiConfig()
 
-        if (!providerConfig.isConfigured) {
+        if (!activeConfig.isConfigured) {
             return ExtraInfoResult.Skipped
         }
 
+        // 检查免费额度
+        val mode = settingsRepository.getAiAccessMode()
+        if (mode == AiAccessMode.FREE) {
+            val remaining = settingsRepository.getAiFreeTrialRemainingCount()
+            if (remaining <= 0) {
+                return ExtraInfoResult.Error("免费体验次数已用完，请配置 API Key 继续使用")
+            }
+        }
+
         val result = musicRepository.fetchMusicExtraInfoWithProvider(
-            providerConfig,
+            activeConfig,
             input.music.title,
             input.music.artist
         )
@@ -189,7 +207,11 @@ class GetDailyMusicRecommendationUseCase(
             onSuccess = { intro ->
                 musicRepository.insertMusicExtra(input.music.id, intro)
                 saveMusicLabels(input.music.id, intro)
-                println("[DBG] Successfully processed music via ${providerConfig.type.displayName}")
+                // 免费模式下递减计数
+                if (mode == AiAccessMode.FREE) {
+                    settingsRepository.decrementAiFreeTrialCount()
+                }
+                println("[DBG] Successfully processed music via ${activeConfig.endpoint}")
                 ExtraInfoResult.Success(intro)
             },
             onFailure = { exception ->

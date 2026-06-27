@@ -1,11 +1,9 @@
 package com.hmp.domain.backup
 
-import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
 import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.PlaylistItem
-import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.model.PlaybackHistory
 import kotlinx.serialization.Contextual
@@ -38,9 +36,9 @@ data class AppSettingsSnapshot(
     val dailyRefreshMode: String = "off",
     val dailyRefreshHours: Int = 8,
     val dailyRefreshStartupCount: Int = 5,
-    val currentAiProvider: AiProviderType,
-    @Contextual
-    val aiProviderConfigs: Map<AiProviderType, AiProviderConfig> = emptyMap()
+    val aiAccessMode: String = "FREE",
+    val customAiEndpoint: String = "",
+    val customAiModel: String = ""
 )
 
 @Serializable

@@ -1,7 +1,6 @@
 package com.hmp.data.repository
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -9,23 +8,22 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.hmp.data.network.BuiltInApiKeyProvider
 import com.hmp.data.util.SecureStorageHelper
+import com.hmp.domain.backup.AppSettingsSnapshot
+import com.hmp.domain.backup.DailyRecommendationSnapshot
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
-import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.lyrics.LyricsComponentConfig
 import com.hmp.domain.setting.SettingsRepository
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.ScanDirectoryConfig
-import com.hmp.domain.backup.AppSettingsSnapshot
-import com.hmp.domain.backup.DailyRecommendationSnapshot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import com.hmp.domain.lyrics.LyricsComponent
-import com.hmp.domain.lyrics.LyricsComponentConfig
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
@@ -33,7 +31,8 @@ import java.io.IOException
 private val Context.dataStore by preferencesDataStore(name = "player_preferences")
 
 class SettingsRepositoryImpl(
-    private val context: Context
+    private val context: Context,
+    private val builtInApiKeyProvider: BuiltInApiKeyProvider = BuiltInApiKeyProvider()
 ) : SettingsRepository {
     private companion object {
         const val HAZE_MODE_CUSTOM = "custom"
@@ -56,7 +55,11 @@ class SettingsRepositoryImpl(
         val RECENT_PLAYLIST_ID = longPreferencesKey("recent_playlist_id")
         val USER_NAME = stringPreferencesKey("user_name")
         val AVATAR_URI = stringPreferencesKey("avatar_uri")
-        val DEEPSEEK_API_KEY = stringPreferencesKey("deepSeek_api_key")
+        val AI_ACCESS_MODE = stringPreferencesKey("ai_access_mode")
+        val CUSTOM_AI_ENDPOINT = stringPreferencesKey("custom_ai_endpoint")
+        val CUSTOM_AI_API_KEY = stringPreferencesKey("custom_ai_api_key")
+        val CUSTOM_AI_MODEL = stringPreferencesKey("custom_ai_model")
+        val AI_FREE_TRIAL_REMAINING = intPreferencesKey("ai_free_trial_remaining")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val BACKGROUND_STYLE = stringPreferencesKey("background_style")
         val HAZE_MODE = stringPreferencesKey("haze_mode")
@@ -65,16 +68,7 @@ class SettingsRepositoryImpl(
         val HAZE_NOISE_FACTOR = floatPreferencesKey("haze_noise_factor")
         val HAZE_TINT_ALPHA = floatPreferencesKey("haze_tint_alpha")
         val HAZE_INTENSITY = floatPreferencesKey("haze_intensity")
-        val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider")
-        val DEEPSEEK_MODEL = stringPreferencesKey("deepseek_model")
-        val OPENAI_API_KEY = stringPreferencesKey("openai_api_key")
-        val OPENAI_MODEL = stringPreferencesKey("openai_model")
-        val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
-        val CLAUDE_MODEL = stringPreferencesKey("claude_model")
-        val QWEN_API_KEY = stringPreferencesKey("qwen_api_key")
-        val QWEN_MODEL = stringPreferencesKey("qwen_model")
-        val ERNIE_API_KEY = stringPreferencesKey("ernie_api_key")
-        val ERNIE_MODEL = stringPreferencesKey("ernie_model")
+        val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider") // kept for migration
         val EQUALIZER_PRESET = intPreferencesKey("equalizer_preset")
         val BASS_BOOST_LEVEL = intPreferencesKey("bass_boost_level")
         val IS_SURROUND_SOUND_ENABLED = booleanPreferencesKey("is_surround_sound_enabled")
@@ -132,7 +126,10 @@ class SettingsRepositoryImpl(
     override val currentPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] }
     override val likedPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.LIKED_PLAYLIST_ID] }
     override val recentPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.RECENT_PLAYLIST_ID] }
-    override val currentAiProvider: Flow<AiProviderType> = dataStore.data.map { prefs -> AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK") }
+    override val aiAccessMode: Flow<AiAccessMode> = dataStore.data.map { prefs ->
+        try { AiAccessMode.valueOf(prefs[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE") } catch (e: Exception) { AiAccessMode.FREE }
+    }
+    override val aiFreeTrialRemainingCount: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100 }
     override val equalizerPreset: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] ?: 0 }
     override val bassBoostLevel: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] ?: 0 }
     override val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] ?: false }
@@ -277,63 +274,55 @@ class SettingsRepositoryImpl(
             launchCountSinceRefresh = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
         )
     }
-    override suspend fun getCurrentProvider(): AiProviderType = AiProviderType.fromName(context.dataStore.data.first()[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
-    override suspend fun setCurrentProvider(provider: AiProviderType) {
-        dataStore.edit { prefs -> prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = provider.name }
+    override suspend fun getAiAccessMode(): AiAccessMode {
+        return try {
+            AiAccessMode.valueOf(context.dataStore.data.first()[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE")
+        } catch (e: Exception) { AiAccessMode.FREE }
     }
-    override suspend fun getProviderApiKey(provider: AiProviderType): String {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
+
+    override suspend fun saveAiAccessMode(mode: AiAccessMode) {
+        dataStore.edit { prefs -> prefs[PreferencesKeys.AI_ACCESS_MODE] = mode.name }
+    }
+
+    override suspend fun getCustomAiConfig(): AiEndpointConfig {
+        val prefs = context.dataStore.data.first()
+        val endpoint = prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] ?: ""
+        val encryptedKey = prefs[PreferencesKeys.CUSTOM_AI_API_KEY]
+        val apiKey = encryptedKey?.let { SecureStorageHelper.decrypt(it) } ?: ""
+        val model = prefs[PreferencesKeys.CUSTOM_AI_MODEL] ?: ""
+        return AiEndpointConfig(
+            endpoint = endpoint,
+            apiKey = apiKey,
+            selectedModel = model,
+            isConfigured = endpoint.isNotBlank() && apiKey.isNotBlank()
+        )
+    }
+
+    override suspend fun saveCustomAiConfig(config: AiEndpointConfig) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] = config.endpoint
+            prefs[PreferencesKeys.CUSTOM_AI_API_KEY] = SecureStorageHelper.encrypt(config.apiKey)
+            prefs[PreferencesKeys.CUSTOM_AI_MODEL] = config.selectedModel
         }
-        val encryptedKey = context.dataStore.data.first()[key]
-        return encryptedKey?.let { SecureStorageHelper.decrypt(it) } ?: ""
     }
-    override suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String) {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
+
+    override suspend fun getActiveAiConfig(): AiEndpointConfig {
+        return when (getAiAccessMode()) {
+            AiAccessMode.FREE, AiAccessMode.PAID -> builtInApiKeyProvider.getConfig()
+            AiAccessMode.CUSTOM -> getCustomAiConfig()
         }
-        dataStore.edit { prefs -> prefs[key] = SecureStorageHelper.encrypt(apiKey) }
     }
-    override suspend fun getProviderModel(provider: AiProviderType): String {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
+
+    override suspend fun getAiFreeTrialRemainingCount(): Int {
+        return context.dataStore.data.first()[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100
+    }
+
+    override suspend fun decrementAiFreeTrialCount() {
+        dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100
+            prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] = (current - 1).coerceAtLeast(0)
         }
-        return context.dataStore.data.first()[key] ?: provider.defaultModel
     }
-    override suspend fun setProviderModel(provider: AiProviderType, model: String) {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
-        }
-        dataStore.edit { prefs -> prefs[key] = model }
-    }
-    override suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
-        val apiKey = getProviderApiKey(provider)
-        val model = getProviderModel(provider)
-        return AiProviderConfig(type = provider, apiKey = apiKey, model = model, isConfigured = apiKey.isNotBlank())
-    }
-    override suspend fun getCurrentProviderConfig(): AiProviderConfig = getProviderConfig(getCurrentProvider())
-    override suspend fun saveProviderConfig(config: AiProviderConfig) {
-        setProviderApiKey(config.type, config.apiKey)
-        if (config.model.isNotBlank()) setProviderModel(config.type, config.model)
-    }
-    override suspend fun isProviderConfigured(provider: AiProviderType): Boolean = getProviderApiKey(provider).isNotBlank()
-    override suspend fun getConfiguredProviders(): List<AiProviderType> = AiProviderType.entries.filter { isProviderConfigured(it) }
     override suspend fun saveEqualizerPreset(preset: Int) {
         dataStore.edit { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] = preset }
     }
@@ -493,8 +482,9 @@ class SettingsRepositoryImpl(
 
     override suspend fun exportAppSettingsSnapshot(): AppSettingsSnapshot {
         val prefs = dataStore.data.first()
-        val currentAiProvider = AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
-        val aiProviderConfigs = AiProviderType.entries.associateWith { getProviderConfig(it) }
+        val aiAccessMode = try {
+            AiAccessMode.valueOf(prefs[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE")
+        } catch (e: Exception) { AiAccessMode.FREE }
         return AppSettingsSnapshot(
             userName = prefs[PreferencesKeys.USER_NAME],
             avatarUri = prefs[PreferencesKeys.AVATAR_URI],
@@ -510,8 +500,9 @@ class SettingsRepositoryImpl(
             dailyRefreshMode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
             dailyRefreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
             dailyRefreshStartupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
-            currentAiProvider = currentAiProvider,
-            aiProviderConfigs = aiProviderConfigs
+            aiAccessMode = aiAccessMode.name,
+            customAiEndpoint = prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] ?: "",
+            customAiModel = prefs[PreferencesKeys.CUSTOM_AI_MODEL] ?: ""
         )
     }
 
@@ -531,9 +522,10 @@ class SettingsRepositoryImpl(
             prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
             prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours
             prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.dailyRefreshStartupCount
-            prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = snapshot.currentAiProvider.name
+            prefs[PreferencesKeys.AI_ACCESS_MODE] = snapshot.aiAccessMode
+            prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] = snapshot.customAiEndpoint
+            prefs[PreferencesKeys.CUSTOM_AI_MODEL] = snapshot.customAiModel
         }
-        snapshot.aiProviderConfigs.forEach { (type, config) -> saveProviderConfig(config) }
     }
 
     override suspend fun exportDailyRecommendationSnapshot(): DailyRecommendationSnapshot? {

@@ -15,7 +15,7 @@ import com.hmp.data.database.PlaylistItemDao
 import com.hmp.data.database.UserInfoDao
 import com.hmp.data.database.getDatabaseBuilder
 import com.hmp.data.database.getRoomDatabase
-import com.hmp.data.network.MultiProviderApiAdapter
+import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.createHttpClient
 import com.hmp.data.repository.BackupFileRepositoryImpl
 import com.hmp.data.repository.MusicRepositoryImpl

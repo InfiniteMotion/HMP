@@ -2,9 +2,9 @@ package com.hmp.domain.setting.usecase
 
 import com.hmp.data.database.currentTimeMillis
 import com.hmp.domain.config.DailyRefreshConfig
-import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.setting.SettingsRepository
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import kotlinx.coroutines.flow.Flow
 
 class UserSettingsUseCase(
@@ -75,42 +75,37 @@ class UserSettingsUseCase(
         settingsRepository.saveIsLoadMusic(status)
     }
 
-    val currentAiProvider: Flow<AiProviderType> = settingsRepository.currentAiProvider
+    // AI Access Mode
+    val aiAccessMode: Flow<AiAccessMode> = settingsRepository.aiAccessMode
 
-    suspend fun getCurrentProvider(): AiProviderType {
-        return settingsRepository.getCurrentProvider()
+    suspend fun getAiAccessMode(): AiAccessMode {
+        return settingsRepository.getAiAccessMode()
     }
 
-    suspend fun setCurrentProvider(provider: AiProviderType) {
-        settingsRepository.setCurrentProvider(provider)
+    suspend fun saveAiAccessMode(mode: AiAccessMode) {
+        settingsRepository.saveAiAccessMode(mode)
     }
 
-    suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
-        return settingsRepository.getProviderConfig(provider)
+    suspend fun getCustomAiConfig(): AiEndpointConfig {
+        return settingsRepository.getCustomAiConfig()
     }
 
-    suspend fun getCurrentProviderConfig(): AiProviderConfig {
-        return settingsRepository.getCurrentProviderConfig()
+    suspend fun saveCustomAiConfig(config: AiEndpointConfig) {
+        settingsRepository.saveCustomAiConfig(config)
     }
 
-    suspend fun saveProviderConfig(config: AiProviderConfig) {
-        settingsRepository.saveProviderConfig(config)
+    suspend fun getActiveAiConfig(): AiEndpointConfig {
+        return settingsRepository.getActiveAiConfig()
     }
 
-    suspend fun saveProviderApiKey(provider: AiProviderType, apiKey: String) {
-        settingsRepository.setProviderApiKey(provider, apiKey)
+    val aiFreeTrialRemainingCount: Flow<Int> = settingsRepository.aiFreeTrialRemainingCount
+
+    suspend fun getAiFreeTrialRemainingCount(): Int {
+        return settingsRepository.getAiFreeTrialRemainingCount()
     }
 
-    suspend fun saveProviderModel(provider: AiProviderType, model: String) {
-        settingsRepository.setProviderModel(provider, model)
-    }
-
-    suspend fun isProviderConfigured(provider: AiProviderType): Boolean {
-        return settingsRepository.isProviderConfigured(provider)
-    }
-
-    suspend fun getConfiguredProviders(): List<AiProviderType> {
-        return settingsRepository.getConfiguredProviders()
+    suspend fun decrementAiFreeTrialCount() {
+        settingsRepository.decrementAiFreeTrialCount()
     }
 
     val autoBatchProcess: Flow<Boolean> = settingsRepository.autoBatchProcess

@@ -53,6 +53,18 @@
     <string name="please_config_provider">Please configure AI provider first</string>
     <string name="no_pending_music">No pending music</string>
     <string name="start_batch_completion">Start Batch Completion</string>
+    <string name="ai_tab_free">Free Trial</string>
+    <string name="ai_tab_custom">Custom</string>
+    <string name="ai_tab_paid">Paid</string>
+    <string name="ai_free_remaining">Remaining: %1$d times</string>
+    <string name="ai_free_used">Used: %1$d / %2$d</string>
+    <string name="ai_free_exhausted">Free trial exhausted. Please configure your own API Key to continue.</string>
+    <string name="ai_free_hint">Each song processed counts as one use. No API Key configuration needed.</string>
+    <string name="ai_endpoint">API Endpoint</string>
+    <string name="ai_preset_quick_fill">Quick Fill Preset</string>
+    <string name="ai_fetch_models">Fetch Available Models</string>
+    <string name="ai_paid_coming_soon">Coming Soon</string>
+    <string name="ai_paid_description">Paid mode with higher quotas and more features is under development.</string>
 
     <!-- Search Screen -->
     <string name="search">Search</string>

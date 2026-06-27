@@ -53,6 +53,18 @@
     <string name="please_config_provider">请先配置 AI 服务商</string>
     <string name="no_pending_music">没有待处理的音乐</string>
     <string name="start_batch_completion">开始批量补全</string>
+    <string name="ai_tab_free">免费体验</string>
+    <string name="ai_tab_custom">自定义配置</string>
+    <string name="ai_tab_paid">付费模式</string>
+    <string name="ai_free_remaining">剩余 %1$d 次</string>
+    <string name="ai_free_used">已使用: %1$d / %2$d</string>
+    <string name="ai_free_exhausted">免费体验次数已用完，请配置自己的 API Key 继续使用</string>
+    <string name="ai_free_hint">每处理一首歌算一次使用，无需配置 API Key</string>
+    <string name="ai_endpoint">API 端点</string>
+    <string name="ai_preset_quick_fill">快捷填入预设</string>
+    <string name="ai_fetch_models">获取可用模型</string>
+    <string name="ai_paid_coming_soon">即将推出</string>
+    <string name="ai_paid_description">付费模式提供更高配额和更多功能，正在开发中</string>
 
     <!-- Search Screen -->
     <string name="search">搜索</string>

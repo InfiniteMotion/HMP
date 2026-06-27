@@ -1,4 +1,5 @@
 package com.hmp.desktop.ui.settings.pages
+
 import com.hmp.desktop.ui.common.navigation.NavController
 
 import androidx.compose.foundation.background
@@ -30,6 +31,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
@@ -52,12 +55,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-
-import com.hmp.domain.setting.model.AiProviderConfig
-import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.enum.AiPresetEndpoints
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
@@ -78,40 +82,40 @@ fun AIScreen(
     dialogManager: DialogManager,
     navController: NavController
 ) {
-    // 加载当前服务商配置
+    // 加载自定义 AI 配置
     LaunchedEffect(Unit) {
-        settingsViewModel.loadCurrentProviderConfig()
+        settingsViewModel.loadCustomAiConfig()
     }
 
     val musicWithExtraCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
     val pendingCount by recommendationViewModel.pendingMusicCount.collectAsState(initial = 0)
-    val currentProvider by settingsViewModel.currentAiProvider.collectAsState()
-    val currentConfig by settingsViewModel.currentProviderConfig.collectAsState()
+    val aiAccessMode by settingsViewModel.aiAccessMode.collectAsState()
+    val customConfig by settingsViewModel.customAiConfig.collectAsState()
     val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
     val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
     val progress by recommendationViewModel.processingProgress.collectAsState()
     val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
-    
+
     // Daily Refresh Settings State
     val refreshMode by settingsViewModel.dailyRefreshMode.collectAsState()
     val refreshHours by settingsViewModel.dailyRefreshHours.collectAsState()
     val startupCount by settingsViewModel.dailyRefreshStartupCount.collectAsState()
 
     AIScreenContent(
-        musicWithExtraCount = musicWithExtraCount,
-        pendingCount = pendingCount,
-        currentProvider = currentProvider,
-        currentConfig = currentConfig,
+        aiAccessMode = aiAccessMode,
+        customConfig = customConfig,
         isTestingApi = isTestingApi,
         apiTestResult = apiTestResult,
+        musicWithExtraCount = musicWithExtraCount,
+        pendingCount = pendingCount,
         progress = progress,
         autoBatchProcess = autoBatchProcess,
         refreshMode = refreshMode,
         refreshHours = refreshHours,
         startupCount = startupCount,
-        onProviderChange = settingsViewModel::switchAiProvider,
-        onTestConnection = settingsViewModel::testAiProviderConnection,
-        onSaveConfig = settingsViewModel::saveAiProviderConfig,
+        onModeChange = settingsViewModel::switchAiAccessMode,
+        onSaveCustomConfig = settingsViewModel::saveCustomAiConfig,
+        onTestConnection = settingsViewModel::testAiConnection,
         onClearTestResult = settingsViewModel::clearApiTestResult,
         onAutoBatchProcessChange = settingsViewModel::saveAutoBatchProcess,
         startAutoProcessExtraInfo = recommendationViewModel::startAutoProcessWithCurrentProvider,
@@ -128,20 +132,20 @@ fun AIScreen(
 
 @Composable
 fun AIScreenContent(
-    musicWithExtraCount: Int,
-    pendingCount: Int,
-    currentProvider: AiProviderType,
-    currentConfig: AiProviderConfig?,
+    aiAccessMode: AiAccessMode,
+    customConfig: AiEndpointConfig,
     isTestingApi: Boolean,
     apiTestResult: SettingsViewModel.ApiTestResult?,
+    musicWithExtraCount: Int,
+    pendingCount: Int,
     progress: RecommendationViewModel.BatchProcessingProgress,
     autoBatchProcess: Boolean,
     refreshMode: String,
     refreshHours: Int,
     startupCount: Int,
-    onProviderChange: (AiProviderType) -> Unit,
-    onTestConnection: (AiProviderType, String, String) -> Unit,
-    onSaveConfig: (AiProviderType, String, String) -> Unit,
+    onModeChange: (AiAccessMode) -> Unit,
+    onSaveCustomConfig: (String, String, String) -> Unit,
+    onTestConnection: (String, String) -> Unit,
     onClearTestResult: () -> Unit,
     onAutoBatchProcessChange: (Boolean) -> Unit,
     startAutoProcessExtraInfo: () -> Unit,
@@ -154,6 +158,18 @@ fun AIScreenContent(
     dialogManager: DialogManager,
     onBackClick: () -> Unit
 ) {
+    // 显示测试结果 Toast
+    LaunchedEffect(apiTestResult) {
+        apiTestResult?.let { result ->
+            val message = when (result) {
+                is SettingsViewModel.ApiTestResult.Success -> result.message
+                is SettingsViewModel.ApiTestResult.Error -> result.message
+            }
+            dialogManager.showMessage(message)
+            onClearTestResult()
+        }
+    }
+
     SubScreen(
         onBackClick = onBackClick,
         title = stringResource(Res.string.title_ai)
@@ -163,39 +179,67 @@ fun AIScreenContent(
         val windowWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
         val sizeClass = widthSizeClass(windowWidthDp)
 
+        val tabs = listOf(AiAccessMode.FREE, AiAccessMode.CUSTOM, AiAccessMode.PAID)
+        val selectedTabIndex = tabs.indexOf(aiAccessMode).coerceAtLeast(0)
+
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState())
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Tab 切换
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Tab(
+                    selected = selectedTabIndex == 0,
+                    onClick = { onModeChange(AiAccessMode.FREE) },
+                    text = { Text(stringResource(Res.string.ai_tab_free)) }
+                )
+                Tab(
+                    selected = selectedTabIndex == 1,
+                    onClick = { onModeChange(AiAccessMode.CUSTOM) },
+                    text = { Text(stringResource(Res.string.ai_tab_custom)) }
+                )
+                Tab(
+                    selected = selectedTabIndex == 2,
+                    onClick = { onModeChange(AiAccessMode.PAID) },
+                    text = { Text(stringResource(Res.string.ai_tab_paid)) }
+                )
+            }
+
+            // Tab 内容
+            when (aiAccessMode) {
+                AiAccessMode.FREE -> FreeTrialContent(
+                    pendingCount = pendingCount
+                )
+                AiAccessMode.CUSTOM -> CustomConfigContent(
+                    customConfig = customConfig,
+                    isTestingApi = isTestingApi,
+                    onSaveConfig = onSaveCustomConfig,
+                    onTestConnection = onTestConnection,
+                    dialogManager = dialogManager
+                )
+                AiAccessMode.PAID -> PaidModeContent()
+            }
+
+            // 批量补全 + 每日刷新（所有 Tab 共享）
             if (sizeClass == WindowWidthSizeClass.Expanded) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        AiProviderConfig(
-                            currentProvider = currentProvider,
-                            currentConfig = currentConfig,
-                            isTestingApi = isTestingApi,
-                            apiTestResult = apiTestResult,
-                            onProviderChange = onProviderChange,
-                            onTestConnection = onTestConnection,
-                            onSaveConfig = onSaveConfig,
-                            onClearTestResult = onClearTestResult,
-                            dialogManager = dialogManager
-                        )
-                    }
-                    Column(
-                        Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                         LoadMusicExtraInfo(
                             pendingCount = pendingCount,
                             musicWithExtraCount = musicWithExtraCount,
                             progress = progress,
-                            isConfigured = currentConfig?.isConfigured == true,
+                            isConfigured = true,
                             autoBatchProcess = autoBatchProcess,
                             onAutoBatchProcessChange = onAutoBatchProcessChange,
                             startAutoProcessExtraInfo = startAutoProcessExtraInfo,
@@ -204,7 +248,8 @@ fun AIScreenContent(
                             cancelProcess = cancelProcess,
                             dialogManager = dialogManager
                         )
-
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                         DailyRefreshSettings(
                             refreshMode = refreshMode,
                             refreshHours = refreshHours,
@@ -217,23 +262,11 @@ fun AIScreenContent(
                     }
                 }
             } else {
-                AiProviderConfig(
-                    currentProvider = currentProvider,
-                    currentConfig = currentConfig,
-                    isTestingApi = isTestingApi,
-                    apiTestResult = apiTestResult,
-                    onProviderChange = onProviderChange,
-                    onTestConnection = onTestConnection,
-                    onSaveConfig = onSaveConfig,
-                    onClearTestResult = onClearTestResult,
-                    dialogManager = dialogManager
-                )
-
                 LoadMusicExtraInfo(
                     pendingCount = pendingCount,
                     musicWithExtraCount = musicWithExtraCount,
                     progress = progress,
-                    isConfigured = currentConfig?.isConfigured == true,
+                    isConfigured = true,
                     autoBatchProcess = autoBatchProcess,
                     onAutoBatchProcessChange = onAutoBatchProcessChange,
                     startAutoProcessExtraInfo = startAutoProcessExtraInfo,
@@ -259,9 +292,231 @@ fun AIScreenContent(
     }
 }
 
-/**
- * 每日推荐刷新策略设置
- */
+// ==================== 免费体验 Tab ====================
+
+@Composable
+private fun FreeTrialContent(
+    pendingCount: Int
+) {
+    TitleWidget(title = stringResource(Res.string.ai_tab_free)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.ai_free_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            if (pendingCount > 0) {
+                Text(
+                    text = stringResource(Res.string.pending_music_count, pendingCount),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+    }
+}
+
+// ==================== 自定义配置 Tab ====================
+
+@Composable
+private fun CustomConfigContent(
+    customConfig: AiEndpointConfig,
+    isTestingApi: Boolean,
+    onSaveConfig: (String, String, String) -> Unit,
+    onTestConnection: (String, String) -> Unit,
+    dialogManager: DialogManager
+) {
+    var endpointValue by rememberSaveable { mutableStateOf(customConfig.endpoint) }
+    var apiKeyValue by rememberSaveable { mutableStateOf("") }
+    var modelValue by rememberSaveable { mutableStateOf(customConfig.selectedModel) }
+    var showPassword by remember { mutableStateOf(false) }
+
+    // 当配置加载后更新输入框
+    LaunchedEffect(customConfig) {
+        if (customConfig.endpoint.isNotBlank()) {
+            endpointValue = customConfig.endpoint
+        }
+        if (customConfig.selectedModel.isNotBlank()) {
+            modelValue = customConfig.selectedModel
+        }
+    }
+
+    TitleWidget(title = stringResource(Res.string.ai_tab_custom)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 预设快捷按钮
+            Text(
+                text = stringResource(Res.string.ai_preset_quick_fill),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AiPresetEndpoints.ALL.forEach { preset ->
+                    Button(
+                        onClick = {
+                            endpointValue = preset.endpoint
+                            modelValue = preset.defaultModel
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text(preset.displayName, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Endpoint 输入
+            OutlinedTextField(
+                value = endpointValue,
+                onValueChange = { endpointValue = it },
+                label = { Text(stringResource(Res.string.ai_endpoint)) },
+                placeholder = { Text("https://api.example.com/v1") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            // API Key 输入
+            TextField(
+                value = apiKeyValue,
+                onValueChange = { apiKeyValue = it },
+                label = {
+                    Text(
+                        stringResource(Res.string.api_key),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
+                placeholder = {
+                    Text(
+                        stringResource(Res.string.enter_api_key_placeholder, ""),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    )
+                },
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Transparent,
+                    unfocusedIndicatorColor = Transparent,
+                    disabledIndicatorColor = Transparent
+                ),
+                shape = RoundedCornerShape(15.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // 模型名称输入
+            OutlinedTextField(
+                value = modelValue,
+                onValueChange = { modelValue = it },
+                label = { Text(stringResource(Res.string.model_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            // 测试 + 保存按钮
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Button(
+                    onClick = {
+                        if (endpointValue.isNotBlank() && apiKeyValue.isNotBlank()) {
+                            onTestConnection(endpointValue, apiKeyValue)
+                        } else {
+                            dialogManager.showMessage("请输入 API Key")
+                        }
+                    },
+                    enabled = endpointValue.isNotBlank() && apiKeyValue.isNotBlank() && !isTestingApi,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (isTestingApi) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(stringResource(Res.string.test), color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
+                Button(
+                    onClick = {
+                        if (endpointValue.isNotBlank() && apiKeyValue.isNotBlank()) {
+                            onSaveConfig(endpointValue, apiKeyValue, modelValue)
+                            dialogManager.showMessage("配置已保存")
+                        } else {
+                            dialogManager.showMessage("请输入 API Key")
+                        }
+                    },
+                    enabled = endpointValue.isNotBlank() && apiKeyValue.isNotBlank(),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(Res.string.save), color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+
+            // 配置状态
+            if (customConfig.isConfigured) {
+                Text(
+                    text = stringResource(Res.string.configured),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+// ==================== 付费模式 Tab ====================
+
+@Composable
+private fun PaidModeContent() {
+    TitleWidget(title = stringResource(Res.string.ai_tab_paid)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.ai_paid_coming_soon),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = stringResource(Res.string.ai_paid_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+// ==================== 每日推荐刷新策略 ====================
+
 @Composable
 fun DailyRefreshSettings(
     refreshMode: String,
@@ -288,7 +543,7 @@ fun DailyRefreshSettings(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            
+
             // 刷新模式选择
             var expanded by remember { mutableStateOf(false) }
             val refreshModes = listOf(
@@ -297,7 +552,7 @@ fun DailyRefreshSettings(
                 "smart" to stringResource(Res.string.refresh_smart)
             )
             val currentModeLabel = refreshModes.find { it.first == refreshMode }?.second ?: stringResource(Res.string.refresh_by_time)
-            
+
             Box {
                 TextField(
                     value = currentModeLabel,
@@ -340,15 +595,15 @@ fun DailyRefreshSettings(
                     }
                 }
             }
-            
+
             // 根据选择的模式显示不同的配置项
             when (refreshMode) {
                 "time" -> {
                     var hoursText by remember(refreshHours) { mutableStateOf(refreshHours.toString()) }
-                    
+
                     OutlinedTextField(
                         value = hoursText,
-                        onValueChange = { 
+                        onValueChange = {
                             hoursText = it
                             it.toIntOrNull()?.let { hours ->
                                 if (hours > 0) {
@@ -365,7 +620,7 @@ fun DailyRefreshSettings(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    
+
                     Text(
                         text = stringResource(Res.string.current_setting_time, refreshHours),
                         style = MaterialTheme.typography.bodySmall,
@@ -374,10 +629,10 @@ fun DailyRefreshSettings(
                 }
                 "startup" -> {
                     var countText by remember(startupCount) { mutableStateOf(startupCount.toString()) }
-                    
+
                     OutlinedTextField(
                         value = countText,
-                        onValueChange = { 
+                        onValueChange = {
                             countText = it
                             it.toIntOrNull()?.let { count ->
                                 if (count > 0) {
@@ -394,7 +649,7 @@ fun DailyRefreshSettings(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    
+
                     Text(
                         text = stringResource(Res.string.current_setting_startup, startupCount),
                         style = MaterialTheme.typography.bodySmall,
@@ -412,259 +667,8 @@ fun DailyRefreshSettings(
         }
     }
 }
-@Composable
-fun AiProviderConfig(
-    currentProvider: AiProviderType,
-    currentConfig: AiProviderConfig?,
-    isTestingApi: Boolean,
-    apiTestResult: SettingsViewModel.ApiTestResult?,
-    onProviderChange: (AiProviderType) -> Unit,
-    onTestConnection: (AiProviderType, String, String) -> Unit,
-    onSaveConfig: (AiProviderType, String, String) -> Unit,
-    onClearTestResult: () -> Unit,
-    dialogManager: DialogManager
-) {
-    var selectedProvider by remember { mutableStateOf(currentProvider) }
-    var apiKeyValue by rememberSaveable { mutableStateOf("") }
-    var modelValue by rememberSaveable { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf(false) }
-    
-    // 当服务商改变时更新选中状态
-    LaunchedEffect(currentProvider) {
-        selectedProvider = currentProvider
-    }
-    
-    // 当配置加载后更新输入框
-    LaunchedEffect(currentConfig) {
-        currentConfig?.let {
-            if (it.type == selectedProvider) {
-                // 不回显 API Key，但显示模型名称
-                modelValue = it.model
-            }
-        }
-    }
-    
-    // 显示测试结果 Toast
-    LaunchedEffect(apiTestResult) {
-        apiTestResult?.let { result ->
-            val message = when (result) {
-                is SettingsViewModel.ApiTestResult.Success -> result.message
-                is SettingsViewModel.ApiTestResult.Error -> result.message
-            }
-            dialogManager.showMessage(message)
-            onClearTestResult()
-        }
-    }
-    
-    TitleWidget(title = stringResource(Res.string.ai_provider_config)) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // 服务商选择下拉框
-            Text(
-                text = stringResource(Res.string.current_ai_provider),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Box {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { expanded = true }
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = selectedProvider.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Icon(
-                        painter = painterResource(Res.drawable.chevron_down),
-                        contentDescription = stringResource(Res.string.select_provider),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    AiProviderType.entries.forEach { provider ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(provider.displayName)
-                                    if (provider == selectedProvider) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            painter = painterResource(Res.drawable.ic_gallery_material_select_checkbox),
-                                            contentDescription = stringResource(Res.string.selected),
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                selectedProvider = provider
-                                onProviderChange(provider)
-                                expanded = false
-                                // 重置输入框
-                                apiKeyValue = ""
-                                modelValue = provider.defaultModel
-                            }
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // 配置状态显示
-            val isConfigured = currentConfig?.isConfigured == true && currentConfig.type == selectedProvider
-            Text(
-                text = if (isConfigured) stringResource(Res.string.configured) else stringResource(Res.string.not_configured),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isConfigured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // API Key 输入框
-            TextField(
-                value = apiKeyValue,
-                onValueChange = { apiKeyValue = it },
-                label = { 
-                    Text(
-                        stringResource(Res.string.api_key), 
-                        color = MaterialTheme.colorScheme.onBackground
-                    ) 
-                },
-                placeholder = {
-                    Text(
-                        stringResource(Res.string.enter_api_key_placeholder, selectedProvider.displayName),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                    )
-                },
-                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Next
-                ),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Transparent,
-                    unfocusedIndicatorColor = Transparent,
-                    disabledIndicatorColor = Transparent
-                ),
-                shape = RoundedCornerShape(15.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // 模型名称输入框
-            TextField(
-                value = modelValue,
-                onValueChange = { modelValue = it },
-                label = { 
-                    Text(
-                        stringResource(Res.string.model_name), 
-                        color = MaterialTheme.colorScheme.onBackground
-                    ) 
-                },
-                placeholder = {
-                    Text(
-                        stringResource(Res.string.default_model_placeholder, selectedProvider.defaultModel),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Done
-                ),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Transparent,
-                    unfocusedIndicatorColor = Transparent,
-                    disabledIndicatorColor = Transparent
-                ),
-                shape = RoundedCornerShape(15.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // 操作按钮
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                // 测试按钮
-                Button(
-                    modifier = Modifier.width(120.dp),
-                    onClick = {
-                        if (apiKeyValue.isNotBlank()) {
-                            onTestConnection(selectedProvider, apiKeyValue, modelValue)
-                        } else {
-                            dialogManager.showMessage("请输入 API Key")
-                        }
-                    },
-                    enabled = apiKeyValue.isNotBlank() && !isTestingApi
-                ) {
-                    if (isTestingApi) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(stringResource(Res.string.test), color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.width(32.dp))
-                
-                // 保存按钮
-                Button(
-                    modifier = Modifier.width(120.dp),
-                    onClick = {
-                        if (apiKeyValue.isNotBlank()) {
-                            onSaveConfig(selectedProvider, apiKeyValue, modelValue)
-                            dialogManager.showMessage("配置已保存")
-                        } else {
-                            dialogManager.showMessage("请输入 API Key")
-                        }
-                    },
-                    enabled = apiKeyValue.isNotBlank()
-                ) {
-                    Text(stringResource(Res.string.save), color = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 提示信息
-            Text(
-                text = stringResource(Res.string.provider_change_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
-        }
-    }
-}
 
+// ==================== 批量补全 ====================
 
 @Composable
 fun LoadMusicExtraInfo(
@@ -712,12 +716,12 @@ fun LoadMusicExtraInfo(
                     onCheckedChange = onAutoBatchProcessChange
                 )
             }
-            
+
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outlineVariant
             )
-            
+
             // 待处理数量提示
             if (!progress.isProcessing) {
                 Text(
@@ -733,7 +737,7 @@ fun LoadMusicExtraInfo(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
             }
-            
+
             // 进度显示
             if (progress.isProcessing) {
                 Column(
@@ -747,21 +751,21 @@ fun LoadMusicExtraInfo(
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     LinearProgressIndicator(
                         progress = { progress.progressPercent },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
+
                     Text(
                         text = "${progress.processedCount} / ${progress.totalCount}",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 4.dp),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
-                    
+
                     if (progress.isPaused) {
                         Text(
                             text = stringResource(Res.string.paused),
@@ -770,9 +774,9 @@ fun LoadMusicExtraInfo(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // 控制按钮
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -792,7 +796,7 @@ fun LoadMusicExtraInfo(
                                 Text(stringResource(Res.string.pause), color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
-                        
+
                         Button(
                             onClick = cancelProcess,
                             modifier = Modifier.width(100.dp),
@@ -806,7 +810,7 @@ fun LoadMusicExtraInfo(
                 }
             } else {
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 if (!isConfigured) {
                     Text(
                         text = stringResource(Res.string.please_config_provider),
@@ -815,7 +819,7 @@ fun LoadMusicExtraInfo(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
-                
+
                 Button(
                     modifier = Modifier.width(300.dp),
                     onClick = {

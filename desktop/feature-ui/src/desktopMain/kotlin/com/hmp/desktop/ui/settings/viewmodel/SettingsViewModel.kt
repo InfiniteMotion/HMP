@@ -9,9 +9,9 @@ import com.hmp.domain.backup.usecase.ImportUserDataBackupUseCase
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
 import com.hmp.domain.config.LyricsConfig
-import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.music.usecase.GetDailyMusicRecommendationUseCase
-import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
 import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import com.hmp.desktop.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
@@ -154,42 +154,35 @@ class SettingsViewModel(
     }
 
     // AI Config
-    val currentAiProvider = userSettingsUseCase.currentAiProvider
-        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), AiProviderType.DEEPSEEK)
+    val aiAccessMode = userSettingsUseCase.aiAccessMode
+        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), AiAccessMode.FREE)
 
-    private val _currentProviderConfig = MutableStateFlow<AiProviderConfig?>(null)
-    val currentProviderConfig: StateFlow<AiProviderConfig?> = _currentProviderConfig
+    private val _customAiConfig = MutableStateFlow(AiEndpointConfig())
+    val customAiConfig: StateFlow<AiEndpointConfig> = _customAiConfig
 
-    fun loadCurrentProviderConfig() {
+    fun loadCustomAiConfig() {
         viewModelScope.launch {
-            _currentProviderConfig.value = userSettingsUseCase.getCurrentProviderConfig()
+            _customAiConfig.value = userSettingsUseCase.getCustomAiConfig()
         }
     }
 
-    fun loadProviderConfig(provider: AiProviderType) {
+    fun switchAiAccessMode(mode: AiAccessMode) {
         viewModelScope.launch {
-            _currentProviderConfig.value = userSettingsUseCase.getProviderConfig(provider)
+            userSettingsUseCase.saveAiAccessMode(mode)
+            loadCustomAiConfig()
         }
     }
 
-    fun switchAiProvider(provider: AiProviderType) {
+    fun saveCustomAiConfig(endpoint: String, apiKey: String, model: String) {
         viewModelScope.launch {
-            userSettingsUseCase.setCurrentProvider(provider)
-            loadProviderConfig(provider)
-        }
-    }
-
-    fun saveAiProviderConfig(provider: AiProviderType, apiKey: String, model: String) {
-        viewModelScope.launch {
-            val config = AiProviderConfig(
-                type = provider,
+            val config = AiEndpointConfig(
+                endpoint = endpoint,
                 apiKey = apiKey,
-                model = model.ifBlank { provider.defaultModel },
-                isConfigured = apiKey.isNotBlank()
+                selectedModel = model,
+                isConfigured = endpoint.isNotBlank() && apiKey.isNotBlank()
             )
-            userSettingsUseCase.saveProviderConfig(config)
-            userSettingsUseCase.setCurrentProvider(provider)
-            _currentProviderConfig.value = config
+            userSettingsUseCase.saveCustomAiConfig(config)
+            _customAiConfig.value = config
         }
     }
 
@@ -299,22 +292,21 @@ class SettingsViewModel(
         }
     }
 
-    fun testAiProviderConnection(provider: AiProviderType, apiKey: String, model: String) {
+    fun testAiConnection(endpoint: String, apiKey: String) {
         viewModelScope.launch {
             _isTestingApi.value = true
             _apiTestResult.value = null
 
             try {
-                val config = AiProviderConfig(
-                    type = provider,
+                val config = AiEndpointConfig(
+                    endpoint = endpoint,
                     apiKey = apiKey,
-                    model = model.ifBlank { provider.defaultModel },
                     isConfigured = true
                 )
 
                 val isValid = getDailyRecommendationUseCase.validateProviderApiKey(config)
                 _apiTestResult.value = if (isValid) {
-                    ApiTestResult.Success("可以访问 ${provider.displayName}")
+                    ApiTestResult.Success("连接成功")
                 } else {
                     ApiTestResult.Error("API Key 无效")
                 }
@@ -417,7 +409,7 @@ class SettingsViewModel(
     }
 
     init {
-        loadCurrentProviderConfig()
+        loadCustomAiConfig()
         loadLocalBackups()
         getAvatarUri()
     }

@@ -136,6 +136,10 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
 
+      - name: Inject built-in AI API key
+        run: |
+          echo "BUILT_IN_AI_API_KEY=${{ secrets.BUILT_IN_AI_API_KEY }}" >> gradle.properties
+
       - name: Download desktop artifacts
         uses: actions/download-artifact@v4
         with:
