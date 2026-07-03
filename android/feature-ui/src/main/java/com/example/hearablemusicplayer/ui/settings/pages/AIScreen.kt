@@ -33,8 +33,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -67,6 +65,8 @@ import com.hmp.domain.enum.AiPresetEndpoints
 import com.hmp.domain.setting.model.AiAccessMode
 import com.hmp.domain.setting.model.AiEndpointConfig
 import com.example.hearablemusicplayer.ui.R
+import com.example.hearablemusicplayer.ui.common.components.SegmentedControl
+import com.example.hearablemusicplayer.ui.common.components.SegmentedOption
 import com.example.hearablemusicplayer.ui.common.components.base.TitleWidget
 import com.example.hearablemusicplayer.ui.common.dialogs.controller.DialogManager
 import com.example.hearablemusicplayer.ui.common.pages.base.SubScreen
@@ -185,7 +185,7 @@ private fun AIScreenContent(
     ) {
         val isLandscape = LocalWindowSizeInfo.current.isLandscape
         val tabs = listOf(AiAccessMode.FREE, AiAccessMode.CUSTOM, AiAccessMode.PAID)
-        val selectedTabIndex = tabs.indexOf(aiAccessMode).coerceAtLeast(0)
+        val selectedModeId = aiAccessMode.name
 
         Column(
             modifier = Modifier
@@ -194,29 +194,26 @@ private fun AIScreenContent(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 顶部 Tab 切换
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                modifier = Modifier.clip(RoundedCornerShape(12.dp)),
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Tab(
-                    selected = selectedTabIndex == 0,
-                    onClick = { onModeChange(AiAccessMode.FREE) },
-                    text = { Text(stringResource(R.string.ai_tab_free)) }
-                )
-                Tab(
-                    selected = selectedTabIndex == 1,
-                    onClick = { onModeChange(AiAccessMode.CUSTOM) },
-                    text = { Text(stringResource(R.string.ai_tab_custom)) }
-                )
-                Tab(
-                    selected = selectedTabIndex == 2,
-                    onClick = { onModeChange(AiAccessMode.PAID) },
-                    text = { Text(stringResource(R.string.ai_tab_paid)) }
-                )
-            }
+            // 顶部模式切换（统一使用 SegmentedControl 风格）
+            SegmentedControl(
+                modifier = Modifier.fillMaxWidth(),
+                options = tabs.map { mode ->
+                    SegmentedOption(
+                        id = mode.name,
+                        label = stringResource(
+                            when (mode) {
+                                AiAccessMode.FREE -> R.string.ai_tab_free
+                                AiAccessMode.CUSTOM -> R.string.ai_tab_custom
+                                AiAccessMode.PAID -> R.string.ai_tab_paid
+                            }
+                        )
+                    )
+                },
+                selectedOption = selectedModeId,
+                onOptionSelected = { id ->
+                    onModeChange(AiAccessMode.valueOf(id))
+                }
+            )
 
             // Tab 内容
             when (aiAccessMode) {

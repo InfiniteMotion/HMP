@@ -32,7 +32,7 @@ data class AppSettingsSnapshot(
     val hazeNoiseFactor: Float = 0.15f,
     val hazeTintAlpha: Float = 0.22f,
     val hazeIntensity: Float = 0f,
-    val autoBatchProcess: Boolean = false,
+    val autoBatchProcess: Boolean = true,
     val dailyRefreshMode: String = "off",
     val dailyRefreshHours: Int = 8,
     val dailyRefreshStartupCount: Int = 5,

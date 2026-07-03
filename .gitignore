@@ -76,6 +76,7 @@ shared/schemas/
 #
 .idea
 .gradle
+gradle.properties
 local.properties
 *.iml
 *.hprof

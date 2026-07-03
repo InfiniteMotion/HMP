@@ -23,7 +23,7 @@ val uiModule = module {
     single { DialogManagerViewModel(get()) }
     single { DialogViewModel(get(), get(), get(), get(), get(), get()) }
 
-    single { LibraryViewModel(get(), get(), get(), get(), get(), get()) }
+    single { LibraryViewModel(get(), get(), get(), get(), get(), get(), get()) }
     single { SearchViewModel(get()) }
     single { SongDetailViewModel(get(), get()) }
     single { PlaybackViewModel(get()) }

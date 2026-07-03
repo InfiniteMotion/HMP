@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,6 +82,7 @@ fun HomeScreen(
 ) {
     val scope = rememberCoroutineScope()
     val dailyMusic by recommendationViewModel.dailyMusic.collectAsState(null)
+    val isProcessingExtraInfo by recommendationViewModel.isProcessingExtraInfo.collectAsState()
     val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     val haptic = rememberHapticFeedback()
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
@@ -106,7 +108,8 @@ fun HomeScreen(
                     }
                 }
             ) {
-                if (dailyMusic == null) {
+                if (dailyMusic == null && !isProcessingExtraInfo) {
+                    // ── 空状态：无数据且未在补全 ──
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -137,6 +140,26 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                     } // Box
+                } else if (dailyMusic == null && isProcessingExtraInfo) {
+                    // ── 处理中状态：AI 正在补全音乐信息 ──
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.processing_ai_recommendation),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CircularProgressIndicator()
+                        }
+                    }
                 } else if (isLandscape) {
                     // ── Expanded: 横向布局 ──
                     key(dailyMusic!!.music.id) {

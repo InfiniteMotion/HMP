@@ -190,6 +190,10 @@ class RecommendationViewModel(
                             processedCount = current.processedCount + 1,
                             currentMusicTitle = music.music.title
                         )
+                        // 首次补全产出带 extra 的音乐后，自动获取每日推荐，使首页从"处理中"切换到"有数据"
+                        if (dailyMusic.value == null) {
+                            refreshDailyMusicInfo()
+                        }
                     },
                     onComplete = { result ->
                         _processingResult.value = result

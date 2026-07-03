@@ -75,10 +75,12 @@ class MainActivity : ComponentActivity() {
             HearableMusicPlayerTheme(darkTheme = darkTheme) {
                 val isMusicReadPermissionGiven = remember { mutableStateOf(false) }
                 val isNotificationPermissionGiven = remember { mutableStateOf(false) }
-                val isFirstLaunch by settingsViewModel.isFirstLaunch.collectAsState(false)
+                // 初始值给 true：避免冷启动第一帧因默认 false 误判为非首次启动而跳过 Intro
+                // DataStore 异步加载后会更新为真实值（老用户为 false，新用户为 true）
+                val isFirstLaunch by settingsViewModel.isFirstLaunch.collectAsState(true)
                 val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState(false)
                 val context = LocalContext.current
-                
+
                 LaunchedEffect(Unit) {
                     val statusOne = ContextCompat.checkSelfPermission(
                         context,
@@ -96,9 +98,9 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(shouldInitialize.value, autoBatchProcess) {
                     if (shouldInitialize.value) {
                         settingsViewModel.getAvatarUri()
-                        
+
                         recommendationViewModel.getDailyMusicInfo()
-                        
+
                         if (autoBatchProcess) {
                             delay(2000)
                             recommendationViewModel.startAutoProcessWithCurrentProvider()
@@ -106,15 +108,16 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if(isFirstLaunch){
-                    IntroScreen (
+                if (isFirstLaunch) {
+                    IntroScreen(
                         settingsViewModel = settingsViewModel,
                         libraryViewModel = libraryViewModel,
+                        recommendationViewModel = recommendationViewModel,
                         onFinished = {
                             settingsViewModel.saveIsFirstLaunchStatus(false)
                         }
                     )
-                }else{
+                } else {
                     MainScreen()
                 }
             }

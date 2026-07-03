@@ -138,6 +138,7 @@
     <string name="refresh_daily_recommendation">Refresh Daily Recommendation</string>
     <string name="no_data_loaded">No data loaded yet</string>
     <string name="relaunch_or_config_ai">Please relaunch the app or configure AI</string>
+    <string name="processing_ai_recommendation">AI is enriching your music…</string>
     <string name="today_recommendation">Today\'s Recommendation</string>
     <string name="today_heartbeat_playlist">Today\'s Heartbeat Playlist</string>
     <string name="generating_heartbeat_playlist">Generating heartbeat playlist...</string>
@@ -203,13 +204,12 @@
     <string name="scan">Scan</string>
     <string name="start_experience">Start Experience</string>
     <string name="welcome_to">Welcome to</string>
-    <string name="follow_guide_to_config">Follow the guide to complete configuration</string>
     <string name="intro_step_1">1. Grant Permissions</string>
     <string name="intro_step_1_desc">Please grant access to audio media files and notification permissions. We need these to scan music and provide playback controls.</string>
     <string name="intro_step_2">2. Scan Music</string>
     <string name="intro_step_2_desc">First launch requires scanning music from your device. You can manually update this in settings later.</string>
-    <string name="intro_step_3">3. Start Experience</string>
-    <string name="intro_step_3_desc">Configuration complete! Click the button to start your music journey.</string>
+    <string name="intro_step_3">3. AI Experience</string>
+    <string name="intro_step_3_desc">After scanning, 100 free AI trials will automatically enrich your music with tags like genre, mood, scenario and language. Configuration complete — tap below to start your music journey. You can switch providers or disable it in AI settings.</string>
 
     <!-- Dialogs -->
     <string name="scan_music_title">Scan Music</string>

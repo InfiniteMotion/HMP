@@ -9,6 +9,7 @@ import com.hmp.domain.music.usecase.LoadMusicFromDeviceUseCase
 import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
 import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
 import com.hmp.domain.music.usecase.SyncMusicFromDeviceIncrementalUseCase
+import com.hmp.domain.setting.usecase.UserSettingsUseCase
 
 import com.example.hearablemusicplayer.ui.common.util.UiState
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,8 @@ class LibraryViewModel(
     private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase,
     private val removeFromLibraryUseCase: RemoveFromLibraryUseCase,
     private val restoreToLibraryUseCase: RestoreToLibraryUseCase,
-    private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase
+    private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase,
+    private val userSettingsUseCase: UserSettingsUseCase
 ) : ViewModel() {
 
     private val _orderBy = MutableStateFlow("title")
@@ -144,6 +146,8 @@ class LibraryViewModel(
                         try { File(music.music.path).parent } catch (e: Exception) { null }
                     }.distinct().size
                     _scanState.value = UiState.Success(ScanResult(musicList, folderCount))
+                    // 首次扫描完成后持久化标记，用于触发 AI 自动补全等一次性逻辑
+                    userSettingsUseCase.saveIsLoadMusic(true)
                 }
                 .onFailure { e ->
                     _scanState.value = UiState.Error(e.message ?: "Scan failed")
@@ -162,6 +166,8 @@ class LibraryViewModel(
                         try { File(music.music.path).parent } catch (e: Exception) { null }
                     }.distinct().size
                     _scanState.value = UiState.Success(ScanResult(musicList, folderCount))
+                    // 首次扫描完成后持久化标记，用于触发 AI 自动补全等一次性逻辑
+                    userSettingsUseCase.saveIsLoadMusic(true)
                 }
                 .onFailure { e ->
                     _scanState.value = UiState.Error(e.message ?: "Scan failed")

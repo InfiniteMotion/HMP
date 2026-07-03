@@ -128,7 +128,7 @@ class SettingsRepositoryImpl(
     override val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] ?: false }
     override val reverbPreset: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.REVERB_PRESET] ?: 0 }
     override val customEqualizerLevels: Flow<FloatArray> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS]?.let { levelsString -> levelsString.split(",").mapNotNull { it.toFloatOrNull() }.toFloatArray() } ?: floatArrayOf() }
-    override val autoBatchProcess: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false }
+    override val autoBatchProcess: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: true }
     override val dailyRefreshMode: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time" }
     override val dailyRefreshHours: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24 }
     override val dailyRefreshStartupCount: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3 }
@@ -455,7 +455,7 @@ class SettingsRepositoryImpl(
             hazeNoiseFactor = (prefs[PreferencesKeys.HAZE_NOISE_FACTOR] ?: DEFAULT_HAZE_NOISE_FACTOR).coerceIn(0f, 1f),
             hazeTintAlpha = (prefs[PreferencesKeys.HAZE_TINT_ALPHA] ?: DEFAULT_HAZE_TINT_ALPHA).coerceIn(0f, 1f),
             hazeIntensity = prefs[PreferencesKeys.HAZE_INTENSITY] ?: 0.6f,
-            autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false,
+            autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: true,
             dailyRefreshMode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
             dailyRefreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
             dailyRefreshStartupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
