@@ -158,6 +158,8 @@
     <string name="creative_background">Background</string>
     <string name="popular_lyrics">Popular Lyrics</string>
     <string name="lyrics">Lyrics</string>
+    <string name="lyrics_settings">Lyrics Settings</string>
+    <string name="lyrics_settings_desc">Separate or share lyrics config for player, fullscreen, and floating</string>
     <string name="labels">Labels</string>
     <string name="song_achievements">Achievements</string>
     <string name="similar_music">Similar Music</string>

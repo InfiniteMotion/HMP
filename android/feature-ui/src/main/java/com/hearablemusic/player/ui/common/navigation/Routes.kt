@@ -114,6 +114,9 @@ object Routes {
         
         /** 音乐库设置路由 */
         @Serializable object LibrarySettings : NavKey
+
+        /** 歌词设置路由 */
+        @Serializable object LyricsSettings : NavKey
     }
     
     /**

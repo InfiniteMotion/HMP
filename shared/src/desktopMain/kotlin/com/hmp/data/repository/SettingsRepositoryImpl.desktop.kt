@@ -9,17 +9,18 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.hmp.data.database.currentTimeMillis
+import com.hmp.data.network.BuiltInApiKeyProvider
 import com.hmp.data.util.SecureStorageHelper
+import com.hmp.domain.backup.AppSettingsSnapshot
+import com.hmp.domain.backup.DailyRecommendationSnapshot
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
-import com.hmp.data.network.BuiltInApiKeyProvider
+import com.hmp.domain.lyrics.LyricsComponentConfig
 import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.model.AiAccessMode
 import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.ScanDirectoryConfig
-import com.hmp.domain.backup.AppSettingsSnapshot
-import com.hmp.domain.backup.DailyRecommendationSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -27,9 +28,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 class SettingsRepositoryImpl(
     private val dataStore: DataStore<Preferences>,
@@ -87,6 +85,10 @@ class SettingsRepositoryImpl(
         val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
         val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
         val LYRICS_ALIGNMENT = stringPreferencesKey("lyrics_alignment")
+        val LYRICS_PLAYER_CONFIG = stringPreferencesKey("lyrics_player_config")
+        val LYRICS_FULLSCREEN_CONFIG = stringPreferencesKey("lyrics_fullscreen_config")
+        val LYRICS_FLOATING_CONFIG = stringPreferencesKey("lyrics_floating_config")
+        val FLOATING_LYRICS_ENABLED = booleanPreferencesKey("floating_lyrics_enabled")
         val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
         val DEFAULT_WEIGHT_TEMPLATE = stringPreferencesKey("default_weight_template")
         val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
@@ -155,6 +157,18 @@ class SettingsRepositoryImpl(
     override val lyricsAlignment: Flow<LyricsAlignment> = dataStore.data.map {
         val alignmentStr = it[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
+    }
+    override val lyricsPlayerConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val lyricsFullscreenConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val lyricsFloatingConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_FLOATING_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val floatingLyricsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.FLOATING_LYRICS_ENABLED] ?: false
     }
     override val galleryOrderBy: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] ?: "title" }
     override val galleryOrderType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] ?: "ASC" }
@@ -311,6 +325,17 @@ class SettingsRepositoryImpl(
         val alignmentStr = dataStore.data.first()[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         return try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
     }
+
+    override suspend fun saveLyricsPlayerConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] = json } }
+    override suspend fun getLyricsPlayerConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_PLAYER_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveLyricsFullscreenConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] = json } }
+    override suspend fun getLyricsFullscreenConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveLyricsFloatingConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_FLOATING_CONFIG] = json } }
+    override suspend fun getLyricsFloatingConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_FLOATING_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveFloatingLyricsEnabled(enabled: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.FLOATING_LYRICS_ENABLED] = enabled } }
     override suspend fun getLyricsOriginalTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] ?: 14
     override suspend fun getLyricsTranslatedTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] ?: 14
     override suspend fun getLyricsCurrentTimeTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] ?: 16

@@ -7,6 +7,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import com.example.hearablemusicplayer.ui.settings.pages.LyricsSettingsPage
 import com.hearablemusic.player.ui.settings.pages.AIScreen
 import com.hearablemusic.player.ui.library.pages.AlbumScreen
 import com.hearablemusic.player.ui.library.pages.ArtistScreen
@@ -33,6 +34,8 @@ import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
+import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
+import org.koin.compose.koinInject
 
 /**
  * 导航图定义
@@ -125,7 +128,15 @@ fun navigationGraph(
     entry<Routes.Settings.LibrarySettings> {
         LibrarySettingsScreen(navController = navController)
     }
-    
+
+    entry<Routes.Settings.LyricsSettings> {
+        val useCase: LyricsSettingsUseCase = koinInject()
+        LyricsSettingsPage(
+            lyricsSettingsUseCase = useCase,
+            onBack = { navController.removeLastOrNull() }
+        )
+    }
+
     // Library 模块
     entry<Routes.Library.Search> {
         SearchScreen(
@@ -186,7 +197,11 @@ fun navigationGraph(
     }
     
     entry<Routes.Player.Lyrics> {
-        LyricsScreen(playbackViewModel = playbackViewModel, playlistQueueViewModel = playlistQueueViewModel)
+        LyricsScreen(
+            playbackViewModel = playbackViewModel,
+            playlistQueueViewModel = playlistQueueViewModel,
+            onNavigateToSettings = { navController.add(Routes.Settings.LyricsSettings) }
+        )
     }
     
     // AI 模块

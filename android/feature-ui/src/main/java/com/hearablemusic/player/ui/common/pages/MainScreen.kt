@@ -45,6 +45,7 @@ import androidx.core.content.FileProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.hearablemusicplayer.ui.player.floating.FloatingLyricsService
 import com.hearablemusic.player.ui.common.components.BottomFusionBar
 import com.hearablemusic.player.ui.common.components.FusionSidebar
 import com.hearablemusic.player.ui.common.components.TabPageIndicator
@@ -85,8 +86,12 @@ import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
+
 import com.hearablemusic.player.ui.common.navigation.Routes as NavRoutes
 
 @SuppressLint("ContextCastToActivity")
@@ -152,6 +157,16 @@ fun MainScreen(
     val hazeState = rememberHazeState()
     val messageToShowState = remember { mutableStateOf<DialogEvent.Message?>(null) }
     val activity = LocalContext.current as ComponentActivity
+
+    // 启动时按配置启动悬浮歌词
+    val lyricsSettingsUseCase: LyricsSettingsUseCase = koinInject()
+    LaunchedEffect(Unit) {
+        try {
+            if (lyricsSettingsUseCase.floatingLyricsEnabled.first() && android.provider.Settings.canDrawOverlays(activity)) {
+                activity.startService(Intent(activity, FloatingLyricsService::class.java))
+            }
+        } catch (_: Exception) {}
+    }
 
     LaunchedEffect(dialogEvent) {
         when (dialogEvent) {

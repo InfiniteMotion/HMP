@@ -112,29 +112,64 @@ interface SettingsRepository {
     val dailyRefreshMode: Flow<String>
     suspend fun saveDailyRefreshMode(mode: String)
 
-    // Lyrics Configuration
+    // Lyrics Configuration (per-component)
+    val lyricsPlayerConfig: Flow<String>
+    suspend fun saveLyricsPlayerConfig(json: String)
+    suspend fun getLyricsPlayerConfig(): String
+
+    val lyricsFullscreenConfig: Flow<String>
+    suspend fun saveLyricsFullscreenConfig(json: String)
+    suspend fun getLyricsFullscreenConfig(): String
+
+    val lyricsFloatingConfig: Flow<String>
+    suspend fun saveLyricsFloatingConfig(json: String)
+    suspend fun getLyricsFloatingConfig(): String
+
+    // Floating Lyrics toggle
+    val floatingLyricsEnabled: Flow<Boolean>
+    suspend fun saveFloatingLyricsEnabled(enabled: Boolean)
+
+    // Lyrics Configuration (legacy - deprecated, use per-component configs above)
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsOriginalTextSize: Flow<Int>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsOriginalTextSize(size: Int)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsOriginalTextSize(): Int
 
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsTranslatedTextSize: Flow<Int>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsTranslatedTextSize(size: Int)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsTranslatedTextSize(): Int
 
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsCurrentTimeTextSize: Flow<Int>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsCurrentTimeTextSize(size: Int)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsCurrentTimeTextSize(): Int
 
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsLineSpacing: Flow<Int>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsLineSpacing(spacing: Int)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsLineSpacing(): Int
 
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsDisplayMode: Flow<DisplayMode>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsDisplayMode(mode: DisplayMode)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsDisplayMode(): DisplayMode
 
+    @Deprecated("Use lyricsPlayerConfig instead")
     val lyricsAlignment: Flow<LyricsAlignment>
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun saveLyricsAlignment(alignment: LyricsAlignment)
+    @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsAlignment(): LyricsAlignment
 
     val dailyRefreshHours: Flow<Int>
