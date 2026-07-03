@@ -40,7 +40,7 @@
 -keep class * extends androidx.room.RoomDatabase { *; }
 
 # Music info classes
--keep class com.example.hearablemusicplayer.domain.music.** { *; }
+-keep class com.hearablemusic.player.domain.music.** { *; }
 
 # Navigation3 rules
 -keep class androidx.navigation3.** { *; }

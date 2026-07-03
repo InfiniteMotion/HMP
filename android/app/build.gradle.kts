@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hearablemusicplayer"
+    namespace = "com.hearablemusic.player"
     compileSdk {
         version = release(36)
     }
@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.hearablemusicplayer"
+        applicationId = "com.hearablemusic.player"
         minSdk = 33
         targetSdk = 36
         versionCode = project.findProperty("hmp.versionCode")?.toString()?.toIntOrNull() ?: 51000

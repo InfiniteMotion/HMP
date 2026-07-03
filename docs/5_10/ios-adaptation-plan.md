@@ -226,7 +226,7 @@ shared/src/
 - `android/core-data` 的 `implementation(project(":android:core-domain"))` 改为 `implementation(project(":shared"))`
 - `android/feature-ui` 同理
 - `android/core-player` 同理
-- 更新所有 `import com.example.hearablemusicplayer.domain.*` 为 `import com.hmp.domain.*`
+- 更新所有 `import com.hearablemusic.player.domain.*` 为 `import com.hmp.domain.*`
 
 #### P1.6 清理空模块
 
@@ -795,8 +795,8 @@ class MusicApplication : Application() {
 
 #### P5.5 更新包名引用
 
-所有 `import com.example.hearablemusicplayer.domain.*` → `import com.hmp.domain.*`
-所有 `import com.example.hearablemusicplayer.data.*` → `import com.hmp.data.*`
+所有 `import com.hearablemusic.player.domain.*` → `import com.hmp.domain.*`
+所有 `import com.hearablemusic.player.data.*` → `import com.hmp.data.*`
 
 #### P5.6 处理 feature-ui 中的 Gson 引用
 

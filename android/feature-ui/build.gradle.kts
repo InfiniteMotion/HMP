@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hearablemusicplayer.ui"
+    namespace = "com.hearablemusic.player.ui"
     compileSdk = 36
 
     defaultConfig {

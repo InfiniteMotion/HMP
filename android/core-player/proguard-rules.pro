@@ -10,7 +10,7 @@
 -dontwarn com.google.android.exoplayer2.**
 
 # Service and Receiver
--keep class com.example.hearablemusicplayer.player.service.** { *; }
+-keep class com.hearablemusic.player.player.service.** { *; }
 
 # Coil
 -keep class coil.** { *; }

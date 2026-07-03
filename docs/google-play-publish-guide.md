@@ -29,7 +29,7 @@
 
 | 配置项 | 当前值 | 状态 | 建议 |
 |--------|--------|------|------|
-| applicationId | `com.example.hearablemusicplayer` | ⚠️ 需要修改 | 改为正式包名，如 `com.hmp.musicplayer` |
+| applicationId | `com.hearablemusic.player` | ✅ 已修改 | 正式包名 |
 | compileSdk | 36 (Android 16) | ✅ 符合要求 | - |
 | targetSdk | 36 (Android 16) | ✅ 符合要求 | 2026年要求，建议保持 |
 | minSdk | 33 (Android 13) | ⚠️ 较高 | 考虑降至26+以覆盖更多用户 |
@@ -189,9 +189,9 @@
 
 ### 4.1 修改包名（Application ID）
 
-当前包名 `com.example.hearablemusicplayer` 是示例包名，必须修改。
+示例包名已修改为正式包名 `com.hearablemusic.player`。
 
-**建议包名格式**：`com.[公司/品牌名].musicplayer` 或 `com.hmp.player`
+**包名格式**：`com.[公司/品牌名].player`
 
 **修改位置**：`android/app/build.gradle.kts`
 

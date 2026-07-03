@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hearablemusicplayer.player"
+    namespace = "com.hearablemusic.player.player"
     compileSdk = 36
 
     defaultConfig {
