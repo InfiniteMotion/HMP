@@ -3,6 +3,8 @@ package com.hmp.data.network.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+// ========== OpenAI Compatible Request/Response ==========
+
 @Serializable
 data class OpenAiStyleRequest(
     val model: String,
@@ -21,7 +23,8 @@ data class OpenAiMessage(
 @Serializable
 data class OpenAiStyleResponse(
     val id: String? = null,
-    val choices: List<OpenAiChoice>? = null
+    val choices: List<OpenAiChoice>? = null,
+    val usage: OpenAiUsage? = null
 )
 
 @Serializable
@@ -30,82 +33,30 @@ data class OpenAiChoice(
 )
 
 @Serializable
-data class ClaudeRequest(
-    val model: String,
-    @SerialName("max_tokens")
-    val maxTokens: Int = 2048,
-    val messages: List<ClaudeMessage>
+data class OpenAiUsage(
+    @SerialName("prompt_tokens")
+    val promptTokens: Int = 0,
+    @SerialName("completion_tokens")
+    val completionTokens: Int = 0,
+    @SerialName("total_tokens")
+    val totalTokens: Int = 0
+)
+
+// ========== Models List Response ==========
+
+@Serializable
+data class ModelsResponse(
+    val data: List<ModelItem>? = null
 )
 
 @Serializable
-data class ClaudeMessage(
-    val role: String,
-    val content: String
+data class ModelItem(
+    val id: String,
+    @SerialName("owned_by")
+    val ownedBy: String? = null
 )
 
-@Serializable
-data class ClaudeResponse(
-    val id: String? = null,
-    val content: List<ClaudeContent>? = null
-)
-
-@Serializable
-data class ClaudeContent(
-    val type: String? = null,
-    val text: String? = null
-)
-
-@Serializable
-data class QwenRequest(
-    val model: String,
-    val input: QwenInput
-)
-
-@Serializable
-data class QwenInput(
-    val messages: List<QwenMessage>
-)
-
-@Serializable
-data class QwenMessage(
-    val role: String,
-    val content: String
-)
-
-@Serializable
-data class QwenResponse(
-    val output: QwenOutput? = null
-)
-
-@Serializable
-data class QwenOutput(
-    val choices: List<QwenChoice>? = null
-)
-
-@Serializable
-data class QwenChoice(
-    val message: QwenMessage? = null
-)
-
-@Serializable
-data class ErnieRequest(
-    val messages: List<ErnieMessage>
-)
-
-@Serializable
-data class ErnieMessage(
-    val role: String,
-    val content: String
-)
-
-@Serializable
-data class ErnieResponse(
-    val result: String? = null,
-    @SerialName("error_code")
-    val errorCode: Int? = null,
-    @SerialName("error_msg")
-    val errorMsg: String? = null
-)
+// ========== Music Info Response ==========
 
 @Serializable
 data class MusicInfoResponse(

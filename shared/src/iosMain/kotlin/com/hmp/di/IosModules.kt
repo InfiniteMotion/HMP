@@ -13,6 +13,7 @@ import com.hmp.data.database.UserInfoDao
 import com.hmp.data.database.getDatabaseBuilder
 import com.hmp.data.database.getRoomDatabase
 import com.hmp.data.di.sharedModule
+import com.hmp.data.network.BuiltInApiKeyProvider
 import com.hmp.data.repository.BackupFileRepositoryImpl
 import com.hmp.data.repository.MusicRepositoryImpl
 import com.hmp.data.repository.PlaylistRepositoryImpl
@@ -42,6 +43,7 @@ val iosPlatformModule = module {
     single<PlaybackHistoryDao> { get<AppDatabase>().playbackHistoryDao() }
     single<ListeningDurationDao> { get<AppDatabase>().listeningDurationDao() }
 
+    single { BuiltInApiKeyProvider() } // iOS: 占位符，后续可通过配置注入
     singleOf(::SettingsRepositoryImpl) bind SettingsRepository::class
     singleOf(::PlaylistRepositoryImpl) bind PlaylistRepository::class
     singleOf(::MusicRepositoryImpl) bind MusicRepository::class

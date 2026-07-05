@@ -1,11 +1,9 @@
 package com.hmp.domain.backup
 
-import com.hmp.domain.enum.AiProviderType
 import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
 import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.PlaylistItem
-import com.hmp.domain.setting.model.AiProviderConfig
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.model.PlaybackHistory
 import kotlinx.serialization.Contextual
@@ -14,11 +12,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserBackupSnapshot(
     val version: Int = 1,
-    val createdAt: Long,
-    val appSettings: AppSettingsSnapshot,
-    val musicUserState: MusicUserStateSnapshot,
-    val playlists: PlaylistsSnapshot,
-    val listeningStats: ListeningStatsSnapshot,
+    val createdAt: Long = 0L,
+    val appSettings: AppSettingsSnapshot? = null,
+    val musicUserState: MusicUserStateSnapshot = MusicUserStateSnapshot(),
+    val playlists: PlaylistsSnapshot = PlaylistsSnapshot(),
+    val listeningStats: ListeningStatsSnapshot = ListeningStatsSnapshot(),
     val dailyRecommendation: DailyRecommendationSnapshot? = null
 )
 
@@ -26,21 +24,21 @@ data class UserBackupSnapshot(
 data class AppSettingsSnapshot(
     val userName: String? = null,
     val avatarUri: String? = null,
-    val themeMode: String,
-    val backgroundStyle: String,
+    val themeMode: String = "default",
+    val backgroundStyle: String = "FLUID",
     val hazeMode: String = "custom",
     val hazeMaterialPreset: String = "regular",
     val hazeBlurRadius: Float = 20f,
     val hazeNoiseFactor: Float = 0.15f,
     val hazeTintAlpha: Float = 0.22f,
     val hazeIntensity: Float = 0f,
-    val autoBatchProcess: Boolean = false,
+    val autoBatchProcess: Boolean = true,
     val dailyRefreshMode: String = "off",
     val dailyRefreshHours: Int = 8,
     val dailyRefreshStartupCount: Int = 5,
-    val currentAiProvider: AiProviderType,
-    @Contextual
-    val aiProviderConfigs: Map<AiProviderType, AiProviderConfig> = emptyMap()
+    val aiAccessMode: String = "FREE",
+    val customAiEndpoint: String = "",
+    val customAiModel: String = ""
 )
 
 @Serializable
@@ -76,9 +74,9 @@ data class MusicExtraUserSnapshot(
 
 @Serializable
 data class MusicLabelSnapshot(
-    val musicId: Long,
-    val label: LabelName,
-    val category: LabelCategory
+    val musicId: Long = 0L,
+    val label: LabelName = LabelName.ROCK,
+    val category: LabelCategory = LabelCategory.GENRE
 )
 
 @Serializable

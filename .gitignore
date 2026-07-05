@@ -76,6 +76,7 @@ shared/schemas/
 #
 .idea
 .gradle
+gradle.properties
 local.properties
 *.iml
 *.hprof
@@ -83,6 +84,7 @@ local.properties
 *.keystore
 !debug.keystore
 *.jks
+keystore.properties
 
 # node.js
 #

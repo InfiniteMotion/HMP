@@ -1,0 +1,23 @@
+package com.hearablemusic.player.ui.player.components
+
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+/**
+ * Reserve bottom safe space for MiniPlayerBar overlap.
+ */
+@Composable
+fun MiniPlayerSafeSpacer(
+    height: Dp = 88.dp
+) {
+    Spacer(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+    )
+}

@@ -78,7 +78,7 @@
 - [x] **P5.2** 更新 feature-ui 依赖 — 改为依赖 `:shared`，添加 Koin Compose 依赖，移除 Hilt
 - [x] **P5.3** 更新 ViewModel 注入方式 — 14 个 ViewModel 从 `@HiltViewModel` 切换为 `koinViewModel()`
 - [x] **P5.4** 更新 Application 类 — `@HiltAndroidApp` → `startKoin { modules(sharedModule, androidPlatformModule) }`
-- [x] **P5.5** 更新包名引用 — `com.example.hearablemusicplayer.domain/data` → `com.hmp.domain/data`
+- [x] **P5.5** 更新包名引用 — `com.hearablemusic.player.domain/data` → `com.hmp.domain/data`
 - [x] **P5.6** 移除 feature-ui 中的 Gson 依赖
 - [x] **P5.7** 移除 feature-ui 中的 Pinyin4j 依赖
 - [x] **P5.8** 验证 — `assembleDebug` + `assembleRelease` 通过 ✅

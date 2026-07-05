@@ -1,8 +1,6 @@
 package com.hmp.data.di
 
 import android.content.Context
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.hmp.data.database.AppDatabase
 import com.hmp.data.database.ListeningDurationDao
 import com.hmp.data.database.MusicAllDao
@@ -15,7 +13,7 @@ import com.hmp.data.database.PlaylistItemDao
 import com.hmp.data.database.UserInfoDao
 import com.hmp.data.database.getDatabaseBuilder
 import com.hmp.data.database.getRoomDatabase
-import com.hmp.data.network.MultiProviderApiAdapter
+import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.createHttpClient
 import com.hmp.data.repository.BackupFileRepositoryImpl
 import com.hmp.data.repository.MusicRepositoryImpl
@@ -25,6 +23,7 @@ import com.hmp.domain.backup.BackupFileRepository
 import com.hmp.domain.music.MusicRepository
 import com.hmp.domain.playlist.PlaylistRepository
 import com.hmp.domain.setting.SettingsRepository
+import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -50,9 +49,11 @@ val androidPlatformModule = module {
     singleOf(::MusicRepositoryImpl) bind MusicRepository::class
     singleOf(::BackupFileRepositoryImpl) bind BackupFileRepository::class
 
-    single<Gson> {
-        GsonBuilder()
-            .setLenient()
-            .create()
+    single<Json> {
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            encodeDefaults = true
+        }
     }
 }

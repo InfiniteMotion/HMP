@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,33 +10,50 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hearablemusicplayer"
+    namespace = "com.hearablemusic.player"
     compileSdk {
         version = release(36)
     }
 
-    // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
+    // 统一签名配置 — 优先 keystore.properties，回退到环境变量/Gradle属性
+    val ksPropsFile = rootProject.file("keystore.properties")
+    val ksProps = if (ksPropsFile.exists()) Properties().apply { load(FileInputStream(ksPropsFile)) } else null
+
     signingConfigs {
         create("unified") {
-            val ksFile = file("hmp-unified-key.jks")
-            val ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: providers.gradleProperty("KEYSTORE_PASSWORD").getOrElse("hmp123456")
-            val kAlias = System.getenv("KEY_ALIAS") ?: "hmpkey"
-            val kPassword = System.getenv("KEY_PASSWORD") ?: providers.gradleProperty("KEY_PASSWORD").getOrElse("hmp123456")
-            storeFile = ksFile
-            storePassword = ksPassword
-            keyAlias = kAlias
-            keyPassword = kPassword
+            storeFile = file(ksProps?.getProperty("storeFile")
+                ?: System.getenv("KEYSTORE_FILE")
+                ?: "hmp-unified-key.jks")
+            storePassword = ksProps?.getProperty("storePassword")
+                ?: System.getenv("KEYSTORE_PASSWORD")
+                ?: providers.gradleProperty("KEYSTORE_PASSWORD").orNull
+            keyAlias = ksProps?.getProperty("keyAlias")
+                ?: System.getenv("KEY_ALIAS")
+                ?: providers.gradleProperty("KEY_ALIAS").getOrElse("hmpkey")
+            keyPassword = ksProps?.getProperty("keyPassword")
+                ?: System.getenv("KEY_PASSWORD")
+                ?: providers.gradleProperty("KEY_PASSWORD").orNull
         }
     }
 
     defaultConfig {
-        applicationId = "com.example.hearablemusicplayer"
+        applicationId = "com.hearablemusic.player"
         minSdk = 33
         targetSdk = 36
         versionCode = project.findProperty("hmp.versionCode")?.toString()?.toIntOrNull() ?: 51000
         versionName = project.findProperty("hmp.versionName")?.toString() ?: "5.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 内置 AI API Key（免费体验 / 付费模式共用）
+        // 本地开发: 在 gradle.properties 中填写（不提交 Git）
+        // CI 构建: GitHub Actions secrets 自动注入
+        val builtInEndpoint = providers.gradleProperty("BUILT_IN_AI_ENDPOINT").getOrElse("https://api.deepseek.com/v1")
+        val builtInKey = providers.gradleProperty("BUILT_IN_AI_API_KEY").getOrElse("")
+        val builtInModel = providers.gradleProperty("BUILT_IN_AI_MODEL").getOrElse("deepseek-chat")
+        buildConfigField("String", "BUILT_IN_AI_ENDPOINT", "\"$builtInEndpoint\"")
+        buildConfigField("String", "BUILT_IN_AI_API_KEY", "\"$builtInKey\"")
+        buildConfigField("String", "BUILT_IN_AI_MODEL", "\"$builtInModel\"")
     }
 
     buildTypes {
@@ -65,6 +84,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

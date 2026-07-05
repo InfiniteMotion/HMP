@@ -55,10 +55,10 @@ cd ios && pod install
 ### 运行单个测试
 ```bash
 # 运行指定测试类
-./gradlew :android:feature-ui:test --tests "com.example.hearablemusicplayer.ui.navigation.RoutesTest"
+./gradlew :android:feature-ui:test --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest"
 
 # 运行指定测试方法
-./gradlew :android:feature-ui:test --tests "com.example.hearablemusicplayer.ui.navigation.RoutesTest.testRouteDefinition"
+./gradlew :android:feature-ui:test --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest.testRouteDefinition"
 ```
 
 ### 发布构建
@@ -156,7 +156,7 @@ HMP/
 - iOS 部署目标: 26.3 (应用目标), 16.0 (shared 模块 CocoaPods)
 
 ### 包名
-- Android: `com.example.hearablemusicplayer`
+- Android: `com.hearablemusic.player`
 - Shared (KMP): `com.hmp`
 
 ### 分支策略

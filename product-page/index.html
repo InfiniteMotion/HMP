@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMP — Hearable Music Player</title>
+<meta name="description" content="Hearable Music Player — 纯粹的跨平台本地音乐播放器。听见你的音乐。" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="aurora-bg">
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+</div>
+
+<div class="bottom-bar">
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+    <span id="themeIcon">&#9789;</span>
+  </button>
+  <a href="https://github.com" class="bottom-link">GitHub</a>
+</div>
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; Built by WLYB</span>
+
+<div class="layout">
+  <!-- Left: Hero -->
+  <aside class="hero-panel">
+    <div class="hero-panel-inner">
+      <div class="hero-badge">HMP v6.10.0</div>
+      <h1 class="hero-title">Hearable Music Player</h1>
+      <p class="hero-subtitle">听见你的音乐</p>
+      <p class="hero-desc">旋律穿过边境，在眼前响起<br/>隐藏的特征被标记<br/>等待，寻找共振的频率</p>
+      <div class="hero-actions">
+        <a href="download.html" class="btn btn-primary">了解与获取</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right: Feature pages -->
+  <main class="features-panel" id="featuresPanel">
+    <div class="feature-slides" id="featureSlides">
+
+      <!-- Page 1: 沉浸氛围 -->
+      <div class="feature-page active" data-index="0">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden;">
+            <div style="position:absolute; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(201,44,44,0.6), transparent 70%); top:10%; left:15%; filter:blur(30px); animation: orbA 6s ease-in-out infinite;"></div>
+            <div style="position:absolute; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle, rgba(0,47,167,0.5), transparent 70%); bottom:15%; right:10%; filter:blur(30px); animation: orbB 8s ease-in-out infinite;"></div>
+            <div style="position:absolute; width:100px; height:100px; border-radius:50%; background:radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%); top:50%; left:50%; filter:blur(25px); animation: orbC 7s ease-in-out infinite;"></div>
+            <div style="position:relative; z-index:1; width:70%; aspect-ratio:16/10; background:rgba(255,255,255,0.04); border-radius:12px; border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:rgba(255,255,255,0.3);">App UI</div>
+          </div>
+          <div class="feature-card-text">
+            <h3>沉浸氛围</h3>
+            <span class="tag">视觉体验</span>
+            <p>不只是播放页——整个应用都笼罩在随音乐实时变化的氛围光影中。从专辑封面提取色彩，生成持续流动的动态背景。三种风格可选：流体极光、沉浸光斑、复古模糊。亮色与暗色模式下各有不同的氛围表达。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">色彩提取</span>
+              <span class="feature-tag">流体极光</span>
+              <span class="feature-tag">全应用沉浸</span>
+              <span class="feature-tag">亮暗双模</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 2: 通透质感 -->
+      <div class="feature-page" data-index="1">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:12px; padding:20px;">
+            <div style="position:absolute; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle, rgba(0,47,167,0.3), transparent 70%); top:5%; right:10%; filter:blur(30px);"></div>
+            <div class="glass" style="width:85%; padding:12px 16px; border-radius:28px; display:flex; align-items:center; gap:10px; margin-top:10px;">
+              <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg, var(--red), #e94560);"></div>
+              <div style="width:50%; height:6px; border-radius:3px; background:rgba(255,255,255,0.12);"></div>
+            </div>
+            <div class="glass" style="width:65%; padding:14px 18px; border-radius:20px; text-align:center; font-size:0.7rem; opacity:0.7;">
+              毛玻璃卡片
+            </div>
+            <div class="glass" style="width:55%; padding:6px 14px; border-radius:24px; display:flex; align-items:center; gap:8px; opacity:0.5;">
+              <div style="width:16px; height:16px; border-radius:50%; background:rgba(255,255,255,0.2);"></div>
+              <div style="width:60%; height:4px; border-radius:2px; background:rgba(255,255,255,0.1);"></div>
+            </div>
+          </div>
+          <div class="feature-card-text">
+            <h3>通透质感</h3>
+            <span class="tag">UI 设计</span>
+            <p>底部导航栏、迷你播放器、对话框——HMP 的核心交互区全部采用大圆角毛玻璃卡片，悬浮于动态背景之上。模糊半径、噪点纹理、透明度均可调节。Android 和桌面端使用 Haze 库，iOS 端使用原生 ultraThinMaterial。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">Haze</span>
+              <span class="feature-tag">ultraThinMaterial</span>
+              <span class="feature-tag">可调节参数</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 3: 智能推荐 -->
+      <div class="feature-page" data-index="2">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:40px; height:40px; border-radius:8px; background:linear-gradient(135deg, #e94560, #C92C2C); display:flex; align-items:center; justify-content:center; font-size:1rem;">&#9835;</div>
+              <div>
+                <div style="font-size:0.75rem; font-weight:600;">Blinding Lights</div>
+                <div style="font-size:0.6rem; color:rgba(255,255,255,0.4);">The Weeknd</div>
+              </div>
+            </div>
+            <div style="font-size:0.6rem; color:rgba(255,255,255,0.3);">↓ LLM 自动标注 ↓</div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;">
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(144,202,249,0.2); color:#90CAF9; font-size:0.6rem;">流派·Synthwave</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(244,143,177,0.2); color:#F48FB1; font-size:0.6rem;">情绪·亢奋</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(129,199,132,0.2); color:#81C784; font-size:0.6rem;">场景·驾驶</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(255,183,77,0.2); color:#FFB74D; font-size:0.6rem;">年代·2020s</span>
+            </div>
+            <div style="font-size:0.7rem; color:var(--primary);">&#9654; 推荐相似曲目</div>
+          </div>
+          <div class="feature-card-text">
+            <h3>智能推荐</h3>
+            <span class="tag">AI &middot; 推荐</span>
+            <p>通过大语言模型为每首歌自动打标签——流派、情绪、场景、语言、年代。基于标签驱动推荐。已集成 DeepSeek、OpenAI、Claude、通义千问、文心一言。API Key 由你提供，加密存储于本地。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">DeepSeek</span>
+              <span class="feature-tag">OpenAI</span>
+              <span class="feature-tag">Claude</span>
+              <span class="feature-tag">端侧加密</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 4: 自适应布局 -->
+      <div class="feature-page" data-index="3">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; display:flex; align-items:center; justify-content:center; gap:40px; padding:20px;">
+            <!-- 竖屏 -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:60px; aspect-ratio:9/16; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; padding:6px 4px; gap:4px;">
+                <div style="height:8px; border-radius:4px; background:rgba(255,255,255,0.10);"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px;">
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                </div>
+                <div style="height:10px; border-radius:5px; background:rgba(255,255,255,0.12); display:flex; gap:2px; padding:2px 4px;">
+                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
+                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
+                </div>
+              </div>
+              <span style="font-size:0.55rem; opacity:0.35;">竖屏 / 窄窗</span>
+            </div>
+            <!-- 箭头 -->
+            <span style="font-size:1.2rem; opacity:0.3;">↔</span>
+            <!-- 横屏 -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:110px; aspect-ratio:16/10; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; padding:4px; gap:4px;">
+                <div style="width:18px; border-radius:4px; background:rgba(255,255,255,0.06); display:flex; flex-direction:column; padding:4px 2px; gap:3px;">
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.1); margin:0 auto;"></div>
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.1); margin:0 auto;"></div>
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.15); margin:0 auto;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px;">
+                  <div style="height:8px; border-radius:4px; background:rgba(255,255,255,0.10);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                </div>
+              </div>
+              <span style="font-size:0.55rem; opacity:0.35;">横屏 / 宽窗</span>
+            </div>
+          </div>
+          <div class="feature-card-text">
+            <h3>自适应布局</h3>
+            <span class="tag">平台</span>
+            <p>业务逻辑和数据层通过 Kotlin Multiplatform 在三平台共享。Android 和 iOS 采用底部胶囊导航，桌面端在宽屏下自动切换为侧边 NavigationRail，窗口缩窄时退化为底部布局。UI 层各自遵循原生规范。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">Kotlin Multiplatform</span>
+              <span class="feature-tag">Compose</span>
+              <span class="feature-tag">SwiftUI</span>
+              <span class="feature-tag">响应式布局</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+
+let currentPage = 0;
+const totalPages = 4;
+let locked = false;
+let autoPlayTimer;
+
+function goToPage(index) {
+  if (locked) return;
+  index = ((index % totalPages) + totalPages) % totalPages;
+  if (index === currentPage) return;
+
+  locked = true;
+  const pages = document.querySelectorAll('.feature-page');
+  pages[currentPage].classList.remove('active');
+  pages[index].classList.add('active');
+  currentPage = index;
+  resetAutoPlay();
+  setTimeout(() => { locked = false; }, 350);
+}
+
+function resetAutoPlay() {
+  clearTimeout(autoPlayTimer);
+  autoPlayTimer = setTimeout(() => {
+    goToPage(currentPage + 1);
+  }, 3000);
+}
+
+// Pause on card hover
+document.querySelectorAll('.feature-card').forEach(card => {
+  card.addEventListener('mouseenter', () => clearTimeout(autoPlayTimer));
+  card.addEventListener('mouseleave', () => resetAutoPlay());
+});
+
+document.addEventListener('wheel', (e) => {
+  if (locked) return;
+  goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
+}, { passive: true });
+
+resetAutoPlay();
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    goToPage(Math.min(currentPage + 1, totalPages - 1));
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    goToPage(Math.max(currentPage - 1, 0));
+  }
+});
+</script>
+</body>
+</html>

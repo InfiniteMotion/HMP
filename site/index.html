@@ -1,558 +1,238 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Hearable Music Player — 纯本地、跨平台音乐播放器。支持 Android、Desktop、iOS。无账号、无云同步、无社交。">
-  <meta name="theme-color" content="#121212">
-  <title>HMP — Hearable Music Player</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23002FA7'/><stop offset='100%25' style='stop-color:%2390CAF9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-family='system-ui'>♪</text></svg>">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Hearable Music Player — 纯本地、跨平台音乐播放器。听见你的音乐。">
+<meta name="theme-color" content="#121212">
+<title>HMP — Hearable Music Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/ic_launcher_foreground.webp" type="image/webp">
+<script>var st=localStorage.getItem('theme');if(st)document.documentElement.setAttribute('data-theme',st);else if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');</script>
 </head>
 <body>
 
-<canvas class="bg-canvas" id="bgCanvas"></canvas>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- Navigation                                                    -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<nav class="nav" id="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <span class="nav-logo-icon">♪</span>
-      <span class="nav-logo-text">HMP</span>
-    </a>
-    <div class="nav-links">
-      <a href="#features">功能</a>
-      <a href="#screenshots">预览</a>
-      <a href="#download">下载</a>
-      <a href="#philosophy">关于</a>
-      <a href="https://github.com/InfiniteMotion/HMP" class="nav-gh" target="_blank" rel="noopener" title="GitHub">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-    </div>
-  </div>
-</nav>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 1. Hero                                                       -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="hero">
-  <div class="hero-bg">
-    <div class="hero-glow hero-glow-1"></div>
-    <div class="hero-glow hero-glow-2"></div>
-  </div>
-  <div class="hero-content">
-      <div class="hero-badge">v6.10 — 桌面端现已发布</div>
-      <h1 class="hero-title">
-        纯粹的音乐，<br>
-        <span class="hero-title-accent">自由的聆听</span>
-      </h1>
-      <p class="hero-desc">
-        一款坚持纯本地路线的跨平台音乐播放器。<br>
-        不收集数据、不需要账号、不依赖网络 — 音乐本该如此简单。
-      </p>
-      <div class="hero-actions">
-        <a href="#download" class="btn-primary">立即下载</a>
-        <a href="https://github.com/InfiniteMotion/HMP" class="btn-secondary" target="_blank" rel="noopener">GitHub</a>
-      </div>
-      <div class="hero-platforms">
-        <span class="hero-platform">🤖 Android</span>
-        <span class="hero-platform">🖥️ Desktop</span>
-        <span class="hero-platform">🍎 iOS</span>
-      </div>
-  </div>
-  <div class="hero-wave">
-    <svg viewBox="0 0 1440 120" preserveAspectRatio="none"><path d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z" fill="var(--bg)"/></svg>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 2. Features — 快速建立产品认知                                   -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="features">
-  <div class="section-header">
-    <h2 class="section-title">功能特性</h2>
-    <p class="section-subtitle">三年迭代打磨，每一处细节都为更好的聆听体验</p>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.18,16.08Q18.1,14.95 18.61,13.56Q19.13,12.17 19.13,10.68Q19.13,8.38 17.98,6.42Q16.82,4.46 14.87,3.32Q12.91,2.18 10.61,2.18Q8.3,2.18 6.35,3.32Q4.39,4.46 3.25,6.42Q2.11,8.38 2.11,10.68Q2.11,12.98 3.25,14.94Q4.39,16.9 6.35,18.04Q8.3,19.18 10.61,19.18Q12.17,19.18 13.57,18.65Q14.98,18.12 16.13,17.16L20.59,21.6Q20.81,21.82 21.12,21.82Q21.43,21.82 21.65,21.6Q21.86,21.38 21.86,21.07Q21.86,20.76 21.65,20.54L17.18,16.08ZM3.62,10.68Q3.62,8.78 4.57,7.18Q5.52,5.57 7.12,4.62Q8.71,3.67 10.61,3.67Q12.5,3.67 14.11,4.62Q15.72,5.57 16.67,7.18Q17.62,8.78 17.62,10.68Q17.62,12.58 16.67,14.18Q15.72,15.79 14.11,16.74Q12.5,17.69 10.61,17.69Q8.71,17.69 7.12,16.74Q5.52,15.79 4.57,14.18Q3.62,12.58 3.62,10.68Z"/></svg></div>
-      <h3>本地音乐扫描</h3>
-      <p>自动扫描设备音频文件，读取 ID3 标签。按专辑、艺术家、流派智能归类，支持目录和屏蔽规则管理。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6.77,2.35Q5.95,1.9 5.08,2.06Q4.2,2.23 3.61,2.9Q3.02,3.58 3.02,4.51L3.02,19.46Q3.02,20.4 3.61,21.08Q4.2,21.77 5.08,21.94Q5.95,22.1 6.77,21.65L19.73,14.16Q20.54,13.7 20.83,12.85Q21.12,12 20.83,11.15Q20.54,10.3 19.73,9.84L6.77,2.35Z"/></svg></div>
-      <h3>完整播放控制</h3>
-      <p>播放、暂停、切歌、快进快退、随机、循环、睡眠定时。淡入淡出 + Audio Focus 自动管理。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3.5,2.76Q2.88,2.76 2.44,3.19Q1.99,3.62 1.99,4.25Q1.99,4.87 2.44,5.32Q2.88,5.76 3.5,5.76Q4.13,5.76 4.56,5.32Q4.99,4.87 4.99,4.25Q4.99,3.62 4.56,3.19Q4.13,2.76 3.5,2.76ZM3.5,10.51Q2.88,10.51 2.44,10.94Q1.99,11.38 1.99,12Q1.99,12.62 2.44,13.07Q2.88,13.51 3.5,13.51Q4.13,13.51 4.56,13.07Q4.99,12.62 4.99,12Q4.99,11.38 4.56,10.94Q4.13,10.51 3.5,10.51ZM3.5,18.24Q2.88,18.24 2.44,18.68Q1.99,19.13 1.99,19.75Q1.99,20.38 2.44,20.81Q2.88,21.24 3.5,21.24Q4.13,21.24 4.56,20.8Q4.99,20.35 4.99,19.75Q4.99,19.13 4.56,18.68Q4.13,18.24 3.5,18.24ZM21.24,4.99Q21.55,4.99 21.78,4.78Q22.01,4.56 22.01,4.25Q22.01,3.94 21.78,3.72Q21.55,3.5 21.24,3.5L7.73,3.5Q7.42,3.5 7.2,3.72Q6.98,3.94 6.98,4.25Q6.98,4.56 7.2,4.78Q7.42,4.99 7.73,4.99L21.24,4.99ZM21.24,12.74Q21.55,12.74 21.78,12.53Q22.01,12.31 22.01,12Q22.01,11.69 21.78,11.47Q21.55,11.26 21.24,11.26L7.73,11.26Q7.42,11.26 7.2,11.47Q6.98,11.69 6.98,12Q6.98,12.31 7.2,12.53Q7.42,12.74 7.73,12.74L21.24,12.74ZM21.24,20.5Q21.55,20.5 21.78,20.28Q22.01,20.06 22.01,19.75Q22.01,19.44 21.78,19.22Q21.55,19.01 21.24,19.01L7.73,19.01Q7.42,19.01 7.2,19.22Q6.98,19.44 6.98,19.75Q6.98,20.06 7.2,20.28Q7.42,20.5 7.73,20.5L21.24,20.5Z"/></svg></div>
-      <h3>播放列表管理</h3>
-      <p>创建、重命名、删除自定义列表。拖拽排序、智能生成。下一首播放逻辑深度优化。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.05,18.36Q13.39,18.36 14.42,18.18Q15.46,18 16.58,17.76L16.66,17.74Q16.8,17.71 16.92,17.6Q17.04,17.5 17.11,17.38Q17.35,16.87 17.76,16.2Q18.17,15.53 18.41,15.26Q19.39,14.06 19.91,12.62Q20.42,11.18 20.42,9.65Q20.42,7.3 19.3,5.3Q18.17,3.31 16.22,2.12Q14.28,0.94 12,0.94Q9.72,0.94 7.78,2.11Q5.83,3.29 4.69,5.28Q3.55,7.27 3.55,9.62Q3.55,11.16 4.07,12.6Q4.58,14.04 5.57,15.24Q5.64,15.34 5.71,15.43Q5.98,15.84 6.36,16.4Q6.74,16.97 6.89,17.23Q6.96,17.38 7.07,17.47Q7.18,17.57 7.32,17.62L7.37,17.64Q7.7,17.74 8.41,17.9Q9.12,18.07 10.08,18.22Q11.04,18.36 12.05,18.36ZM7.97,16.2Q7.63,15.6 7.31,15.1Q6.98,14.59 6.65,14.3Q5.86,13.32 5.42,12.11Q4.99,10.9 4.99,9.65Q4.99,7.68 5.94,6.01Q6.89,4.34 8.5,3.37Q10.1,2.4 12,2.4Q13.9,2.4 15.49,3.38Q17.09,4.37 18.04,6.02Q18.98,7.68 18.98,9.65Q18.98,10.92 18.55,12.13Q18.12,13.34 17.3,14.33Q16.85,14.83 15.98,16.42Q15.58,16.51 14.96,16.62Q14.35,16.73 13.58,16.81Q12.82,16.9 12.05,16.9Q10.58,16.9 8.28,16.39L8.04,16.32ZM16.34,18.89Q13.99,19.32 11.94,19.31Q9.89,19.3 7.66,18.89Q7.61,18.86 7.56,18.91Q7.51,18.96 7.51,19.03Q7.61,20.16 8.22,21.07Q8.83,21.98 9.83,22.51Q10.82,23.04 12.07,23.04Q13.18,23.04 14.16,22.51Q15.14,21.98 15.76,21.07Q16.37,20.16 16.46,19.03Q16.49,18.98 16.44,18.94Q16.39,18.89 16.34,18.89Z"/></svg></div>
-      <h3>AI 智能推荐</h3>
-      <p>5 家 AI 服务商（DeepSeek / OpenAI / Claude / 通义千问 / 文心一言），API Key 加密存储，三种刷新策略。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9.67,3.12Q8.78,3.26 8.21,3.95Q7.63,4.63 7.63,5.54L7.63,14.11Q7.63,15.14 6.98,15.73Q6.34,16.32 5.09,16.87L5.04,16.9Q4.34,17.21 3.92,17.56Q3.5,17.9 3.14,18.65Q2.83,19.32 2.89,20.02Q2.95,20.71 3.36,21.26Q3.82,21.89 4.56,22.14Q5.3,22.39 5.95,22.3Q7.06,22.18 7.75,21.61Q8.45,21.05 8.77,20.34Q9.1,19.63 9.12,19.01L9.12,8.47L19.61,6.6L19.61,11.86Q19.61,12.36 19.45,12.79Q19.3,13.22 18.79,13.63Q18.24,14.09 17.23,14.52Q16.42,14.9 15.94,15.26Q15.46,15.62 15.1,16.39Q14.78,17.06 14.84,17.76Q14.9,18.46 15.31,19.01Q15.72,19.58 16.42,19.86Q17.11,20.14 17.9,20.04Q19.01,19.9 19.7,19.33Q20.4,18.77 20.72,18.06Q21.05,17.35 21.1,16.73L21.1,4.22Q21.1,3.46 20.69,2.82Q20.28,2.18 19.6,1.88Q18.91,1.58 18.14,1.7L9.67,3.12Z"/></svg></div>
-      <h3>滚动歌词</h3>
-      <p>LRC 歌词解析与同步滚动。独立歌词页面，可选对齐方式、字体大小，支持逐字高亮。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1.01Q11.69,1.01 11.47,1.22Q11.26,1.44 11.26,1.75L11.26,5.66Q11.26,5.98 11.47,6.19Q11.69,6.41 12,6.41Q12.31,6.41 12.53,6.19Q12.74,5.98 12.74,5.66L12.74,2.52Q15.17,2.71 17.17,4.02Q19.18,5.33 20.34,7.44Q21.5,9.55 21.5,12Q21.5,14.57 20.22,16.75Q18.94,18.94 16.75,20.22Q14.57,21.5 12,21.5Q9.43,21.5 7.25,20.22Q5.06,18.94 3.78,16.75Q2.5,14.57 2.5,12Q2.5,10.08 3.22,8.35Q3.94,6.62 5.28,5.28Q5.5,5.06 5.5,4.75Q5.5,4.44 5.28,4.2Q5.06,4.01 4.75,4.01Q4.44,4.01 4.2,4.2Q2.66,5.78 1.84,7.79Q1.01,9.79 1.01,12Q1.01,14.98 2.48,17.51Q3.96,20.04 6.49,21.52Q9.02,22.99 12,22.99Q14.98,22.99 17.5,21.52Q20.02,20.04 21.5,17.51Q22.99,14.98 22.99,12Q22.99,9.02 21.5,6.49Q20.02,3.96 17.5,2.48Q14.98,1.01 12,1.01ZM11.28,12.67Q11.54,13.01 11.99,13.03Q12.43,13.06 12.74,12.74Q13.06,12.43 13.03,11.99Q13.01,11.54 12.67,11.28L7.9,7.18Q7.73,7.03 7.54,7.03Q7.34,7.03 7.18,7.18Q7.06,7.34 7.04,7.55Q7.03,7.75 7.18,7.9L11.28,12.67Z"/></svg></div>
-      <h3>睡眠定时</h3>
-      <p>倒计时自动暂停播放。伴你入眠，不耗电、不打扰，支持自定义时长。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.74,2.76Q12.74,2.45 12.53,2.22Q12.31,1.99 12,1.99Q11.69,1.99 11.46,2.22Q11.23,2.45 11.23,2.76L11.23,4.8Q10.42,5.04 9.88,5.74Q9.34,6.43 9.34,7.32Q9.34,8.21 9.86,8.9Q10.39,9.6 11.23,9.86L11.23,21.24Q11.23,21.55 11.46,21.77Q11.69,21.98 12,21.98Q12.31,21.98 12.53,21.77Q12.74,21.55 12.74,21.24L12.74,9.86Q13.58,9.6 14.12,8.92Q14.66,8.23 14.66,7.32Q14.66,6.43 14.12,5.74Q13.58,5.04 12.74,4.8L12.74,2.76ZM12,8.5Q11.52,8.5 11.18,8.15Q10.85,7.8 10.85,7.32Q10.85,6.84 11.18,6.5Q11.52,6.17 12,6.17Q12.48,6.17 12.82,6.5Q13.15,6.84 13.15,7.32Q13.15,7.8 12.82,8.15Q12.48,8.5 12,8.5ZM22.37,16.66Q22.37,15.77 21.84,15.07Q21.31,14.38 20.45,14.11L20.45,2.76Q20.45,2.45 20.23,2.22Q20.02,1.99 19.7,1.99Q19.42,1.99 19.19,2.22Q18.96,2.45 18.96,2.76L18.96,14.11Q18.14,14.38 17.6,15.07Q17.06,15.77 17.06,16.66Q17.06,17.54 17.59,18.24Q18.12,18.94 18.96,19.2L18.96,21.24Q18.96,21.55 19.19,21.77Q19.42,21.98 19.7,21.98Q20.02,21.98 20.23,21.77Q20.45,21.55 20.45,21.24L20.45,19.2Q21.31,18.94 21.84,18.25Q22.37,17.57 22.37,16.66ZM19.7,17.81Q19.22,17.81 18.89,17.47Q18.55,17.14 18.55,16.66Q18.55,16.18 18.89,15.84Q19.22,15.5 19.7,15.5Q20.18,15.5 20.53,15.84Q20.88,16.18 20.88,16.66Q20.88,17.14 20.53,17.47Q20.18,17.81 19.7,17.81ZM5.02,2.76Q5.02,2.45 4.8,2.22Q4.58,1.99 4.27,1.99Q3.96,1.99 3.74,2.22Q3.53,2.45 3.53,2.76L3.53,14.11Q2.69,14.38 2.16,15.07Q1.63,15.77 1.63,16.66Q1.63,17.57 2.16,18.25Q2.69,18.94 3.53,19.2L3.53,21.24Q3.53,21.55 3.74,21.77Q3.96,21.98 4.27,21.98Q4.58,21.98 4.8,21.77Q5.02,21.55 5.02,21.24L5.02,19.2Q5.86,18.94 6.4,18.25Q6.94,17.57 6.94,16.66Q6.94,15.77 6.4,15.07Q5.86,14.38 5.02,14.11L5.02,2.76ZM4.27,17.81Q3.79,17.81 3.46,17.47Q3.12,17.14 3.12,16.66Q3.12,16.18 3.46,15.84Q3.79,15.5 4.27,15.5Q4.75,15.5 5.1,15.84Q5.45,16.18 5.45,16.66Q5.45,17.14 5.1,17.47Q4.75,17.81 4.27,17.81Z"/></svg></div>
-      <h3>音频效果</h3>
-      <p>均衡器、低音增强、环绕音效。实时调节，即时生效，满足不同听音偏好。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M16.27,20.98Q17.02,20.98 17.64,20.6Q18.26,20.23 18.64,19.61Q19.01,18.98 19.01,18.24L19.01,9.36Q19.01,8.62 18.64,7.98Q18.26,7.34 17.64,6.97Q17.02,6.6 16.27,6.6L4.22,6.6Q3.48,6.6 2.86,6.97Q2.23,7.34 1.86,7.98Q1.49,8.62 1.49,9.36L1.49,18.24Q1.49,18.98 1.86,19.61Q2.23,20.23 2.86,20.6Q3.48,20.98 4.22,20.98L16.27,20.98ZM16.27,8.11Q16.78,8.11 17.15,8.47Q17.52,8.83 17.52,9.36L17.52,18.24Q17.52,18.74 17.15,19.12Q16.78,19.49 16.27,19.49L4.22,19.49Q3.72,19.49 3.35,19.12Q2.98,18.74 2.98,18.24L2.98,9.36Q2.98,8.83 3.35,8.47Q3.72,8.11 4.22,8.11L16.27,8.11ZM7.99,3Q7.22,3 6.55,3.29Q5.88,3.58 5.36,4.1Q4.85,4.63 4.56,5.3L6.31,5.3Q6.62,4.94 7.06,4.73Q7.49,4.51 7.99,4.51L18.79,4.51Q19.7,4.51 20.35,5.16Q21,5.81 21,6.72L21,14.23Q21,14.71 20.82,15.12Q20.64,15.53 20.3,15.84L20.3,17.62Q20.95,17.33 21.46,16.82Q21.96,16.32 22.24,15.65Q22.51,14.98 22.51,14.23L22.51,6.72Q22.51,5.71 22.01,4.86Q21.5,4.01 20.65,3.5Q19.8,3 18.79,3L7.99,3Z"/></svg></div>
-      <h3>专辑浏览</h3>
-      <p>按专辑封面瀑布式浏览，大图沉浸体验。支持按艺术家、流派筛选和排序。</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.04,8.04Q10.66,7.82 10.26,7.91Q9.86,7.99 9.59,8.29Q9.31,8.59 9.31,9.02L9.31,15.05Q9.31,15.48 9.59,15.79Q9.86,16.1 10.26,16.18Q10.66,16.25 11.04,16.03L16.25,13.03Q16.61,12.82 16.74,12.43Q16.87,12.05 16.74,11.65Q16.61,11.26 16.25,11.04L11.04,8.04ZM11.95,23.09Q14.95,23.09 17.5,21.59Q20.04,20.09 21.54,17.54Q23.04,15 23.04,12Q23.04,9 21.55,6.44Q20.06,3.89 17.51,2.39Q14.95,0.89 11.95,0.89Q8.83,0.89 6.18,2.51Q3.53,4.13 2.09,6.89Q1.97,7.18 2.05,7.46Q2.14,7.75 2.42,7.9Q2.69,8.04 2.99,7.94Q3.29,7.85 3.43,7.58Q4.68,5.18 6.97,3.79Q9.26,2.4 11.95,2.4Q14.54,2.4 16.75,3.7Q18.96,4.99 20.26,7.2Q21.55,9.41 21.55,12Q21.55,14.59 20.26,16.8Q18.96,19.01 16.75,20.3Q14.54,21.6 11.95,21.6Q9.26,21.6 6.97,20.21Q4.68,18.82 3.43,16.42Q3.29,16.13 2.99,16.03Q2.69,15.94 2.42,16.08Q2.14,16.22 2.05,16.52Q1.97,16.82 2.09,17.11Q3.53,19.87 6.18,21.48Q8.83,23.09 11.95,23.09ZM2.47,10.49Q1.85,10.49 1.4,10.93Q0.96,11.38 0.96,12Q0.96,12.62 1.4,13.07Q1.85,13.51 2.47,13.51Q3.1,13.51 3.54,13.07Q3.98,12.62 3.98,12Q3.98,11.38 3.54,10.93Q3.1,10.49 2.47,10.49Z"/></svg></div>
-      <h3>桌面端体验</h3>
-      <p>响应式多面板布局（Compact / Expanded），键盘快捷键，无边框窗口，系统托盘集成。</p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 3. Dynamic Theme — 差异化亮点，制造"哇"                          -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section section-alt" id="theme">
-  <div class="section-header">
-    <h2 class="section-title">动态背景系统</h2>
-    <p class="section-subtitle">每首歌都有自己的色彩 — 专辑封面驱动，播放时实时变幻</p>
-  </div>
-  <div class="theme-demo">
-    <div class="theme-modes">
-      <button class="theme-mode-btn active" data-mode="fluid">
-        <span class="mode-dot mode-dot-fluid"></span>
-        <span class="mode-label"><strong>流体极光</strong><small>FLUID</small></span>
-      </button>
-      <button class="theme-mode-btn" data-mode="spots">
-        <span class="mode-dot mode-dot-spots"></span>
-        <span class="mode-label"><strong>沉浸光斑</strong><small>SPOTS</small></span>
-      </button>
-      <button class="theme-mode-btn" data-mode="blur">
-        <span class="mode-dot mode-dot-blur"></span>
-        <span class="mode-label"><strong>复古模糊</strong><small>BLUR</small></span>
-      </button>
-    </div>
-  </div>
-  <div class="theme-features">
-    <div class="theme-feature">
-      <h4>Palette 颜色提取</h4>
-      <p>从每张专辑封面提取 8 种代表色，构建完整动态配色方案，主题随音乐流动变化。</p>
-    </div>
-    <div class="theme-feature">
-      <h4>毛玻璃效果</h4>
-      <p>Android Haze 库 5 档预设强度 + iOS 液态玻璃系统级 GPU 加速。弹窗、底部栏全覆盖。</p>
-    </div>
-    <div class="theme-feature">
-      <h4>暗色 / 亮色双主题</h4>
-      <p>支持系统主题自动跟随，可手动锁定。亮色模式下动态背景依然完整呈现。</p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 4. Screenshots — 视觉证据                                       -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="screenshots">
-  <div class="section-header">
-    <h2 class="section-title">界面预览</h2>
-    <p class="section-subtitle">精雕细琢，每一屏都经得起放大看</p>
-  </div>
-  <div class="preview-layout">
-    <div class="preview-video">
-      <div class="device-frame">
-        <video autoplay muted loop playsinline preload="metadata">
-          <source src="assets/demo.mp4" type="video/mp4">
-        </video>
-      </div>
-    </div>
-    <div class="preview-detail">
-    <div class="preview-nav" id="previewNav">
-<button class="preview-nav-item active" data-src="assets/screenshots/screenshot-home-android.jpg">
-        <span class="preview-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.67,3.12Q8.78,3.26 8.21,3.95Q7.63,4.63 7.63,5.54L7.63,14.11Q7.63,15.14 6.98,15.73Q6.34,16.32 5.09,16.87L5.04,16.9Q4.34,17.21 3.92,17.56Q3.5,17.9 3.14,18.65Q2.83,19.32 2.89,20.02Q2.95,20.71 3.36,21.26Q3.82,21.89 4.56,22.14Q5.3,22.39 5.95,22.3Q7.06,22.18 7.75,21.61Q8.45,21.05 8.77,20.34Q9.1,19.63 9.12,19.01L9.12,8.47L19.61,6.6L19.61,11.86Q19.61,12.36 19.45,12.79Q19.3,13.22 18.79,13.63Q18.24,14.09 17.23,14.52Q16.42,14.9 15.94,15.26Q15.46,15.62 15.1,16.39Q14.78,17.06 14.84,17.76Q14.9,18.46 15.31,19.01Q15.72,19.58 16.42,19.86Q17.11,20.14 17.9,20.04Q19.01,19.9 19.7,19.33Q20.4,18.77 20.72,18.06Q21.05,17.35 21.1,16.73L21.1,4.22Q21.1,3.46 20.69,2.82Q20.28,2.18 19.6,1.88Q18.91,1.58 18.14,1.7L9.67,3.12Z"/></svg></span>
-        <span>首页</span>
-      </button>
-<button class="preview-nav-item" data-src="assets/screenshots/screenshot-gallery-android.jpg">
-        <span class="preview-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.27,20.98Q17.02,20.98 17.64,20.6Q18.26,20.23 18.64,19.61Q19.01,18.98 19.01,18.24L19.01,9.36Q19.01,8.62 18.64,7.98Q18.26,7.34 17.64,6.97Q17.02,6.6 16.27,6.6L4.22,6.6Q3.48,6.6 2.86,6.97Q2.23,7.34 1.86,7.98Q1.49,8.62 1.49,9.36L1.49,18.24Q1.49,18.98 1.86,19.61Q2.23,20.23 2.86,20.6Q3.48,20.98 4.22,20.98L16.27,20.98Z"/></svg></span>
-        <span>音乐库</span>
-      </button>
-<button class="preview-nav-item" data-src="assets/screenshots/screenshot-player-android.jpg">
-        <span class="preview-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.77,2.35Q5.95,1.9 5.08,2.06Q4.2,2.23 3.61,2.9Q3.02,3.58 3.02,4.51L3.02,19.46Q3.02,20.4 3.61,21.08Q4.2,21.77 5.08,21.94Q5.95,22.1 6.77,21.65L19.73,14.16Q20.54,13.7 20.83,12.85Q21.12,12 20.83,11.15Q20.54,10.3 19.73,9.84L6.77,2.35Z"/></svg></span>
-        <span>播放器</span>
-      </button>
-<button class="preview-nav-item" data-src="assets/screenshots/screenshot-list-android.jpg">
-        <span class="preview-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.5,2.76Q2.88,2.76 2.44,3.19Q1.99,3.62 1.99,4.25Q1.99,4.87 2.44,5.32Q2.88,5.76 3.5,5.76Q4.13,5.76 4.56,5.32Q4.99,4.87 4.99,4.25Q4.99,3.62 4.56,3.19Q4.13,2.76 3.5,2.76ZM21.24,4.99Q21.55,4.99 21.78,4.78Q22.01,4.56 22.01,4.25Q22.01,3.94 21.78,3.72Q21.55,3.5 21.24,3.5L7.73,3.5Q7.42,3.5 7.2,3.72Q6.98,3.94 6.98,4.25Q6.98,4.56 7.2,4.78Q7.42,4.99 7.73,4.99L21.24,4.99ZM21.24,12.74Q21.55,12.74 21.78,12.53Q22.01,12.31 22.01,12Q22.01,11.69 21.78,11.47Q21.55,11.26 21.24,11.26L7.73,11.26Q7.42,11.26 7.2,11.47Q6.98,11.69 6.98,12Q6.98,12.31 7.2,12.53Q7.42,12.74 7.73,12.74L21.24,12.74Z"/></svg></span>
-        <span>播放列表</span>
-      </button>
-<button class="preview-nav-item" data-src="assets/screenshots/screenshot-user-android.jpg">
-        <span class="preview-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.05,18.36Q13.39,18.36 14.42,18.18Q15.46,18 16.58,17.76L16.66,17.74Q16.8,17.71 16.92,17.6Q17.04,17.5 17.11,17.38Q17.35,16.87 17.76,16.2Q18.17,15.53 18.41,15.26Q19.39,14.06 19.91,12.62Q20.42,11.18 20.42,9.65Q20.42,7.3 19.3,5.3Q18.17,3.31 16.22,2.12Q14.28,0.94 12,0.94Q9.72,0.94 7.78,2.11Q5.83,3.29 4.69,5.28Q3.55,7.27 3.55,9.62Q3.55,11.16 4.07,12.6Q4.58,14.04 5.57,15.24Q5.64,15.34 5.71,15.43Q5.98,15.84 6.36,16.4Q6.74,16.97 6.89,17.23Q6.96,17.38 7.07,17.47Q7.18,17.57 7.32,17.62L7.37,17.64Q7.7,17.74 8.41,17.9Q9.12,18.07 10.08,18.22Q11.04,18.36 12.05,18.36ZM16.34,18.89Q13.99,19.32 11.94,19.31Q9.89,19.3 7.66,18.89Q7.61,18.86 7.56,18.91Q7.51,18.96 7.51,19.03Q7.61,20.16 8.22,21.07Q8.83,21.98 9.83,22.51Q10.82,23.04 12.07,23.04Q13.18,23.04 14.16,22.51Q15.14,21.98 15.76,21.07Q16.37,20.16 16.46,19.03Q16.49,18.98 16.44,18.94Q16.39,18.89 16.34,18.89Z"/></svg></span>
-        <span>个人中心</span>
-      </button>
-    
-    </div>
-    <div class="preview-screen" id="previewScreen">
-      <div class="device-frame">
-        <img src="assets/screenshots/screenshot-home-android.jpg" alt="界面截图" id="previewImg">
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 5. Platforms — 我在哪里能用                                      -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section section-alt" id="platforms">
-  <div class="section-header">
-    <h2 class="section-title">全平台支持</h2>
-    <p class="section-subtitle">一套代码，三端运行。共享核心逻辑，UI 保持平台原生。</p>
-  </div>
-  <div class="platforms-grid">
-    <div class="platform-card">
-      <div class="platform-icon">🤖</div>
-      <h3>Android</h3>
-      <p class="platform-req">Android 13+</p>
-      <p class="platform-desc">Jetpack Compose · Material 3 · Media3 引擎 · Navigation 3 · Haze 毛玻璃</p>
-      <div class="platform-tags"><span>Kotlin</span><span>Compose</span><span>Media3</span><span>Room</span></div>
-    </div>
-    <div class="platform-card platform-card-featured">
-      <div class="platform-badge">NEW</div>
-      <div class="platform-icon">🖥️</div>
-      <h3>Desktop</h3>
-      <p class="platform-req">macOS 14+ / Windows 10+ / Linux</p>
-      <p class="platform-desc">Compose Multiplatform · FFmpeg + JNA 音频引擎 · 响应式多面板 · 快捷键 · 无边框窗口</p>
-      <div class="platform-tags"><span>Kotlin</span><span>CMP</span><span>FFmpeg</span><span>JNA</span></div>
-    </div>
-    <div class="platform-card">
-      <div class="platform-icon">🍎</div>
-      <h3>iOS</h3>
-      <p class="platform-req">iOS 26.0+</p>
-      <p class="platform-desc">SwiftUI · AVFoundation 引擎 · 灵动岛 Live Activity · 锁屏控制 · 液态玻璃效果</p>
-      <div class="platform-tags"><span>Swift</span><span>SwiftUI</span><span>AVFoundation</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 6. Download — 行动转化                                          -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="download">
-  <div class="section-header">
-    <h2 class="section-title">下载 HMP</h2>
-    <p class="section-subtitle">选择你的平台，开始享受纯粹的音乐体验</p>
-  </div>
-  <div class="download-tabs" role="tablist">
-    <button class="download-tab active" data-platform="android">Android</button>
-    <button class="download-tab" data-platform="macos">macOS</button>
-    <button class="download-tab" data-platform="windows">Windows</button>
-    <button class="download-tab" data-platform="linux">Linux</button>
-  </div>
-  <div class="download-panels">
-    <div class="download-panel active" data-platform="android">
-      <div class="download-card">
-        <div class="download-card-icon">📱</div>
-        <h3>Android</h3>
-        <div class="download-files">
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-release.apk</span><span class="dl-badge">APK</span></a>
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-release.aab</span><span class="dl-badge">AAB</span><span class="dl-hint">Google Play</span></a>
-        </div>
-        <p class="download-note">需要 Android 13+ · 允许存储权限</p>
-      </div>
-    </div>
-    <div class="download-panel" data-platform="macos">
-      <div class="download-card">
-        <div class="download-card-icon">🍎</div>
-        <h3>macOS</h3>
-        <div class="download-files">
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-macos.dmg</span><span class="dl-badge">DMG</span></a>
-        </div>
-        <p class="download-note">需要 macOS 14+ · 首次打开右键选择"打开"</p>
-      </div>
-    </div>
-    <div class="download-panel" data-platform="windows">
-      <div class="download-card">
-        <div class="download-card-icon">🪟</div>
-        <h3>Windows</h3>
-        <div class="download-files">
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-windows.msi</span><span class="dl-badge">MSI</span></a>
-        </div>
-        <p class="download-note">需要 Windows 10+ · SmartScreen 点击"更多信息"即可运行</p>
-      </div>
-    </div>
-    <div class="download-panel" data-platform="linux">
-      <div class="download-card">
-        <div class="download-card-icon">🐧</div>
-        <h3>Linux</h3>
-        <div class="download-files">
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-linux.deb</span><span class="dl-badge">DEB</span></a>
-          <a href="https://github.com/InfiniteMotion/HMP/releases" class="download-link"><span class="dl-name">HMP-v6.10.0-linux.AppImage</span><span class="dl-badge">AppImage</span></a>
-        </div>
-        <p class="download-note">需要 Ubuntu 22.04+ 或兼容发行版</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 7+ 深入了解 — 这里有 divider 分隔"决策转化"和"了解更»                    -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div class="section-divider" id="philosophy">
-  <div class="divider-line"></div>
-  <span class="divider-label">深入了解 HMP</span>
-  <div class="divider-line"></div>
+<div class="aurora-bg">
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 8. Design Philosophy — 为什么这样做                               -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section">
-  <div class="section-header">
-    <h2 class="section-title">设计理念</h2>
-    <p class="section-subtitle">好的音乐播放器应该尊重用户，而非绑架用户</p>
-  </div>
-  <div class="philosophy-grid">
-    <div class="philo-card">
-      <div class="philo-icon">☁️</div>
-      <h3>不做云同步</h3>
-      <p>数据存储在设备本地。无需网络即可使用全部功能，地铁、飞行模式不受影响。</p>
-    </div>
-    <div class="philo-card">
-      <div class="philo-icon">👤</div>
-      <h3>不引入账号系统</h3>
-      <p>无需注册登录，打开即用。无账号泄露风险，隐私始终属于你。</p>
-    </div>
-    <div class="philo-card">
-      <div class="philo-icon">💬</div>
-      <h3>不做社交功能</h3>
-      <p>不添加好友、不分享动态、不做社区。专注音乐播放，回归工具本质。</p>
-    </div>
-    <div class="philo-card">
-      <div class="philo-icon">🔒</div>
-      <h3>不收集用户数据</h3>
-      <p>无埋点、无分析、无遥测。你的听歌记录和偏好完全私密，零数据收集。</p>
-    </div>
-  </div>
-  <div class="philo-principle">
-    <div class="principle-badge">核心原则</div>
-    <p class="principle-text"><strong>纯本地优先</strong> — 数据完全由用户掌控，备份还原均在本地完成。AI 推荐是唯一的网络功能，且需用户自行配置 API Key。</p>
-  </div>
-</section>
+<div class="bottom-bar">
+  <a href="https://github.com/InfiniteMotion/HMP" class="bottom-link">GitHub</a>
+  <a href="https://github.com/InfiniteMotion/HMP/releases/tag/v6.10.0" class="top-badge">v6.10.0</a>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+    <span id="themeIcon">&#9789;</span>
+  </button>
+</div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 9. Architecture Evolution — 怎么一步一步走过来的                    -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section section-alt" id="evolution">
-  <div class="section-header">
-    <h2 class="section-title">架构演进</h2>
-    <p class="section-subtitle">三次重大架构变迁，每一次都在前一步基础上渐进演进，从不推倒重来</p>
-  </div>
-  <div class="timeline">
-    <div class="timeline-item">
-      <div class="timeline-marker" style="--marker-color:#4CAF50"></div>
-      <div class="timeline-content">
-        <div class="timeline-phase">阶段一 · v1.0 – v4.0</div>
-        <h3>单体架构</h3>
-        <p>从零搭建基础播放功能，所有代码集中在一个模块。快速验证产品方向，积累核心能力。</p>
-        <div class="timeline-tags"><span>基础播放</span><span>播放列表</span><span>搜索与歌词</span></div>
+<div class="layout">
+  <aside class="hero-panel">
+    <div class="hero-panel-inner">
+      <a href="https://github.com/InfiniteMotion/HMP/releases/tag/v6.10.0" style="text-decoration:none;"><div class="hero-badge">HMP v6.10.0</div></a>
+      <h1 class="hero-title">Hearable Music Player</h1>
+      <p class="hero-subtitle">听见你的音乐</p>
+      <p class="hero-desc">旋律穿过边境，在眼前响起<br/>隐藏的特征被标记<br/>等待，寻找共振的频率</p>
+      <div class="hero-actions">
+        <a href="download.html" class="btn btn-primary">了解与获取</a>
       </div>
     </div>
-    <div class="timeline-item">
-      <div class="timeline-marker" style="--marker-color:#2196F3"></div>
-      <div class="timeline-content">
-        <div class="timeline-phase">阶段二 · v5.0 – v5.9</div>
-        <h3>模块化架构</h3>
-        <p>拆分为 5 个独立模块，引入 Hilt + Media3。AI 多服务商、动态主题、毛玻璃、Navigation 3 等核心特性集中落地。</p>
-        <div class="timeline-tags"><span>5 模块拆分</span><span>Media3</span><span>AI 推荐</span><span>动态主题</span><span>Navigation 3</span></div>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-marker" style="--marker-color:#002FA7"></div>
-      <div class="timeline-content">
-        <div class="timeline-phase">阶段三 · v5.10+</div>
-        <h3>跨平台架构</h3>
-        <p>KMP Monorepo，共享 domain + data 层。新增 iOS 与 Desktop 双平台。平台原生 UI，各取所长。</p>
-        <div class="timeline-tags"><span>KMP</span><span>Room KMP</span><span>Ktor</span><span>Koin</span><span>iOS</span><span>Desktop</span></div>
-      </div>
-    </div>
-  </div>
-</section>
+  </aside>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 10. Key Technical Decisions — 关键选择背后的原因                    -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="decisions">
-  <div class="section-header">
-    <h2 class="section-title">关键技术决策</h2>
-    <p class="section-subtitle">每个选择背后都有明确的原因和权衡</p>
-  </div>
-  <div class="decisions-grid">
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#4CAF50"></div>
-      <div class="decision-time">2025.11</div>
-      <h4>模块化重构</h4>
-      <p>从单体拆分为 5 模块，引入 Hilt + Media3</p>
-      <p class="decision-reason">代码量增长导致维护困难，需要清晰的模块边界和职责分离</p>
-    </div>
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#2196F3"></div>
-      <div class="decision-time">2025.12</div>
-      <h4>多 AI 服务商</h4>
-      <p>支持 5 家而非绑定单一提供商</p>
-      <p class="decision-reason">避免供应商锁定，给用户更多选择，降低单点故障风险</p>
-    </div>
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#9C27B0"></div>
-      <div class="decision-time">2026.04</div>
-      <h4>Navigation 3 迁移</h4>
-      <p>从字符串路由迁移到类型安全导航</p>
-      <p class="decision-reason">编译时类型检查，消除路由拼写错误，支持深度链接</p>
-    </div>
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#002FA7"></div>
-      <div class="decision-time">2026.05</div>
-      <h4>KMP 跨平台</h4>
-      <p>共享业务逻辑，UI 保持平台原生</p>
-      <p class="decision-reason">业务逻辑复用减少重复，原生 UI 保证各平台最佳体验</p>
-    </div>
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#FF9800"></div>
-      <div class="decision-time">2026.05</div>
-      <h4>Room KMP vs SQLDelight</h4>
-      <p>排查后选择修复 Room 而非迁移</p>
-      <p class="decision-reason">问题根因是 Gradle 配置，修复成本远低于全量迁移</p>
-    </div>
-    <div class="decision-card">
-      <div class="decision-bar" style="--d-color:#C92C2C"></div>
-      <div class="decision-time">2026.05</div>
-      <h4>平台原生 UI</h4>
-      <p>不用 Compose Multiplatform UI</p>
-      <p class="decision-reason">平台原生组件可节省最高 94% 代码量，系统级 GPU 加速不可替代</p>
-    </div>
-  </div>
-</section>
+  <main class="features-panel">
+    <div class="feature-slides">
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 11. Visual Design System — 设计语言                              -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="section section-alt" id="design">
-  <div class="section-header">
-    <h2 class="section-title">视觉设计系统</h2>
-    <p class="section-subtitle">从品牌色到动效，一套完整的设计语言</p>
-  </div>
-  <div class="design-block">
-    <h3 class="design-block-title">品牌色</h3>
-    <div class="color-swatches">
-      <div class="color-swatch">
-        <div class="color-chip" style="background:#002FA7"></div>
-        <div class="color-info"><strong>HD Blue</strong><span>Klein Blue · #002FA7</span><span>主品牌色，用于强调元素</span></div>
+      <!-- Page 1: 沉浸氛围 -->
+      <div class="feature-page active">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden;">
+            <div style="position:absolute; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(201,44,44,0.6), transparent 70%); top:10%; left:15%; filter:blur(30px); animation: orbA 6s ease-in-out infinite;"></div>
+            <div style="position:absolute; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle, rgba(0,47,167,0.5), transparent 70%); bottom:15%; right:10%; filter:blur(30px); animation: orbB 8s ease-in-out infinite;"></div>
+            <div style="position:absolute; width:100px; height:100px; border-radius:50%; background:radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%); top:50%; left:50%; filter:blur(25px); animation: orbC 7s ease-in-out infinite;"></div>
+            <div style="position:relative; z-index:1; width:70%; aspect-ratio:16/10; background:rgba(255,255,255,0.04); border-radius:12px; border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:rgba(255,255,255,0.3);">App UI</div>
+          </div>
+          <div class="feature-card-text">
+            <h3>沉浸氛围</h3>
+            <span class="tag">视觉体验</span>
+            <p>不只是播放页——整个应用都笼罩在随音乐实时变化的氛围光影中。从专辑封面提取色彩，生成持续流动的动态背景。三种风格可选：流体极光、沉浸光斑、复古模糊。亮色与暗色模式下各有不同的氛围表达。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">色彩提取</span>
+              <span class="feature-tag">流体极光</span>
+              <span class="feature-tag">全应用沉浸</span>
+              <span class="feature-tag">亮暗双模</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="color-swatch">
-        <div class="color-chip" style="background:#C92C2C"></div>
-        <div class="color-info"><strong>HD Red</strong><span>HD Red · #C92C2C</span><span>警示与破坏性操作</span></div>
-      </div>
-    </div>
-  </div>
-  <div class="design-block">
-    <h3 class="design-block-title">字体系统</h3>
-    <p class="design-block-desc">HarmonyOS Sans · 6 种字重：Thin / Light / Regular / Medium / Bold / Black</p>
-    <div class="font-showcase">
-      <span style="font-weight:100">Thin</span>
-      <span style="font-weight:300">Light</span>
-      <span style="font-weight:400">Regular</span>
-      <span style="font-weight:500">Medium</span>
-      <span style="font-weight:700">Bold</span>
-      <span style="font-weight:900">Black</span>
-    </div>
-  </div>
-  <div class="design-block">
-    <h3 class="design-block-title">动效体系</h3>
-    <div class="motion-grid">
-      <div class="motion-card">
-        <strong>4 档时长</strong>
-        <span>MICRO 200ms</span><span>SHORT 300ms</span><span>MEDIUM 500ms</span><span>BACKGROUND 3000ms</span>
-      </div>
-      <div class="motion-card">
-        <strong>3 组缓动</strong>
-        <span>EASE_IN_OUT</span><span>EASE_OUT</span><span>EASE_IN</span>
-      </div>
-      <div class="motion-card">
-        <strong>3 种弹簧</strong>
-        <span>Bouncy</span><span>Gentle</span><span>Stiff</span>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- 12. CTA — 最后推动                                                -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<section class="cta">
-  <h2 class="cta-title">准备好开始了吗？</h2>
-  <p class="cta-desc">开源、免费、无广告。坚持纯本地，尊重你的隐私。</p>
-  <div class="cta-actions">
-    <a href="#download" class="btn-primary btn-lg">立即下载</a>
-    <a href="https://github.com/InfiniteMotion/HMP" class="btn-secondary btn-lg" target="_blank" rel="noopener">查看源码</a>
-  </div>
-</section>
+      <!-- Page 2: 通透质感 -->
+      <div class="feature-page">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:12px; padding:20px;">
+            <div style="position:absolute; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle, rgba(0,47,167,0.3), transparent 70%); top:5%; right:10%; filter:blur(30px);"></div>
+            <div class="glass" style="width:85%; padding:12px 16px; border-radius:28px; display:flex; align-items:center; gap:10px; margin-top:10px;">
+              <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg, var(--red), #e94560);"></div>
+              <div style="width:50%; height:6px; border-radius:3px; background:rgba(255,255,255,0.12);"></div>
+            </div>
+            <div class="glass" style="width:65%; padding:14px 18px; border-radius:20px; text-align:center; font-size:0.7rem; opacity:0.7;">毛玻璃卡片</div>
+            <div class="glass" style="width:55%; padding:6px 14px; border-radius:24px; display:flex; align-items:center; gap:8px; opacity:0.5;">
+              <div style="width:16px; height:16px; border-radius:50%; background:rgba(255,255,255,0.2);"></div>
+              <div style="width:60%; height:4px; border-radius:2px; background:rgba(255,255,255,0.1);"></div>
+            </div>
+          </div>
+          <div class="feature-card-text">
+            <h3>通透质感</h3>
+            <span class="tag">UI 设计</span>
+            <p>底部导航栏、迷你播放器、对话框——HMP 的核心交互区全部采用大圆角毛玻璃卡片，悬浮于动态背景之上。模糊半径、噪点纹理、透明度均可调节。Android 和桌面端使用 Haze 库，iOS 端使用原生 ultraThinMaterial。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">Haze</span>
+              <span class="feature-tag">ultraThinMaterial</span>
+              <span class="feature-tag">可调节参数</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- Footer                                                        -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <span class="footer-logo">♪ HMP</span>
-      <p class="footer-tagline">纯本地 · 跨平台 · 尊重隐私</p>
-    </div>
-    <div class="footer-links">
-      <div class="footer-col">
-        <h4>产品</h4>
-        <a href="#features">功能</a>
-        <a href="#theme">动态背景</a>
-        <a href="#platforms">平台</a>
-        <a href="#download">下载</a>
+      <!-- Page 3: 智能推荐 -->
+      <div class="feature-page">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:40px; height:40px; border-radius:8px; background:linear-gradient(135deg, #e94560, #C92C2C); display:flex; align-items:center; justify-content:center; font-size:1rem;">&#9835;</div>
+              <div>
+                <div style="font-size:0.75rem; font-weight:600;">Blinding Lights</div>
+                <div style="font-size:0.6rem; color:rgba(255,255,255,0.4);">The Weeknd</div>
+              </div>
+            </div>
+            <div style="font-size:0.6rem; color:rgba(255,255,255,0.3);">↓ LLM 自动标注 ↓</div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;">
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(144,202,249,0.2); color:#90CAF9; font-size:0.6rem;">流派·Synthwave</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(244,143,177,0.2); color:#F48FB1; font-size:0.6rem;">情绪·亢奋</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(129,199,132,0.2); color:#81C784; font-size:0.6rem;">场景·驾驶</span>
+              <span style="padding:3px 10px; border-radius:100px; background:rgba(255,183,77,0.2); color:#FFB74D; font-size:0.6rem;">年代·2020s</span>
+            </div>
+            <div style="font-size:0.7rem; color:var(--primary);">&#9654; 推荐相似曲目</div>
+          </div>
+          <div class="feature-card-text">
+            <h3>智能推荐</h3>
+            <span class="tag">AI &middot; 推荐</span>
+            <p>通过大语言模型为每首歌自动打标签——流派、情绪、场景、语言、年代。基于标签驱动推荐。已集成 DeepSeek、OpenAI、Claude、通义千问、文心一言。API Key 由你提供，加密存储于本地。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">DeepSeek</span>
+              <span class="feature-tag">OpenAI</span>
+              <span class="feature-tag">Claude</span>
+              <span class="feature-tag">端侧加密</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="footer-col">
-        <h4>项目</h4>
-        <a href="https://github.com/InfiniteMotion/HMP" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/InfiniteMotion/HMP/blob/master/ROADMAP.md" target="_blank" rel="noopener">更新日志</a>
-        <a href="https://github.com/InfiniteMotion/HMP/issues" target="_blank" rel="noopener">问题反馈</a>
-      </div>
-      <div class="footer-col">
-        <h4>技术</h4>
-        <span>Kotlin Multiplatform</span>
-        <span>Compose Multiplatform</span>
-        <span>SwiftUI</span>
-      </div>
-      <div class="footer-col">
-        <h4>了解更多</h4>
-        <a href="#philosophy">设计理念</a>
-        <a href="#evolution">架构演进</a>
-        <a href="#design">视觉系统</a>
-      </div>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>&copy; 2026 Hearable Music Player · Built with ♪ by WLYB</p>
-  </div>
-</footer>
 
-<script src="js/main.js"></script>
+      <!-- Page 4: 自适应布局 -->
+      <div class="feature-page">
+        <div class="feature-card glass">
+          <div class="feature-card-visual" style="background:#121218; display:flex; align-items:center; justify-content:center; gap:40px; padding:20px;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:60px; aspect-ratio:9/16; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; padding:6px 4px; gap:4px;">
+                <div style="height:8px; border-radius:4px; background:rgba(255,255,255,0.10);"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px;">
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div><div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div><div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                </div>
+                <div style="height:10px; border-radius:5px; background:rgba(255,255,255,0.12); display:flex; gap:2px; padding:2px 4px;">
+                  <div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div><div style="flex:1; border-radius:3px; background:rgba(255,255,255,0.08);"></div>
+                </div>
+              </div>
+              <span style="font-size:0.55rem; opacity:0.35;">竖屏 / 窄窗</span>
+            </div>
+            <span style="font-size:1.2rem; opacity:0.3;">↔</span>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:110px; aspect-ratio:16/10; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; padding:4px; gap:4px;">
+                <div style="width:18px; border-radius:4px; background:rgba(255,255,255,0.06); display:flex; flex-direction:column; padding:4px 2px; gap:3px;">
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.1); margin:0 auto;"></div>
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.1); margin:0 auto;"></div>
+                  <div style="width:10px; height:10px; border-radius:2px; background:rgba(255,255,255,0.15); margin:0 auto;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px;">
+                  <div style="height:8px; border-radius:4px; background:rgba(255,255,255,0.10);"></div>
+                  <div style="flex:1; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                </div>
+              </div>
+              <span style="font-size:0.55rem; opacity:0.35;">横屏 / 宽窗</span>
+            </div>
+          </div>
+          <div class="feature-card-text">
+            <h3>自适应布局</h3>
+            <span class="tag">平台</span>
+            <p>业务逻辑和数据层通过 Kotlin Multiplatform 在三平台共享。Android 和 iOS 采用底部胶囊导航，桌面端在宽屏下自动切换为侧边 NavigationRail，窗口缩窄时退化为底部布局。UI 层各自遵循原生规范。</p>
+            <div class="feature-tags">
+              <span class="feature-tag">Kotlin Multiplatform</span>
+              <span class="feature-tag">Compose</span>
+              <span class="feature-tag">SwiftUI</span>
+              <span class="feature-tag">响应式布局</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="swipe-dots" id="swipeDots">
+      <span class="swipe-dot active"></span>
+      <span class="swipe-dot"></span>
+      <span class="swipe-dot"></span>
+      <span class="swipe-dot"></span>
+    </div>
+  </main>
+</div>
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; By WLYB &middot; <a href="privacy-policy.html" style="color:inherit;text-decoration:underline;">隐私政策</a></span>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const theme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+
+let currentPage = 0;
+const totalPages = 4;
+let locked = false;
+let autoPlayTimer;
+
+function goToPage(index) {
+  if (locked) return;
+  index = ((index % totalPages) + totalPages) % totalPages;
+  if (index === currentPage) return;
+  locked = true;
+  document.querySelectorAll('.feature-page').forEach((p,i) => p.classList.toggle('active', i === index));
+  currentPage = index;
+  resetAutoPlay();
+  setTimeout(() => { locked = false; }, 350);
+}
+
+function resetAutoPlay() {
+  clearTimeout(autoPlayTimer);
+  autoPlayTimer = setTimeout(() => goToPage(currentPage + 1), 3000);
+}
+
+if (window.innerWidth > 860) {
+  document.querySelectorAll('.feature-card').forEach(card => {
+    card.addEventListener('mouseenter', () => clearTimeout(autoPlayTimer));
+    card.addEventListener('mouseleave', () => resetAutoPlay());
+  });
+
+  document.addEventListener('wheel', (e) => {
+    if (locked) return;
+    goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
+
+  resetAutoPlay();
+}
+
+</script>
 </body>
 </html>

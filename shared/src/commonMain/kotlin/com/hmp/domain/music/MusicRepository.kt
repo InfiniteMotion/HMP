@@ -1,6 +1,6 @@
 package com.hmp.domain.music
 
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.model.PlaybackHistory
@@ -63,12 +63,14 @@ interface MusicRepository {
 
     // AI / Extra Fetching
     suspend fun fetchMusicExtraInfoWithProvider(
-        providerConfig: AiProviderConfig,
+        config: AiEndpointConfig,
         title: String,
         artist: String
     ): Result<DailyMusicInfo>
 
-    suspend fun validateProviderApiKey(providerConfig: AiProviderConfig): Result<Boolean>
+    suspend fun validateProviderApiKey(config: AiEndpointConfig): Result<Boolean>
+
+    suspend fun fetchAvailableModels(config: AiEndpointConfig): Result<List<String>>
 
     // Listening Duration
     suspend fun insertPlayback(history: PlaybackHistory): Long

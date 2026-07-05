@@ -53,6 +53,18 @@
     <string name="please_config_provider">请先配置 AI 服务商</string>
     <string name="no_pending_music">没有待处理的音乐</string>
     <string name="start_batch_completion">开始批量补全</string>
+    <string name="ai_tab_free">免费体验</string>
+    <string name="ai_tab_custom">自定义配置</string>
+    <string name="ai_tab_paid">付费模式</string>
+    <string name="ai_free_remaining">剩余 %1$d 次</string>
+    <string name="ai_free_used">已使用: %1$d / %2$d</string>
+    <string name="ai_free_exhausted">免费体验次数已用完，请配置自己的 API Key 继续使用</string>
+    <string name="ai_free_hint">每处理一首歌算一次使用，无需配置 API Key</string>
+    <string name="ai_endpoint">API 端点</string>
+    <string name="ai_preset_quick_fill">快捷填入预设</string>
+    <string name="ai_fetch_models">获取可用模型</string>
+    <string name="ai_paid_coming_soon">即将推出</string>
+    <string name="ai_paid_description">付费模式提供更高配额和更多功能，正在开发中</string>
 
     <!-- Search Screen -->
     <string name="search">搜索</string>
@@ -126,6 +138,7 @@
     <string name="refresh_daily_recommendation">刷新每日推荐</string>
     <string name="no_data_loaded">暂未加载到数据</string>
     <string name="relaunch_or_config_ai">请重新启动应用或进行 AI 配置</string>
+    <string name="processing_ai_recommendation">AI 正在为你的音乐补全信息…</string>
     <string name="today_recommendation">今日推荐</string>
     <string name="today_heartbeat_playlist">今日心动歌单</string>
     <string name="generating_heartbeat_playlist">正在生成心动歌单…</string>
@@ -143,6 +156,8 @@
     <string name="creative_background">创作背景</string>
     <string name="popular_lyrics">热门歌词</string>
     <string name="lyrics">歌词</string>
+    <string name="lyrics_settings">歌词设置</string>
+    <string name="lyrics_settings_desc">播放页、全屏、悬浮歌词单独调整或共享配置</string>
     <string name="labels">标签</string>
     <string name="song_achievements">歌曲成就</string>
     <string name="similar_music">类似音乐</string>
@@ -190,13 +205,12 @@
     <string name="scan">扫描</string>
     <string name="start_experience">开始体验</string>
     <string name="welcome_to">欢迎来到</string>
-    <string name="follow_guide_to_config">跟着向导快速完成配置</string>
     <string name="intro_step_1">1. 授予权限</string>
     <string name="intro_step_1_desc">向您请求授予音频媒体文件访问权限和通知权限，我们需要这些权限来实现音乐扫描和通知栏控制。</string>
     <string name="intro_step_2">2. 扫描音乐</string>
     <string name="intro_step_2_desc">首次启动需要从设备中扫描音乐，后续您可以在设置中自行手动更新和扫描。</string>
-    <string name="intro_step_3">3. 开始体验</string>
-    <string name="intro_step_3_desc">设置完毕后，点击按钮即可开启您的音乐体验。</string>
+    <string name="intro_step_3">3. AI 体验</string>
+    <string name="intro_step_3_desc">扫描完成后，100 次免费 AI 额度将自动为音乐补全流派、心情、场景、语言等标签。配置已完成，点击下方按钮开启音乐之旅。可在 AI 设置中切换服务商或关闭。</string>
 
     <!-- Dialogs -->
     <string name="scan_music_title">扫描音乐</string>

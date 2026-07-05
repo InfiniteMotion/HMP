@@ -53,6 +53,18 @@
     <string name="please_config_provider">Please configure AI provider first</string>
     <string name="no_pending_music">No pending music</string>
     <string name="start_batch_completion">Start Batch Completion</string>
+    <string name="ai_tab_free">Free Trial</string>
+    <string name="ai_tab_custom">Custom</string>
+    <string name="ai_tab_paid">Paid</string>
+    <string name="ai_free_remaining">Remaining: %1$d times</string>
+    <string name="ai_free_used">Used: %1$d / %2$d</string>
+    <string name="ai_free_exhausted">Free trial exhausted. Please configure your own API Key to continue.</string>
+    <string name="ai_free_hint">Each song processed counts as one use. No API Key configuration needed.</string>
+    <string name="ai_endpoint">API Endpoint</string>
+    <string name="ai_preset_quick_fill">Quick Fill Preset</string>
+    <string name="ai_fetch_models">Fetch Available Models</string>
+    <string name="ai_paid_coming_soon">Coming Soon</string>
+    <string name="ai_paid_description">Paid mode with higher quotas and more features is under development.</string>
 
     <!-- Search Screen -->
     <string name="search">Search</string>
@@ -126,6 +138,7 @@
     <string name="refresh_daily_recommendation">Refresh Daily Recommendation</string>
     <string name="no_data_loaded">No data loaded yet</string>
     <string name="relaunch_or_config_ai">Please relaunch the app or configure AI</string>
+    <string name="processing_ai_recommendation">AI is enriching your music…</string>
     <string name="today_recommendation">Today\'s Recommendation</string>
     <string name="today_heartbeat_playlist">Today\'s Heartbeat Playlist</string>
     <string name="generating_heartbeat_playlist">Generating heartbeat playlist...</string>
@@ -145,6 +158,8 @@
     <string name="creative_background">Background</string>
     <string name="popular_lyrics">Popular Lyrics</string>
     <string name="lyrics">Lyrics</string>
+    <string name="lyrics_settings">Lyrics Settings</string>
+    <string name="lyrics_settings_desc">Separate or share lyrics config for player, fullscreen, and floating</string>
     <string name="labels">Labels</string>
     <string name="song_achievements">Achievements</string>
     <string name="similar_music">Similar Music</string>
@@ -191,13 +206,12 @@
     <string name="scan">Scan</string>
     <string name="start_experience">Start Experience</string>
     <string name="welcome_to">Welcome to</string>
-    <string name="follow_guide_to_config">Follow the guide to complete configuration</string>
     <string name="intro_step_1">1. Grant Permissions</string>
     <string name="intro_step_1_desc">Please grant access to audio media files and notification permissions. We need these to scan music and provide playback controls.</string>
     <string name="intro_step_2">2. Scan Music</string>
     <string name="intro_step_2_desc">First launch requires scanning music from your device. You can manually update this in settings later.</string>
-    <string name="intro_step_3">3. Start Experience</string>
-    <string name="intro_step_3_desc">Configuration complete! Click the button to start your music journey.</string>
+    <string name="intro_step_3">3. AI Experience</string>
+    <string name="intro_step_3_desc">After scanning, 100 free AI trials will automatically enrich your music with tags like genre, mood, scenario and language. Configuration complete — tap below to start your music journey. You can switch providers or disable it in AI settings.</string>
 
     <!-- Dialogs -->
     <string name="scan_music_title">Scan Music</string>

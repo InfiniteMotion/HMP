@@ -6,11 +6,11 @@
 
 # Keep ViewModel classes
 -keep class * extends androidx.lifecycle.ViewModel { *; }
--keep class com.example.hearablemusicplayer.ui.viewmodel.** { *; }
+-keep class com.hearablemusic.player.ui.viewmodel.** { *; }
 
 # Keep UI Event classes
--keep class com.example.hearablemusicplayer.ui.viewmodel.UiEvent { *; }
--keep class com.example.hearablemusicplayer.ui.viewmodel.UiEvent$* { *; }
+-keep class com.hearablemusic.player.ui.viewmodel.UiEvent { *; }
+-keep class com.hearablemusic.player.ui.viewmodel.UiEvent$* { *; }
 
 # Keep Composable functions
 -keep @androidx.compose.runtime.Composable class ** { *; }

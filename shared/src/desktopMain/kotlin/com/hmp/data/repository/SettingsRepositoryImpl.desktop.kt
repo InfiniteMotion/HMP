@@ -9,16 +9,18 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.hmp.data.database.currentTimeMillis
+import com.hmp.data.network.BuiltInApiKeyProvider
 import com.hmp.data.util.SecureStorageHelper
+import com.hmp.domain.backup.AppSettingsSnapshot
+import com.hmp.domain.backup.DailyRecommendationSnapshot
 import com.hmp.domain.config.DailyRefreshConfig
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
-import com.hmp.domain.enum.AiProviderType
+import com.hmp.domain.lyrics.LyricsComponentConfig
 import com.hmp.domain.setting.SettingsRepository
-import com.hmp.domain.setting.model.AiProviderConfig
+import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.ScanDirectoryConfig
-import com.hmp.domain.backup.AppSettingsSnapshot
-import com.hmp.domain.backup.DailyRecommendationSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -26,13 +28,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 class SettingsRepositoryImpl(
     private val dataStore: DataStore<Preferences>,
-    private val json: Json
+    private val json: Json,
+    private val builtInApiKeyProvider: BuiltInApiKeyProvider = BuiltInApiKeyProvider()
 ) : SettingsRepository {
     private companion object {
         const val HAZE_MODE_CUSTOM = "custom"
@@ -62,16 +62,11 @@ class SettingsRepositoryImpl(
         val HAZE_NOISE_FACTOR = floatPreferencesKey("haze_noise_factor")
         val HAZE_TINT_ALPHA = floatPreferencesKey("haze_tint_alpha")
         val HAZE_INTENSITY = floatPreferencesKey("haze_intensity")
-        val CURRENT_AI_PROVIDER = stringPreferencesKey("current_ai_provider")
-        val DEEPSEEK_MODEL = stringPreferencesKey("deepseek_model")
-        val OPENAI_API_KEY = stringPreferencesKey("openai_api_key")
-        val OPENAI_MODEL = stringPreferencesKey("openai_model")
-        val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
-        val CLAUDE_MODEL = stringPreferencesKey("claude_model")
-        val QWEN_API_KEY = stringPreferencesKey("qwen_api_key")
-        val QWEN_MODEL = stringPreferencesKey("qwen_model")
-        val ERNIE_API_KEY = stringPreferencesKey("ernie_api_key")
-        val ERNIE_MODEL = stringPreferencesKey("ernie_model")
+        val AI_ACCESS_MODE = stringPreferencesKey("ai_access_mode")
+        val CUSTOM_AI_ENDPOINT = stringPreferencesKey("custom_ai_endpoint")
+        val CUSTOM_AI_API_KEY = stringPreferencesKey("custom_ai_api_key")
+        val CUSTOM_AI_MODEL = stringPreferencesKey("custom_ai_model")
+        val AI_FREE_TRIAL_REMAINING = intPreferencesKey("ai_free_trial_remaining")
         val EQUALIZER_PRESET = intPreferencesKey("equalizer_preset")
         val BASS_BOOST_LEVEL = intPreferencesKey("bass_boost_level")
         val IS_SURROUND_SOUND_ENABLED = booleanPreferencesKey("is_surround_sound_enabled")
@@ -90,6 +85,10 @@ class SettingsRepositoryImpl(
         val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
         val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
         val LYRICS_ALIGNMENT = stringPreferencesKey("lyrics_alignment")
+        val LYRICS_PLAYER_CONFIG = stringPreferencesKey("lyrics_player_config")
+        val LYRICS_FULLSCREEN_CONFIG = stringPreferencesKey("lyrics_fullscreen_config")
+        val LYRICS_FLOATING_CONFIG = stringPreferencesKey("lyrics_floating_config")
+        val FLOATING_LYRICS_ENABLED = booleanPreferencesKey("floating_lyrics_enabled")
         val DEFAULT_ALGORITHM_TYPE = stringPreferencesKey("default_algorithm_type")
         val DEFAULT_WEIGHT_TEMPLATE = stringPreferencesKey("default_weight_template")
         val DEFAULT_EXTENSION_CONFIG = stringPreferencesKey("default_extension_config")
@@ -131,13 +130,16 @@ class SettingsRepositoryImpl(
     override val currentPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CURRENT_PLAYLIST_ID] }
     override val likedPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.LIKED_PLAYLIST_ID] }
     override val recentPlaylistId: Flow<Long?> = dataStore.data.map { prefs -> prefs[PreferencesKeys.RECENT_PLAYLIST_ID] }
-    override val currentAiProvider: Flow<AiProviderType> = dataStore.data.map { prefs -> AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK") }
+    override val aiAccessMode: Flow<AiAccessMode> = dataStore.data.map { prefs ->
+        try { AiAccessMode.valueOf(prefs[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE") } catch (e: Exception) { AiAccessMode.FREE }
+    }
+    override val aiFreeTrialRemainingCount: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100 }
     override val equalizerPreset: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] ?: 0 }
     override val bassBoostLevel: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] ?: 0 }
     override val isSurroundSoundEnabled: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] ?: false }
     override val reverbPreset: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.REVERB_PRESET] ?: 0 }
     override val customEqualizerLevels: Flow<FloatArray> = dataStore.data.map { prefs -> prefs[PreferencesKeys.CUSTOM_EQUALIZER_LEVELS]?.let { it.split(",").mapNotNull { s -> s.toFloatOrNull() }.toFloatArray() } ?: floatArrayOf() }
-    override val autoBatchProcess: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false }
+    override val autoBatchProcess: Flow<Boolean> = dataStore.data.map { prefs -> prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: true }
     override val dailyRefreshMode: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time" }
     override val dailyRefreshHours: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24 }
     override val dailyRefreshStartupCount: Flow<Int> = dataStore.data.map { prefs -> prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3 }
@@ -155,6 +157,18 @@ class SettingsRepositoryImpl(
     override val lyricsAlignment: Flow<LyricsAlignment> = dataStore.data.map {
         val alignmentStr = it[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
+    }
+    override val lyricsPlayerConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val lyricsFullscreenConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val lyricsFloatingConfig: Flow<String> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_FLOATING_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+    }
+    override val floatingLyricsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.FLOATING_LYRICS_ENABLED] ?: false
     }
     override val galleryOrderBy: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_BY] ?: "title" }
     override val galleryOrderType: Flow<String> = dataStore.data.map { prefs -> prefs[PreferencesKeys.GALLERY_ORDER_TYPE] ?: "ASC" }
@@ -205,61 +219,26 @@ class SettingsRepositoryImpl(
             launchCountSinceRefresh = prefs[PreferencesKeys.APP_LAUNCH_COUNT_SINCE_REFRESH] ?: 0
         )
     }
-    override suspend fun getCurrentProvider(): AiProviderType = AiProviderType.fromName(dataStore.data.first()[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
-    override suspend fun setCurrentProvider(provider: AiProviderType) { dataStore.edit { prefs -> prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = provider.name } }
-    override suspend fun getProviderApiKey(provider: AiProviderType): String {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
-        }
-        val encryptedKey = dataStore.data.first()[key]
-        return encryptedKey?.let { SecureStorageHelper.decrypt(it) } ?: ""
+    override suspend fun getAiAccessMode(): AiAccessMode {
+        return try { AiAccessMode.valueOf(dataStore.data.first()[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE") } catch (e: Exception) { AiAccessMode.FREE }
     }
-    override suspend fun setProviderApiKey(provider: AiProviderType, apiKey: String) {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_API_KEY
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_API_KEY
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_API_KEY
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_API_KEY
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_API_KEY
-        }
-        dataStore.edit { prefs -> prefs[key] = SecureStorageHelper.encrypt(apiKey) }
+    override suspend fun saveAiAccessMode(mode: AiAccessMode) { dataStore.edit { prefs -> prefs[PreferencesKeys.AI_ACCESS_MODE] = mode.name } }
+    override suspend fun getCustomAiConfig(): AiEndpointConfig {
+        val prefs = dataStore.data.first()
+        val endpoint = prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] ?: ""
+        val encryptedKey = prefs[PreferencesKeys.CUSTOM_AI_API_KEY]
+        val apiKey = encryptedKey?.let { SecureStorageHelper.decrypt(it) } ?: ""
+        val model = prefs[PreferencesKeys.CUSTOM_AI_MODEL] ?: ""
+        return AiEndpointConfig(endpoint = endpoint, apiKey = apiKey, selectedModel = model, isConfigured = endpoint.isNotBlank() && apiKey.isNotBlank())
     }
-    override suspend fun getProviderModel(provider: AiProviderType): String {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
-        }
-        return dataStore.data.first()[key] ?: provider.defaultModel
+    override suspend fun saveCustomAiConfig(config: AiEndpointConfig) {
+        dataStore.edit { prefs -> prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] = config.endpoint; prefs[PreferencesKeys.CUSTOM_AI_API_KEY] = SecureStorageHelper.encrypt(config.apiKey); prefs[PreferencesKeys.CUSTOM_AI_MODEL] = config.selectedModel }
     }
-    override suspend fun setProviderModel(provider: AiProviderType, model: String) {
-        val key = when (provider) {
-            AiProviderType.DEEPSEEK -> PreferencesKeys.DEEPSEEK_MODEL
-            AiProviderType.OPENAI -> PreferencesKeys.OPENAI_MODEL
-            AiProviderType.CLAUDE -> PreferencesKeys.CLAUDE_MODEL
-            AiProviderType.QWEN -> PreferencesKeys.QWEN_MODEL
-            AiProviderType.ERNIE -> PreferencesKeys.ERNIE_MODEL
-        }
-        dataStore.edit { prefs -> prefs[key] = model }
+    override suspend fun getActiveAiConfig(): AiEndpointConfig {
+        return when (getAiAccessMode()) { AiAccessMode.FREE, AiAccessMode.PAID -> builtInApiKeyProvider.getConfig(); AiAccessMode.CUSTOM -> getCustomAiConfig() }
     }
-    override suspend fun getProviderConfig(provider: AiProviderType): AiProviderConfig {
-        val apiKey = getProviderApiKey(provider)
-        val model = getProviderModel(provider)
-        return AiProviderConfig(type = provider, apiKey = apiKey, model = model, isConfigured = apiKey.isNotBlank())
-    }
-    override suspend fun getCurrentProviderConfig(): AiProviderConfig = getProviderConfig(getCurrentProvider())
-    override suspend fun saveProviderConfig(config: AiProviderConfig) {
-        setProviderApiKey(config.type, config.apiKey)
-        if (config.model.isNotBlank()) setProviderModel(config.type, config.model)
-    }
-    override suspend fun isProviderConfigured(provider: AiProviderType): Boolean = getProviderApiKey(provider).isNotBlank()
-    override suspend fun getConfiguredProviders(): List<AiProviderType> = AiProviderType.entries.filter { isProviderConfigured(it) }
+    override suspend fun getAiFreeTrialRemainingCount(): Int = dataStore.data.first()[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100
+    override suspend fun decrementAiFreeTrialCount() { dataStore.edit { prefs -> val current = prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] ?: 100; prefs[PreferencesKeys.AI_FREE_TRIAL_REMAINING] = (current - 1).coerceAtLeast(0) } }
     override suspend fun saveEqualizerPreset(preset: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.EQUALIZER_PRESET] = preset } }
     override suspend fun saveBassBoostLevel(level: Int) { dataStore.edit { prefs -> prefs[PreferencesKeys.BASS_BOOST_LEVEL] = level } }
     override suspend fun saveSurroundSoundEnabled(enabled: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.IS_SURROUND_SOUND_ENABLED] = enabled } }
@@ -346,6 +325,17 @@ class SettingsRepositoryImpl(
         val alignmentStr = dataStore.data.first()[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         return try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
     }
+
+    override suspend fun saveLyricsPlayerConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] = json } }
+    override suspend fun getLyricsPlayerConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_PLAYER_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveLyricsFullscreenConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] = json } }
+    override suspend fun getLyricsFullscreenConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_FULLSCREEN_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveLyricsFloatingConfig(json: String) { dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_FLOATING_CONFIG] = json } }
+    override suspend fun getLyricsFloatingConfig(): String = dataStore.data.first()[PreferencesKeys.LYRICS_FLOATING_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
+
+    override suspend fun saveFloatingLyricsEnabled(enabled: Boolean) { dataStore.edit { prefs -> prefs[PreferencesKeys.FLOATING_LYRICS_ENABLED] = enabled } }
     override suspend fun getLyricsOriginalTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_ORIGINAL_TEXT_SIZE] ?: 14
     override suspend fun getLyricsTranslatedTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_TRANSLATED_TEXT_SIZE] ?: 14
     override suspend fun getLyricsCurrentTimeTextSize(): Int = dataStore.data.first()[PreferencesKeys.LYRICS_CURRENT_TIME_TEXT_SIZE] ?: 16
@@ -382,8 +372,7 @@ class SettingsRepositoryImpl(
 
     override suspend fun exportAppSettingsSnapshot(): AppSettingsSnapshot {
         val prefs = dataStore.data.first()
-        val currentAiProvider = AiProviderType.fromName(prefs[PreferencesKeys.CURRENT_AI_PROVIDER] ?: "DEEPSEEK")
-        val aiProviderConfigs = AiProviderType.entries.associateWith { getProviderConfig(it) }
+        val aiAccessMode = try { AiAccessMode.valueOf(prefs[PreferencesKeys.AI_ACCESS_MODE] ?: "FREE") } catch (e: Exception) { AiAccessMode.FREE }
         return AppSettingsSnapshot(
             userName = prefs[PreferencesKeys.USER_NAME],
             avatarUri = prefs[PreferencesKeys.AVATAR_URI],
@@ -395,12 +384,13 @@ class SettingsRepositoryImpl(
             hazeNoiseFactor = (prefs[PreferencesKeys.HAZE_NOISE_FACTOR] ?: DEFAULT_HAZE_NOISE_FACTOR).coerceIn(0f, 1f),
             hazeTintAlpha = (prefs[PreferencesKeys.HAZE_TINT_ALPHA] ?: DEFAULT_HAZE_TINT_ALPHA).coerceIn(0f, 1f),
             hazeIntensity = prefs[PreferencesKeys.HAZE_INTENSITY] ?: 0.6f,
-            autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: false,
+            autoBatchProcess = prefs[PreferencesKeys.AUTO_BATCH_PROCESS] ?: true,
             dailyRefreshMode = prefs[PreferencesKeys.DAILY_REFRESH_MODE] ?: "time",
             dailyRefreshHours = prefs[PreferencesKeys.DAILY_REFRESH_HOURS] ?: 24,
             dailyRefreshStartupCount = prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] ?: 3,
-            currentAiProvider = currentAiProvider,
-            aiProviderConfigs = aiProviderConfigs
+            aiAccessMode = aiAccessMode.name,
+            customAiEndpoint = prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] ?: "",
+            customAiModel = prefs[PreferencesKeys.CUSTOM_AI_MODEL] ?: ""
         )
     }
 
@@ -420,9 +410,10 @@ class SettingsRepositoryImpl(
             prefs[PreferencesKeys.DAILY_REFRESH_MODE] = snapshot.dailyRefreshMode
             prefs[PreferencesKeys.DAILY_REFRESH_HOURS] = snapshot.dailyRefreshHours
             prefs[PreferencesKeys.DAILY_REFRESH_STARTUP_COUNT] = snapshot.dailyRefreshStartupCount
-            prefs[PreferencesKeys.CURRENT_AI_PROVIDER] = snapshot.currentAiProvider.name
+            prefs[PreferencesKeys.AI_ACCESS_MODE] = snapshot.aiAccessMode
+            prefs[PreferencesKeys.CUSTOM_AI_ENDPOINT] = snapshot.customAiEndpoint
+            prefs[PreferencesKeys.CUSTOM_AI_MODEL] = snapshot.customAiModel
         }
-        snapshot.aiProviderConfigs.forEach { (_, config) -> saveProviderConfig(config) }
     }
 
     override suspend fun exportDailyRecommendationSnapshot(): DailyRecommendationSnapshot? {
