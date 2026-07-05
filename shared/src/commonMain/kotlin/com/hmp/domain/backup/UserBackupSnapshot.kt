@@ -12,11 +12,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserBackupSnapshot(
     val version: Int = 1,
-    val createdAt: Long,
-    val appSettings: AppSettingsSnapshot,
-    val musicUserState: MusicUserStateSnapshot,
-    val playlists: PlaylistsSnapshot,
-    val listeningStats: ListeningStatsSnapshot,
+    val createdAt: Long = 0L,
+    val appSettings: AppSettingsSnapshot? = null,
+    val musicUserState: MusicUserStateSnapshot = MusicUserStateSnapshot(),
+    val playlists: PlaylistsSnapshot = PlaylistsSnapshot(),
+    val listeningStats: ListeningStatsSnapshot = ListeningStatsSnapshot(),
     val dailyRecommendation: DailyRecommendationSnapshot? = null
 )
 
@@ -24,8 +24,8 @@ data class UserBackupSnapshot(
 data class AppSettingsSnapshot(
     val userName: String? = null,
     val avatarUri: String? = null,
-    val themeMode: String,
-    val backgroundStyle: String,
+    val themeMode: String = "default",
+    val backgroundStyle: String = "FLUID",
     val hazeMode: String = "custom",
     val hazeMaterialPreset: String = "regular",
     val hazeBlurRadius: Float = 20f,
@@ -74,9 +74,9 @@ data class MusicExtraUserSnapshot(
 
 @Serializable
 data class MusicLabelSnapshot(
-    val musicId: Long,
-    val label: LabelName,
-    val category: LabelCategory
+    val musicId: Long = 0L,
+    val label: LabelName = LabelName.ROCK,
+    val category: LabelCategory = LabelCategory.GENRE
 )
 
 @Serializable

@@ -2,20 +2,17 @@ package com.hmp.data.repository
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.hmp.domain.backup.BackupFileRepository
 import com.hmp.domain.backup.UserBackupSnapshot
+import kotlinx.serialization.json.Json
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class BackupFileRepositoryImpl(
     private val context: Context,
-    private val gson: Gson
+    private val json: Json
 ) : BackupFileRepository {
 
     private val backupDir by lazy {
@@ -30,9 +27,7 @@ class BackupFileRepositoryImpl(
             val filename = "hearable-backup-v${snapshot.version}-$timestamp.json"
             val file = File(backupDir, filename)
 
-            FileWriter(file).use { writer ->
-                gson.toJson(snapshot, writer)
-            }
+            file.writeText(json.encodeToString(UserBackupSnapshot.serializer(), snapshot))
             Log.i("BackupFileRepository", "Backup saved to ${file.absolutePath}")
             Result.success(file.absolutePath)
         } catch (e: Exception) {
@@ -47,11 +42,12 @@ class BackupFileRepositoryImpl(
             if (!file.exists()) {
                 return Result.failure(Exception("Backup file not found"))
             }
-            FileReader(file).use { reader ->
-                val type = object : TypeToken<UserBackupSnapshot>() {}.type
-                val snapshot = gson.fromJson<UserBackupSnapshot>(reader, type)
-                Result.success(snapshot)
+            val jsonString = file.readText()
+            if (jsonString.isBlank()) {
+                return Result.failure(Exception("Backup file is empty"))
             }
+            val snapshot = json.decodeFromString(UserBackupSnapshot.serializer(), jsonString)
+            Result.success(snapshot)
         } catch (e: Exception) {
             Log.e("BackupFileRepository", "Failed to load backup", e)
             Result.failure(e)
