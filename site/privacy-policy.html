@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121212">
+  <title>隐私政策 — HMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23002FA7'/><stop offset='100%25' style='stop-color:%2390CAF9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-family='system-ui'>♪</text></svg>">
+  <script>var st=localStorage.getItem('theme');if(st)document.documentElement.setAttribute('data-theme',st);else if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');</script>
+  <style>
+    .policy-wrap {
+      width: 92vw;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 120px;
+      position: relative;
+      z-index: 1;
+    }
+    .policy-grid {
+      column-count: 3;
+      column-gap: 16px;
+    }
+    .policy-grid .policy-section {
+      break-inside: avoid;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 960px) {
+      .policy-grid { column-count: 2; }
+    }
+    @media (max-width: 768px) {
+      .dl-hero { padding: 48px 24px 0 24px; }
+      .policy-section { padding: 20px; }
+    }
+    @media (max-width: 640px) {
+      .policy-grid { column-count: 1; }
+      .policy-wrap { padding: 0 16px 80px; }
+      .policy-section { padding: 16px; }
+    }
+    .dl-hero {
+      position: relative;
+      z-index: 1;
+      padding: 48px 24px 0 48px;
+      text-align: left;
+      margin-bottom: 32px;
+    }
+    .dl-hero h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      transition: color var(--dur-micro);
+    }
+    .back-link:hover { color: var(--text); }
+    .policy-updated {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .policy-section {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    .policy-section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .policy-section p,
+    .policy-section li {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.85;
+      margin-bottom: 8px;
+    }
+    .policy-section ul { padding-left: 1.5rem; }
+    .policy-section strong { color: var(--text); }
+    .policy-header { margin-bottom: 48px; }
+    .bottom-bar { position:fixed; top:24px; right:24px; left:auto; bottom:auto; z-index:100; }
+  </style>
+</head>
+<body>
+
+  <div class="aurora-bg">
+    <div class="hero-orb"></div>
+    <div class="hero-orb"></div>
+    <div class="hero-orb"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+      <span id="themeIcon">&#9788;</span>
+    </button>
+  </div>
+
+  <section class="dl-hero">
+    <a class="back-link" href="index.html">&larr; 返回首页</a>
+    <h1>隐私政策</h1>
+    <p class="policy-updated">最后更新：2026 年 7 月 5 日</p>
+  </section>
+
+  <div class="policy-wrap">
+    <div class="policy-section">
+      <h2>概述</h2>
+      <p>HMP（Hearable Music Player）是一款纯本地音乐播放器。我们高度重视您的隐私，本政策说明了我们的数据处理方式。HMP <strong>不收集、不上传</strong>任何用户数据，所有功能均在设备本地运行。</p>
+    </div>
+
+    <div class="policy-grid">
+      <div class="policy-section">
+        <h2>数据收集</h2>
+        <p>HMP 不收集以下任何数据：</p>
+        <ul>
+          <li>个人身份信息</li>
+          <li>音乐文件内容或播放历史</li>
+          <li>设备标识符或使用行为数据</li>
+          <li>位置信息</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>网络使用</h2>
+        <p>HMP 在以下场景使用网络，均需用户主动触发：</p>
+        <ul>
+          <li><strong>AI 推荐功能</strong> — 向用户自行配置的 API 服务发送请求，HMP 不内置任何第三方账号或密钥，不存储 API 响应内容</li>
+          <li><strong>歌词/封面下载</strong> — 请求第三方公开数据源，下载内容存储在设备本地</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>本地存储</h2>
+        <p>以下数据仅存储在您的设备本地，不会离开您的设备：</p>
+        <ul>
+          <li>播放列表与歌曲收藏</li>
+          <li>播放偏好与均衡器设置</li>
+          <li>应用配置与主题选择</li>
+          <li>下载的歌词和封面图片</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>权限说明</h2>
+        <p>HMP 申请的权限仅用于核心功能：</p>
+        <ul>
+          <li><strong>READ_MEDIA_AUDIO</strong> — 读取设备上的音频文件</li>
+          <li><strong>INTERNET</strong> — AI 推荐、歌词/封面下载（需用户主动触发）</li>
+          <li><strong>FOREGROUND_SERVICE</strong> — 后台音乐播放</li>
+          <li><strong>POST_NOTIFICATIONS</strong> — 播放控制通知</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>第三方服务</h2>
+        <p>HMP 不集成任何第三方分析、广告或追踪 SDK。AI 推荐功能使用的 API 端点由用户自行配置，HMP 不对第三方服务的隐私政策负责。</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>儿童隐私</h2>
+        <p>HMP 不针对 13 岁以下儿童，也不会有意收集任何儿童的个人信息。</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>政策变更</h2>
+        <p>如本隐私政策有重大变更，将在应用内或本页面通知用户。继续使用 HMP 即表示您接受更新后的政策。</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>联系方式</h2>
+        <p>如有任何隐私相关问题，请通过以下方式联系我们：</p>
+        <ul>
+          <li>GitHub Issues：<a href="https://github.com/InfiniteMotion/HMP/issues">InfiniteMotion/HMP</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const theme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('themeIcon').innerHTML = saved === 'dark' ? '&#9788;' : '&#9789;';
+  }
+})();
+</script>
+</body>
+</html>

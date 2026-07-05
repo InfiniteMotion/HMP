@@ -22,12 +22,12 @@
 </div>
 
 <div class="bottom-bar">
+  <a href="https://github.com/InfiniteMotion/HMP" class="bottom-link">GitHub</a>
+  <a href="https://github.com/InfiniteMotion/HMP/releases/tag/v6.10.0" class="top-badge">v6.10.0</a>
   <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
     <span id="themeIcon">&#9789;</span>
   </button>
-  <a href="https://github.com/InfiniteMotion/HMP" class="bottom-link">GitHub</a>
 </div>
-<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; By WLYB</span>
 
 <div class="layout">
   <aside class="hero-panel">
@@ -177,8 +177,15 @@
       </div>
 
     </div>
+    <div class="swipe-dots" id="swipeDots">
+      <span class="swipe-dot active"></span>
+      <span class="swipe-dot"></span>
+      <span class="swipe-dot"></span>
+      <span class="swipe-dot"></span>
+    </div>
   </main>
 </div>
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; By WLYB &middot; <a href="privacy-policy.html" style="color:inherit;text-decoration:underline;">隐私政策</a></span>
 
 <script>
 function toggleTheme() {
@@ -212,17 +219,20 @@ function resetAutoPlay() {
   autoPlayTimer = setTimeout(() => goToPage(currentPage + 1), 3000);
 }
 
-document.querySelectorAll('.feature-card').forEach(card => {
-  card.addEventListener('mouseenter', () => clearTimeout(autoPlayTimer));
-  card.addEventListener('mouseleave', () => resetAutoPlay());
-});
+if (window.innerWidth > 860) {
+  document.querySelectorAll('.feature-card').forEach(card => {
+    card.addEventListener('mouseenter', () => clearTimeout(autoPlayTimer));
+    card.addEventListener('mouseleave', () => resetAutoPlay());
+  });
 
-document.addEventListener('wheel', (e) => {
-  if (locked) return;
-  goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
-}, { passive: true });
+  document.addEventListener('wheel', (e) => {
+    if (locked) return;
+    goToPage(currentPage + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
 
-resetAutoPlay();
+  resetAutoPlay();
+}
+
 </script>
 </body>
 </html>
