@@ -84,6 +84,7 @@ local.properties
 *.keystore
 !debug.keystore
 *.jks
+keystore.properties
 
 # node.js
 #

@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -13,17 +15,24 @@ android {
         version = release(36)
     }
 
-    // 统一签名配置 - 解决不同环境编译APK无法无缝安装的问题
+    // 统一签名配置 — 优先 keystore.properties，回退到环境变量/Gradle属性
+    val ksPropsFile = rootProject.file("keystore.properties")
+    val ksProps = if (ksPropsFile.exists()) Properties().apply { load(FileInputStream(ksPropsFile)) } else null
+
     signingConfigs {
         create("unified") {
-            val ksFile = file("hmp-unified-key.jks")
-            val ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: providers.gradleProperty("KEYSTORE_PASSWORD").getOrElse("hmp123456")
-            val kAlias = System.getenv("KEY_ALIAS") ?: "hmpkey"
-            val kPassword = System.getenv("KEY_PASSWORD") ?: providers.gradleProperty("KEY_PASSWORD").getOrElse("hmp123456")
-            storeFile = ksFile
-            storePassword = ksPassword
-            keyAlias = kAlias
-            keyPassword = kPassword
+            storeFile = file(ksProps?.getProperty("storeFile")
+                ?: System.getenv("KEYSTORE_FILE")
+                ?: "hmp-unified-key.jks")
+            storePassword = ksProps?.getProperty("storePassword")
+                ?: System.getenv("KEYSTORE_PASSWORD")
+                ?: providers.gradleProperty("KEYSTORE_PASSWORD").orNull
+            keyAlias = ksProps?.getProperty("keyAlias")
+                ?: System.getenv("KEY_ALIAS")
+                ?: providers.gradleProperty("KEY_ALIAS").getOrElse("hmpkey")
+            keyPassword = ksProps?.getProperty("keyPassword")
+                ?: System.getenv("KEY_PASSWORD")
+                ?: providers.gradleProperty("KEY_PASSWORD").orNull
         }
     }
 
@@ -49,8 +58,8 @@ android {
 
     buildTypes {
         release {
-//            isMinifyEnabled = true
-//            isShrinkResources = true
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
