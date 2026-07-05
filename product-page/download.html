@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>了解与获取 — HMP Hearable Music Player</title>
+<meta name="description" content="了解 HMP 并下载 — Android APK、Desktop 安装包、iOS 构建指引。" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  .dl-hero {
+    position: relative; z-index: 1;
+    padding: 48px 24px 0 48px;
+    margin-bottom: -40px;
+    text-align: left;
+  }
+  .dl-hero h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0; }
+  .dl-hero p { color: var(--text-secondary); font-size: 1rem; line-height: 1.8; }
+  .back-link {
+    display: inline-block; margin-bottom: 8px;
+    color: var(--text-secondary); font-size: 0.85rem;
+    transition: color var(--dur-micro);
+  }
+  .back-link:hover { color: var(--text); }
+
+  /* Tabs */
+  .tab-bar {
+    position: relative; z-index: 1;
+    display: flex; justify-content: center; gap: 4px;
+    max-width: 480px; margin: -20px auto 32px;
+    padding: 4px;
+    border-radius: 100px;
+    background: var(--glass-bg); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+  .tab-btn {
+    flex: 1; padding: 12px 28px; border-radius: 100px;
+    border: none; background: none;
+    color: var(--text-secondary); font-size: 0.92rem; font-weight: 500;
+    cursor: pointer; transition: all 300ms var(--ease-out);
+  }
+  .tab-btn.active {
+    background: var(--red); color: #fff;
+  }
+
+  /* Tab content */
+  .tab-content { display: none; position: relative; z-index: 1; }
+  .tab-content.active { display: block; }
+
+  /* Preview row */
+  .preview-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; max-width: 800px; margin: 0 auto 40px; padding: 0 24px;
+  }
+  .preview-card {
+    border-radius: var(--radius-lg); aspect-ratio: 9/16;
+    background: var(--glass-bg); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); font-size: 0.82rem;
+    transition: transform 300ms var(--ease-out);
+  }
+  .preview-card:hover { transform: scale(1.03); }
+
+  /* Platform info + download */
+  .plat-info {
+    text-align: center; max-width: 520px; margin: 0 auto 100px;
+    padding: 0 24px;
+  }
+  .plat-specs {
+    list-style: none; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+    color: var(--text-secondary); font-size: 0.85rem;
+    margin-bottom: 28px;
+  }
+  .plat-specs li { padding: 6px 16px; border-radius: 100px; background: var(--glass-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--glass-border); }
+  .plat-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .plat-note { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.5; margin-top: 16px; }
+
+  @media (max-width: 768px) {
+    .preview-row { grid-template-columns: 1fr; max-width: 280px; }
+    .tab-btn { padding: 10px 18px; font-size: 0.82rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora-bg">
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+</div>
+
+<div class="bottom-bar">
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+    <span id="themeIcon">&#9789;</span>
+  </button>
+  <a href="https://github.com" class="bottom-link">GitHub</a>
+</div>
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; Built by WLYB</span>
+
+<section class="dl-hero">
+  <a href="index.html" class="back-link">&larr; 返回首页</a>
+  <h1>了解与获取</h1>
+</section>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('android')">Android</button>
+  <button class="tab-btn" onclick="switchTab('ios')">iOS</button>
+  <button class="tab-btn" onclick="switchTab('desktop')">Desktop</button>
+</div>
+
+<!-- Android -->
+<div class="tab-content active" id="tab-android">
+  <div class="preview-row">
+    <div class="preview-card">播放器</div>
+    <div class="preview-card">音乐库</div>
+    <div class="preview-card">亮色模式</div>
+  </div>
+  <div class="plat-info">
+    <ul class="plat-specs">
+      <li>Jetpack Compose + Material3</li>
+      <li>Media3 ExoPlayer</li>
+      <li>Haze 毛玻璃</li>
+      <li>Android 13+</li>
+    </ul>
+    <div class="plat-actions">
+      <a href="#" class="btn btn-primary">下载 APK</a>
+    </div>
+  </div>
+</div>
+
+<!-- iOS -->
+<div class="tab-content" id="tab-ios">
+  <div class="preview-row">
+    <div class="preview-card">播放器</div>
+    <div class="preview-card">音乐库</div>
+    <div class="preview-card">暗色模式</div>
+  </div>
+  <div class="plat-info">
+    <ul class="plat-specs">
+      <li>SwiftUI + Liquid Glass</li>
+      <li>AVFoundation</li>
+      <li>ultraThinMaterial</li>
+      <li>iOS 16.0+</li>
+    </ul>
+    <div class="plat-actions">
+      <a href="#" class="btn btn-outline">查看构建指南</a>
+    </div>
+    <p class="plat-note">iOS 无直链分发，需通过 Xcode 自行构建</p>
+  </div>
+</div>
+
+<!-- Desktop -->
+<div class="tab-content" id="tab-desktop">
+  <div class="preview-row">
+    <div class="preview-card">播放器</div>
+    <div class="preview-card">宽屏布局</div>
+    <div class="preview-card">系统托盘</div>
+  </div>
+  <div class="plat-info">
+    <ul class="plat-specs">
+      <li>Compose Desktop</li>
+      <li>FFmpeg 音频引擎</li>
+      <li>响应式窗口</li>
+      <li>系统托盘</li>
+    </ul>
+    <div class="plat-actions">
+      <a href="#" class="btn btn-primary">下载 Windows</a>
+      <a href="#" class="btn btn-outline">下载 macOS</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+
+function switchTab(platform) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${platform}')"]`).classList.add('active');
+  document.getElementById(`tab-${platform}`).classList.add('active');
+}
+</script>
+</body>
+</html>

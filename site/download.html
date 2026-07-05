@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>了解与获取 — HMP Hearable Music Player</title>
+<meta name="description" content="了解 HMP 并下载 — Android APK、Desktop 安装包、iOS 构建指引。" />
+<meta name="theme-color" content="#121212">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/ic_launcher_foreground.webp" type="image/webp">
+<script>var st=localStorage.getItem('theme');if(st)document.documentElement.setAttribute('data-theme',st);else if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');</script>
+<style>
+  .dl-hero { position:relative; z-index:1; padding:48px 24px 0 48px; text-align:left; margin-bottom:16px; }
+  .dl-hero h1 { font-size:1.4rem; font-weight:700; }
+  .back-link { display:inline-block; margin-bottom:8px; color:var(--text-secondary); font-size:0.85rem; transition:color var(--dur-micro); }
+  .back-link:hover { color:var(--text); }
+
+  .tab-bar { position:relative; z-index:1; display:flex; justify-content:center; gap:4px; max-width:480px; margin:0 auto 24px; padding:4px; border-radius:100px; background:var(--glass-bg); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--glass-border); }
+  .tab-btn { flex:1; padding:12px 28px; border-radius:100px; border:none; background:none; color:var(--text-secondary); font-size:0.92rem; font-weight:500; cursor:pointer; transition:all 300ms var(--ease-out); }
+  .tab-btn.active { background:var(--red); color:#fff; }
+  .tab-content { display:none; position:relative; z-index:1; }
+  .tab-content.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:calc(100vh - 220px); }
+
+  /* ── Preview ────────────────────────────────────────────── */
+  .preview-layout { display:flex; gap:180px; align-items:center; justify-content:center; width:fit-content; margin:0 auto 40px; padding:0 48px; }
+  .preview-group { display:flex; gap:80px; align-items:center; flex-shrink:0; }
+  .preview-video { flex-shrink:0; }
+  .device-frame { flex-shrink:0; border-radius:28px; overflow:hidden; box-shadow:0 0 0 3px rgba(255,255,255,0.1), 0 20px 50px rgba(0,0,0,0.5); }
+  .device-frame img,.device-frame video { display:block; width:auto; height:520px; }
+  .preview-detail { display:flex; gap:32px; align-items:center; }
+  .preview-detail .preview-nav { order:2; }
+  .preview-detail .preview-screen { order:1; }
+  .preview-nav { flex-shrink:0; display:flex; flex-direction:column; gap:4px; min-width:80px; }
+  .preview-nav-item { display:flex; align-items:center; justify-content:center; padding:10px 6px; background:transparent; border:1px solid transparent; border-radius:12px; color:var(--text-secondary); font-size:0.85rem; cursor:pointer; transition:all var(--dur-micro); }
+  .preview-nav-item:hover { background:var(--surface); color:var(--text); }
+  .preview-nav-item.active { background:rgba(201,44,44,0.08); border-color:rgba(201,44,44,0.3); color:var(--accent); }
+  .preview-nav-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; color:var(--text-secondary); }
+  .preview-nav-item.active .preview-nav-icon { color:var(--accent); }
+  .preview-screen { flex-shrink:0; }
+  .preview-screen .device-frame img { transition:opacity 0.25s ease; }
+  .preview-screen .device-frame img.switching { opacity:0.4; }
+
+  /* ── Download Info ──────────────────────────────────────── */
+  .dl-info { flex-shrink:0; max-width:240px; }
+  .dl-info h3 { font-size:1.3rem; font-weight:700; margin-bottom:14px; }
+  .plat-specs { list-style:none; display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .plat-specs li { padding:5px 14px; border-radius:100px; background:var(--glass-bg); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid var(--glass-border); color:var(--text-secondary); font-size:0.8rem; }
+  .plat-actions { display:flex; flex-direction:column; gap:14px; }
+  .plat-actions .btn { width:100%; justify-content:center; }
+  .plat-note { font-size:0.72rem; color:var(--text-secondary); opacity:0.5; margin-top:10px; }
+
+  @media (max-width:768px) {
+    .preview-layout { flex-direction:column; align-items:center; gap:32px; padding:0 20px; }
+    .preview-group { flex-direction:column; gap:28px; }
+    .preview-detail { flex-direction:column; gap:20px; }
+    .preview-nav { flex-direction:row; flex-wrap:wrap; min-width:0; justify-content:center; }
+    .preview-nav-item { padding:8px 12px; font-size:13px; }
+    .preview-nav-item .preview-nav-icon { display:none; }
+    .preview-screen { max-width:100%; }
+    .device-frame { max-width:100%; }
+    .device-frame img,.device-frame video { height:auto; width:100%; }
+    .dl-info { max-width:none; text-align:center; order:-1; }
+    .plat-actions { align-items:center; }
+    .plat-actions .btn { max-width:240px; }
+    .tab-btn { padding:10px 18px; font-size:0.82rem; }
+    .dl-hero { padding:48px 24px 0 24px; }
+    .bottom-bar { position:fixed; top:24px; right:24px; left:auto; bottom:auto; z-index:100; padding:0; }
+    .bottom-copy { position:relative; bottom:auto; right:auto; display:block; text-align:center; padding:20px 24px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora-bg">
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+</div>
+
+<div class="bottom-bar">
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+    <span id="themeIcon">&#9789;</span>
+  </button>
+</div>
+
+<section class="dl-hero">
+  <a href="index.html" class="back-link">&larr; 返回首页</a>
+  <h1>了解与获取</h1>
+</section>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('android')">Android</button>
+  <button class="tab-btn" onclick="switchTab('ios')">iOS</button>
+  <button class="tab-btn" onclick="switchTab('desktop')">Desktop</button>
+</div>
+
+<!-- Android -->
+<div class="tab-content active" id="tab-android">
+  <div class="preview-layout">
+    <div class="preview-group">
+    <div class="preview-video">
+      <div class="device-frame">
+        <video autoplay muted loop playsinline preload="metadata" id="androidVideo">
+          <source src="assets/demo.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+    <div class="preview-detail">
+      <div class="preview-nav" id="androidNav">
+        <button class="preview-nav-item active" data-src="assets/screenshots/screenshot-home-android.jpg"><span>首页</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-gallery-android.jpg"><span>音乐库</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-player-android.jpg"><span>播放器</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-list-android.jpg"><span>播放列表</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-user-android.jpg"><span>个人中心</span></button>
+      </div>
+      <div class="preview-screen" id="androidScreen">
+        <div class="device-frame">
+          <img src="assets/screenshots/screenshot-home-android.jpg" alt="界面截图" id="androidImg">
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="dl-info">
+      <h3>Android</h3>
+      <ul class="plat-specs">
+        <li>Jetpack Compose + Material3</li>
+        <li>Media3 ExoPlayer</li>
+        <li>Haze 毛玻璃</li>
+        <li>Android 13+</li>
+      </ul>
+      <div class="plat-actions">
+        <a href="https://github.com/InfiniteMotion/HMP/releases/download/v6.10.0/HMP-v6.10.0-release.apk" class="btn btn-primary">下载 APK</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- iOS -->
+<div class="tab-content" id="tab-ios">
+  <div class="preview-layout">
+    <div class="preview-group">
+    <div class="preview-video">
+      <div class="device-frame" style="height:520px;width:240px;background:var(--surface);border-radius:28px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9rem;">截图待补充</div>
+    </div>
+    <div class="preview-detail">
+      <div class="preview-nav" id="iosNav">
+        <button class="preview-nav-item active" style="cursor:default;"><span>预览</span></button>
+      </div>
+      <div class="preview-screen">
+        <div class="device-frame" style="height:520px;width:240px;background:var(--surface);border-radius:28px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9rem;">截图待补充</div>
+      </div>
+    </div>
+    </div>
+    <div class="dl-info">
+      <h3>iOS</h3>
+      <ul class="plat-specs">
+        <li>SwiftUI + Liquid Glass</li>
+        <li>AVFoundation</li>
+        <li>ultraThinMaterial</li>
+        <li>iOS 16.0+</li>
+      </ul>
+      <div class="plat-actions">
+        <a href="https://github.com/InfiniteMotion/HMP/releases/tag/v6.10.0" class="btn btn-primary">查看构建指南</a>
+      </div>
+      <p class="plat-note">iOS 无直链分发，需通过 Xcode 自行构建</p>
+    </div>
+  </div>
+</div>
+
+<!-- Desktop -->
+<div class="tab-content" id="tab-desktop">
+  <div class="preview-layout">
+    <div class="preview-group">
+    <div class="preview-video">
+      <div class="device-frame" style="border-radius:14px;">
+        <video autoplay muted loop playsinline preload="metadata" id="desktopVideo" style="height:340px;width:auto;">
+          <source src="assets/demo-desktop.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+    <div class="preview-detail">
+      <div class="preview-nav" id="desktopNav">
+        <button class="preview-nav-item active" data-src="assets/screenshots/screenshot-home-desktop.jpg"><span>首页</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-gallery-desktop.jpg"><span>音乐库</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-player-desktop.jpg"><span>播放器</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-list-desktop.jpg"><span>播放列表</span></button>
+        <button class="preview-nav-item" data-src="assets/screenshots/screenshot-user-desktop.jpg"><span>个人中心</span></button>
+      </div>
+      <div class="preview-screen" id="desktopScreen">
+        <div class="device-frame" style="border-radius:14px;">
+          <img src="assets/screenshots/screenshot-home-desktop.jpg" alt="界面截图" id="desktopImg" style="height:340px;width:auto;">
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="dl-info">
+      <h3>Desktop</h3>
+      <ul class="plat-specs">
+        <li>Compose Desktop</li>
+        <li>FFmpeg 音频引擎</li>
+        <li>响应式窗口</li>
+        <li>系统托盘</li>
+      </ul>
+      <div class="plat-actions">
+        <a href="https://github.com/InfiniteMotion/HMP/releases/download/v6.10.0/HMP-v6.10.0-windows.msi" class="btn btn-primary">下载 Windows</a>
+        <a href="https://github.com/InfiniteMotion/HMP/releases/download/v6.10.0/HMP-v6.10.0-macos.dmg" class="btn btn-primary">下载 macOS</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const theme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+function switchTab(platform) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${platform}')"]`).classList.add('active');
+  document.getElementById(`tab-${platform}`).classList.add('active');
+}
+// Preview nav switching (Android tab)
+(function(){
+  var nav = document.getElementById('androidNav');
+  var img = document.getElementById('androidImg');
+  if (!nav || !img) return;
+  nav.addEventListener('click', function(e) {
+    var item = e.target.closest('.preview-nav-item');
+    if (!item || !item.dataset.src) return;
+    nav.querySelectorAll('.preview-nav-item').forEach(function(b){ b.classList.remove('active'); });
+    item.classList.add('active');
+    var newSrc = item.getAttribute('data-src');
+    if (img.src.indexOf(newSrc) !== -1) return;
+    img.classList.add('switching');
+    setTimeout(function(){
+      img.src = newSrc;
+      img.classList.remove('switching');
+    }, 150);
+  });
+})();
+// Preview nav switching (Desktop tab)
+(function(){
+  var nav = document.getElementById('desktopNav');
+  var img = document.getElementById('desktopImg');
+  if (!nav || !img) return;
+  nav.addEventListener('click', function(e) {
+    var item = e.target.closest('.preview-nav-item');
+    if (!item || !item.dataset.src) return;
+    nav.querySelectorAll('.preview-nav-item').forEach(function(b){ b.classList.remove('active'); });
+    item.classList.add('active');
+    var newSrc = item.getAttribute('data-src');
+    if (img.src.indexOf(newSrc) !== -1) return;
+    img.classList.add('switching');
+    setTimeout(function(){
+      img.src = newSrc;
+      img.classList.remove('switching');
+    }, 150);
+  });
+})();
+</script>
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; By WLYB</span>
+</body>
+</html>
