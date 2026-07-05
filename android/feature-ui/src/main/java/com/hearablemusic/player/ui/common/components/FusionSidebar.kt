@@ -1,6 +1,8 @@
 package com.hearablemusic.player.ui.common.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,11 +23,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,9 +64,6 @@ fun FusionSidebar(
     currentMusic: MusicInfo?,
     isPlaying: Boolean,
     onTabSelected: (Int) -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    onPrev: () -> Unit,
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,26 +76,19 @@ fun FusionSidebar(
             .fillMaxHeight()
             .padding(vertical = dimens.spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         // 导航 Tab 区域
         sidebarTabs.forEachIndexed { index, tab ->
             val isSelected = index == selectedTabIndex
-            val contentColor by animateColorAsState(
-                targetValue = if (isSelected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                animationSpec = tween(200)
-            )
-            val containerColor by animateColorAsState(
-                targetValue = MaterialTheme.colorScheme.surface,
-                animationSpec = tween(200)
-            )
+            val iconTint = if (isSelected)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant
 
-            Column(
+            Box(
                 modifier = Modifier
-                    .width(64.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(dimens.corner.sm))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -101,136 +96,57 @@ fun FusionSidebar(
                     ) {
                         haptic.performClick()
                         onTabSelected(index)
-                    }
-                    .padding(vertical = dimens.spacing.xs),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(dimens.corner.sm))
-                        .background(containerColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            if (isSelected) tab.selectedIconId else tab.unselectedIconId
-                        ),
-                        contentDescription = tab.label,
-                        tint = contentColor,
-                        modifier = Modifier.size(dimens.icon.sm)
-                    )
-                }
-                Text(
-                    text = tab.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = dimens.type.sm,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                Icon(
+                    painter = painterResource(
+                        if (isSelected) tab.selectedIconId else tab.unselectedIconId
+                    ),
+                    contentDescription = tab.label,
+                    tint = iconTint,
+                    modifier = Modifier.size(dimens.icon.md)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 分隔线
-        Box(
-            modifier = Modifier
-                .width(40.dp)
-                .height(1.dp)
-                .background(
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+        // 迷你播放封面（无播放时隐藏）
+        if (currentMusic != null) {
+        val coverRotation = remember { Animatable(0f) }
+        LaunchedEffect(isPlaying) {
+            if (!isPlaying) return@LaunchedEffect
+            while (true) {
+                val current = coverRotation.value % 360f
+                val remaining = 360f - current
+                val durationMillis = ((remaining / 360f) * 8000f).toInt().coerceAtLeast(1)
+                coverRotation.animateTo(
+                    targetValue = 360f,
+                    animationSpec = tween(durationMillis = durationMillis, easing = LinearEasing)
                 )
-        )
-
-        Spacer(modifier = Modifier.height(dimens.spacing.sm))
-
-        // 迷你播放控制区域
-        Column(
-            modifier = Modifier
-                .width(64.dp)
-                .clip(RoundedCornerShape(dimens.corner.sm))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { onOpenPlayer() }
-                .padding(vertical = dimens.spacing.xs),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 专辑封面缩略图
-            AsyncImage(
-                model = currentMusic?.music?.albumArtUri,
-                contentDescription = currentMusic?.music?.title,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(dimens.corner.sm))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
-            )
-            Text(
-                text = currentMusic?.music?.title ?: "",
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = dimens.type.sm,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = dimens.spacing.xs)
-            )
+                coverRotation.snapTo(0f)
+            }
         }
 
-        // 播放控制按钮
-        Icon(
-            painter = painterResource(R.drawable.backward_end_fill),
-            contentDescription = "上一首",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) {
-                    haptic.performClick()
-                    onPrev()
-                }
-                .padding(dimens.spacing.xs)
-        )
-
-        Icon(
-            painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play_fill),
-            contentDescription = if (isPlaying) "暂停" else "播放",
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    haptic.performClick()
-                    onPlayPause()
-                }
-                .padding(dimens.spacing.xs)
-        )
-
-        Icon(
-            painter = painterResource(R.drawable.forward_end_fill),
-            contentDescription = "下一首",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    haptic.performClick()
-                    onNext()
-                }
-                .padding(dimens.spacing.xs)
-        )
-
-        Spacer(modifier = Modifier.height(dimens.spacing.xs))
+                ) { onOpenPlayer() },
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = currentMusic.music.albumArtUri,
+                contentDescription = currentMusic.music.title,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                    .graphicsLayer { rotationZ = coverRotation.value },
+                contentScale = ContentScale.Crop
+            )
+        }
+        }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -53,6 +54,7 @@ import com.hmp.domain.config.LyricsAlignment
 import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.SegmentedOption
 import com.hearablemusic.player.ui.common.components.VerticalSegmentedControl
+import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
@@ -126,8 +128,8 @@ fun LyricsScreen(
         playbackViewModel.setMiniPlayerVisible(isControlsVisible)
     }
 
+    val isLandscape = LocalWindowSizeInfo.current.isLandscape
     val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
-    val bottomPadding by animateDpAsState(targetValue = if (isControlsVisible) 80.dp else 0.dp)
 
     Box(
         modifier = Modifier
@@ -146,11 +148,10 @@ fun LyricsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = bottomPadding)
         ) {
             // 歌词展示区域
             AdvancedLyrics(
-                modifier = if(!isSettingsPanelVisible) Modifier.weight(1f) else Modifier.padding(bottom = 240.dp),
+                modifier = if(!isSettingsPanelVisible) Modifier.weight(1f) else Modifier.padding(bottom = if (isLandscape) 200.dp else 320.dp),
                 lyrics = lyrics,
                 currentPosition = currentPosition,
                 onSeek = {
@@ -170,7 +171,8 @@ fun LyricsScreen(
             visible = isSettingsPanelVisible,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 128.dp),
+                .then(if (isLandscape) Modifier.widthIn(max = 480.dp) else Modifier.fillMaxWidth())
+                .padding(bottom = if (isLandscape) 40.dp else 120.dp),
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutVertically { it }
         ) {

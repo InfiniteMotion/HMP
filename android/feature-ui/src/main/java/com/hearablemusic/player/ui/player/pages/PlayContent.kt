@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +87,7 @@ import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.playlist.AlgorithmType
 import com.hmp.domain.playlist.ExtensionConfig
 import com.hmp.domain.playlist.WeightTemplate
+import kotlin.math.abs
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import org.koin.androidx.compose.koinViewModel
@@ -161,15 +165,38 @@ fun PlayContent(
             if (isPhoneLandscape) {
                 // 手机横屏：左栏封面，右栏 tabs
                 var selectedTab by remember { mutableStateOf("controls") }
+                var isProgrammaticScroll by remember { mutableStateOf(false) }
                 Row(modifier = Modifier.fillMaxSize().displayCutoutPadding()) {
-                    Box(Modifier.weight(0.35f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                        AlbumCover(musicInfo?.music?.albumArtUri, minOf(containerWidth * 0.5f, 240.dp), 16.dp, 8.dp)
+                    var dragOffset by remember { mutableFloatStateOf(0f) }
+                    Box(Modifier.weight(0.35f).fillMaxHeight()
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    if (dragOffset > 100f) callbacks.onPrevious()
+                                    else if (dragOffset < -100f) callbacks.onNext()
+                                    dragOffset = 0f
+                                },
+                                onDragCancel = { dragOffset = 0f },
+                                onHorizontalDrag = { _, dragAmount -> dragOffset += dragAmount }
+                            )
+                        }, contentAlignment = Alignment.Center) {
+                        AlbumCover(musicInfo?.music?.albumArtUri, minOf(containerWidth * 0.5f, 240.dp), 16.dp, 8.dp,
+                            modifier = Modifier.graphicsLayer { translationX = dragOffset })
                     }
                     Column(Modifier.weight(0.65f).fillMaxHeight().padding(start = 16.dp, end = 24.dp).padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         val tabs = listOf("controls", "lyrics", "info", "generate", "playlist")
                         val pagerState = rememberPagerState(initialPage = 0) { tabs.size }
-                        LaunchedEffect(selectedTab) { val idx = tabs.indexOf(selectedTab); if (idx >= 0) pagerState.animateScrollToPage(idx) }
-                        LaunchedEffect(pagerState.currentPage) { selectedTab = tabs[pagerState.currentPage] }
+                        LaunchedEffect(selectedTab) {
+                            val idx = tabs.indexOf(selectedTab)
+                            if (idx >= 0 && idx != pagerState.currentPage) {
+                                isProgrammaticScroll = true
+                                pagerState.animateScrollToPage(idx)
+                                isProgrammaticScroll = false
+                            }
+                        }
+                        LaunchedEffect(pagerState.currentPage) {
+                            if (!isProgrammaticScroll) selectedTab = tabs[pagerState.currentPage]
+                        }
                         Box(modifier = Modifier.weight(1f)) {
                             HorizontalPager(state = pagerState) { page ->
                                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -195,6 +222,7 @@ fun PlayContent(
             } else if (isLandscape) {
                 // 平板横屏：左控制 + 右 3tab
                 var selectedTab by remember { mutableStateOf("lyrics") }
+                var isProgrammaticScroll by remember { mutableStateOf(false) }
                 Row(modifier = Modifier.fillMaxSize()) {
                     Column(Modifier.weight(0.4f).fillMaxHeight()) {
                         Spacer(Modifier.height(12.dp))
@@ -213,8 +241,17 @@ fun PlayContent(
                     Column(Modifier.weight(0.6f).fillMaxHeight().padding(start = 16.dp, end = 24.dp).padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         val tabs = listOf("lyrics", "info", "playlist")
                         val pagerState = rememberPagerState(initialPage = 0) { tabs.size }
-                        LaunchedEffect(selectedTab) { val idx = tabs.indexOf(selectedTab); if (idx >= 0) pagerState.animateScrollToPage(idx) }
-                        LaunchedEffect(pagerState.currentPage) { selectedTab = tabs[pagerState.currentPage] }
+                        LaunchedEffect(selectedTab) {
+                            val idx = tabs.indexOf(selectedTab)
+                            if (idx >= 0 && idx != pagerState.currentPage) {
+                                isProgrammaticScroll = true
+                                pagerState.animateScrollToPage(idx)
+                                isProgrammaticScroll = false
+                            }
+                        }
+                        LaunchedEffect(pagerState.currentPage) {
+                            if (!isProgrammaticScroll) selectedTab = tabs[pagerState.currentPage]
+                        }
                         Box(Modifier.weight(1f)) {
                             HorizontalPager(state = pagerState) { page ->
                                 when (tabs[page]) {

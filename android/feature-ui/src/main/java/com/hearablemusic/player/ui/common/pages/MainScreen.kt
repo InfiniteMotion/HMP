@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -436,7 +437,7 @@ fun MainScreen(
 
                     if (windowSizeInfo.useFusionSidebar) {
                         // Medium 手机横屏：左侧融合侧边栏 + 右侧内容（侧边栏仅在Tab页面显示）
-                        Row(modifier = contentModifier) {
+                        Row(modifier = contentModifier.displayCutoutPadding()) {
                             if (isOnTabPage) {
                                 FusionSidebar(
                                     selectedTabIndex = pagerState.currentPage,
@@ -447,12 +448,6 @@ fun MainScreen(
                                             pagerState.animateScrollToPage(index)
                                         }
                                     },
-                                    onPlayPause = {
-                                        if (isPlaying) playbackViewModel.pauseMusic()
-                                        else playbackViewModel.playOrResume()
-                                    },
-                                    onNext = { playbackViewModel.playNext() },
-                                    onPrev = { playbackViewModel.playPrevious() },
                                     onOpenPlayer = { navController.add(NavRoutes.Player.Player) }
                                 )
                             }
@@ -462,7 +457,9 @@ fun MainScreen(
                         }
                     } else {
                         // Compact / Expanded：单列布局
-                        Box(modifier = contentModifier) {
+                        Box(modifier = contentModifier.then(
+                            if (windowSizeInfo.isLandscape) Modifier.displayCutoutPadding() else Modifier
+                        )) {
                             navContent()
                         }
                     }
@@ -476,7 +473,7 @@ fun MainScreen(
                 val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
                 val bfbScope = rememberCoroutineScope()
                 AnimatedVisibility(
-                    visible = navController.none { it is NavRoutes.Player.Player } && isMiniPlayerVisible,
+                    visible = navController.none { it is NavRoutes.Player.Player || it is NavRoutes.Player.Lyrics } && isMiniPlayerVisible,
                     enter = slideInVertically(
                         initialOffsetY = { it },
                         animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)

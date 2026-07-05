@@ -92,14 +92,12 @@ fun AdvancedLyrics(
             .fillMaxSize()
             .onSizeChanged { containerHeightPx = it.height }
     ) {
-        // 自动滚动到当前行
+        // 自动滚动到当前行，居中显示（contentPadding 已提供上下对称空间）
         LaunchedEffect(currentIndex, containerHeightPx) {
             if (currentIndex >= 0 && currentIndex < parsedLyrics.size && containerHeightPx > 0) {
-                val halfItemHeight = with(density) { 30.dp.toPx() }.toInt()
-
                 scrollState.animateScrollToItem(
                     index = currentIndex,
-                    scrollOffset = -halfItemHeight
+                    scrollOffset = 0
                 )
             }
         }

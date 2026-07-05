@@ -163,7 +163,7 @@ fun BottomFusionBar(
         modifier = modifier
             .fillMaxWidth()
             .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
             .padding(bottom = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
@@ -339,7 +339,7 @@ private fun NavigationExpandedContent(
                         haptic.performLightClick()
                         onTabSelected(index)
                     }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
