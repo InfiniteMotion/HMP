@@ -299,7 +299,7 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "## ${TAG}
+            --notes "## Hearable Music ${TAG}
 
           ${{ steps.notes.outputs.NOTES }}
 
