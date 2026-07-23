@@ -1,31 +1,6 @@
-# Add project specific ProGuard rules here.
+# ProGuard rules for feature-ui module
+# 库自身的 consumer rules 已处理 Compose/Coil/Palette/Navigation 的保留规则
 
-# Compose
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
-
-# Keep ViewModel classes
--keep class * extends androidx.lifecycle.ViewModel { *; }
+# ViewModels（Koin 构造函数引用）
+-keep class * extends androidx.lifecycle.ViewModel { <init>(...); }
 -keep class com.hearablemusic.player.ui.viewmodel.** { *; }
-
-# Keep UI Event classes
--keep class com.hearablemusic.player.ui.viewmodel.UiEvent { *; }
--keep class com.hearablemusic.player.ui.viewmodel.UiEvent$* { *; }
-
-# Keep Composable functions
--keep @androidx.compose.runtime.Composable class ** { *; }
--keepclassmembers class ** {
-    @androidx.compose.runtime.Composable *;
-}
-
-# Navigation Compose
--keep class androidx.navigation.** { *; }
--dontwarn androidx.navigation.**
-
-# Coil
--keep class coil.** { *; }
--dontwarn coil.**
-
-# Palette
--keep class androidx.palette.** { *; }
--dontwarn androidx.palette.**

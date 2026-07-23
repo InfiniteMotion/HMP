@@ -1,6 +1,5 @@
 # Consumer ProGuard rules for core-player module
-# These rules will be automatically applied to consumers of this library
+# 传递给消费此库的模块（如 app）
 
-# 确保Media3相关类不被混淆
--keep class androidx.media3.** { *; }
--keep interface androidx.media3.** { *; }
+# Media3 Service（Manifest 通过类名访问）
+-keep class com.hearablemusic.player.player.service.** { *; }

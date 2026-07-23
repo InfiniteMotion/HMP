@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>版本更新记录 — HMP Hearable Music Player</title>
+<meta name="description" content="HMP 版本更新历史 — 功能演进与变更记录。" />
+<meta name="theme-color" content="#121212">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/ic_launcher_foreground.webp" type="image/webp">
+<script>var st=localStorage.getItem('theme');if(st)document.documentElement.setAttribute('data-theme',st);else if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');</script>
+<style>
+  .changelog-page { position:relative; z-index:1; max-width:760px; margin:0 auto; padding:48px 24px 80px; }
+  .changelog-header { margin-bottom:40px; }
+  .changelog-header .back-link { display:inline-block; margin-bottom:12px; color:var(--text-secondary); font-size:0.85rem; transition:color var(--dur-micro); }
+  .changelog-header .back-link:hover { color:var(--text); }
+  .changelog-header h1 { font-size:1.6rem; font-weight:800; margin-bottom:6px; }
+  .changelog-header p { color:var(--text-secondary); font-size:0.9rem; }
+
+  .changelog-timeline { position:relative; padding-left:28px; }
+  .changelog-timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:2px; background:var(--divider); border-radius:1px; }
+
+  .cl-entry { position:relative; margin-bottom:36px; }
+  .cl-entry::before { content:''; position:absolute; left:-25px; top:8px; width:10px; height:10px; border-radius:50%; background:var(--surface); border:2px solid var(--divider); transition:all var(--dur-micro); }
+  .cl-entry:first-child::before { background:var(--red); border-color:var(--red); box-shadow:0 0 8px rgba(201,44,44,0.5); }
+
+  .cl-head { display:flex; align-items:baseline; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .cl-version { font-size:1.15rem; font-weight:700; }
+  .cl-date { font-size:0.8rem; color:var(--text-secondary); }
+  .cl-latest { font-size:0.7rem; font-weight:600; padding:2px 10px; border-radius:100px; background:rgba(201,44,44,0.15); color:var(--red); }
+
+  .cl-card { background:var(--glass-bg); backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur)); border:1px solid var(--glass-border); border-radius:var(--radius); padding:20px 24px; }
+  .cl-section { margin-bottom:14px; }
+  .cl-section:last-child { margin-bottom:0; }
+  .cl-section-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; }
+  .cl-section ul { list-style:none; padding:0; }
+  .cl-section li { position:relative; padding-left:16px; font-size:0.88rem; line-height:1.7; color:var(--text); }
+  .cl-section li::before { content:''; position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--divider); }
+  .cl-section li strong { font-weight:600; }
+
+  /* Collapse: hide extra sections + toggle button */
+  .cl-entry[data-collapsed] .cl-section:nth-child(n+2) { display:none; }
+  .cl-entry[data-collapsed] .cl-toggle .cl-toggle-expanded { display:none; }
+  .cl-entry:not([data-collapsed]) .cl-toggle .cl-toggle-collapsed { display:none; }
+  .cl-entry[data-collapsed] .cl-toggle { display:block; }
+  .cl-entry:not([data-collapsed]) .cl-toggle { display:block; }
+
+  .cl-toggle { margin-top:10px; font-size:0.8rem; color:var(--primary); cursor:pointer; transition:color var(--dur-micro); user-select:none; display:none; }
+  .cl-toggle:hover { color:var(--text); }
+
+  @media (max-width:600px) {
+    .changelog-page { padding:32px 16px 60px; }
+    .changelog-timeline { padding-left:22px; }
+    .cl-entry::before { left:-19px; width:8px; height:8px; }
+    .cl-card { padding:16px; }
+    .cl-version { font-size:1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora-bg">
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+</div>
+
+<div class="bottom-bar">
+  <a href="https://github.com/InfiniteMotion/HMP" class="bottom-link">GitHub</a>
+  <a href="https://github.com/InfiniteMotion/HMP/releases" class="top-badge">Releases</a>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+    <span id="themeIcon">&#9789;</span>
+  </button>
+</div>
+
+<div class="changelog-page">
+  <div class="changelog-header">
+    <a href="index.html" class="back-link">&larr; 返回首页</a>
+    <h1>版本更新记录</h1>
+    <p>HMP 的功能演进与变更历史</p>
+  </div>
+
+  <div class="changelog-timeline">
+
+    <!-- v6.11.1 -->
+    <div class="cl-entry">
+      <div class="cl-head">
+        <span class="cl-version">v6.11.1</span>
+        <span class="cl-date">2026-07-23</span>
+        <span class="cl-latest">Latest</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">R8 优化</div>
+          <ul>
+            <li>启用 <strong>-repackageclasses</strong>，收窄 ProGuard keep 规则</li>
+            <li>移除 Compose/Koin/Media3/Room/Navigation3 等宽泛库保留规则</li>
+            <li>替换为精确的 Room Entity、@Serializable、ViewModel 保留规则</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">CI/CD 发版流程优化</div>
+          <ul>
+            <li>添加 Gradle 构建缓存，移除 --rerun-tasks</li>
+            <li>新增构建前校验（单元测试 + 版本号重复检测）</li>
+            <li>Android 与桌面端构建并行化，不再互相阻塞</li>
+            <li>Release Notes 按 commit 类型自动分类展示</li>
+            <li>新增产物 SHA256 校验文件</li>
+            <li>支持 workflow_dispatch 手动触发 PATCH 发版</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v6.10 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v6.10</span>
+        <span class="cl-date">2026-05-20</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">桌面端平台</div>
+          <ul>
+            <li>Compose Multiplatform 桌面端（JVM）</li>
+            <li>自研音频引擎（FFmpeg 解码 + JNA 绑定）</li>
+            <li>响应式布局系统（Compact/Expanded 模式、多面板导航）</li>
+            <li>NavigationRail + BottomFusionBar 自适应导航组件</li>
+            <li>无边框窗口（标题栏、拖拽、圆角阴影、主题集成）</li>
+            <li>键盘快捷键支持</li>
+            <li>动态背景重构与主题系统优化</li>
+            <li>冷启动优化（同步预加载、JNA 预热）</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">Android 增强</div>
+          <ul>
+            <li>BottomFusionBar 组件（底部融合栏替代 MiniPlayerBar）</li>
+            <li>动态背景取色算法重构</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">构建与 CI</div>
+          <ul>
+            <li>settings.gradle.kts 条件化模块包含（HMP_BUILD_TARGET 环境变量）</li>
+            <li>CI 自动构建桌面三平台安装包（macOS DMG / Windows MSI / Linux DEB+AppImage）</li>
+            <li>GitHub Release 同发 Android + Desktop 六种产物</li>
+          </ul>
+        </div>
+        <span class="cl-toggle" onclick="toggleEntry(this)">
+          <span class="cl-toggle-collapsed">展开全部 ↓</span>
+          <span class="cl-toggle-expanded">收起 ↑</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- v5.10 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.10</span>
+        <span class="cl-date">2026-05-09</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">跨平台架构迁移</div>
+          <ul>
+            <li>实现 <strong>Kotlin Multiplatform Mobile</strong> (KMM) 架构</li>
+            <li>迁移 core-domain 和 core-data 层到 shared 模块</li>
+            <li>配置 CocoaPods 集成，支持 iOS 平台</li>
+            <li>创建 iOS 平台特定实现（11 个 expect/actual 声明）</li>
+            <li>完成 iOS 应用的构建和基本 UI 显示</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">iOS 核心功能</div>
+          <ul>
+            <li>播放引擎（AVPlayer + MusicPlayerController 单例）</li>
+            <li>锁屏控制与远程命令（NowPlayingInfoManager + RemoteCommandManager）</li>
+            <li>Live Activity 与灵动岛（LiveActivityManager）</li>
+            <li>音乐扫描（DeviceMusicScanner + MusicTagParser Bridge）</li>
+            <li>8 个 ViewModel 实现完毕</li>
+            <li>SwiftUI 界面大规模实现：音乐库/播放器/播放列表/设置四大模块</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">发布流程重构</div>
+          <ul>
+            <li>版本号集中管理到 gradle.properties</li>
+            <li>新增 Gradle release 任务（releaseAndroid / releaseIos / release）</li>
+            <li>Release 构建启用代码混淆和资源压缩</li>
+            <li>CI/CD 自动发布 GitHub Release</li>
+          </ul>
+        </div>
+        <span class="cl-toggle" onclick="toggleEntry(this)">
+          <span class="cl-toggle-collapsed">展开全部 ↓</span>
+          <span class="cl-toggle-expanded">收起 ↑</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- v5.9 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.9</span>
+        <span class="cl-date">2026-04-17</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">代码组织与播放器重构</div>
+          <ul>
+            <li>拆分 PlayControlViewModel 为多个专用 ViewModel</li>
+            <li>重构播放器界面结构，优化播放控制逻辑</li>
+            <li>按功能模块重新组织包结构</li>
+            <li>实现音乐详情弹窗的分享功能（支持分享音频文件）</li>
+            <li>优化「下一首播放」逻辑</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.8 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.8</span>
+        <span class="cl-date">2026-04-01</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">架构升级与 UI 优化</div>
+          <ul>
+            <li>迁移到 <strong>Navigation 3</strong> 和 Gradle 9.0</li>
+            <li>重构导航系统为集中式路由管理</li>
+            <li>新增专辑页面及功能</li>
+            <li>添加毛玻璃效果相关设置和优化弹窗功能</li>
+            <li>简化应用名称与开启代码混淆</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.7 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.7</span>
+        <span class="cl-date">2026-03-17</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">播放列表管理补全</div>
+          <ul>
+            <li>用户自定义播放列表全流程支持</li>
+            <li>新建/重命名/删除（含确认）、列表内拖拽排序</li>
+            <li>从播放列表移除单曲</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.6 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.6</span>
+        <span class="cl-date">2026-02-24</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">功能</div>
+          <ul>
+            <li>新增独立歌词页面及其设置面板</li>
+            <li>添加智能播放列表生成算法及 UI 支持</li>
+            <li>重构歌曲详情页面并新增详情视图模型</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.5 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.5</span>
+        <span class="cl-date">2026-02-05</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">功能</div>
+          <ul>
+            <li>实现 UI 字符串国际化并优化组件样式</li>
+            <li>添加动态背景风格选择与改进动画效果</li>
+            <li>替换智能歌词组件为高级歌词组件，支持歌词显示参数配置及管理</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.4 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.4</span>
+        <span class="cl-date">2026-01-14</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">重构与优化</div>
+          <ul>
+            <li>实现 Hilt 导航组件集成与音乐控制器重构</li>
+            <li>重构列表页面，新增多样化播放列表展示组件</li>
+            <li>优化用户界面和听歌时长热力图展示</li>
+            <li>修复音乐列表快速滑动时的崩溃问题</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.3 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.3</span>
+        <span class="cl-date">2025-12-30</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">AI 推荐系统</div>
+          <ul>
+            <li>实现多 AI 服务商支持（DeepSeek、OpenAI、Claude、通义千问、文心一言）</li>
+            <li>添加 AI 服务商配置界面，支持自由切换</li>
+            <li>实现 API 密钥加密存储机制</li>
+            <li>实现每日推荐刷新策略系统</li>
+            <li>优化 AI 批量处理流程，支持暂停、继续、取消操作</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.2 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.2</span>
+        <span class="cl-date">2025-12-03</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">功能与体验</div>
+          <ul>
+            <li>添加触觉反馈增强用户体验</li>
+            <li>实现动态主题设置</li>
+            <li>添加按艺术家页面</li>
+            <li>添加自定义主题和 AI 功能页面</li>
+            <li>添加音频效果屏幕并重构用户界面</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v5.0 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v5.0</span>
+        <span class="cl-date">2025-11-20</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">模块化架构</div>
+          <ul>
+            <li>模块化架构迁移完成</li>
+            <li>实现 Hilt 依赖注入</li>
+            <li>升级数据库版本支持分页查询</li>
+            <li>迁移到 Media3 MediaSession</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v4.0 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v4.0</span>
+        <span class="cl-date">2025-05-06</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">重构</div>
+          <ul>
+            <li>重构代码结构，优化播放逻辑</li>
+            <li>提升应用稳定性</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v3.0 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v3.0</span>
+        <span class="cl-date">2025-05-06</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">优化</div>
+          <ul>
+            <li>优化 MusicViewModel 逻辑</li>
+            <li>完善播放控制功能</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v2.0 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v2.0</span>
+        <span class="cl-date">2025-04-23</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">首个可运行版本</div>
+          <ul>
+            <li>实现播放列表功能</li>
+            <li>添加基础播放控制功能</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.0 -->
+    <div class="cl-entry" data-collapsed>
+      <div class="cl-head">
+        <span class="cl-version">v1.0</span>
+        <span class="cl-date">2025-03-31</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">项目诞生</div>
+          <ul>
+            <li>项目初始化，创建基础项目结构</li>
+            <li>配置 Git 仓库</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<span class="bottom-copy">&copy; 2026 Hearable Music Player &middot; By WLYB &middot; <a href="privacy-policy.html" style="color:inherit;text-decoration:underline;">隐私政策</a></span>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const theme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  icon.innerHTML = isDark ? '&#9788;' : '&#9789;';
+}
+
+function toggleEntry(el) {
+  var entry = el.closest('.cl-entry');
+  if (entry.hasAttribute('data-collapsed')) {
+    entry.removeAttribute('data-collapsed');
+  } else {
+    entry.setAttribute('data-collapsed', '');
+  }
+}
+</script>
+</body>
+</html>

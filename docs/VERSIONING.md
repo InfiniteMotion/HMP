@@ -1,15 +1,15 @@
 # Hearable Music Player — 版本命名与发布规范
 
-本文档为项目**版本号格式、发版流程与分支策略**的正式约定。**自 v5.6.1 起施行**；此前已发布版本与历史记录保留不改。
+本文档为项目**版本号格式、发版流程与分支策略**的正式约定。**自 v5.6.1 起施行**，v6.11.1 起更新发版流程。
 
 ---
 
 ## 1. 版本号格式
 
-采用 **三位版本号**：`MAJOR.MINOR.PATCH`（如 `5.6.0`、`6.0.0`）。
+采用 **三位版本号**：`MAJOR.MINOR.PATCH`（如 `6.0.0`、`6.11.1`）。
 
-- 文档与对外表述可带前缀 `v`，如 **v6.0.0**。
-- 构建产物使用纯数字：`versionName = "6.0.0"`，与 ROADMAP 中的版本一致。
+- 文档与对外表述可带前缀 `v`，如 **v6.11.1**。
+- 构建产物使用纯数字：`versionName = "6.11.1"`，与 ROADMAP 中的版本一致。
 
 ## 2. 何时升级哪一位
 
@@ -22,94 +22,209 @@
 **原则**：
 
 - 每次正式发布**只递增一位**：能 PATCH 就 PATCH，否则 MINOR，再否则 MAJOR。
-- 避免跳号：从 `5.10.0` 下次应为 `5.10.1` 或 `6.0.0`，不直接出现未发布过的版本号。
+- 避免跳号：从 `6.11.1` 下次应为 `6.11.2` 或 `6.12.0`，不直接出现未发布过的版本号。
 - 发布后立即在 **ROADMAP.md** 中写入该版本、日期及变更，并更新「当前版本」。
 
-## 3. 与构建系统的对应关系
+## 3. 版本号与构建系统
 
 版本号集中维护在 `gradle.properties`：
 
 ```properties
-hmp.versionCode=61000
-hmp.versionName=6.10.0
+hmp.versionCode=61101
+hmp.versionName=6.11.1
 ```
 
-- **versionName**：与三位版本号一致，如 `"6.0.0"`。`android/app/build.gradle.kts` 通过 `project.findProperty("hmp.versionName")` 引用。
-- **versionCode**：每次发布**严格递增**的整数。`android/app/build.gradle.kts` 通过 `project.findProperty("hmp.versionCode")` 引用。建议按 `MAJOR*10000 + MINOR*1000 + PATCH` 换算（保证只增不减）。
+- **versionName**：与三位版本号一致。各模块通过 `project.findProperty("hmp.versionName")` 引用。
+- **versionCode**：每次发布**严格递增**的整数。建议按 `MAJOR*10000 + MINOR*1000 + PATCH` 换算。
 
-**发布前检查**（每次发版必做）：
+## 4. 分支策略
 
-1. 确定 MAJOR / MINOR / PATCH 及新版本号。
-2. 在 `gradle.properties` 中更新 `hmp.versionCode` 和 `hmp.versionName`。
-3. 在 **ROADMAP.md** 的「项目历史与版本演进」中新增该版本条目，并更新「当前版本」。
-4. 若 README 等文档有「当前版本」，一并更新。
-
-## 4. 与 ROADMAP 的同步
-
-- **ROADMAP.md** 是版本历史与变更日志的**单一事实来源**。
-- 版本号、发布日期、变更说明以 ROADMAP 为准；`versionName` 与 ROADMAP 中的版本号保持一致。
-
-## 5. 分支与发版
-
-### 5.1 分支结构
+### 分支结构
 
 ```
 master ─────────────────────────────── 已发布版本（保护分支）
   │
-  ├── develop-android ──────────────── Android 开发
-  ├── develop-ios ──────────────────── iOS 开发
-  ├── develop-desktop ──────────────── 桌面端开发（未来）
-  └── develop-shared ───────────────── shared 模块开发
+  ├── develop-android ──────────────── Android + shared 开发
+  ├── develop-site ──────────────────── 产品展示站点开发
+  ├── develop-ios ──────────────────── iOS 开发（规划中）
+  ├── feature/* ─────────────────────── 功能分支
+  ├── fix/* ─────────────────────────── 修复分支
+  └── release/X.Y.Z ────────────────── 发版集成分支
 ```
 
-- **master**：已发布版本。仅通过「从 release/X.Y 合并」或「在 master 上直接提交（PATCH）」更新。
-- **develop-android / develop-ios / develop-desktop**：各平台独立开发分支，互不阻塞。
-- **develop-shared**：跨平台共享模块开发。shared 改动先合入此分支，各平台分支定期从 `develop-shared` merge 同步。
-- **feature/\***：功能分支，从对应 develop 拉出，完成后 PR 合回。
-- **fix/\***：修复分支，从 develop 或 master 拉出。
+| 分支 | 用途 | 保护 |
+|------|------|------|
+| `master` | 已发布版本，仅通过 release 分支 PR 合入 | ✅ |
+| `develop-android` | Android + shared 模块日常开发 | — |
+| `develop-site` | 产品展示站点开发 | — |
+| `feature/*` | 从 develop 拉出，完成后 PR 合回 | — |
+| `fix/*` | 从 develop 或 master 拉出 | — |
+| `release/X.Y.Z` | 发版集成分支，从 develop 拉出，PR 到 master | — |
 
-### 5.2 日常开发
+### 日常开发
 
-1. 从对应平台 develop 分支拉出 `feature/xxx` 分支。
+1. 从对应 develop 分支拉出 `feature/xxx` 分支。
 2. 开发完成后提 PR 合回对应 develop 分支。
-3. 如果改动涉及 shared 模块，PR 合入 `develop-shared` 后，各平台 develop 分支 merge `develop-shared` 同步。
+3. 涉及 shared 模块的改动，在 `develop-android` 上开发即可。
 4. 小改动（修 bug、改配置）可直接在 develop 分支上提交。
-
-### 5.3 MINOR / MAJOR 发版
-
-统一版本号，所有平台一起发。流程：
-
-1. 各平台在各自 develop 分支上完成改动。
-2. 创建 `release/X.Y` 分支（从 master 拉出），将各 develop 分支合入：
-   ```
-   git checkout -b release/6.0 master
-   git merge develop-shared
-   git merge develop-android
-   git merge develop-ios
-   ```
-3. 按「发布前检查」更新版本号与 ROADMAP，本地执行 `./gradlew release` 构建所有平台产物并自测。
-4. 将 `release/X.Y` **PR 到 master**，CI 自动构建并创建 GitHub Release + 部署 Storybook。
-5. 发布后，各 develop 分支从 master merge 同步版本号和 tag。
-
-### 5.4 PATCH 发版
-
-1. **不切 release 分支**。在 **master** 上直接修改（或从 master 拉短命分支如 `fix/xxx`，修完合并回 master）。
-2. 在 master 上升 PATCH 版本号（`gradle.properties`）、更新 ROADMAP、构建、自测通过后打 tag（如 `v5.10.1`）。
-3. 若需 develop 分支同步此次修复，执行一次 **master → 各 develop** 合并。
-
-### 5.5 CI/CD 自动发布
-
-项目配置了 GitHub Actions 自动发布工作流 (`.github/workflows/release.yml`)：
-
-- **触发条件**：`release/*` 分支的 PR 合并到 `master` 时自动触发
-- **release job**：构建 Android APK + AAB，基于上一个 git tag 自动生成 changelog，创建版本 tag 并发布 GitHub Release
-- **storybook job** + **deploy-pages job**：构建并部署 Storybook 到 GitHub Pages
-
-PATCH 发版（直接在 master 上操作）不触发此工作流，需手动打 tag 和创建 Release。
 
 ---
 
-**适用范围**：本规范自 **v5.6.1** 起施行。v5.6.1 之前的版本号与历史记录不做追溯修改。分支策略自 **v6.0** 起调整为按平台拆分的 develop 分支模式。
+## 5. 发版流程
+
+### 5.1 MINOR / MAJOR 发版
+
+适用于新功能、架构变更等较大版本升级。
+
+```bash
+# 1. 从 develop 拉出 release 分支
+git checkout develop-android
+git checkout -b release/X.Y.0
+
+# 2. 合入其他 develop 分支（如有需要）
+git merge develop-site
+
+# 3. 更新版本号
+#    gradle.properties: hmp.versionCode + hmp.versionName
+#    ROADMAP.md: 新增版本条目 + 更新「当前版本」
+#    site/: 更新版本号链接
+
+# 4. 本地构建验证
+./gradlew :android:app:assembleRelease
+
+# 5. 提交版本 bump
+git add -A && git commit -m "bump: vX.Y.0"
+
+# 6. 推送并创建 PR 到 master
+git push origin release/X.Y.0
+# → 在 GitHub 创建 PR: release/X.Y.0 → master
+```
+
+PR 合入 master 后，CI 自动执行：
+- 单元测试 + 版本号校验
+- Android + 桌面端并行构建
+- 生成分类 Release Notes + SHA256 校验
+- 创建 `vX.Y.0` tag + GitHub Release
+- 部署产品展示站点到 GitHub Pages
+
+### 5.2 PATCH 发版
+
+适用于 bug 修复、配置调整等小改动。
+
+```bash
+# 1. 从 develop 拉出 release 分支
+git checkout develop-android
+git checkout -b release/X.Y.Z
+
+# 2. 合入其他 develop 分支（如有需要）
+git merge develop-site
+
+# 3. 更新版本号
+#    gradle.properties: hmp.versionCode++ , hmp.versionName → X.Y.Z
+#    ROADMAP.md: 新增版本条目 + 更新「当前版本」
+#    site/: 更新版本号链接
+
+# 4. 本地构建验证
+./gradlew :android:app:assembleRelease
+
+# 5. 提交版本 bump
+git add -A && git commit -m "bump: vX.Y.Z"
+
+# 6. 推送并创建 PR 到 master
+git push origin release/X.Y.Z
+```
+
+PATCH 发版流程与 MINOR/MAJOR 相同，统一走 `release/* → master` PR 触发 CI。
+
+### 5.3 手动触发（workflow_dispatch）
+
+当需要跳过 PR 流程直接发布时，可在 GitHub Actions 页面手动触发：
+
+1. 打开 Actions → Release → Run workflow
+2. 选择分支，可勾选 `Dry run` 仅构建不发布
+
+---
+
+## 6. 发版检查清单
+
+每次发版前，确认以下事项：
+
+### 版本号
+- [ ] `gradle.properties` 中 `hmp.versionName` 已更新
+- [ ] `gradle.properties` 中 `hmp.versionCode` 已递增
+- [ ] 版本号与 ROADMAP.md 中的版本一致
+
+### 文档
+- [ ] `ROADMAP.md` 已新增版本条目（日期 + 变更说明）
+- [ ] `ROADMAP.md` 「当前版本」已更新
+- [ ] 站点 `site/index.html` 版本号已更新
+- [ ] 站点 `site/download.html` 下载链接已更新
+- [ ] 站点 `site/changelog.html` 已新增版本条目
+
+### 构建验证
+- [ ] 本地 Release 构建通过
+- [ ] 真机测试通过（如涉及功能改动）
+
+---
+
+## 7. CI/CD 自动发布
+
+工作流定义在 `.github/workflows/release.yml`。
+
+### 触发条件
+
+- `release/*` 分支的 PR 合并到 `master` 时自动触发
+- 支持 `workflow_dispatch` 手动触发
+
+### 流程图
+
+```
+                    ┌─ validate（单元测试 + 版本号校验）
+                    │
+PR 合入 master ────┼─ build-android ──────┐
+                    │                       │
+                    ├─ build-desktop-macos ─┤
+                    ├─ build-desktop-win  ──┼─ release（收集产物 + Notes + tag）
+                    └─ build-desktop-linux ─┘     │
+                                                    └─ deploy-site
+```
+
+### 构建产物
+
+| 平台 | 产物 | 格式 |
+|------|------|------|
+| Android | APK + AAB | `HMP-vX.Y.Z-release.apk` / `.aab` |
+| macOS | DMG | `HMP-vX.Y.Z-macos.dmg` |
+| Windows | MSI | `HMP-vX.Y.Z-windows.msi` |
+| Linux | DEB + AppImage | `HMP-vX.Y.Z-linux.deb` / `.AppImage` |
+| 校验 | SHA256 | `SHA256SUMS.txt` |
+
+### Release Notes
+
+基于 commit message 自动生成，按前缀分类：
+
+| commit 前缀 | 归类 |
+|-------------|------|
+| `feat:` / `feature:` | ✨ New Features |
+| `fix:` | 🐛 Bug Fixes |
+| `perf:` / `optimize:` / `refactor:` | ⚡ Performance & Refactoring |
+| 其他 | 📦 Other Changes |
+
+### 版本号校验
+
+CI 会自动检查 `gradle.properties` 中的版本号是否与已有 tag 重复，重复则构建失败。
+
+---
+
+## 8. 与 ROADMAP 的同步
+
+- **ROADMAP.md** 是版本历史与变更日志的**单一事实来源**。
+- 版本号、发布日期、变更说明以 ROADMAP 为准。
+- `versionName` 与 ROADMAP 中的版本号保持一致。
+
+---
+
+**适用范围**：本规范自 **v5.6.1** 起施行，**v6.11.1** 起更新发版流程。分支策略自 **v6.0** 起调整为按平台拆分的 develop 分支模式。
 
 ---
 
