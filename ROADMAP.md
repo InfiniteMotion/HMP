@@ -164,6 +164,19 @@
   - CI 自动构建桌面三平台安装包（macOS DMG / Windows MSI / Linux DEB+AppImage）
   - GitHub Release 同发 Android + Desktop 六种产物
 
+
+### v6.11.1 (2026-07-23)
+- **R8 优化**：
+  - 启用 -repackageclasses，收窄 ProGuard keep 规则
+  - 移除 Compose/Koin/Media3/Room/Navigation3 等宽泛库保留规则
+  - 替换为精确的 Room Entity、@Serializable、ViewModel 保留规则
+- **CI/CD 发版流程优化**：
+  - 添加 Gradle 构建缓存，移除 --rerun-tasks
+  - 新增构建前校验（单元测试 + 版本号重复检测）
+  - Android 与桌面端构建并行化，不再互相阻塞
+  - Release Notes 按 commit 类型自动分类展示
+  - 新增产物 SHA256 校验文件
+  - 支持 workflow_dispatch 手动触发 PATCH 发版
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -338,8 +351,8 @@
 
 ---
 
-**最后更新时间**: 2026-05-20
-**当前版本**: v6.10.0
+**最后更新时间**: 2026-07-23
+**当前版本**: v6.11.1
 
 ---
 
