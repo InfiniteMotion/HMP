@@ -180,7 +180,7 @@
             <li>完成 iOS 应用的构建和基本 UI 显示</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -201,7 +201,7 @@
             <li>优化「下一首播放」逻辑</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -222,7 +222,7 @@
             <li>简化应用名称与开启代码混淆</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -259,7 +259,7 @@
             <li>重构歌曲详情页面并新增详情视图模型</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -278,7 +278,7 @@
             <li>替换智能歌词组件为高级歌词组件，支持歌词显示参数配置及管理</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -298,7 +298,7 @@
             <li>修复音乐列表快速滑动时的崩溃问题</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -319,7 +319,7 @@
             <li>优化 AI 批量处理流程，支持暂停、继续、取消操作</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -340,7 +340,7 @@
             <li>添加音频效果屏幕并重构用户界面</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 &darr;</div>
+        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -451,10 +451,10 @@ function toggleEntry(el) {
   const entry = el.closest('.cl-entry');
   if (entry.hasAttribute('data-collapsed')) {
     entry.removeAttribute('data-collapsed');
-    el.textContent = '收起 &uarr;';
+    el.innerHTML = '收起 ↑';
   } else {
     entry.setAttribute('data-collapsed', '');
-    el.textContent = '展开全部 &darr;';
+    el.innerHTML = '展开全部 ↓';
   }
 }
 </script>
