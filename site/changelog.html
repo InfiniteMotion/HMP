@@ -14,7 +14,6 @@
 <script>var st=localStorage.getItem('theme');if(st)document.documentElement.setAttribute('data-theme',st);else if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');</script>
 <style>
   .changelog-page { position:relative; z-index:1; max-width:760px; margin:0 auto; padding:48px 24px 80px; }
-
   .changelog-header { margin-bottom:40px; }
   .changelog-header .back-link { display:inline-block; margin-bottom:12px; color:var(--text-secondary); font-size:0.85rem; transition:color var(--dur-micro); }
   .changelog-header .back-link:hover { color:var(--text); }
@@ -22,18 +21,10 @@
   .changelog-header p { color:var(--text-secondary); font-size:0.9rem; }
 
   .changelog-timeline { position:relative; padding-left:28px; }
-  .changelog-timeline::before {
-    content:''; position:absolute; left:6px; top:8px; bottom:8px;
-    width:2px; background:var(--divider); border-radius:1px;
-  }
+  .changelog-timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:2px; background:var(--divider); border-radius:1px; }
 
   .cl-entry { position:relative; margin-bottom:36px; }
-  .cl-entry::before {
-    content:''; position:absolute; left:-25px; top:8px;
-    width:10px; height:10px; border-radius:50%;
-    background:var(--surface); border:2px solid var(--divider);
-    transition:all var(--dur-micro);
-  }
+  .cl-entry::before { content:''; position:absolute; left:-25px; top:8px; width:10px; height:10px; border-radius:50%; background:var(--surface); border:2px solid var(--divider); transition:all var(--dur-micro); }
   .cl-entry:first-child::before { background:var(--red); border-color:var(--red); box-shadow:0 0 8px rgba(201,44,44,0.5); }
 
   .cl-head { display:flex; align-items:baseline; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
@@ -41,13 +32,7 @@
   .cl-date { font-size:0.8rem; color:var(--text-secondary); }
   .cl-latest { font-size:0.7rem; font-weight:600; padding:2px 10px; border-radius:100px; background:rgba(201,44,44,0.15); color:var(--red); }
 
-  .cl-card {
-    background:var(--glass-bg); backdrop-filter:blur(var(--glass-blur));
-    -webkit-backdrop-filter:blur(var(--glass-blur));
-    border:1px solid var(--glass-border); border-radius:var(--radius);
-    padding:20px 24px;
-  }
-
+  .cl-card { background:var(--glass-bg); backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur)); border:1px solid var(--glass-border); border-radius:var(--radius); padding:20px 24px; }
   .cl-section { margin-bottom:14px; }
   .cl-section:last-child { margin-bottom:0; }
   .cl-section-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; }
@@ -56,8 +41,14 @@
   .cl-section li::before { content:''; position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--divider); }
   .cl-section li strong { font-weight:600; }
 
-  .cl-entry[data-collapsed] .cl-card .cl-section:not(:first-child) { display:none; }
-  .cl-toggle { display:inline-block; margin-top:8px; font-size:0.8rem; color:var(--primary); cursor:pointer; transition:color var(--dur-micro); user-select:none; }
+  /* Collapse: hide extra sections + toggle button */
+  .cl-entry[data-collapsed] .cl-section:nth-child(n+2) { display:none; }
+  .cl-entry[data-collapsed] .cl-toggle .cl-toggle-expanded { display:none; }
+  .cl-entry:not([data-collapsed]) .cl-toggle .cl-toggle-collapsed { display:none; }
+  .cl-entry[data-collapsed] .cl-toggle { display:block; }
+  .cl-entry:not([data-collapsed]) .cl-toggle { display:block; }
+
+  .cl-toggle { margin-top:10px; font-size:0.8rem; color:var(--primary); cursor:pointer; transition:color var(--dur-micro); user-select:none; display:none; }
   .cl-toggle:hover { color:var(--text); }
 
   @media (max-width:600px) {
@@ -93,6 +84,7 @@
   </div>
 
   <div class="changelog-timeline">
+
     <!-- v6.11.1 -->
     <div class="cl-entry">
       <div class="cl-head">
@@ -123,13 +115,11 @@
       </div>
     </div>
 
-
     <!-- v6.10 -->
     <div class="cl-entry" data-collapsed>
       <div class="cl-head">
         <span class="cl-version">v6.10</span>
         <span class="cl-date">2026-05-20</span>
-        
       </div>
       <div class="cl-card">
         <div class="cl-section">
@@ -160,6 +150,10 @@
             <li>GitHub Release 同发 Android + Desktop 六种产物</li>
           </ul>
         </div>
+        <span class="cl-toggle" onclick="toggleEntry(this)">
+          <span class="cl-toggle-collapsed">展开全部 ↓</span>
+          <span class="cl-toggle-expanded">收起 ↑</span>
+        </span>
       </div>
     </div>
 
@@ -180,7 +174,30 @@
             <li>完成 iOS 应用的构建和基本 UI 显示</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
+        <div class="cl-section">
+          <div class="cl-section-title">iOS 核心功能</div>
+          <ul>
+            <li>播放引擎（AVPlayer + MusicPlayerController 单例）</li>
+            <li>锁屏控制与远程命令（NowPlayingInfoManager + RemoteCommandManager）</li>
+            <li>Live Activity 与灵动岛（LiveActivityManager）</li>
+            <li>音乐扫描（DeviceMusicScanner + MusicTagParser Bridge）</li>
+            <li>8 个 ViewModel 实现完毕</li>
+            <li>SwiftUI 界面大规模实现：音乐库/播放器/播放列表/设置四大模块</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">发布流程重构</div>
+          <ul>
+            <li>版本号集中管理到 gradle.properties</li>
+            <li>新增 Gradle release 任务（releaseAndroid / releaseIos / release）</li>
+            <li>Release 构建启用代码混淆和资源压缩</li>
+            <li>CI/CD 自动发布 GitHub Release</li>
+          </ul>
+        </div>
+        <span class="cl-toggle" onclick="toggleEntry(this)">
+          <span class="cl-toggle-collapsed">展开全部 ↓</span>
+          <span class="cl-toggle-expanded">收起 ↑</span>
+        </span>
       </div>
     </div>
 
@@ -201,7 +218,6 @@
             <li>优化「下一首播放」逻辑</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -222,7 +238,6 @@
             <li>简化应用名称与开启代码混淆</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -259,7 +274,6 @@
             <li>重构歌曲详情页面并新增详情视图模型</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -278,7 +292,6 @@
             <li>替换智能歌词组件为高级歌词组件，支持歌词显示参数配置及管理</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -298,7 +311,6 @@
             <li>修复音乐列表快速滑动时的崩溃问题</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -319,7 +331,6 @@
             <li>优化 AI 批量处理流程，支持暂停、继续、取消操作</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -340,7 +351,6 @@
             <li>添加音频效果屏幕并重构用户界面</li>
           </ul>
         </div>
-        <div class="cl-toggle" onclick="toggleEntry(this)">展开全部 ↓</div>
       </div>
     </div>
 
@@ -448,13 +458,11 @@ function toggleTheme() {
 }
 
 function toggleEntry(el) {
-  const entry = el.closest('.cl-entry');
+  var entry = el.closest('.cl-entry');
   if (entry.hasAttribute('data-collapsed')) {
     entry.removeAttribute('data-collapsed');
-    el.innerHTML = '收起 ↑';
   } else {
     entry.setAttribute('data-collapsed', '');
-    el.innerHTML = '展开全部 ↓';
   }
 }
 </script>
