@@ -1,11 +1,7 @@
 # Consumer ProGuard rules for feature-ui module
+# 传递给消费此库的模块（如 app）
 
-# Keep ViewModel classes visible to app module
+# ViewModels（Koin 构造函数引用）
 -keep public class * extends androidx.lifecycle.ViewModel {
     public <init>(...);
-}
-
-# Keep Composable functions visible
--keep @androidx.compose.runtime.Composable public class ** { 
-    public *;
 }

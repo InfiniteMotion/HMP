@@ -1,25 +1,5 @@
-# Add project specific ProGuard rules here for core-player module.
+# ProGuard rules for core-player module
+# 库自身的 consumer rules 已处理 Media3/Coil/Koin/Coroutines 的保留规则
 
-# Media3
--keep class androidx.media3.** { *; }
--keep interface androidx.media3.** { *; }
--dontwarn androidx.media3.**
-
-# ExoPlayer
--keep class com.google.android.exoplayer2.** { *; }
--dontwarn com.google.android.exoplayer2.**
-
-# Service and Receiver
+# Media3 Service（Manifest 通过类名访问）
 -keep class com.hearablemusic.player.player.service.** { *; }
-
-# Coil
--keep class coil.** { *; }
--dontwarn coil.**
-
-# Coroutines
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--dontwarn kotlinx.coroutines.flow.**
-
-# Koin
--keep class org.koin.** { *; }

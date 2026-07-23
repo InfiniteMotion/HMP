@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [closed]
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip publish)'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: write
@@ -11,12 +18,97 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: release
   cancel-in-progress: false
 
 jobs:
-  desktop-macos:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+  # ============================================================
+  # 1. 校验：单元测试 + 版本号检查
+  # ============================================================
+  validate:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request.merged == true
+          && startsWith(github.event.pull_request.head.ref, 'release/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests
+        continue-on-error: true
+        run: ./gradlew :shared:test :android:feature-ui:test --no-daemon --no-configuration-cache
+
+      - name: Validate version
+        run: |
+          VERSION=$(grep '^hmp.versionName=' gradle.properties | cut -d'=' -f2)
+          LATEST_TAG=$(git tag --sort=-v:refname | head -1 | sed 's/^v//')
+          echo "Current: $VERSION, Latest tag: $LATEST_TAG"
+
+          if [ "$VERSION" = "$LATEST_TAG" ]; then
+            echo "::error::Version $VERSION already exists! Please bump version in gradle.properties."
+            exit 1
+          fi
+
+  # ============================================================
+  # 2. Android 构建（与桌面端并行）
+  # ============================================================
+  build-android:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    env:
+      HMP_BUILD_TARGET: android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
+
+      - name: Inject built-in AI API key
+        run: echo "BUILT_IN_AI_API_KEY=${{ secrets.BUILT_IN_AI_API_KEY }}" >> gradle.properties
+
+      - name: Build Android Release
+        run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon --no-configuration-cache
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-android
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 5
+
+  # ============================================================
+  # 3. 桌面端构建（与 Android 并行）
+  # ============================================================
+  build-desktop-macos:
+    needs: [validate]
     runs-on: macos-latest
     env:
       HMP_BUILD_TARGET: desktop
@@ -31,19 +123,20 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build macOS DMG
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --no-configuration-cache
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-macos
+          name: build-desktop-macos
           path: desktop/app/build/compose/binaries/main/dmg/
+          retention-days: 5
 
-  desktop-windows:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+  build-desktop-windows:
+    needs: [validate]
     runs-on: windows-latest
     env:
       HMP_BUILD_TARGET: desktop
@@ -58,22 +151,23 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
 
       - name: Build Windows MSI
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --no-configuration-cache
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-windows
+          name: build-desktop-windows
           path: desktop/app/build/compose/binaries/main/msi/
+          retention-days: 5
 
-  desktop-linux:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+  build-desktop-linux:
+    needs: [validate]
     runs-on: ubuntu-latest
     env:
       HMP_BUILD_TARGET: desktop
@@ -88,106 +182,105 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot
 
       - name: Build Linux DEB + AppImage
-        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --rerun-tasks --no-configuration-cache
+        run: ./gradlew :desktop:app:packageDistributionForCurrentOS --no-daemon --no-configuration-cache
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-linux
+          name: build-desktop-linux
           path: |
             desktop/app/build/compose/binaries/main/deb/
             desktop/app/build/compose/binaries/main/appimage/
+          retention-days: 5
 
+  # ============================================================
+  # 4. 发布：收集产物 + 生成 Notes + 创建 Release
+  # ============================================================
   release:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    needs: [desktop-macos, desktop-windows, desktop-linux]
+    needs: [build-android, build-desktop-macos, build-desktop-windows, build-desktop-linux]
+    if: ${{ github.event.inputs.dry_run != 'true' }}
     runs-on: ubuntu-latest
-    env:
-      HMP_BUILD_TARGET: android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Read version from gradle.properties
+      - name: Read version
         id: version
         run: |
           VERSION=$(grep '^hmp.versionName=' gradle.properties | cut -d'=' -f2)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Release version: $VERSION"
 
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: jetbrains
-          java-version: 21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/hmp-unified-key.jks
-
-      - name: Inject built-in AI API key
-        run: |
-          echo "BUILT_IN_AI_API_KEY=${{ secrets.BUILT_IN_AI_API_KEY }}" >> gradle.properties
-
-      - name: Download desktop artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: desktop-artifacts/
+          path: artifacts/
 
-      - name: Build Android Release
-        run: ./gradlew :android:app:assembleRelease :android:app:bundleRelease --no-daemon --no-configuration-cache
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-      - name: Rename build outputs
+      - name: Collect and rename artifacts
+        id: assets
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          cp android/app/build/outputs/apk/release/app-release.apk "HMP-v${VERSION}-release.apk"
-          cp android/app/build/outputs/bundle/release/app-release.aab "HMP-v${VERSION}-release.aab"
+          mkdir -p release-assets
 
-          # Rename desktop artifacts
-          for dmg in desktop-artifacts/desktop-macos/*.dmg; do
-            [ -f "$dmg" ] && cp "$dmg" "HMP-v${VERSION}-macos.dmg"
-          done
-          for msi in desktop-artifacts/desktop-windows/*.msi; do
-            [ -f "$msi" ] && cp "$msi" "HMP-v${VERSION}-windows.msi"
-          done
-          deb_file=$(find desktop-artifacts/desktop-linux -name "*.deb" 2>/dev/null | head -1)
-          if [ -n "$deb_file" ]; then cp "$deb_file" "HMP-v${VERSION}-linux.deb"; fi
-          appimage_file=$(find desktop-artifacts/desktop-linux -name "*.AppImage" 2>/dev/null | head -1)
-          if [ -n "$appimage_file" ]; then cp "$appimage_file" "HMP-v${VERSION}-linux.AppImage"; fi
+          # Android
+          cp artifacts/build-android/app-release.apk "release-assets/HMP-v${VERSION}-release.apk" 2>/dev/null || true
+          cp artifacts/build-android/app-release.aab "release-assets/HMP-v${VERSION}-release.aab" 2>/dev/null || true
 
-      - name: Get previous tag
-        id: prev_tag
+          # macOS
+          for f in artifacts/build-desktop-macos/*.dmg; do
+            [ -f "$f" ] && cp "$f" "release-assets/HMP-v${VERSION}-macos.dmg"
+          done
+
+          # Windows
+          for f in artifacts/build-desktop-windows/*.msi; do
+            [ -f "$f" ] && cp "$f" "release-assets/HMP-v${VERSION}-windows.msi"
+          done
+
+          # Linux
+          DEB=$(find artifacts/build-desktop-linux -name "*.deb" 2>/dev/null | head -1)
+          [ -n "$DEB" ] && cp "$DEB" "release-assets/HMP-v${VERSION}-linux.deb"
+          APPIMAGE=$(find artifacts/build-desktop-linux -name "*.AppImage" 2>/dev/null | head -1)
+          [ -n "$APPIMAGE" ] && cp "$APPIMAGE" "release-assets/HMP-v${VERSION}-linux.AppImage"
+
+          ls -lh release-assets/
+
+      - name: Generate SHA256 checksums
         run: |
-          PREV=$(git tag --sort=-v:refname | head -1)
-          echo "TAG=$PREV" >> $GITHUB_OUTPUT
+          cd release-assets
+          sha256sum HMP-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
-      - name: Generate release notes
+      - name: Generate categorized release notes
         id: notes
         run: |
-          PREV_TAG=${{ steps.prev_tag.outputs.TAG }}
+          PREV_TAG=$(git tag --sort=-v:refname | head -1)
           if [ -n "$PREV_TAG" ]; then
-            NOTES=$(git log "$PREV_TAG..HEAD" --pretty=format:"- %s" --no-merges)
+            COMMITS=$(git log "$PREV_TAG..HEAD" --pretty=format:"%s" --no-merges)
           else
-            NOTES="- Initial release"
+            COMMITS="Initial release"
           fi
-          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -iE "^(feat|feature)" | sed 's/^/- /' || true)
+          FIXES=$(echo "$COMMITS" | grep -iE "^fix" | sed 's/^/- /' || true)
+          PERF=$(echo "$COMMITS" | grep -iE "^(perf|optimize|refactor)" | sed 's/^/- /' || true)
+          OTHERS=$(echo "$COMMITS" | grep -viE "^(feat|feature|fix|perf|optimize|refactor)" | sed 's/^/- /' || true)
+
+          {
+            echo "NOTES<<EOF"
+            [ -n "$FEATURES" ] && echo "### ✨ New Features" && echo "$FEATURES" && echo ""
+            [ -n "$FIXES" ] && echo "### 🐛 Bug Fixes" && echo "$FIXES" && echo ""
+            [ -n "$PERF" ] && echo "### ⚡ Performance & Refactoring" && echo "$PERF" && echo ""
+            [ -n "$OTHERS" ] && echo "### 📦 Other Changes" && echo "$OTHERS" && echo ""
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create tag and GitHub Release
         env:
@@ -201,16 +294,6 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
 
-          # Collect all release assets
-          ASSETS=(
-            HMP-v${VERSION}-release.apk
-            HMP-v${VERSION}-release.aab
-          )
-          [ -f "HMP-v${VERSION}-macos.dmg" ] && ASSETS+=("HMP-v${VERSION}-macos.dmg")
-          [ -f "HMP-v${VERSION}-windows.msi" ] && ASSETS+=("HMP-v${VERSION}-windows.msi")
-          [ -f "HMP-v${VERSION}-linux.deb" ] && ASSETS+=("HMP-v${VERSION}-linux.deb")
-          [ -f "HMP-v${VERSION}-linux.AppImage" ] && ASSETS+=("HMP-v${VERSION}-linux.AppImage")
-
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
@@ -219,15 +302,21 @@ jobs:
           ${{ steps.notes.outputs.NOTES }}
 
           ---
-          ### Assets
-          - **Android**: \`HMP-v${VERSION}-release.apk\` / \`HMP-v${VERSION}-release.aab\` (Google Play)
-          - **macOS**: \`HMP-v${VERSION}-macos.dmg\`
-          - **Windows**: \`HMP-v${VERSION}-windows.msi\`
-          - **Linux**: \`HMP-v${VERSION}-linux.deb\` / \`HMP-v${VERSION}-linux.AppImage\`" \
-            "${ASSETS[@]}"
+          ### 📥 Assets
+          | Platform | File |
+          |----------|------|
+          | Android | \`HMP-v${VERSION}-release.apk\` / \`.aab\` (Google Play) |
+          | macOS | \`HMP-v${VERSION}-macos.dmg\` |
+          | Windows | \`HMP-v${VERSION}-windows.msi\` |
+          | Linux | \`HMP-v${VERSION}-linux.deb\` / \`.AppImage\` |
+          | Checksums | \`SHA256SUMS.txt\` |" \
+            release-assets/*
 
+  # ============================================================
+  # 5. 站点部署
+  # ============================================================
   deploy-site:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    needs: [release]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -244,4 +333,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

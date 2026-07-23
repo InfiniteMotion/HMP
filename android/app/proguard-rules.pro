@@ -1,73 +1,57 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ============================================================
+# R8 Optimization Rules — HMP Android App
+# ============================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- R8 优化标志 ---
+# 启用类重新打包（合并包，减小体积）
+-repackageclasses ''
+# 允许 R8 修改访问修饰符以优化代码
+-allowaccessmodification
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
+# --- 调试堆栈跟踪 ---
 -keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
 -renamesourcefileattribute SourceFile
 
-# Compose rules
--keepclassmembers class * extends androidx.compose.runtime.Composable {
-    *;
-}
--keep class androidx.compose.** { *; }
+# --- Kotlin 元数据（Koin/序列化等依赖） ---
+-keep class kotlin.Metadata { *; }
+-keepattributes *Annotation*, Signature, InnerClasses, Exceptions
 
-# Koin rules
--keep class org.koin.** { *; }
-
-# Media3 rules
--keep class androidx.media3.** { *; }
-
-# Kotlin serialization
--keep class kotlinx.serialization.** { *; }
-
-# Room rules
--keep class androidx.room.** { *; }
--keep class * extends androidx.room.RoomDatabase { *; }
-
-# Music info classes
--keep class com.hearablemusic.player.domain.music.** { *; }
-
-# Navigation3 rules
--keep class androidx.navigation3.** { *; }
-
-# Preserve annotation classes
--keepattributes *Annotation*
-
-# Preserve generic signatures
--keepattributes Signature
-
-# Preserve exceptions
--keepattributes Exceptions
-
-# Preserve inner classes
--keepattributes InnerClasses
-
-# Preserve enums
+# --- 枚举 ---
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
-# Preserve Kotlin metadata
--keep class kotlin.Metadata { *; }
+# --- 应用入口（Manifest 引用） ---
+-keep class com.hearablemusic.player.MusicApplication { *; }
+-keep class com.hearablemusic.player.MainActivity { *; }
 
-# Preserve Parcelable implementations
--keep class * implements android.os.Parcelable { *; }
+# --- Kotlinx Serialization ---
+# 保留 @Serializable 类的 Companion 和 serializer 方法
+-keepclassmembers @kotlinx.serialization.Serializable class ** {
+    *** Companion;
+    *** INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keepclasseswithmembers @kotlinx.serialization.Serializable class ** {
+    *** Companion;
+}
+-keepclasseswithmembers @kotlinx.serialization.Serializable class ** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
 
-# Preserve Serializable implementations
--keep class * implements java.io.Serializable { *; }
+# --- Room ---
+# Entity 字段被生成的 SQL 引用，必须保留
+-keep class com.hmp.data.database.** { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
+
+# --- Media3 Service（Manifest 引用） ---
+-keep class com.hearablemusic.player.player.service.** { *; }
+
+# --- ViewModel（Koin 构造函数引用） ---
+-keep class * extends androidx.lifecycle.ViewModel { <init>(...); }
+
+# --- 抑制桌面端警告 ---
+-dontwarn java.awt.**
+-dontwarn javax.swing.**
