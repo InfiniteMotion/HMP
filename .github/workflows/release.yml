@@ -230,8 +230,10 @@ jobs:
           mkdir -p release-assets
 
           # Android
-          cp artifacts/build-android/app-release.apk "release-assets/HMP-v${VERSION}-release.apk" 2>/dev/null || true
-          cp artifacts/build-android/app-release.aab "release-assets/HMP-v${VERSION}-release.aab" 2>/dev/null || true
+          APK=$(find artifacts/build-android -name "app-release.apk" 2>/dev/null | head -1)
+          [ -n "$APK" ] && cp "$APK" "release-assets/HMP-v${VERSION}-release.apk"
+          AAB=$(find artifacts/build-android -name "app-release.aab" 2>/dev/null | head -1)
+          [ -n "$AAB" ] && cp "$AAB" "release-assets/HMP-v${VERSION}-release.aab"
 
           # macOS
           for f in artifacts/build-desktop-macos/*.dmg; do
@@ -297,7 +299,7 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "## ${TAG}
+            --notes "## Hearable Music ${TAG}
 
           ${{ steps.notes.outputs.NOTES }}
 
