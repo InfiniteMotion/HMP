@@ -65,6 +65,11 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
+        }
     }
 }
 
@@ -77,13 +82,13 @@ dependencies {
 }
 
 room {
-    schemaDirectory("$projectDir/schemas")
+    schemaDirectory("/schemas")
 }
 
 // Copy shared icons to iOS project bundle resources
 val copyIconsToIos by tasks.registering(Copy::class) {
-    from("$projectDir/src/commonMain/resources/icons")
-    into("$projectDir/../ios/HMP/HMP/icons")
+    from("/src/commonMain/resources/icons")
+    into("/../ios/HMP/HMP/icons")
 }
 
 tasks.matching { it.name == "compileKotlinIosSimulatorArm64" }.configureEach {
