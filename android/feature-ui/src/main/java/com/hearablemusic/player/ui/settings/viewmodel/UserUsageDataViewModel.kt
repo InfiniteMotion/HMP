@@ -1,7 +1,9 @@
 package com.hearablemusic.player.ui.settings.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModelScope
 import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.domain.setting.usecase.GetUserUsageDataUseCase
 import com.hearablemusic.player.ui.common.util.UiState
@@ -11,8 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class UserUsageDataViewModel(
+    private val application: Application,
     private val getUserUsageDataUseCase: GetUserUsageDataUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<UiState<UserUsageAnalytics>>(UiState.Loading)
     val uiState: StateFlow<UiState<UserUsageAnalytics>> = _uiState.asStateFlow()
@@ -28,7 +31,7 @@ class UserUsageDataViewModel(
                 val analytics = getUserUsageDataUseCase.getAnalytics()
                 _uiState.value = UiState.Success(analytics)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Unknown error")
+                _uiState.value = UiState.Error(e.message ?: application.getString(com.hearablemusic.player.ui.R.string.unknown_error))
             }
         }
     }

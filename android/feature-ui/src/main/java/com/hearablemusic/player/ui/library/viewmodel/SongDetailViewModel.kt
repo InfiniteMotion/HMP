@@ -1,8 +1,10 @@
-package com.hearablemusic.player.ui.library.viewmodel
+﻿package com.hearablemusic.player.ui.library.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 
+import com.hearablemusic.player.ui.R
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.music.usecase.GetDailyMusicRecommendationUseCase
@@ -24,9 +26,10 @@ data class SongDetailData(
 )
 
 class SongDetailViewModel(
+    application: Application,
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
     private val playbackHistoryUseCase: PlaybackHistoryUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<UiState<SongDetailData>>(UiState.Idle)
     val uiState: StateFlow<UiState<SongDetailData>> = _uiState.asStateFlow()
@@ -54,10 +57,10 @@ class SongDetailViewModel(
                         )
                     }
                 } else {
-                    _uiState.value = UiState.Error("Music not found")
+                    _uiState.value = UiState.Error(getApplication<Application>().getString(R.string.music_not_found))
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Unknown error")
+                _uiState.value = UiState.Error(e.message ?: getApplication<Application>().getString(R.string.unknown_error))
             }
         }
     }

@@ -307,7 +307,7 @@ fun BackButton(
     ) {
         Icon(
             painter = painterResource(id = R.drawable.chevron_left),
-            contentDescription = "Back Button",
+            contentDescription = stringResource(R.string.back_button_desc),
             modifier = Modifier.size(24.dp)
         )
     }
@@ -332,7 +332,7 @@ fun SearchButton(
     ) {
         Icon(
             painter = painterResource(id = R.drawable.magnifyingglass),
-            contentDescription = "Search Button",
+            contentDescription = stringResource(R.string.search_button_desc),
             modifier = Modifier.size(16.dp)
         )
     }
@@ -354,7 +354,7 @@ fun NewPlaylistButton(onClick: () -> Unit) {
     ) {
         Icon(
             painter = painterResource(R.drawable.plus),
-            contentDescription = "New Playlist",
+            contentDescription = stringResource(R.string.new_playlist_desc),
             modifier = Modifier.size(16.dp)
         )
     }
@@ -380,33 +380,33 @@ fun GeneratePlaylistComboButtons(
     val weightOptions = listOf(
         SegmentedOption(
             id = WeightTemplate.BALANCED.name,
-            label = "平衡"
+            label = stringResource(R.string.balance)
         ),
         SegmentedOption(
             id = WeightTemplate.GENRE_FOCUS.name,
-            label = "风格"
+            label = stringResource(R.string.style)
         ),
         SegmentedOption(
             id = WeightTemplate.MOOD_FOCUS.name,
-            label = "情绪"
+            label = stringResource(R.string.mood)
         ),
         SegmentedOption(
             id = WeightTemplate.SCENARIO_FOCUS.name,
-            label = "场景"
+            label = stringResource(R.string.scene)
         ),
         SegmentedOption(
             id = WeightTemplate.ERA_FOCUS.name,
-            label = "年代"
+            label = stringResource(R.string.era)
         )
     )
     val algorithmOptions = listOf(
         SegmentedOption(
             id = AlgorithmType.OPTIMIZED_SIMILARITY.name,
-            label = "相似"
+            label = stringResource(R.string.similar)
         ),
         SegmentedOption(
             id = AlgorithmType.CHAIN_SIMILARITY.name,
-            label = "心动"
+            label = stringResource(R.string.heart)
         )
     )
     Column(
@@ -461,7 +461,7 @@ fun GeneratePlaylistComboButtons(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "生成推荐列表",
+                text = stringResource(R.string.generate_recommend_list),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary
             )

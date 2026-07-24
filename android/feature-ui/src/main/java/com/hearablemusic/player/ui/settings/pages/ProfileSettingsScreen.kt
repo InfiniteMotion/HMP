@@ -188,7 +188,7 @@ private fun UpdateAvatar(
                 } else {
                     AsyncImage(
                         model = uriImg.value,
-                        contentDescription = "User Avatar",
+                        contentDescription = stringResource(R.string.user_avatar_desc),
                         modifier = Modifier
                             .size(dimens.component.xs)
                             .clip(RoundedCornerShape(dimens.corner.sm))

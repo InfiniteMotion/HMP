@@ -353,4 +353,155 @@
     <string name="taste_card">风格偏好</string>
     <string name="ranking_and_history">排行</string>
     <string name="tab_playlists">歌单</string>
+    <string name="retry">重试</string>
+    <string name="no_data_available">暂无数据</string>
+
+    <!-- i18n: extracted hardcoded strings -->
+    <string name="album_label">专辑</string>
+    <string name="bitrate">比特率</string>
+    <string name="sample_rate">采样率</string>
+    <string name="file_size">文件大小</string>
+    <string name="format">格式</string>
+    <string name="scene">场景</string>
+    <string name="style">风格</string>
+    <string name="mood">情绪</string>
+    <string name="era">年代</string>
+    <string name="cover">封面</string>
+    <string name="unknown">未知</string>
+    <string name="close">关闭</string>
+    <string name="confirm">确认</string>
+    <string name="processing">处理中</string>
+    <string name="connected">连接成功</string>
+    <string name="generated">已生成</string>
+    <string name="has_data">有数据</string>
+    <string name="no_lyrics">暂无歌词</string>
+    <string name="early">早</string>
+    <string name="end">末</string>
+    <string name="related_info">相关信息</string>
+    <string name="similar">相似</string>
+    <string name="heart">红心</string>
+    <string name="heart_list">红心列表</string>
+    <string name="default_playlist">默认播放列表</string>
+    <string name="default_list">默认列表</string>
+    <string name="recently_played">最近播放</string>
+    <string name="share_music">分享音乐</string>
+    <string name="generate_recommend_list">生成推荐列表</string>
+
+    <!-- i18n: lyrics settings -->
+    <string name="lyrics_component">歌词组件</string>
+    <string name="player_page">播放页</string>
+    <string name="fullscreen">全屏</string>
+    <string name="floating_lyrics">悬浮歌词</string>
+    <string name="enable_floating_lyrics">开启悬浮歌词</string>
+    <string name="display_mode">显示模式</string>
+    <string name="bilingual">双语</string>
+    <string name="original_text">原文</string>
+    <string name="translated_text">译文</string>
+    <string name="alignment">对齐方式</string>
+    <string name="align_left">左对齐</string>
+    <string name="align_center">居中</string>
+    <string name="align_right">右对齐</string>
+    <string name="text_settings">文本设置</string>
+    <string name="original_text_size">原文字号</string>
+    <string name="translated_text_size">翻译字号</string>
+    <string name="current_line_size">当前行字号</string>
+    <string name="line_spacing">行间距</string>
+    <string name="shared_settings">共享设置</string>
+    <string name="independent_config">独立配置</string>
+    <string name="follow_component">跟随「%1$s」</string>
+    <string name="increase">增大</string>
+    <string name="decrease">减小</string>
+    <string name="highlight_line">强调行</string>
+    <string name="more_settings">更多设置\n→</string>
+    <string name="reset_all">重置全部</string>
+    <string name="reset_component_to_default">重置 %1$s 为默认</string>
+
+    <!-- i18n: audio effects -->
+    <string name="bass_boost">低音增强</string>
+    <string name="surround_sound">环绕声</string>
+    <string name="reverb">混响</string>
+    <string name="balance">平衡</string>
+    <string name="hall">大厅</string>
+    <string name="church">教堂</string>
+    <string name="small_room">小房间</string>
+    <string name="large_room">大房间</string>
+
+    <!-- i18n: playlist operations -->
+    <string name="select_all">全选</string>
+    <string name="deselect_all">取消全选</string>
+    <string name="selected_count_format">已选 %1$d 首</string>
+    <string name="remove_from_list">从列表移除</string>
+    <string name="add_songs_to_playlist_dialog">添加歌曲到歌单</string>
+    <string name="select_playlist">选择播放列表</string>
+    <string name="added_to_playlist">已添加到播放列表</string>
+    <string name="added_to_next_play">已添加到下一首播放</string>
+    <string name="removed_from_current_list">已从当前列表移除</string>
+    <string name="music_deleted">已删除音乐</string>
+    <string name="no_playlists_available">没有可用的播放列表，请先创建</string>
+    <string name="load_playlists_failed">加载播放列表失败</string>
+    <string name="load_songs_failed">加载歌曲失败</string>
+    <string name="playlist_updated">歌单已更新</string>
+    <string name="playlist_created">歌单已创建</string>
+    <string name="update_playlist_failed">更新歌单失败</string>
+    <string name="create_playlist_failed">创建歌单失败</string>
+    <string name="playlist_name_empty">歌单名不能为空</string>
+    <string name="playlist_name_too_long">歌单名最多 30 个字符</string>
+    <string name="playlist_name_exists">歌单名已存在</string>
+    <string name="added_n_songs_to_playlist">已添加 %1$d 首歌曲到播放列表</string>
+    <string name="selected_n_songs">已选择 %1$d 首</string>
+
+    <!-- i18n: AI screen -->
+    <string name="api_key_invalid">API Key 无效</string>
+    <string name="test_failed">测试失败: %1$s</string>
+    <string name="save_failed">保存失败: %1$s</string>
+    <string name="fetch_models_failed">获取模型失败: %1$s</string>
+    <string name="fetched_n_models">获取到 %1$d 个模型</string>
+    <string name="generation_error">生成错误: %1$s</string>
+    <string name="generation_failed">生成失败: %1$s</string>
+
+    <!-- i18n: extracted hardcoded English strings -->
+    <string name="music_not_found">未找到音乐</string>
+    <string name="scan_failed">扫描失败</string>
+    <string name="search_failed">搜索失败</string>
+    <string name="pause_desc">暂停</string>
+    <string name="play_desc">播放</string>
+    <string name="next_desc">下一首</string>
+    <string name="refresh_desc">刷新</string>
+    <string name="restore_desc">恢复</string>
+    <string name="delete_desc">删除</string>
+    <string name="confirm_restore">确认恢复</string>
+    <string name="restore_action">恢复</string>
+    <string name="cancel_action">取消</string>
+    <string name="album_art_desc">专辑封面</string>
+    <string name="artist_label">艺术家</string>
+    <string name="album_label_en">专辑</string>
+    <string name="new_playlist_desc">新建歌单</string>
+    <string name="order_play_desc">顺序播放</string>
+    <string name="shuffle_desc">随机播放</string>
+    <string name="edit_desc">编辑</string>
+    <string name="expand_sort_desc">展开排序</string>
+    <string name="add_to_playlist_desc">添加到歌单</string>
+    <string name="delete_selected_desc">删除所选</string>
+    <string name="confirm_desc">确认</string>
+    <string name="restore_success">恢复成功</string>
+    <string name="restore_successful">恢复成功</string>
+    <string name="welcome_to">欢迎来到</string>
+    <string name="failed_to_load_music">加载音乐失败</string>
+    <string name="failed_to_load_album_music">加载专辑音乐失败</string>
+    <string name="failed_to_load_artist_music">加载艺术家音乐失败</string>
+    <string name="failed_to_load_playlist">加载歌单失败</string>
+    <string name="failed_to_load_playlists">加载歌单列表失败</string>
+    <string name="unknown_error">未知错误</string>
+    <string name="just_now">刚刚</string>
+    <string name="never">从未</string>
+    <string name="none_label">无</string>
+
+    <!-- i18n: remaining hardcoded strings -->
+    <string name="user_avatar_desc">用户头像</string>
+    <string name="music_title_placeholder">音乐标题</string>
+    <string name="artist_placeholder">艺术家名称</string>
+    <string name="back_button_desc">返回按钮</string>
+    <string name="search_button_desc">搜索按钮</string>
+    <string name="backup_failed">备份失败: %1</string>
+    <string name="restore_failed">恢复失败: %1</string>
 </resources>

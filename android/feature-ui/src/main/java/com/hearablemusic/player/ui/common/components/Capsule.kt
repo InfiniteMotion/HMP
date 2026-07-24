@@ -1,4 +1,4 @@
-﻿package com.hearablemusic.player.ui.common.components
+package com.hearablemusic.player.ui.common.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,10 +59,10 @@ fun LabelsCapsule(
         ) {
             extra?.let { it1 ->
                 listOf(
-                    Triple("Bit" , it1.bitRate.toString(),"kbps"),
-                    Triple("SampleRate" , it1.sampleRate.toString(),"Hz"),
-                    Triple("FileSize" , it1.fileSize.toString(),"Byte"),
-                    Triple("Format" , it1.format.toString(),"")
+                    Triple(stringResource(R.string.bitrate) , it1.bitRate.toString(),"kbps"),
+                    Triple(stringResource(R.string.sample_rate) , it1.sampleRate.toString(),"Hz"),
+                    Triple(stringResource(R.string.file_size) , it1.fileSize.toString(),"Byte"),
+                    Triple(stringResource(R.string.format) , it1.format.toString(),"")
                 ).forEach {
                     Capsule(text = "${it.first}: ${it.second} ${it.third}",color=color,style=style)
                 }

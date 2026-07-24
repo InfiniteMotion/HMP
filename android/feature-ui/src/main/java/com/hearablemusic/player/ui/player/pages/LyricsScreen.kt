@@ -256,9 +256,9 @@ private fun LyricsSettingsPanel(
         VerticalSegmentedControl(
             modifier = Modifier.weight(1f),
             options = listOf(
-                SegmentedOption(id = "LANG1", label = "原文", icon = painterResource(R.drawable.translate_c2e)),
-                SegmentedOption(id = "LANG2", label = "译文", icon = painterResource(R.drawable.translate_e2c)),
-                SegmentedOption(id = "DUAL", label = "双语", icon = painterResource(R.drawable.translate))
+                SegmentedOption(id = "LANG1", label = stringResource(R.string.original_text), icon = painterResource(R.drawable.translate_c2e)),
+                SegmentedOption(id = "LANG2", label = stringResource(R.string.translated_text), icon = painterResource(R.drawable.translate_e2c)),
+                SegmentedOption(id = "DUAL", label = stringResource(R.string.bilingual), icon = painterResource(R.drawable.translate))
             ),
             selectedOption = displayMode.name,
             onOptionSelected = { name ->
@@ -269,9 +269,9 @@ private fun LyricsSettingsPanel(
         VerticalSegmentedControl(
             modifier = Modifier.weight(1f),
             options = listOf(
-                SegmentedOption(id = "LEFT", label = "左对齐", icon = painterResource(R.drawable.text_alignleft)),
-                SegmentedOption(id = "CENTER", label = "居中", icon = painterResource(R.drawable.text_aligncenter)),
-                SegmentedOption(id = "RIGHT", label = "右对齐", icon = painterResource(R.drawable.text_alignright))
+                SegmentedOption(id = "LEFT", label = stringResource(R.string.align_left), icon = painterResource(R.drawable.text_alignleft)),
+                SegmentedOption(id = "CENTER", label = stringResource(R.string.align_center), icon = painterResource(R.drawable.text_aligncenter)),
+                SegmentedOption(id = "RIGHT", label = stringResource(R.string.align_right), icon = painterResource(R.drawable.text_alignright))
             ),
             selectedOption = alignment.name,
             onOptionSelected = { name ->
@@ -283,7 +283,7 @@ private fun LyricsSettingsPanel(
             // 原文字体大小
             SizeControl(
                 modifier = Modifier.weight(1f),
-                label = "原 文",
+                label = stringResource(R.string.original_text),
                 value = originalTextSize,
                 minValue = 10,
                 maxValue = 28,
@@ -294,7 +294,7 @@ private fun LyricsSettingsPanel(
             // 译文字体大小
             SizeControl(
                 modifier = Modifier.weight(1f),
-                label = "译 文",
+                label = stringResource(R.string.translated_text),
                 value = translatedTextSize,
                 minValue = 10,
                 maxValue = 28,
@@ -304,7 +304,7 @@ private fun LyricsSettingsPanel(
         // 当前行字体大小
         SizeControl(
             modifier = Modifier.weight(1f),
-            label = "强调行",
+            label = stringResource(R.string.highlight_line),
             value = currentTimeTextSize,
             minValue = 14,
             maxValue = 32,
@@ -313,7 +313,7 @@ private fun LyricsSettingsPanel(
         // 行间距
         SizeControl(
             modifier = Modifier.weight(1f),
-            label = "行间距",
+            label = stringResource(R.string.line_spacing),
             value = lineSpacing,
             minValue = 2,
             maxValue = 20,
@@ -329,7 +329,7 @@ private fun LyricsSettingsPanel(
 			modifier = Modifier.weight(1f)
 		) {
 			Text(
-				"更多设置\n→",
+				stringResource(R.string.more_settings),
 				style = MaterialTheme.typography.labelMedium,
 				color = MaterialTheme.colorScheme.onSurfaceVariant,
 				textAlign = TextAlign.Center
@@ -388,7 +388,7 @@ private fun SizeControl(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.plus),
-                    contentDescription = "增大",
+                    contentDescription = stringResource(R.string.increase),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(16.dp) // 图标尺寸适配按钮
                 )
@@ -426,7 +426,7 @@ private fun SizeControl(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.minus),
-                    contentDescription = "减小",
+                    contentDescription = stringResource(R.string.decrease),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(16.dp) // 图标尺寸适配按钮
                 )

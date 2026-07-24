@@ -397,7 +397,7 @@ fun PlaylistScreenContent(
                         // 显示播放列表选择弹窗
                         dialogViewModel.showPlaylistPickerDialog(
                             playlists = userCustomPlaylists,
-                            title = "选择播放列表",
+                            title = stringResource(R.string.select_playlist),
                             onConfirm = { selectedPlaylist ->
                                 // 批量添加歌曲到选择的播放列表
                                 val itemsToAdd = selectedMusicList.map {
@@ -407,7 +407,7 @@ fun PlaylistScreenContent(
                                     playlistId = selectedPlaylist.id,
                                     items = itemsToAdd,
                                     onComplete = {
-                                        dialogManager.showMessage("已添加 ${selectedMusicList.size} 首歌曲到播放列表")
+                                        dialogManager.showMessage(stringResource(R.string.added_n_songs_to_playlist, selectedMusicList.size))
                                     }
                                 )
                             }

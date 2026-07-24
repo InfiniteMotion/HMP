@@ -400,7 +400,7 @@ fun MusicInfo(
         modifier = Modifier.padding(horizontal = 32.dp)
     ) {
         Text(
-            text = music?.title ?: "Music Title",
+            text = music?.title ?: stringResource(R.string.music_title_placeholder),
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.displayMedium,
@@ -408,18 +408,18 @@ fun MusicInfo(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = music?.artist ?: "Artist",
+            text = music?.artist ?: stringResource(R.string.artist_label),
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.clickable {
-                onArtistClick(music?.artist ?: "Artist")
+                onArtistClick(music?.artist ?: stringResource(R.string.artist_label))
             }
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = music?.album ?: "Album",
+            text = music?.album ?: stringResource(R.string.album_label),
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
@@ -758,7 +758,7 @@ private fun SongDetailInfoTab(songDetailState: UiState<SongDetailData>, musicExt
         if (songDetailState is UiState.Success) {
             val data = songDetailState.data; val dailyInfo = data.dailyMusicInfo
             if (dailyInfo != null && (dailyInfo.backgroundIntroduce.isNotBlank() && dailyInfo.backgroundIntroduce != "None" || dailyInfo.description.isNotBlank() && dailyInfo.description != "None" || dailyInfo.singerIntroduce.isNotBlank() && dailyInfo.singerIntroduce != "None" || dailyInfo.rewards.isNotBlank() && dailyInfo.rewards != "None")) {
-                InfoCard("相关信息") {
+                InfoCard(stringResource(R.string.related_info)) {
                     if (dailyInfo.backgroundIntroduce.isNotBlank() && dailyInfo.backgroundIntroduce != "None") InfoRow(stringResource(R.string.creative_background), dailyInfo.backgroundIntroduce)
                     if (dailyInfo.description.isNotBlank() && dailyInfo.description != "None") InfoRow(stringResource(R.string.song_description), dailyInfo.description)
                     if (dailyInfo.singerIntroduce.isNotBlank() && dailyInfo.singerIntroduce != "None") InfoRow(stringResource(R.string.artist_introduction), dailyInfo.singerIntroduce)

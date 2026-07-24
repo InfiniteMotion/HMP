@@ -1,6 +1,9 @@
 package com.hearablemusic.player.ui.common.dialogs.viewmodel
 
+import android.app.Application
+
 import androidx.annotation.OptIn
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -26,13 +29,14 @@ import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 class DialogViewModel(
+    private val application: Application,
     private val musicController: MusicController,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
     private val settingsRepository: SettingsRepository,
     private val dialogManager: DialogManager,
     private val removeFromLibraryUseCase: RemoveFromLibraryUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     // 统一弹窗状态
     private val _activeDialog = MutableStateFlow<DialogUiState?>(null)
@@ -310,7 +314,7 @@ class DialogViewModel(
                 val playlists = allPlaylists.filter { it.id !in systemIds }
 
                 if (playlists.isEmpty()) {
-                    dialogManager.showMessage("没有可用的播放列表，请先创建")
+                    dialogManager.showMessage(application.getString(R.string.no_playlists_available))
                     onComplete()
                     return@launch
                 }
@@ -318,7 +322,7 @@ class DialogViewModel(
                 // 显示播放列表选择弹窗
                 showPlaylistPickerDialog(
                     playlists = playlists,
-                    title = "选择播放列表",
+                    title = application.getString(R.string.select_playlist),
                     onConfirm = { playlist ->
                         viewModelScope.launch {
                             // 将歌曲添加到选择的播放列表
@@ -327,13 +331,13 @@ class DialogViewModel(
                                 musicId = musicInfo.music.id,
                                 musicPath = musicInfo.music.path
                             )
-                            dialogManager.showMessage("已添加到播放列表")
+                            dialogManager.showMessage(application.getString(R.string.added_to_playlist))
                             onComplete()
                         }
                     }
                 )
             } catch (e: Exception) {
-                dialogManager.showMessage(e.message ?: "加载播放列表失败")
+                dialogManager.showMessage(e.message ?: application.getString(R.string.load_playlists_failed))
             }
         }
     }
@@ -344,7 +348,7 @@ class DialogViewModel(
         val musicInfo = currentState.musicInfo
 
         musicController.addToNextPlay(musicInfo)
-        dialogManager.showMessage("已添加到下一首播放")
+        dialogManager.showMessage(application.getString(R.string.added_to_next_play))
         dismissMusicDetailDialog()
     }
 
@@ -354,7 +358,7 @@ class DialogViewModel(
         val musicInfo = currentState.musicInfo
 
         musicController.removeFromPlaylist(musicInfo)
-        dialogManager.showMessage("已从当前列表移除")
+        dialogManager.showMessage(application.getString(R.string.removed_from_current_list))
         onComplete()
     }
 
@@ -368,7 +372,7 @@ class DialogViewModel(
             musicController.removeFromPlaylist(musicInfo)
             // 使用标记删除法从音乐库中删除
             removeFromLibraryUseCase(listOf(musicInfo.music.id))
-            dialogManager.showMessage("已删除音乐")
+            dialogManager.showMessage(application.getString(R.string.music_deleted))
             onComplete()
         }
     }
@@ -460,7 +464,7 @@ class DialogViewModel(
                 showMusicPickerDialog(
                     allMusic = allMusic,
                     selectedIds = current.selectedSongIds,
-                    title = "添加歌曲到歌单",
+                    title = application.getString(R.string.add_songs_to_playlist_dialog),
                     onConfirm = { selectedIds ->
                         _activeDialog.value = DialogUiState.CreatePlaylist(
                             current.copy(
@@ -471,7 +475,7 @@ class DialogViewModel(
                     }
                 )
             } catch (e: Exception) {
-                dialogManager.showMessage(e.message ?: "加载歌曲失败")
+                dialogManager.showMessage(e.message ?: application.getString(R.string.load_songs_failed))
             }
         }
     }
@@ -574,7 +578,7 @@ class DialogViewModel(
                     managePlaylistUseCase.setPlaylistPinned(id, current.pinAfterCreate)
 
                     onPlaylistCreated?.invoke(id)
-                    dialogManager.showMessage("歌单已更新")
+                    dialogManager.showMessage(application.getString(R.string.playlist_updated))
                     dismissCreatePlaylistDialog()
                 } else {
                     val id = managePlaylistUseCase.createPlaylist(current.name.trim())
@@ -590,14 +594,14 @@ class DialogViewModel(
                         selectedSongIds = current.selectedSongIds
                     )
                     onPlaylistCreated?.invoke(id)
-                    dialogManager.showMessage("歌单已创建")
+                    dialogManager.showMessage(application.getString(R.string.playlist_created))
                     dismissCreatePlaylistDialog()
                 }
             } catch (e: Exception) {
                 updateCreatePlaylistState {
                     it.copy(
                         isSubmitting = false,
-                        submitError = e.message ?: if (current.isEditing) "更新歌单失败" else "创建歌单失败"
+                        submitError = e.message ?: if (current.isEditing) application.getString(R.string.update_playlist_failed) else application.getString(R.string.create_playlist_failed)
                     )
                 }
             }
@@ -621,13 +625,13 @@ class DialogViewModel(
     private fun validatePlaylistName(input: String): String? {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) {
-            return "歌单名不能为空"
+            return application.getString(R.string.playlist_name_empty)
         }
         if (trimmed.length > 30) {
-            return "歌单名最多 30 个字符"
+            return application.getString(R.string.playlist_name_too_long)
         }
         if (existingPlaylistNames.contains(trimmed.lowercase())) {
-            return "歌单名已存在"
+            return application.getString(R.string.playlist_name_exists)
         }
         return null
     }

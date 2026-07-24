@@ -355,4 +355,153 @@
     <string name="taste_card">Listening Taste</string>
     <string name="ranking_and_history">Ranking &amp; History</string>
     <string name="tab_playlists">Playlists</string>
+
+    <!-- i18n: extracted hardcoded strings -->
+    <string name="album_label">Album</string>
+    <string name="bitrate">Bitrate</string>
+    <string name="sample_rate">Sample Rate</string>
+    <string name="file_size">File Size</string>
+    <string name="format">Format</string>
+    <string name="scene">Scenario</string>
+    <string name="style">Genre</string>
+    <string name="mood">Mood</string>
+    <string name="era">Era</string>
+    <string name="cover">Cover</string>
+    <string name="unknown">Unknown</string>
+    <string name="close">Close</string>
+    <string name="confirm">Confirm</string>
+    <string name="processing">Processing</string>
+    <string name="connected">Connected</string>
+    <string name="generated">Generated</string>
+    <string name="has_data">Has Data</string>
+    <string name="no_lyrics">No lyrics</string>
+    <string name="early">Early</string>
+    <string name="end">End</string>
+    <string name="related_info">Related Info</string>
+    <string name="similar">Similar</string>
+    <string name="heart">Heart</string>
+    <string name="heart_list">Heart List</string>
+    <string name="default_playlist">Default Playlist</string>
+    <string name="default_list">Default List</string>
+    <string name="recently_played">Recently Played</string>
+    <string name="share_music">Share Music</string>
+    <string name="generate_recommend_list">Generate Recommendation</string>
+
+    <!-- i18n: lyrics settings -->
+    <string name="lyrics_component">Lyrics Component</string>
+    <string name="player_page">Player</string>
+    <string name="fullscreen">Fullscreen</string>
+    <string name="floating_lyrics">Floating Lyrics</string>
+    <string name="enable_floating_lyrics">Enable Floating Lyrics</string>
+    <string name="display_mode">Display Mode</string>
+    <string name="bilingual">Bilingual</string>
+    <string name="original_text">Original</string>
+    <string name="translated_text">Translation</string>
+    <string name="alignment">Alignment</string>
+    <string name="align_left">Left</string>
+    <string name="align_center">Center</string>
+    <string name="align_right">Right</string>
+    <string name="text_settings">Text Settings</string>
+    <string name="original_text_size">Original Size</string>
+    <string name="translated_text_size">Translation Size</string>
+    <string name="current_line_size">Current Line Size</string>
+    <string name="line_spacing">Line Spacing</string>
+    <string name="shared_settings">Shared Settings</string>
+    <string name="independent_config">Independent</string>
+    <string name="follow_component">Follow "%1$s"</string>
+    <string name="increase">Increase</string>
+    <string name="decrease">Decrease</string>
+    <string name="highlight_line">Highlight Line</string>
+    <string name="more_settings">More Settings\n→</string>
+    <string name="reset_all">Reset All</string>
+    <string name="reset_component_to_default">Reset %1$s to Default</string>
+
+    <!-- i18n: audio effects -->
+    <string name="bass_boost">Bass Boost</string>
+    <string name="surround_sound">Surround Sound</string>
+    <string name="reverb">Reverb</string>
+    <string name="balance">Balance</string>
+    <string name="hall">Hall</string>
+    <string name="church">Church</string>
+    <string name="small_room">Small Room</string>
+    <string name="large_room">Large Room</string>
+
+    <!-- i18n: playlist operations -->
+    <string name="select_all">Select All</string>
+    <string name="deselect_all">Deselect All</string>
+    <string name="selected_count_format">Selected %1$d songs</string>
+    <string name="remove_from_list">Remove from list</string>
+    <string name="add_songs_to_playlist_dialog">Add Songs to Playlist</string>
+    <string name="select_playlist">Select Playlist</string>
+    <string name="added_to_playlist">Added to playlist</string>
+    <string name="added_to_next_play">Added to play next</string>
+    <string name="removed_from_current_list">Removed from current list</string>
+    <string name="music_deleted">Music deleted</string>
+    <string name="no_playlists_available">No playlists available, please create one first</string>
+    <string name="load_playlists_failed">Failed to load playlists</string>
+    <string name="load_songs_failed">Failed to load songs</string>
+    <string name="playlist_updated">Playlist updated</string>
+    <string name="playlist_created">Playlist created</string>
+    <string name="update_playlist_failed">Failed to update playlist</string>
+    <string name="create_playlist_failed">Failed to create playlist</string>
+    <string name="playlist_name_empty">Playlist name cannot be empty</string>
+    <string name="playlist_name_too_long">Playlist name cannot exceed 30 characters</string>
+    <string name="playlist_name_exists">Playlist name already exists</string>
+    <string name="added_n_songs_to_playlist">Added %1$d songs to playlist</string>
+    <string name="selected_n_songs">Selected %1$d songs</string>
+
+    <!-- i18n: AI screen -->
+    <string name="api_key_invalid">Invalid API Key</string>
+    <string name="test_failed">Test failed: %1$s</string>
+    <string name="save_failed">Save failed: %1$s</string>
+    <string name="fetch_models_failed">Failed to fetch models: %1$s</string>
+    <string name="fetched_n_models">Fetched %1$d models</string>
+    <string name="generation_error">Generation error: %1$s</string>
+    <string name="generation_failed">Generation failed: %1$s</string>
+
+    <!-- i18n: extracted hardcoded English strings -->
+    <string name="music_not_found">Music not found</string>
+    <string name="scan_failed">Scan failed</string>
+    <string name="search_failed">Search failed</string>
+    <string name="pause_desc">Pause</string>
+    <string name="play_desc">Play</string>
+    <string name="next_desc">Next</string>
+    <string name="refresh_desc">Refresh</string>
+    <string name="restore_desc">Restore</string>
+    <string name="delete_desc">Delete</string>
+    <string name="confirm_restore">Confirm Restore</string>
+    <string name="restore_action">Restore</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="album_art_desc">Album art</string>
+    <string name="artist_label">Artist</string>
+    <string name="album_label_en">Album</string>
+    <string name="new_playlist_desc">New Playlist</string>
+    <string name="order_play_desc">Order play</string>
+    <string name="shuffle_desc">Shuffle</string>
+    <string name="edit_desc">Edit</string>
+    <string name="expand_sort_desc">Expand sort</string>
+    <string name="add_to_playlist_desc">Add to playlist</string>
+    <string name="delete_selected_desc">Delete selected</string>
+    <string name="confirm_desc">Confirm</string>
+    <string name="restore_success">Restore success</string>
+    <string name="restore_successful">Restore Successful</string>
+    <string name="welcome_to">Welcome to</string>
+    <string name="failed_to_load_music">Failed to load music</string>
+    <string name="failed_to_load_album_music">Failed to load album music</string>
+    <string name="failed_to_load_artist_music">Failed to load artist music</string>
+    <string name="failed_to_load_playlist">Failed to load playlist</string>
+    <string name="failed_to_load_playlists">Failed to load playlists</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="just_now">Just now</string>
+    <string name="never">Never</string>
+    <string name="none_label">None</string>
+
+    <!-- i18n: remaining hardcoded strings -->
+    <string name="user_avatar_desc">User Avatar</string>
+    <string name="music_title_placeholder">Music Title</string>
+    <string name="artist_placeholder">Artist Name</string>
+    <string name="back_button_desc">Back Button</string>
+    <string name="search_button_desc">Search Button</string>
+    <string name="backup_failed">Backup failed: %1</string>
+    <string name="restore_failed">Restore failed: %1</string>
 </resources>

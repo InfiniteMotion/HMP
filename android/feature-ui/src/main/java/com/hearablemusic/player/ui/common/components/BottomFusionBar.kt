@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.common.components
+﻿package com.hearablemusic.player.ui.common.components
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
@@ -59,11 +59,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hearablemusic.player.ui.R
+import androidx.annotation.StringRes
 import com.hearablemusic.player.ui.common.util.HapticFeedbackHelper
 import com.hearablemusic.player.ui.common.util.hazeStyleForIntensity
 import com.hearablemusic.player.ui.common.util.hazeTintAlpha
@@ -84,16 +86,16 @@ enum class FusionBarState {
 }
 
 private data class BottomTabItem(
-    val label: String,
+    val label: @StringRes Int,
     val selectedIconId: Int,
     val unselectedIconId: Int
 )
 
 private val bottomTabs = listOf(
-    BottomTabItem("首页", R.drawable.house_fill, R.drawable.house),
-    BottomTabItem("封面", R.drawable.square_fill_grid_2x2, R.drawable.square_grid_2x2),
-    BottomTabItem("列表", R.drawable.list_bullet, R.drawable.list_bullet),
-    BottomTabItem("我的", R.drawable.person_filled_viewfinder, R.drawable.person)
+    BottomTabItem(R.string.tab_home, R.drawable.house_fill, R.drawable.house),
+    BottomTabItem(R.string.tab_gallery, R.drawable.square_fill_grid_2x2, R.drawable.square_grid_2x2),
+    BottomTabItem(R.string.tab_list, R.drawable.list_bullet, R.drawable.list_bullet),
+    BottomTabItem(R.string.tab_user, R.drawable.person_filled_viewfinder, R.drawable.person)
 )
 
 @Composable
@@ -344,14 +346,14 @@ private fun NavigationExpandedContent(
             ) {
                 Icon(
                     painter = painterResource(if (isSelected) tab.selectedIconId else tab.unselectedIconId),
-                    contentDescription = tab.label,
+                    contentDescription = stringResource(tab.label),
                     tint = contentColor,
                     modifier = Modifier.size(28.dp)
                 )
                 if (showNavText) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = tab.label,
+                        text = stringResource(tab.label),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = contentColor
@@ -565,7 +567,7 @@ private fun PlaybackExpandedContent(
                     painter = painterResource(
                         if (isPlaying) R.drawable.pause else R.drawable.play_fill
                     ),
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = if (isPlaying) stringResource(R.string.pause_desc) else stringResource(R.string.play_desc),
                     tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )

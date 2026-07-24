@@ -1,5 +1,7 @@
 package com.hearablemusic.player.ui.di
 
+import android.app.Application
+
 import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
@@ -19,17 +21,17 @@ import org.koin.dsl.module
 val uiModule = module {
     single { DialogManager() }
     single { DialogManagerViewModel(get()) }
-    single { DialogViewModel(get(), get(), get(), get(), get(), get()) }
+    single { DialogViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
 
-    single { LibraryViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    single { SearchViewModel(get()) }
-    single { SongDetailViewModel(get(), get()) }
+    single { LibraryViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
+    single { SearchViewModel(androidApplication(), get()) }
+    single { SongDetailViewModel(androidApplication(), get(), get()) }
     single { PlaybackViewModel(get()) }
-    single { PlaylistQueueViewModel(get(), get(), get(), get()) }
-    single { PlaylistViewModel(get(), get(), get(), get()) }
-    single { SettingsViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    single { PlaylistQueueViewModel(androidApplication(), get(), get(), get(), get()) }
+    single { PlaylistViewModel(androidApplication(), get(), get(), get(), get()) }
+    single { SettingsViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     single { AudioEffectViewModel(get()) }
     single { RecommendationViewModel(get(), get(), get(), get()) }
-    single { UserUsageDataViewModel(get()) }
+    single { UserUsageDataViewModel(androidApplication(), get()) }
     single { ThemeViewModel(get(), get()) }
 }

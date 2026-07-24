@@ -131,9 +131,9 @@ fun LyricsSettingsPage(
     }
 
     val tabLabels = mapOf(
-        LyricsComponent.PLAYER to "播放页",
-        LyricsComponent.FULLSCREEN to "全屏",
-        LyricsComponent.FLOATING to "悬浮歌词"
+        LyricsComponent.PLAYER to stringResource(R.string.player_page),
+        LyricsComponent.FULLSCREEN to stringResource(R.string.fullscreen),
+        LyricsComponent.FLOATING to stringResource(R.string.floating_lyrics)
     )
 
     SubScreen(
@@ -148,7 +148,7 @@ fun LyricsSettingsPage(
             verticalArrangement = Arrangement.spacedBy(dimens.spacing.lg)
         ) {
             // 组件切换
-            TitleWidget(title = "歌词组件") {
+            TitleWidget(title = stringResource(R.string.lyrics_component)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     LyricsComponent.entries.forEachIndexed { idx, comp ->
                         SegmentedButton(
@@ -162,7 +162,7 @@ fun LyricsSettingsPage(
 
             // 悬浮歌词开关 — 仅 floating tab 时显示
             if (selectedTab == LyricsComponent.FLOATING) {
-                TitleWidget(title = "悬浮歌词") {
+                TitleWidget(title = stringResource(R.string.floating_lyrics)) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -175,7 +175,7 @@ fun LyricsSettingsPage(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "开启悬浮歌词",
+                                stringResource(R.string.enable_floating_lyrics),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -195,9 +195,9 @@ fun LyricsSettingsPage(
             val config = currentConfig()
 
             // 显示模式
-            TitleWidget(title = "显示模式") {
+            TitleWidget(title = stringResource(R.string.display_mode)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf("DUAL" to "双语", "LANG1" to "原文", "LANG2" to "翻译").forEachIndexed { idx, (key, label) ->
+                    listOf("DUAL" to stringResource(R.string.bilingual), "LANG1" to stringResource(R.string.original_text), "LANG2" to stringResource(R.string.translated_text)).forEachIndexed { idx, (key, label) ->
                         SegmentedButton(
                             selected = config.displayMode.name == key,
                             onClick = { updateCurrent(config.copy(displayMode = DisplayMode.valueOf(key))) },
@@ -208,9 +208,9 @@ fun LyricsSettingsPage(
             }
 
             // 对齐方式
-            TitleWidget(title = "对齐方式") {
+            TitleWidget(title = stringResource(R.string.alignment)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf("LEFT" to "左对齐", "CENTER" to "居中", "RIGHT" to "右对齐").forEachIndexed { idx, (key, label) ->
+                    listOf("LEFT" to stringResource(R.string.align_left), "CENTER" to stringResource(R.string.align_center), "RIGHT" to stringResource(R.string.align_right)).forEachIndexed { idx, (key, label) ->
                         SegmentedButton(
                             selected = config.alignment.name == key,
                             onClick = { updateCurrent(config.copy(alignment = LyricsAlignment.valueOf(key))) },
@@ -221,30 +221,30 @@ fun LyricsSettingsPage(
             }
 
             // 文本设置
-            TitleWidget(title = "文本设置") {
+            TitleWidget(title = stringResource(R.string.text_settings)) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = dimens.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(dimens.spacing.sm)
                 ) {
-                    NumericRow("原文字号", config.originalTextSize, 10..28) {
+                    NumericRow(stringResource(R.string.original_text_size), config.originalTextSize, 10..28) {
                         updateCurrent(config.copy(originalTextSize = it))
                     }
-                    NumericRow("翻译字号", config.translatedTextSize, 10..28) {
+                    NumericRow(stringResource(R.string.translated_text_size), config.translatedTextSize, 10..28) {
                         updateCurrent(config.copy(translatedTextSize = it))
                     }
-                    NumericRow("当前行字号", config.currentTimeTextSize, 10..28) {
+                    NumericRow(stringResource(R.string.current_line_size), config.currentTimeTextSize, 10..28) {
                         updateCurrent(config.copy(currentTimeTextSize = it))
                     }
-                    NumericRow("行间距", config.lineSpacing, 0..20) {
+                    NumericRow(stringResource(R.string.line_spacing), config.lineSpacing, 0..20) {
                         updateCurrent(config.copy(lineSpacing = it))
                     }
                 }
             }
 
             // 共享设置
-            TitleWidget(title = "共享设置") {
-                val linkOptions = listOf(null to "独立配置") +
-                    LyricsComponent.entries.filter { it != selectedTab }.map { it.key to "跟随「${tabLabels[it]}」" }
+            TitleWidget(title = stringResource(R.string.shared_settings)) {
+                val linkOptions = listOf(null to stringResource(R.string.independent_config)) +
+                    LyricsComponent.entries.filter { it != selectedTab }.map { it.key to stringResource(R.string.follow_component, tabLabels[it]!!) }
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = dimens.spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -297,7 +297,7 @@ fun LyricsSettingsPage(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    "重置 ${tabLabels[selectedTab]} 为默认",
+                    stringResource(R.string.reset_component_to_default, tabLabels[selectedTab] ?: ""),
                     color = MaterialTheme.colorScheme.error
                 )
             }

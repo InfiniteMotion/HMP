@@ -17,8 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.music.MusicExtra
+import com.hearablemusic.player.ui.R
 
 @Composable
 fun TechnicalInfoCard(
@@ -44,10 +46,10 @@ fun TechnicalInfoCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 extra?.bitRate?.let {
-                    TechnicalInfoItem("比特率", "$it kbps")
+                    TechnicalInfoItem(stringResource(R.string.bitrate), "$it kbps")
                 }
                 extra?.sampleRate?.let {
-                    TechnicalInfoItem("采样率", "$it Hz")
+                    TechnicalInfoItem(stringResource(R.string.sample_rate), "$it Hz")
                 }
             }
 
@@ -57,10 +59,10 @@ fun TechnicalInfoCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 extra?.fileSize?.let {
-                    TechnicalInfoItem("文件大小", formatFileSize(it))
+                    TechnicalInfoItem(stringResource(R.string.file_size), formatFileSize(it))
                 }
                 extra?.format?.let {
-                    TechnicalInfoItem("格式", it)
+                    TechnicalInfoItem(stringResource(R.string.format), it)
                 }
             }
         }

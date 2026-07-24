@@ -1,7 +1,9 @@
-package com.hearablemusic.player.ui.library.viewmodel
+﻿package com.hearablemusic.player.ui.library.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hearablemusic.player.ui.R
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.usecase.GetAllMusicUseCase
 import com.hmp.domain.music.usecase.GetDeletedMusicIdsGroupedByFolderUseCase
@@ -38,6 +40,7 @@ data class ScanResult(
 )
 
 class LibraryViewModel(
+    application: Application,
     private val getAllMusicUseCase: GetAllMusicUseCase,
     private val loadMusicFromDeviceUseCase: LoadMusicFromDeviceUseCase,
     private val syncMusicFromDeviceIncrementalUseCase: SyncMusicFromDeviceIncrementalUseCase,
@@ -45,7 +48,7 @@ class LibraryViewModel(
     private val restoreToLibraryUseCase: RestoreToLibraryUseCase,
     private val getDeletedMusicIdsGroupedByFolderUseCase: GetDeletedMusicIdsGroupedByFolderUseCase,
     private val userSettingsUseCase: UserSettingsUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _orderBy = MutableStateFlow("title")
     val orderBy: MutableStateFlow<String> = _orderBy
@@ -125,9 +128,9 @@ class LibraryViewModel(
     val scannedFolders: StateFlow<List<FolderInfo>> = _allMusic.map { list ->
         list.groupBy { music ->
             try {
-                File(music.music.path).parent ?: "Unknown"
+                File(music.music.path).parent ?: getApplication<Application>().getString(R.string.unknown)
             } catch (e: Exception) {
-                "Unknown"
+                getApplication<Application>().getString(R.string.unknown)
             }
         }.map { (path, songs) ->
             FolderInfo(path, songs.size)
@@ -149,7 +152,7 @@ class LibraryViewModel(
                     userSettingsUseCase.saveIsLoadMusic(true)
                 }
                 .onFailure { e ->
-                    _scanState.value = UiState.Error(e.message ?: "Scan failed")
+                    _scanState.value = UiState.Error(e.message ?: getApplication<Application>().getString(R.string.scan_failed))
                 }
         }
     }
@@ -169,7 +172,7 @@ class LibraryViewModel(
                     userSettingsUseCase.saveIsLoadMusic(true)
                 }
                 .onFailure { e ->
-                    _scanState.value = UiState.Error(e.message ?: "Scan failed")
+                    _scanState.value = UiState.Error(e.message ?: getApplication<Application>().getString(R.string.scan_failed))
                 }
         }
     }
