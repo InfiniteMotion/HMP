@@ -1,0 +1,247 @@
+package com.hmp.data.mapper
+
+import com.hmp.data.database.Music as MusicEntity
+import com.hmp.data.database.MusicExtra as MusicExtraEntity
+import com.hmp.data.database.MusicInfo as MusicInfoEntity
+import com.hmp.data.database.MusicLabel as MusicLabelEntity
+import com.hmp.data.database.UserInfo as UserInfoEntity
+import com.hmp.data.database.ListeningDuration as ListeningDurationEntity
+import com.hmp.data.database.PlaybackHistory as PlaybackHistoryEntity
+import com.hmp.data.database.myenum.LabelCategory as DataLabelCategory
+import com.hmp.data.database.myenum.LabelName as DataLabelName
+import com.hmp.domain.enum.LabelCategory as DomainLabelCategory
+import com.hmp.domain.enum.LabelName as DomainLabelName
+import com.hmp.domain.music.Music
+import com.hmp.domain.music.MusicExtra
+import com.hmp.domain.music.MusicInfo
+import com.hmp.domain.music.MusicLabel
+import com.hmp.domain.music.UserInfo
+import com.hmp.domain.setting.model.ListeningDuration
+import com.hmp.domain.setting.model.PlaybackHistory as PlaybackHistoryDomain
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class MusicMapperTest {
+
+    @Test
+    fun musicEntity_toDomain_mapsAllFields() {
+        val entity = MusicEntity(
+            id = 1,
+            title = "Test Song",
+            artist = "Test Artist",
+            album = "Test Album",
+            duration = 180000L,
+            path = "/path/to/song.mp3",
+            albumArtUri = "/path/to/art.jpg"
+        )
+        val domain = entity.toDomain()
+        assertEquals(1L, domain.id)
+        assertEquals("Test Song", domain.title)
+        assertEquals("Test Artist", domain.artist)
+        assertEquals("Test Album", domain.album)
+        assertEquals(180000L, domain.duration)
+        assertEquals("/path/to/song.mp3", domain.path)
+        assertEquals("/path/to/art.jpg", domain.albumArtUri)
+    }
+
+    @Test
+    fun music_toEntity_mapsAllFields() {
+        val domain = Music(
+            id = 2,
+            title = "Domain Song",
+            artist = "Domain Artist",
+            album = "Domain Album",
+            duration = 240000L,
+            path = "/domain/path.flac",
+            albumArtUri = "/domain/art.png"
+        )
+        val entity = domain.toEntity()
+        assertEquals(2L, entity.id)
+        assertEquals("Domain Song", entity.title)
+        assertEquals("Domain Artist", entity.artist)
+        assertEquals("Domain Album", entity.album)
+        assertEquals(240000L, entity.duration)
+        assertEquals("/domain/path.flac", entity.path)
+        assertEquals("/domain/art.png", entity.albumArtUri)
+    }
+
+    @Test
+    fun musicEntity_toDomain_roundTrip_preservesData() {
+        val original = Music(
+            id = 10,
+            title = "Round Trip",
+            artist = "Artist",
+            album = "Album",
+            duration = 300000L,
+            path = "/path",
+            albumArtUri = "/art"
+        )
+        val entity = original.toEntity()
+        val restored = entity.toDomain()
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun musicExtraEntity_toDomain_mapsAllFields() {
+        val entity = MusicExtraEntity(
+            id = 1,
+            lyrics = "Some lyrics",
+            bitRate = 320,
+            sampleRate = 44100,
+            fileSize = 1024000L,
+            format = "mp3",
+            language = "en",
+            date = 1700000000L,
+            recommendationIds = "1,2,3",
+            isGetExtraInfo = true,
+            rewards = "reward",
+            popLyric = "pop",
+            singerIntroduce = "intro",
+            backgroundIntroduce = "bg",
+            description = "desc",
+            relevantMusic = "related"
+        )
+        val domain = entity.toDomain()
+        assertEquals(1L, domain.id)
+        assertEquals("Some lyrics", domain.lyrics)
+        assertEquals(320, domain.bitRate)
+        assertEquals(44100, domain.sampleRate)
+        assertEquals(1024000L, domain.fileSize)
+        assertEquals("mp3", domain.format)
+        assertEquals("en", domain.language)
+        assertEquals(1700000000L, domain.date)
+        assertEquals("1,2,3", domain.recommendationIds)
+        assertEquals(true, domain.isGetExtraInfo)
+    }
+
+    @Test
+    fun musicExtra_toEntity_mapsAllFields() {
+        val domain = MusicExtra(
+            id = 5,
+            isGetExtraInfo = false
+        )
+        val entity = domain.toEntity()
+        assertEquals(5L, entity.id)
+        assertEquals(false, entity.isGetExtraInfo)
+    }
+
+    @Test
+    fun userInfoEntity_toDomain_mapsFields() {
+        val entity = UserInfoEntity(
+            id = 1,
+            liked = true,
+            disLiked = false,
+            lastPlayed = 1700000000L,
+            playCount = 42,
+            skippedCount = 3,
+            userRating = 5,
+            inCustomPlaylistCount = 2
+        )
+        val domain = entity.toDomain()
+        assertEquals(1L, domain.id)
+        assertEquals(true, domain.liked)
+        assertEquals(false, domain.disLiked)
+        assertEquals(1700000000L, domain.lastPlayed)
+        assertEquals(42, domain.playCount)
+        assertEquals(3, domain.skippedCount)
+        assertEquals(5, domain.userRating)
+        assertEquals(2, domain.inCustomPlaylistCount)
+    }
+
+    @Test
+    fun userInfo_toEntity_roundTrip() {
+        val original = com.hmp.domain.music.UserInfo(
+            id = 10,
+            liked = true,
+            playCount = 100
+        )
+        val entity = original.toEntity()
+        val restored = entity.toDomain()
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun musicLabelEntity_toDomain_mapsEnumCorrectly() {
+        val entity = MusicLabelEntity(
+            musicId = 1,
+            type = DataLabelCategory.GENRE,
+            label = DataLabelName.ROCK
+        )
+        val domain = entity.toDomain()
+        assertEquals(1L, domain.musicId)
+        assertEquals(DomainLabelCategory.GENRE, domain.type)
+        assertEquals(DomainLabelName.ROCK, domain.label)
+    }
+
+    @Test
+    fun musicLabel_toEntity_mapsEnumCorrectly() {
+        val domain = MusicLabel(
+            musicId = 2,
+            type = DomainLabelCategory.MOOD,
+            label = DomainLabelName.HAPPY
+        )
+        val entity = domain.toEntity()
+        assertEquals(2L, entity.musicId)
+        assertEquals(DataLabelCategory.MOOD, entity.type)
+        assertEquals(DataLabelName.HAPPY, entity.label)
+    }
+
+    @Test
+    fun listeningDurationEntity_toDomain_mapsCorrectly() {
+        val entity = ListeningDurationEntity(
+            date = "2024-01-15",
+            duration = 3600000L,
+            updatedAt = 1700000000L
+        )
+        val domain = entity.toDomain()
+        assertEquals("2024-01-15", domain.date)
+        assertEquals(3600000L, domain.duration)
+        assertEquals(1700000000L, domain.updatedAt)
+    }
+
+    @Test
+    fun listeningDuration_toEntity_roundTrip() {
+        val original = ListeningDuration(
+            date = "2024-06-01",
+            duration = 7200000L,
+            updatedAt = 1700100000L
+        )
+        val entity = original.toEntity()
+        val restored = entity.toDomain()
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun playbackHistoryEntity_toDomain_mapsCorrectly() {
+        val entity = PlaybackHistoryEntity(
+            id = 1,
+            musicId = 100,
+            playedAt = 1700000000L,
+            playDuration = 120000L,
+            isCompleted = true,
+            source = "playlist"
+        )
+        val domain = entity.toDomain()
+        assertEquals(1L, domain.id)
+        assertEquals(100L, domain.musicId)
+        assertEquals(1700000000L, domain.playedAt)
+        assertEquals(120000L, domain.playDuration)
+        assertEquals(true, domain.isCompleted)
+        assertEquals("playlist", domain.source)
+    }
+
+    @Test
+    fun playbackHistory_toEntity_roundTrip() {
+        val original = PlaybackHistoryDomain(
+            id = 5,
+            musicId = 200,
+            playedAt = 1700100000L,
+            playDuration = 180000L,
+            isCompleted = false,
+            source = "search"
+        )
+        val entity = original.toEntity()
+        val restored = entity.toDomain()
+        assertEquals(original, restored)
+    }
+}
