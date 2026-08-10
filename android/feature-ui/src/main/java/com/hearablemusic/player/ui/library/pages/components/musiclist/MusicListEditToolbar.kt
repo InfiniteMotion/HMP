@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.library.pages.components.musiclist
+﻿package com.hearablemusic.player.ui.library.pages.components.musiclist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.hearablemusic.player.ui.R
 
@@ -86,7 +87,7 @@ internal fun MusicListEditToolbar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.plus),
-                contentDescription = "Add to playlist",
+                contentDescription = stringResource(R.string.add_to_playlist_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -97,7 +98,7 @@ internal fun MusicListEditToolbar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.trash),
-                contentDescription = "Delete selected",
+                contentDescription = stringResource(R.string.delete_selected_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -108,7 +109,7 @@ internal fun MusicListEditToolbar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.checkmark_circle),
-                contentDescription = "Confirm",
+                contentDescription = stringResource(R.string.confirm_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.primary,
             )

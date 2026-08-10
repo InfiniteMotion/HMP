@@ -1,5 +1,6 @@
 package com.hearablemusic.player.ui.library.pages
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -292,7 +294,7 @@ private fun SongDetailExpanded(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatItem(stringResource(R.string.user_rating), (userInfo?.userRating ?: 0).toString(), Modifier.weight(1f))
-                        StatItem(stringResource(R.string.last_played), formatLastPlayed(userInfo?.lastPlayed), Modifier.weight(1f))
+                        StatItem(stringResource(R.string.last_played), formatLastPlayed(userInfo?.lastPlayed, LocalContext.current), Modifier.weight(1f))
                         StatItem(
                             stringResource(R.string.liked_status),
                             userInfo?.liked?.let { if (it) stringResource(R.string.liked_yes) else stringResource(R.string.liked_no) } ?: stringResource(R.string.liked_no),
@@ -449,13 +451,14 @@ private fun formatDuration(ms: Long): String {
     return "%02d:%02d".format(minutes, seconds)
 }
 
-private fun formatLastPlayed(timestamp: Long?): String {
-    if (timestamp == null || timestamp == 0L) return "Never"
+private fun formatLastPlayed(timestamp: Long?, context: Context): String {
+    if (timestamp == null || timestamp == 0L) return context.getString(R.string.never)
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
     return when {
-        diff < 60000L -> "Just now"
+        diff < 60000L -> context.getString(R.string.just_now)
+
         diff < 3600000L -> "${diff / 60000L}m ago"
         diff < 86400000L -> "${diff / 3600000L}h ago"
         diff < 604800000L -> "${diff / 86400000L}d ago"
@@ -758,7 +761,7 @@ fun SongDetailInfo(
                             )
                             StatItem(
                                 label = stringResource(R.string.last_played),
-                                value = formatLastPlayed(userInfo?.lastPlayed),
+                                value = formatLastPlayed(userInfo?.lastPlayed, LocalContext.current),
                                 modifier = Modifier.weight(1f)
                             )
                             StatItem(

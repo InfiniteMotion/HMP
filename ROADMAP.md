@@ -177,6 +177,18 @@
   - Release Notes 按 commit 类型自动分类展示
   - 新增产物 SHA256 校验文件
   - 支持 workflow_dispatch 手动触发 PATCH 发版
+
+### v6.11.2 (2026-07-23)
+- 版本号与构建配置更新（gradle.properties）
+
+### v6.12.0 (2026-08-10)
+- **国际化扩展**：
+  - 新增 12 种语言（日/韩/西/法/德/葡/俄/阿/印地/泰/越/印尼），每语言 450+ 条字符串
+  - 应用合计支持 14 种语言，补齐占位符、换行符与实体转义
+- **质量保障**：
+  - 补全单元测试 650+ 用例，覆盖 shared（commonTest/desktopTest）、desktop（feature-ui/core-player）、android（feature-ui/core-player）全模块
+  - 引入 FakeRepository、FakeAudioEngine、Room in-memory 测试库、Robolectric + MockK 等测试基础设施
+
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -267,12 +279,12 @@
 - ✅ iOS端播放控制功能
 - ✅ iOS锁屏控制与Live Activity
 - ✅ CI/CD自动发布（GitHub Actions）
+- ✅ 单元测试覆盖（650+ 用例）
 
 ### 计划中功能
 - 🔄 桌面小组件
 - 🔄 音乐标签编辑
 - 🔄 性能优化
-- 🔄 单元测试覆盖
 
 ## 📊 开发里程碑
 
@@ -351,8 +363,8 @@
 
 ---
 
-**最后更新时间**: 2026-07-23
-**当前版本**: v6.11.1
+**最后更新时间**: 2026-08-10
+**当前版本**: v6.12.0
 
 ---
 

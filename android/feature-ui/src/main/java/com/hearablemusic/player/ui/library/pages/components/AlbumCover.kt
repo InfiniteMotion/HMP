@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.hearablemusic.player.ui.R
@@ -25,7 +26,7 @@ fun AlbumCover(
     Crossfade(targetState = uri, label = "AlbumArtCrossroad") {
         AsyncImage(
             model = it,
-            contentDescription = "Album art",
+            contentDescription = stringResource(R.string.album_art_desc),
             modifier = modifier
                 .sizeIn(maxWidth = size, maxHeight = size)
                 .aspectRatio(1f)

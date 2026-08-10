@@ -1,6 +1,7 @@
 package com.hearablemusic.player.ui.common.navigation
 
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import io.mockk.*
 import org.junit.Assert.*
 import org.junit.Before
@@ -12,12 +13,12 @@ import org.junit.Test
  */
 class RouterTest {
 
-    private lateinit var mockNavBackStack: NavBackStack
+    private lateinit var mockNavBackStack: NavBackStack<NavKey>
     private lateinit var router: Router
 
     @Before
     fun setUp() {
-        mockNavBackStack = mockk()
+        mockNavBackStack = mockk(relaxed = true)
         router = Router(mockNavBackStack)
     }
 
@@ -25,7 +26,7 @@ class RouterTest {
     fun `navigateTo should call add on NavBackStack`() {
         // Given
         val route = Routes.Main.Tabs
-        every { mockNavBackStack.add(route) } just runs
+        every { mockNavBackStack.add(route) } just Awaits
 
         // When
         router.navigateTo(route)
@@ -40,7 +41,7 @@ class RouterTest {
         val route = Routes.Main.Tabs
         every { mockNavBackStack.size } returns 2
         every { mockNavBackStack.removeLastOrNull() } returns null
-        every { mockNavBackStack.add(route) } just runs
+        every { mockNavBackStack.add(route) } just Awaits
 
         // When
         router.navigateReplace(route)
@@ -58,7 +59,7 @@ class RouterTest {
         // Given
         val route = Routes.Main.Tabs
         every { mockNavBackStack.size } returns 0
-        every { mockNavBackStack.add(route) } just runs
+        every { mockNavBackStack.add(route) } just Awaits
 
         // When
         router.navigateReplace(route)
@@ -91,7 +92,7 @@ class RouterTest {
         every { mockNavBackStack.indexOfFirst(any()) } returns 1
         every { mockNavBackStack.size } returns 3
         every { mockNavBackStack.removeLastOrNull() } returns null
-        every { mockNavBackStack.add(route) } just runs
+        every { mockNavBackStack.add(route) } just Awaits
 
         // When
         router.navigateSingleTop(route)
@@ -107,7 +108,7 @@ class RouterTest {
         val route = Routes.Main.Tabs
         every { mockNavBackStack.lastOrNull() } returns Routes.Main.Home
         every { mockNavBackStack.indexOfFirst(any()) } returns -1
-        every { mockNavBackStack.add(route) } just runs
+        every { mockNavBackStack.add(route) } just Awaits
 
         // When
         router.navigateSingleTop(route)

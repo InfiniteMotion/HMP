@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -67,8 +68,8 @@ fun MiniPlayerBar(
     val haptic = rememberHapticFeedback()
     val normalizedProgress = progress.coerceIn(0f, 1f)
     val barShape = RoundedCornerShape(36.dp)
-    val musicTitle = musicInfo?.music?.title ?: "Music Title"
-    val artistName = musicInfo?.music?.artist ?: "Artist Name"
+    val musicTitle = musicInfo?.music?.title ?: stringResource(R.string.music_title_placeholder)
+    val artistName = musicInfo?.music?.artist ?: stringResource(R.string.artist_placeholder)
     val albumArtUri = musicInfo?.music?.albumArtUri ?: ""
     val coverRotation = remember { Animatable(0f) }
 
@@ -180,7 +181,7 @@ fun MiniPlayerBar(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.backward_end_fill),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.previous),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
                     )
@@ -200,7 +201,7 @@ fun MiniPlayerBar(
                         } else {
                             painterResource(R.drawable.play_fill)
                         },
-                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        contentDescription = if (isPlaying) stringResource(R.string.pause_desc) else stringResource(R.string.play_desc),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(26.dp)
                     )
@@ -216,7 +217,7 @@ fun MiniPlayerBar(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.forward_end_fill),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.next_desc),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
                     )

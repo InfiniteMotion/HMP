@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.common.dialogs
+﻿package com.hearablemusic.player.ui.common.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -149,7 +149,7 @@ fun CreatePlaylistDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "已选择 ${uiState.selectedSongIds.size} 首",
+                                text = stringResource(R.string.selected_n_songs, uiState.selectedSongIds.size),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

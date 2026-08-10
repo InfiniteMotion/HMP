@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.hmp.domain.music.Music
 import com.hmp.domain.music.MusicInfo
 import com.hearablemusic.player.ui.common.design.theme.HearableMusicPlayerTheme
+import com.hearablemusic.player.ui.R
 
 private fun previewMusicInfo(
     id: Long,
@@ -139,6 +141,7 @@ private fun MusicListPreviewFullHeader() {
 @Composable
 private fun MusicListPreviewFull() {
     HearableMusicPlayerTheme(darkTheme = false) {
+        val selectedCountFormat = stringResource(R.string.selected_count_format)
         MusicList(
             musicInfoList = previewListFull,
             config = defaultMusicListConfig().copy(
@@ -159,7 +162,7 @@ private fun MusicListPreviewFull() {
                         showPinButton = true,
                         showRemoveButton = true,
                         showMenuButton = true,
-                        extraMenuItems = listOf("从列表移除" to {}),
+                        extraMenuItems = listOf(stringResource(R.string.remove_from_list) to {}),
                     ),
                 ),
                 list = ListConfig(
@@ -175,9 +178,9 @@ private fun MusicListPreviewFull() {
                         EditToolbarAction.Delete,
                         EditToolbarAction.AddToPlaylist,
                     ),
-                    selectAllLabel = "全选",
-                    deselectAllLabel = "取消全选",
-                    selectedCountFormat = { "已选 $it 首" },
+                    selectAllLabel = stringResource(R.string.select_all),
+                    deselectAllLabel = stringResource(R.string.deselect_all),
+                    selectedCountFormat = { selectedCountFormat.format(it) },
                 ),
                 indexJump = IndexJumpConfig(
                     enabled = true,

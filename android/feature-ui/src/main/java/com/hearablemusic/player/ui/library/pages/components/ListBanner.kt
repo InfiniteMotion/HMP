@@ -24,6 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import com.hearablemusic.player.ui.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
@@ -100,7 +102,7 @@ fun ListBanner(
     ) {
         AsyncImage(
             model = listCoverUri,
-            contentDescription = "Album art",
+            contentDescription = stringResource(R.string.album_art_desc),
             contentScale = ContentScale.Crop,
             modifier = imageModifier
         )

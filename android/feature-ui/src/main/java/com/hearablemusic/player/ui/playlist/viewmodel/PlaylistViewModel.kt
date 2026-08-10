@@ -1,5 +1,8 @@
 package com.hearablemusic.player.ui.playlist.viewmodel
 
+import android.app.Application
+
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hmp.domain.music.MusicInfo
@@ -11,6 +14,7 @@ import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
 import com.hearablemusic.player.ui.common.util.UiState
+import com.hearablemusic.player.ui.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,11 +35,12 @@ data class PlaylistScreenUiState(
 )
 
 class PlaylistViewModel(
+    private val application: Application,
     private val managePlaylistUseCase: ManagePlaylistUseCase,
     private val musicLabelUseCase: MusicLabelUseCase,
     private val settingsRepository: SettingsRepository,
     private val getAllMusicUseCase: GetAllMusicUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val genrePlaylistName = musicLabelUseCase.getLabelNamesByType(LabelCategory.GENRE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -106,20 +111,20 @@ class PlaylistViewModel(
     fun initializeDefaultPlaylists() {
         viewModelScope.launch {
             if (settingsRepository.getCurrentPlaylistId() == null) {
-                managePlaylistUseCase.removePlaylist(name = "默认播放列表")
-                val defaultId = managePlaylistUseCase.createPlaylist(name = "默认播放列表")
+                managePlaylistUseCase.removePlaylist(name = getApplication<Application>().getString(R.string.default_playlist))
+                val defaultId = managePlaylistUseCase.createPlaylist(name = getApplication<Application>().getString(R.string.default_playlist))
                 settingsRepository.saveCurrentPlaylistId(defaultId)
             }
 
             if (settingsRepository.getLikedPlaylistId() == null) {
-                managePlaylistUseCase.removePlaylist(name = "红心")
-                val likedId = managePlaylistUseCase.createPlaylist(name = "红心")
+                managePlaylistUseCase.removePlaylist(name = getApplication<Application>().getString(R.string.heart))
+                val likedId = managePlaylistUseCase.createPlaylist(name = getApplication<Application>().getString(R.string.heart))
                 settingsRepository.saveLikedPlaylistId(likedId)
             }
 
             if (settingsRepository.getRecentPlaylistId() == null) {
-                managePlaylistUseCase.removePlaylist(name = "最近播放")
-                val recentId = managePlaylistUseCase.createPlaylist(name = "最近播放")
+                managePlaylistUseCase.removePlaylist(name = getApplication<Application>().getString(R.string.recently_played))
+                val recentId = managePlaylistUseCase.createPlaylist(name = getApplication<Application>().getString(R.string.recently_played))
                 settingsRepository.saveRecentPlaylistId(recentId)
             }
         }
@@ -335,9 +340,9 @@ class PlaylistViewModel(
         _selectedPlaylistState.value = UiState.Loading
         viewModelScope.launch {
             val id = when (label) {
-                "默认列表" -> settingsRepository.getCurrentPlaylistId()
-                "红心列表" -> settingsRepository.getLikedPlaylistId()
-                "最近播放" -> settingsRepository.getRecentPlaylistId()
+                getApplication<Application>().getString(R.string.default_list) -> settingsRepository.getCurrentPlaylistId()
+                getApplication<Application>().getString(R.string.heart_list) -> settingsRepository.getLikedPlaylistId()
+                getApplication<Application>().getString(R.string.recently_played) -> settingsRepository.getRecentPlaylistId()
                 else -> null
             }
             if (id != null) {

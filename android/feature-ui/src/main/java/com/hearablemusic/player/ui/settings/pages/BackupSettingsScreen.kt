@@ -201,7 +201,7 @@ private fun ImportBackupSection(
                 selectedBackupFilePath = tempFile.absolutePath
                 showRestoreDialog = true
             } catch (e: Exception) {
-                dialogManager.showMessage("Error reading file: ${e.message}")
+                dialogManager.showMessage(context.getString(R.string.scan_error, e.message ?: ""))
             }
         }
     }
@@ -237,7 +237,7 @@ private fun ImportBackupSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFilePath!!, {
-                    dialogManager.showMessage("Restore Successful")
+                    dialogManager.showMessage(context.getString(R.string.restore_successful))
                 }, { error ->
                     dialogManager.showMessage(error)
                 })
@@ -280,7 +280,7 @@ private fun ManageBackupsSection(
                 IconButton(onClick = onRefreshBackups) {
                     Icon(
                         painter = painterResource(R.drawable.externaldrive),
-                        contentDescription = "Refresh",
+                        contentDescription = stringResource(R.string.refresh),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -312,7 +312,7 @@ private fun ManageBackupsSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFilePath!!, {
-                    dialogManager.showMessage("Restore Successful")
+                    dialogManager.showMessage(context.getString(R.string.restore_successful))
                 }, { error ->
                     dialogManager.showMessage(error)
                 })
@@ -357,14 +357,14 @@ private fun BackupItem(
             IconButton(onClick = onRestore) {
                 Icon(
                     painter = painterResource(R.drawable.ic_gallery_material_select_checkbox),
-                    contentDescription = "Restore",
+                    contentDescription = stringResource(R.string.restore_action),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
             IconButton(onClick = onDelete) {
                 Icon(
                     painter = painterResource(R.drawable.trash),
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.delete),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -379,16 +379,16 @@ private fun RestoreConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Confirm Restore") },
-        text = { Text("Restoring will overwrite current data. Are you sure?") },
+        title = { Text(stringResource(R.string.confirm_restore)) },
+        text = { Text(stringResource(R.string.confirm_restore)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Restore")
+                Text(stringResource(R.string.restore_action))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel_action))
             }
         }
     )

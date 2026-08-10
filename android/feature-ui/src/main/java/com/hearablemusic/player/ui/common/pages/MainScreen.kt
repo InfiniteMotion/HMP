@@ -41,12 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.player.floating.FloatingLyricsService
+import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.BottomFusionBar
 import com.hearablemusic.player.ui.common.components.FusionSidebar
 import com.hearablemusic.player.ui.common.components.TabPageIndicator
@@ -169,6 +171,7 @@ fun MainScreen(
         } catch (_: Exception) {}
     }
 
+    val shareMusicText = stringResource(R.string.share_music)
     LaunchedEffect(dialogEvent) {
         when (dialogEvent) {
             is DialogEvent.Message -> {
@@ -194,7 +197,7 @@ fun MainScreen(
                         putExtra(Intent.EXTRA_TEXT, "${shareEvent.title} - ${shareEvent.artist}")
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    val chooser = Intent.createChooser(shareIntent, "分享音乐")
+                    val chooser = Intent.createChooser(shareIntent, shareMusicText)
                     activity.startActivity(chooser)
                 } else {
                     // 文件不存在，退化为分享文本
@@ -205,7 +208,7 @@ fun MainScreen(
                         putExtra(Intent.EXTRA_TEXT, shareText)
                         putExtra(Intent.EXTRA_SUBJECT, shareEvent.title)
                     }
-                    val chooser = Intent.createChooser(shareIntent, "分享音乐")
+                    val chooser = Intent.createChooser(shareIntent, shareMusicText)
                     activity.startActivity(chooser)
                 }
             }

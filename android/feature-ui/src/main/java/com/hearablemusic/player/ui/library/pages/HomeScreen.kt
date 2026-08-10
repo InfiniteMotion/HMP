@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.library.pages
+﻿package com.hearablemusic.player.ui.library.pages
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -452,7 +452,7 @@ fun DailyHeroCard(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.media_center),
-                        contentDescription = "Play",
+                        contentDescription = stringResource(R.string.play_desc),
                         modifier = Modifier.size(dimens.icon.lg)
                     )
                 }

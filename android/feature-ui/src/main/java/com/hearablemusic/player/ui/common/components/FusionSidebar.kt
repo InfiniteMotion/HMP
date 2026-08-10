@@ -32,25 +32,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.hearablemusic.player.ui.R
+import androidx.annotation.StringRes
 import com.hearablemusic.player.ui.common.design.dimens.LocalHMPDimens
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hmp.domain.music.MusicInfo
 
 private data class SidebarTabItem(
-    val label: String,
+    @StringRes val label: Int,
     val selectedIconId: Int,
     val unselectedIconId: Int
 )
 
 private val sidebarTabs = listOf(
-    SidebarTabItem("首页", R.drawable.house_fill, R.drawable.house),
-    SidebarTabItem("封面", R.drawable.square_fill_grid_2x2, R.drawable.square_grid_2x2),
-    SidebarTabItem("列表", R.drawable.list_bullet, R.drawable.list_bullet),
-    SidebarTabItem("我的", R.drawable.person_filled_viewfinder, R.drawable.person)
+    SidebarTabItem(R.string.tab_home, R.drawable.house_fill, R.drawable.house),
+    SidebarTabItem(R.string.tab_gallery, R.drawable.square_fill_grid_2x2, R.drawable.square_grid_2x2),
+    SidebarTabItem(R.string.tab_list, R.drawable.list_bullet, R.drawable.list_bullet),
+    SidebarTabItem(R.string.tab_user, R.drawable.person_filled_viewfinder, R.drawable.person)
 )
 
 /**
@@ -103,7 +105,7 @@ fun FusionSidebar(
                     painter = painterResource(
                         if (isSelected) tab.selectedIconId else tab.unselectedIconId
                     ),
-                    contentDescription = tab.label,
+                    contentDescription = stringResource(tab.label),
                     tint = iconTint,
                     modifier = Modifier.size(dimens.icon.md)
                 )

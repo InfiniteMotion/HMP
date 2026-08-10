@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.library.pages.components.musiclist
+﻿package com.hearablemusic.player.ui.library.pages.components.musiclist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -125,7 +125,7 @@ private fun SimpleHeader(
         ) {
             Icon(
                 painter = painterResource(R.drawable.order_play),
-                contentDescription = "Order play",
+                contentDescription = stringResource(R.string.order_play_desc),
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -139,7 +139,7 @@ private fun SimpleHeader(
         ) {
             Icon(
                 painter = painterResource(R.drawable.shuffle),
-                contentDescription = "Shuffle",
+                contentDescription = stringResource(R.string.shuffle_desc),
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -154,7 +154,7 @@ private fun SimpleHeader(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rectangle_on_rectangle),
-                    contentDescription = "Edit",
+                    contentDescription = stringResource(R.string.edit_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -208,7 +208,7 @@ private fun FullHeader(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.slider_vertical_3),
-                    contentDescription = "Expand sort",
+                    contentDescription = stringResource(R.string.expand_sort_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -222,7 +222,7 @@ private fun FullHeader(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.order_play),
-                    contentDescription = "Order play",
+                    contentDescription = stringResource(R.string.order_play_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -236,7 +236,7 @@ private fun FullHeader(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.shuffle),
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.shuffle_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -251,7 +251,7 @@ private fun FullHeader(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.rectangle_on_rectangle),
-                        contentDescription = "Edit",
+                        contentDescription = stringResource(R.string.edit_desc),
                         modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )

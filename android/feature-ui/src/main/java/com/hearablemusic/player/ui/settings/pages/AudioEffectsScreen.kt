@@ -257,7 +257,7 @@ fun BassBoostSlider(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "低音增强",
+                text = stringResource(R.string.bass_boost),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -296,7 +296,7 @@ fun SurroundSoundToggle(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "环绕声",
+            text = stringResource(R.string.surround_sound),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -313,13 +313,13 @@ fun ReverbSettings(
     currentPreset: Int,
     onPresetChanged: (Int) -> Unit
 ) {
-    val reverbPresets = listOf("关闭", "小房间", "大房间", "大厅", "教堂")
+    val reverbPresets = listOf(stringResource(R.string.close), stringResource(R.string.small_room), stringResource(R.string.large_room), stringResource(R.string.hall), stringResource(R.string.church))
 
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "混响",
+            text = stringResource(R.string.reverb),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp),
             color = MaterialTheme.colorScheme.onSurface
@@ -453,7 +453,7 @@ fun CustomEqualizer(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "重置全部",
+                    text = stringResource(R.string.reset_all),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )

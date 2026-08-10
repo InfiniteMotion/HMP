@@ -1,7 +1,9 @@
-package com.hearablemusic.player.ui.library.viewmodel
+﻿package com.hearablemusic.player.ui.library.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hearablemusic.player.ui.R
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.usecase.SearchMusicUseCase
 import com.hearablemusic.player.ui.common.util.UiState
@@ -10,8 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SearchViewModel(
+    application: Application,
     private val searchMusicUseCase: SearchMusicUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _searchState = MutableStateFlow<UiState<List<MusicInfo>>>(UiState.Idle)
     val searchState: StateFlow<UiState<List<MusicInfo>>> = _searchState
@@ -31,7 +34,7 @@ class SearchViewModel(
                     UiState.Success(results)
                 }
             } catch (e: Exception) {
-                _searchState.value = UiState.Error(e.message ?: "Search failed")
+                _searchState.value = UiState.Error(e.message ?: getApplication<Application>().getString(R.string.search_failed))
             }
         }
     }

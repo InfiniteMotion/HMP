@@ -1,5 +1,8 @@
 package com.hearablemusic.player.ui.player.viewmodel
 
+import android.app.Application
+
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -13,6 +16,7 @@ import com.hmp.domain.playlist.usecase.GeneratePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
 import com.hearablemusic.player.player.controller.MusicController
 import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
+import com.hearablemusic.player.ui.R
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -21,11 +25,12 @@ import kotlinx.coroutines.launch
 
 @UnstableApi
 class PlaylistQueueViewModel(
+    private val application: Application,
     private val musicController: MusicController,
     private val generatePlaylistUseCase: GeneratePlaylistUseCase,
     private val settingsRepository: SettingsRepository,
     private val dialogManager: DialogManager
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val currentPlaylist: StateFlow<List<MusicInfo>> = musicController.currentPlaylist
     val currentIndex: StateFlow<Int> = musicController.currentIndex
@@ -77,15 +82,15 @@ class PlaylistQueueViewModel(
                 when (result) {
                     is GeneratePlaylistResult.Success -> {
                         addAllToPlaylistInOrder(result.playlist)
-                        dialogManager.showMessage("已生成")
+                        dialogManager.showMessage(getApplication<Application>().getString(R.string.generated))
                     }
 
                     is GeneratePlaylistResult.Error -> {
-                        dialogManager.showMessage("生成失败: ${result.message}")
+                        dialogManager.showMessage(getApplication<Application>().getString(R.string.generation_failed, result.message ?: ""))
                     }
                 }
             } catch (e: Exception) {
-                dialogManager.showMessage("生成错误: ${e.message}")
+                dialogManager.showMessage(getApplication<Application>().getString(R.string.generation_error, e.message ?: ""))
             }
         }
     }
@@ -101,7 +106,7 @@ class PlaylistQueueViewModel(
                 settingsRepository.saveDefaultWeightTemplate(weightTemplate.name)
                 settingsRepository.saveDefaultExtensionConfig(extensionConfig.toJson())
             } catch (e: Exception) {
-                dialogManager.showMessage("保存失败: ${e.message}")
+                dialogManager.showMessage(getApplication<Application>().getString(R.string.save_failed, e.message ?: ""))
             }
         }
     }

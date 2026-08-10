@@ -362,6 +362,8 @@ fun PlaylistScreenContent(
             }
 
             val coroutineScope = rememberCoroutineScope()
+            val selectPlaylistTitle = stringResource(R.string.select_playlist)
+            val addedNSongsMessageFormat = stringResource(R.string.added_n_songs_to_playlist)
             val callbacks = object : MusicListCallbacksAdapter() {
                 override fun onEnterEditMode() {
                     isListEditMode = true
@@ -397,7 +399,7 @@ fun PlaylistScreenContent(
                         // 显示播放列表选择弹窗
                         dialogViewModel.showPlaylistPickerDialog(
                             playlists = userCustomPlaylists,
-                            title = "选择播放列表",
+                            title = selectPlaylistTitle,
                             onConfirm = { selectedPlaylist ->
                                 // 批量添加歌曲到选择的播放列表
                                 val itemsToAdd = selectedMusicList.map {
@@ -407,7 +409,7 @@ fun PlaylistScreenContent(
                                     playlistId = selectedPlaylist.id,
                                     items = itemsToAdd,
                                     onComplete = {
-                                        dialogManager.showMessage("已添加 ${selectedMusicList.size} 首歌曲到播放列表")
+                                        dialogManager.showMessage(addedNSongsMessageFormat.format(selectedMusicList.size))
                                     }
                                 )
                             }

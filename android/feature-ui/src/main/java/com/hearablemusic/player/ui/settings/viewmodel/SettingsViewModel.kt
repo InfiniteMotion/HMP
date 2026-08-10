@@ -1,6 +1,8 @@
 package com.hearablemusic.player.ui.settings.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.hearablemusic.player.ui.R
 import androidx.lifecycle.viewModelScope
 import com.hmp.domain.backup.usecase.DeleteBackupUseCase
 import com.hmp.domain.backup.usecase.ExportUserDataBackupUseCase
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
+    application: Application,
     private val userSettingsUseCase: UserSettingsUseCase,
     private val lyricsSettingsUseCase: LyricsSettingsUseCase,
     private val getDailyRecommendationUseCase: GetDailyMusicRecommendationUseCase,
@@ -33,7 +36,7 @@ class SettingsViewModel(
     private val importUserDataBackupUseCase: ImportUserDataBackupUseCase,
     private val getBackupsUseCase: GetBackupsUseCase,
     private val deleteBackupUseCase: DeleteBackupUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     // User Info
     val isFirstLaunch = userSettingsUseCase.isFirstLaunch
@@ -197,12 +200,12 @@ class SettingsViewModel(
                 val result = getDailyRecommendationUseCase.fetchModels(config)
                 result.onSuccess { models ->
                     _availableModels.value = models
-                    _apiTestResult.value = ApiTestResult.Success("获取到 ${models.size} 个模型")
+                    _apiTestResult.value = ApiTestResult.Success(getApplication<Application>().getString(R.string.fetched_n_models, models.size))
                 }.onFailure { e ->
-                    _apiTestResult.value = ApiTestResult.Error("获取模型失败: ${e.message}")
+                    _apiTestResult.value = ApiTestResult.Error(getApplication<Application>().getString(R.string.fetch_models_failed, e.message ?: ""))
                 }
             } catch (e: Exception) {
-                _apiTestResult.value = ApiTestResult.Error("获取模型失败: ${e.message}")
+                _apiTestResult.value = ApiTestResult.Error(getApplication<Application>().getString(R.string.fetch_models_failed, e.message ?: ""))
             } finally {
                 _isTestingApi.value = false
             }
@@ -329,12 +332,12 @@ class SettingsViewModel(
 
                 val isValid = getDailyRecommendationUseCase.validateProviderApiKey(config)
                 _apiTestResult.value = if (isValid) {
-                    ApiTestResult.Success("连接成功")
+                    ApiTestResult.Success(getApplication<Application>().getString(R.string.connected))
                 } else {
-                    ApiTestResult.Error("API Key 无效")
+                    ApiTestResult.Error(getApplication<Application>().getString(R.string.api_key_invalid))
                 }
             } catch (e: Exception) {
-                _apiTestResult.value = ApiTestResult.Error("测试失败: ${e.message}")
+                _apiTestResult.value = ApiTestResult.Error(getApplication<Application>().getString(R.string.test_failed, e.message ?: ""))
             } finally {
                 _isTestingApi.value = false
             }
@@ -406,13 +409,13 @@ class SettingsViewModel(
         viewModelScope.launch {
             exportUserDataBackupUseCase()
                 .onSuccess { filePath ->
-                    _backupResult.value = "Backup success: $filePath"
+                    _backupResult.value = getApplication<Application>().getString(R.string.backup_desc) + ": $filePath"
                     loadLocalBackups()
                     onSuccess(filePath)
                 }
                 .onFailure { e ->
-                    _backupResult.value = "Backup failed: ${e.message}"
-                    onError(e.message ?: "Unknown error")
+                    _backupResult.value = getApplication<Application>().getString(R.string.backup_failed, e.message ?: "")
+                    onError(e.message ?: getApplication<Application>().getString(R.string.unknown_error))
                 }
         }
     }
@@ -421,12 +424,12 @@ class SettingsViewModel(
             viewModelScope.launch {
             importUserDataBackupUseCase(filePath)
                 .onSuccess {
-                    _backupResult.value = "Restore success"
+                    _backupResult.value = getApplication<Application>().getString(R.string.restore_success)
                     onSuccess()
                 }
                 .onFailure { e ->
-                    _backupResult.value = "Restore failed: ${e.message}"
-                    onError(e.message ?: "Unknown error")
+                    _backupResult.value = getApplication<Application>().getString(R.string.restore_failed, e.message ?: "")
+                    onError(e.message ?: getApplication<Application>().getString(R.string.unknown_error))
                 }
             }
     }

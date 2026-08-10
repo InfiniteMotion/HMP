@@ -37,6 +37,13 @@ kotlin {
                 implementation(libs.haze.materials)
             }
         }
+
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
     }
 }
 

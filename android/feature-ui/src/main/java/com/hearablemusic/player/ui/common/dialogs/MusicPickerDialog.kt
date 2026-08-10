@@ -1,4 +1,4 @@
-package com.hearablemusic.player.ui.common.dialogs
+﻿package com.hearablemusic.player.ui.common.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -94,7 +94,7 @@ fun MusicPickerDialog(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     Text(
-                        text = "已选择 ${currentSelectedIds.size} 首",
+                        text = stringResource(R.string.selected_n_songs, currentSelectedIds.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
