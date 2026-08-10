@@ -470,4 +470,8 @@
     <string name="song_added">เพิ่มแล้ว</string>
     <string name="explore">สำรวจ</string>
     <string name="switched_to">สลับไปที่: %1$s</string>
+
+    <string name="section_basic_info">ข้อมูลพื้นฐาน</string>
+    <string name="section_detail_info">รายละเอียด</string>
+    <string name="unsaved_changes">การเปลี่ยนแปลงที่ยังไม่บันทึก</string>
 </resources>

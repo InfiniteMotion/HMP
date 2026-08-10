@@ -24,10 +24,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -93,11 +96,22 @@ fun SongDetailScreen(
         title = title,
         trailingContent = {
             if (uiState is UiState.Success) {
-                TextButton(onClick = {
-                    haptic.performClick()
-                    navController.add(Routes.Library.EditMusicTags(musicId))
-                }) {
-                    Text(stringResource(R.string.edit_music_tags))
+                FilledIconButton(
+                    onClick = {
+                        haptic.performClick()
+                        navController.add(Routes.Library.EditMusicTags(musicId))
+                    },
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.rename),
+                        contentDescription = stringResource(R.string.edit_music_tags),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

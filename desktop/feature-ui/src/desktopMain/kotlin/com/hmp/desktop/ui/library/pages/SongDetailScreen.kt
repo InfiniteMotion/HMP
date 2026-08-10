@@ -24,10 +24,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +55,7 @@ import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.PlaybackHistory
 import com.hmp.desktop.generated.resources.*
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import com.hmp.desktop.ui.library.pages.components.AlbumCover
 import com.hmp.desktop.ui.common.components.SegmentedControl
@@ -94,11 +97,22 @@ fun SongDetailScreen(
         title = title,
         trailingContent = {
             if (uiState is UiState.Success) {
-                TextButton(onClick = {
-                    haptic.performClick()
-                    navController.navigate(Routes.Library.EditMusicTags(musicId))
-                }) {
-                    Text(stringResource(Res.string.edit_music_tags))
+                FilledIconButton(
+                    onClick = {
+                        haptic.performClick()
+                        navController.navigate(Routes.Library.EditMusicTags(musicId))
+                    },
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.rename),
+                        contentDescription = stringResource(Res.string.edit_music_tags),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

@@ -470,4 +470,8 @@
     <string name="song_added">Añadido</string>
     <string name="explore">EXPLORAR</string>
     <string name="switched_to">Cambiado a: %1$s</string>
+
+    <string name="section_basic_info">Información básica</string>
+    <string name="section_detail_info">Detalles</string>
+    <string name="unsaved_changes">Cambios sin guardar</string>
 </resources>

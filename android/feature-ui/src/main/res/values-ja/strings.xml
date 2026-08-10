@@ -470,4 +470,8 @@
     <string name="song_added">追加しました</string>
     <string name="explore">探索</string>
     <string name="switched_to">%1$s に切り替えました</string>
+
+    <string name="section_basic_info">基本情報</string>
+    <string name="section_detail_info">詳細情報</string>
+    <string name="unsaved_changes">未保存の変更</string>
 </resources>

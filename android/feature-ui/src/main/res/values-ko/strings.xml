@@ -470,4 +470,8 @@
     <string name="song_added">추가됨</string>
     <string name="explore">탐색</string>
     <string name="switched_to">%1$s(으)로 전환됨</string>
+
+    <string name="section_basic_info">기본 정보</string>
+    <string name="section_detail_info">상세 정보</string>
+    <string name="unsaved_changes">저장되지 않은 변경 사항</string>
 </resources>

@@ -470,4 +470,8 @@
     <string name="song_added">जोड़ा गया</string>
     <string name="explore">खोजें</string>
     <string name="switched_to">%1$s पर स्विच किया गया</string>
+
+    <string name="section_basic_info">मूल जानकारी</string>
+    <string name="section_detail_info">विवरण</string>
+    <string name="unsaved_changes">असहेज किए गए बदलाव</string>
 </resources>

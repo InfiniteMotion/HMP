@@ -470,4 +470,8 @@
     <string name="song_added">Đã thêm</string>
     <string name="explore">KHÁM PHÁ</string>
     <string name="switched_to">Đã chuyển sang: %1$s</string>
+
+    <string name="section_basic_info">Thông tin cơ bản</string>
+    <string name="section_detail_info">Chi tiết</string>
+    <string name="unsaved_changes">Thay đổi chưa lưu</string>
 </resources>

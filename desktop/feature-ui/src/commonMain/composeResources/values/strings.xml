@@ -379,4 +379,9 @@
     <string name="storage_permission_title">Storage access required</string>
     <string name="storage_permission_message">Editing music tags requires modifying music files. Please grant "All files access" in Settings.</string>
     <string name="go_to_settings">Go to Settings</string>
+
+    <string name="section_basic_info">Basic Info</string>
+    <string name="section_detail_info">Details</string>
+    <string name="unsaved_changes">Unsaved changes</string>
+    <string name="no_lyrics">No lyrics</string>
 </resources>

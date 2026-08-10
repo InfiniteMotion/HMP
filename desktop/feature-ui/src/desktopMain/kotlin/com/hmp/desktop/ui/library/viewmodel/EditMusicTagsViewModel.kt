@@ -27,6 +27,8 @@ data class EditMusicTagsUiState(
     val albumArtUri: String? = null,
     /** 新选择的封面字节；空数组表示移除封面，null 表示不修改 */
     val newAlbumArtBytes: ByteArray? = null,
+    /** 是否有未保存的更改 */
+    val hasChanges: Boolean = false,
     val error: String? = null
 )
 
@@ -102,7 +104,8 @@ class EditMusicTagsViewModel(
                         genre = genre,
                         track = track,
                         lyrics = lyrics,
-                        albumArtUri = music.albumArtUri
+                        albumArtUri = music.albumArtUri,
+                        hasChanges = false
                     )
                 }
             } catch (e: Exception) {
@@ -113,13 +116,26 @@ class EditMusicTagsViewModel(
         }
     }
 
-    fun onTitleChange(value: String) = _uiState.update { it.copy(title = value) }
-    fun onArtistChange(value: String) = _uiState.update { it.copy(artist = value) }
-    fun onAlbumChange(value: String) = _uiState.update { it.copy(album = value) }
-    fun onYearChange(value: String) = _uiState.update { it.copy(year = value) }
-    fun onGenreChange(value: String) = _uiState.update { it.copy(genre = value) }
-    fun onTrackChange(value: String) = _uiState.update { it.copy(track = value) }
-    fun onLyricsChange(value: String) = _uiState.update { it.copy(lyrics = value) }
+    fun onTitleChange(value: String) = updateField { it.copy(title = value) }
+    fun onArtistChange(value: String) = updateField { it.copy(artist = value) }
+    fun onAlbumChange(value: String) = updateField { it.copy(album = value) }
+    fun onYearChange(value: String) {
+        val filtered = value.filter { it.isDigit() }.take(MAX_YEAR_LENGTH)
+        updateField { it.copy(year = filtered) }
+    }
+    fun onGenreChange(value: String) = updateField { it.copy(genre = value) }
+    fun onTrackChange(value: String) {
+        val filtered = value.filter { it.isDigit() }.take(MAX_TRACK_LENGTH)
+        updateField { it.copy(track = filtered) }
+    }
+    fun onLyricsChange(value: String) = updateField { it.copy(lyrics = value) }
+
+    private fun updateField(transform: (EditMusicTagsUiState) -> EditMusicTagsUiState) {
+        _uiState.update { state ->
+            val newState = transform(state)
+            newState.copy(hasChanges = computeHasChanges(newState))
+        }
+    }
 
     fun onCoverSelected(path: String) {
         viewModelScope.launch {
@@ -133,7 +149,11 @@ class EditMusicTagsViewModel(
     }
 
     fun onRemoveCover() {
-        _uiState.update { it.copy(newAlbumArtBytes = ByteArray(0)) }
+        updateField { it.copy(newAlbumArtBytes = ByteArray(0)) }
+    }
+
+    fun retry() {
+        currentMusicId?.let { loadTags(it) }
     }
 
     fun save() {
@@ -174,5 +194,21 @@ class EditMusicTagsViewModel(
 
     fun clearSaveResult() {
         _saveResult.value = null
+    }
+
+    private fun computeHasChanges(state: EditMusicTagsUiState): Boolean {
+        return (state.title.trim().isNotEmpty() && state.title.trim() != originalTitle) ||
+            (state.artist.trim().isNotEmpty() && state.artist.trim() != originalArtist) ||
+            (state.album.trim().isNotEmpty() && state.album.trim() != originalAlbum) ||
+            (state.year.trim().isNotEmpty() && state.year.trim() != originalYear) ||
+            (state.genre.trim().isNotEmpty() && state.genre.trim() != originalGenre) ||
+            (state.track.trim().isNotEmpty() && state.track.trim() != originalTrack) ||
+            (state.lyrics.isNotEmpty() && state.lyrics != originalLyrics) ||
+            state.newAlbumArtBytes != null
+    }
+
+    private companion object {
+        const val MAX_YEAR_LENGTH = 4
+        const val MAX_TRACK_LENGTH = 3
     }
 }

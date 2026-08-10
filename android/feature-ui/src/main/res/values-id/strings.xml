@@ -502,4 +502,8 @@
     <string name="song_added">Ditambahkan</string>
     <string name="explore">JELAJAHI</string>
     <string name="switched_to">Beralih ke: %1$s</string>
+
+    <string name="section_basic_info">Informasi Dasar</string>
+    <string name="section_detail_info">Detail</string>
+    <string name="unsaved_changes">Perubahan belum disimpan</string>
 </resources>
