@@ -48,6 +48,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.player.floating.FloatingLyricsService
+import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.BottomFusionBar
 import com.hearablemusic.player.ui.common.components.FusionSidebar
 import com.hearablemusic.player.ui.common.components.TabPageIndicator

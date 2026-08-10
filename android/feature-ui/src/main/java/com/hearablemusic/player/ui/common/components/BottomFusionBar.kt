@@ -86,7 +86,7 @@ enum class FusionBarState {
 }
 
 private data class BottomTabItem(
-    val label: @StringRes Int,
+    @StringRes val label: Int,
     val selectedIconId: Int,
     val unselectedIconId: Int
 )
@@ -378,7 +378,7 @@ private fun NavigationCollapsedContent(
     ) {
         Icon(
             painter = painterResource(selectedTab.selectedIconId),
-            contentDescription = selectedTab.label,
+            contentDescription = stringResource(selectedTab.label),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(28.dp)
         )

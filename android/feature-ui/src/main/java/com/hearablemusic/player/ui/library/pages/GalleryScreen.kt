@@ -144,6 +144,9 @@ fun GalleryScreenContent(
     var pendingBatchIds by remember { mutableStateOf<Set<Long>?>(null) }
     var deleteCounter by remember { mutableIntStateOf(0) }
 
+    val selectPlaylistTitle = stringResource(R.string.select_playlist)
+    val addedNSongsMessageFormat = stringResource(R.string.added_n_songs_to_playlist)
+
     val callbacks = object : MusicListCallbacksAdapter() {
         override fun onItemClick(musicInfo: MusicInfo, index: Int) {
             haptic.performClick()
@@ -167,7 +170,7 @@ fun GalleryScreenContent(
                 // 显示播放列表选择弹窗
                 dialogViewModel.showPlaylistPickerDialog(
                     playlists = userCustomPlaylists,
-                    title = stringResource(R.string.select_playlist),
+                    title = selectPlaylistTitle,
                     onConfirm = { selectedPlaylist ->
                         // 批量添加歌曲到选择的播放列表
                         val itemsToAdd = selectedMusicList.map {
@@ -177,7 +180,7 @@ fun GalleryScreenContent(
                             playlistId = selectedPlaylist.id,
                             items = itemsToAdd,
                             onComplete = {
-                                dialogManager.showMessage(stringResource(R.string.added_n_songs_to_playlist, selectedMusicList.size))
+                                dialogManager.showMessage(addedNSongsMessageFormat.format(selectedMusicList.size))
                             }
                         )
                     }

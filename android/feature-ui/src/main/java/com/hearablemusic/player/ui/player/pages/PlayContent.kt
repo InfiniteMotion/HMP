@@ -399,6 +399,7 @@ fun MusicInfo(
         horizontalAlignment = if (centerAlign) Alignment.CenterHorizontally else Alignment.Start,
         modifier = Modifier.padding(horizontal = 32.dp)
     ) {
+        val artistLabel = stringResource(R.string.artist_label)
         Text(
             text = music?.title ?: stringResource(R.string.music_title_placeholder),
             maxLines = 1,
@@ -408,13 +409,13 @@ fun MusicInfo(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = music?.artist ?: stringResource(R.string.artist_label),
+            text = music?.artist ?: artistLabel,
             maxLines = 1,
             overflow = TextOverflow.MiddleEllipsis,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.clickable {
-                onArtistClick(music?.artist ?: stringResource(R.string.artist_label))
+                onArtistClick(music?.artist ?: artistLabel)
             }
         )
         Spacer(modifier = Modifier.height(4.dp))

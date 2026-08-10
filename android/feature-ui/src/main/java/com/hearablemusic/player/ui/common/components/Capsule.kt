@@ -16,10 +16,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.music.MusicExtra
 import com.hmp.domain.music.MusicLabel
+import com.hearablemusic.player.ui.R
 
 @Composable
 fun Capsule(

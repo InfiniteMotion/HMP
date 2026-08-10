@@ -201,7 +201,7 @@ private fun ImportBackupSection(
                 selectedBackupFilePath = tempFile.absolutePath
                 showRestoreDialog = true
             } catch (e: Exception) {
-                dialogManager.showMessage(stringResource(R.string.scan_error, e.message ?: ""))
+                dialogManager.showMessage(context.getString(R.string.scan_error, e.message ?: ""))
             }
         }
     }
@@ -237,7 +237,7 @@ private fun ImportBackupSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFilePath!!, {
-                    dialogManager.showMessage(stringResource(R.string.restore_successful))
+                    dialogManager.showMessage(context.getString(R.string.restore_successful))
                 }, { error ->
                     dialogManager.showMessage(error)
                 })
@@ -280,7 +280,7 @@ private fun ManageBackupsSection(
                 IconButton(onClick = onRefreshBackups) {
                     Icon(
                         painter = painterResource(R.drawable.externaldrive),
-                        contentDescription = stringResource(R.string.refresh_desc),
+                        contentDescription = stringResource(R.string.refresh),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -312,7 +312,7 @@ private fun ManageBackupsSection(
         RestoreConfirmDialog(
             onConfirm = {
                 onRestoreBackup(selectedBackupFilePath!!, {
-                    dialogManager.showMessage(stringResource(R.string.restore_successful))
+                    dialogManager.showMessage(context.getString(R.string.restore_successful))
                 }, { error ->
                     dialogManager.showMessage(error)
                 })
@@ -364,7 +364,7 @@ private fun BackupItem(
             IconButton(onClick = onDelete) {
                 Icon(
                     painter = painterResource(R.drawable.trash),
-                    contentDescription = stringResource(R.string.delete_desc),
+                    contentDescription = stringResource(R.string.delete),
                     tint = MaterialTheme.colorScheme.error
                 )
             }

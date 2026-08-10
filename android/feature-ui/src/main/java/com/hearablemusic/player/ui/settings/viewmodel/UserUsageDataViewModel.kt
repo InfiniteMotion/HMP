@@ -2,8 +2,7 @@ package com.hearablemusic.player.ui.settings.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import android.app.Application
-import androidx.lifecycle.AndroidViewModelScope
+import androidx.lifecycle.viewModelScope
 import com.hmp.domain.setting.model.UserUsageAnalytics
 import com.hmp.domain.setting.usecase.GetUserUsageDataUseCase
 import com.hearablemusic.player.ui.common.util.UiState

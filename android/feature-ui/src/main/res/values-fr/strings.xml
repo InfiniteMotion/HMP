@@ -178,7 +178,7 @@
     <string name="bitrate">Débit binaire</string>
     <string name="play_source">Source de lecture</string>
     <string name="sort_size">Taille du fichier</string>
-    <string name="display_mode">Mode d'affichage</string>
+    <string name="display_mode">Mode d\'affichage</string>
     <string name="alignment">Alignement</string>
     <string name="api_key_invalid">Clé API invalide</string>
     <string name="export_backup">Exporter la sauvegarde</string>
@@ -186,7 +186,7 @@
     <string name="style">Style</string>
     <string name="remove_from_current_playlist">Retirer de la playlist actuelle</string>
     <string name="share_music">Partager la musique</string>
-    <string name="timer_desc_format">Après %1$d minutes, la lecture s'arrêtera</string>
+    <string name="timer_desc_format">Après %1$d minutes, la lecture s\'arrêtera</string>
     <string name="top_scenarios">Scénarios populaires</string>
     <string name="increase">Augmenter</string>
     <string name="audio_effects">Effets audio</string>
@@ -198,7 +198,7 @@
     <string name="follow_component">Suivre \"%1$s\"</string>
     <string name="search_failed">Échec de la recherche</string>
     <string name="player_page">Page du lecteur</string>
-    <string name="total_listening_minutes">Minutes d'écoute totales</string>
+    <string name="total_listening_minutes">Minutes d\'écoute totales</string>
     <string name="relaunch_or_config_ai">Veuillez relancer ou configurer le fournisseur IA</string>
     <string name="playlist">Playlist</string>
     <string name="liked_status">Aimé</string>
@@ -215,7 +215,7 @@
     <string name="restore_success">Restauration réussie</string>
     <string name="song_detail_tab_user">Données utilisateur</string>
     <string name="file_size">Taille du fichier</string>
-    <string name="artist_introduction">Présentation de l'artiste</string>
+    <string name="artist_introduction">Présentation de l\'artiste</string>
     <string name="timer_desc_off">Minuterie de sommeil désactivée</string>
     <string name="reset_component_to_default">Réinitialiser %1$s par défaut</string>
     <string name="fetched_n_models">%1$d modèles récupérés</string>
@@ -226,22 +226,22 @@
     <string name="ai_free_hint">Chaque morceau traité compte comme une utilisation. Aucune configuration de clé API requise.</string>
     <string name="timer_off">Désactivé</string>
     <string name="align_left">Gauche</string>
-    <string name="no_playlists_available">Aucune playlist disponible, veuillez en créer une d'abord</string>
+    <string name="no_playlists_available">Aucune playlist disponible, veuillez en créer une d\'abord</string>
     <string name="enter_api_key_placeholder">Veuillez entrer la clé API pour %1$s</string>
     <string name="album_label">Album</string>
     <string name="skipped_count">Ignorés</string>
     <string name="library_settings">Bibliothèque</string>
-    <string name="skip_rate">Taux d'ignorés</string>
+    <string name="skip_rate">Taux d\'ignorés</string>
     <string name="library_desc">Gérer votre bibliothèque musicale</string>
     <string name="search_placeholder">Rechercher votre musique</string>
     <string name="confirm_batch_remove_from_library">Êtes-vous sûr de vouloir retirer les morceaux sélectionnés de la bibliothèque ?</string>
-    <string name="gallery_batch_delete_unsupported">La suppression en lot n'est pas prise en charge sur cet appareil</string>
+    <string name="gallery_batch_delete_unsupported">La suppression en lot n\'est pas prise en charge sur cet appareil</string>
     <string name="local_backup">Sauvegarde locale</string>
     <string name="selected_count_format">%1$d morceaux sélectionnés</string>
     <string name="original_text">Original</string>
     <string name="new_playlist_desc">Nouvelle playlist</string>
     <string name="large_room">Grande salle</string>
-    <string name="enter_new_user_name">Veuillez entrer un nouveau nom d'utilisateur</string>
+    <string name="enter_new_user_name">Veuillez entrer un nouveau nom d\'utilisateur</string>
     <string name="ai_fetch_models">Récupérer les modèles disponibles</string>
     <string name="scene">Scénario</string>
     <string name="play_source_breakdown">Répartition des sources de lecture</string>
@@ -249,7 +249,7 @@
     <string name="album_label_en">Album</string>
     <string name="removed_from_current_list">Retiré de la liste actuelle</string>
     <string name="backup_failed">Échec de la sauvegarde : %1$s</string>
-    <string name="style_blur_desc">Flou d'arrière-plan</string>
+    <string name="style_blur_desc">Flou d\'arrière-plan</string>
     <string name="delete_selected_desc">Supprimer la sélection</string>
     <string name="theme_auto">Auto</string>
     <string name="lyrics_component">Paroles</string>
@@ -259,7 +259,7 @@
     <string name="hall">Salle</string>
     <string name="song_detail_empty">Aucune information sur le morceau disponible</string>
     <string name="playlist_name_too_long">Le nom de la playlist ne peut pas dépasser 30 caractères</string>
-    <string name="avatar_change_cancelled">Changement d'avatar annulé !</string>
+    <string name="avatar_change_cancelled">Changement d\'avatar annulé !</string>
     <string name="default_list">Liste par défaut</string>
     <string name="translated_text">Traduit</string>
     <string name="ai_free_used">Utilisé : %1$d / %2$d</string>
@@ -271,7 +271,7 @@
     <string name="completion_rate">Taux de complétion</string>
     <string name="total_songs">Morceaux au total</string>
     <string name="heart_list">Liste des favoris</string>
-    <string name="lyrics_settings_desc">Personnaliser l'affichage des paroles</string>
+    <string name="lyrics_settings_desc">Personnaliser l\'affichage des paroles</string>
     <string name="user_avatar_desc">Avatar utilisateur</string>
     <string name="surround_sound">Son surround</string>
     <string name="favorite">Favori</string>
@@ -286,7 +286,7 @@
     <string name="new_playlist_dialog_title">Créer une nouvelle playlist</string>
     <string name="current_setting_startup">Actuel : actualiser au démarrage</string>
     <string name="select_playlist">Sélectionner une playlist</string>
-    <string name="change_avatar">Changer l'avatar</string>
+    <string name="change_avatar">Changer l\'avatar</string>
     <string name="provider_change_hint">Reconfigurer la clé API après le changement de fournisseur</string>
     <string name="restore_backup_desc">Importer un fichier de sauvegarde exporté précédemment pour restaurer vos données.</string>
     <string name="independent_config">Indépendant</string>
@@ -301,7 +301,7 @@
     <string name="resume">Reprendre</string>
     <string name="current_setting_time">Actuel : actualiser toutes les %1$d heures</string>
     <string name="backup_desc">Sauvegarder vos données</string>
-    <string name="album_art">Pochette d'album</string>
+    <string name="album_art">Pochette d\'album</string>
     <string name="add_to_specific_playlist">Ajouter à %1$s</string>
     <string name="end">Fin</string>
     <string name="highlight_line">Surligner la ligne</string>
@@ -329,8 +329,8 @@
     <string name="sort">Trier</string>
     <string name="play_desc">Lire</string>
     <string name="backup">Sauvegarde</string>
-    <string name="user_rating">Note de l'utilisateur</string>
-    <string name="sort_add_time">Date d'ajout</string>
+    <string name="user_rating">Note de l\'utilisateur</string>
+    <string name="sort_add_time">Date d\'ajout</string>
     <string name="pause_desc">Pause</string>
     <string name="ai_preset_quick_fill">Remplissage rapide du préréglage</string>
     <string name="auto_background_completion_desc">Lancer automatiquement la complétion des infos musicales au démarrage</string>
@@ -354,7 +354,7 @@
     <string name="no_pending_music">Aucune musique en attente</string>
     <string name="generation_error">Erreur de génération : %1$s</string>
     <string name="text_settings">Texte</string>
-    <string name="please_config_provider">Veuillez d'abord configurer le fournisseur IA</string>
+    <string name="please_config_provider">Veuillez d\'abord configurer le fournisseur IA</string>
     <string name="line_spacing">Interligne</string>
     <string name="top_artists">Artistes principaux</string>
     <string name="reset_all">Tout réinitialiser</string>

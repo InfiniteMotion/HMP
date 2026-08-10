@@ -16,6 +16,7 @@ import com.hearablemusic.player.ui.settings.viewmodel.AudioEffectViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.UserUsageDataViewModel
+import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 
 val uiModule = module {

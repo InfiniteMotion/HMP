@@ -43,7 +43,7 @@ import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hmp.domain.music.MusicInfo
 
 private data class SidebarTabItem(
-    val label: @StringRes Int,
+    @StringRes val label: Int,
     val selectedIconId: Int,
     val unselectedIconId: Int
 )
