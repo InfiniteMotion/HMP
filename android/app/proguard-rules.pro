@@ -49,6 +49,11 @@
 # --- Media3 Service（Manifest 引用） ---
 -keep class com.hearablemusic.player.player.service.** { *; }
 
+# --- Jaudiotagger（音乐标签解析/写入） ---
+# Jaudiotagger 在桌面端使用 javax.imageio，Android 无此包（仅编译期引用，不影响运行）
+-dontwarn javax.imageio.ImageIO
+-dontwarn javax.imageio.stream.ImageInputStream
+
 # --- ViewModel（Koin 构造函数引用） ---
 -keep class * extends androidx.lifecycle.ViewModel { <init>(...); }
 

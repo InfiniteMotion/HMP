@@ -27,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,7 +76,8 @@ fun SongDetailScreen(
     viewModel: SongDetailViewModel = koinViewModel()
 ) {
     // 手动调用 loadSongDetail 方法，传入 musicId
-    LaunchedEffect(musicId) {
+    // 同时监听返回栈变化：从标签编辑页返回后重新加载，展示最新标签
+    LaunchedEffect(musicId, navController.size) {
         viewModel.loadSongDetail(musicId)
     }
     val uiState by viewModel.uiState.collectAsState()
@@ -89,6 +91,16 @@ fun SongDetailScreen(
     SubScreen(
         onBackClick = { navController.removeLastOrNull() },
         title = title,
+        trailingContent = {
+            if (uiState is UiState.Success) {
+                TextButton(onClick = {
+                    haptic.performClick()
+                    navController.add(Routes.Library.EditMusicTags(musicId))
+                }) {
+                    Text(stringResource(R.string.edit_music_tags))
+                }
+            }
+        }
     ) {
         val isLandscape = LocalWindowSizeInfo.current.isLandscape
         val dimens = LocalHMPDimens.current

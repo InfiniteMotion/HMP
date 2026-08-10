@@ -155,7 +155,7 @@
     <string name="add_to_playlist">プレイリストに追加</string>
     <string name="add_to_playlist_desc">プレイリストに追加</string>
     <string name="add_to_favorites">お気に入りに追加</string>
-    <string name="add_to_specific_playlist">%1$sに追加</string>
+    <string name="add_to_specific_playlist">特定のプレイリストに追加</string>
     <string name="select_playlist">プレイリストを選択</string>
     <string name="added_to_playlist">プレイリストに追加しました</string>
     <string name="added_to_next_play">次に再生する曲に追加しました</string>
@@ -449,4 +449,25 @@
     <string name="failed_to_load_artist_music">アーティスト音楽の読み込みに失敗しました</string>
     <string name="failed_to_load_playlist">プレイリストの読み込みに失敗しました</string>
     <string name="failed_to_load_playlists">プレイリスト一覧の読み込みに失敗しました</string>
+    <string name="edit_music_tags">タグを編集</string>
+    <string name="tag_title">タイトル</string>
+    <string name="tag_artist">アーティスト</string>
+    <string name="tag_album">アルバム</string>
+    <string name="tags_saved">タグを更新しました</string>
+    <string name="tags_save_failed">タグの更新に失敗しました: %1$s</string>
+    <string name="edit_tags_hint">変更しない項目は空のままにしてください</string>
+    <string name="tag_year">年</string>
+    <string name="tag_genre">ジャンル</string>
+    <string name="tag_track">トラック</string>
+    <string name="tag_lyrics">歌詞</string>
+    <string name="tag_cover">カバー</string>
+    <string name="choose_cover">カバーを選択</string>
+    <string name="remove_cover">カバーを削除</string>
+    <string name="no_changes">保存する変更はありません</string>
+    <string name="storage_permission_title">ストレージへのアクセスが必要です</string>
+    <string name="storage_permission_message">音楽タグの編集には音楽ファイルの変更が必要です。設定で「すべてのファイルへのアクセス」を許可してください。</string>
+    <string name="go_to_settings">設定へ移動</string>
+    <string name="song_added">追加しました</string>
+    <string name="explore">探索</string>
+    <string name="switched_to">%1$s に切り替えました</string>
 </resources>

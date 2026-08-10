@@ -27,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,7 +54,6 @@ import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.PlaybackHistory
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.library.pages.components.AlbumCover
 import com.hmp.desktop.ui.common.components.SegmentedControl
 import com.hmp.desktop.ui.common.components.SegmentedOption
@@ -77,7 +77,8 @@ fun SongDetailScreen(
     viewModel: SongDetailViewModel = koinInject()
 ) {
     // 手动调用 loadSongDetail 方法，传入 musicId
-    LaunchedEffect(musicId) {
+    // 同时监听返回栈变化：从标签编辑页返回后重新加载，展示最新标签
+    LaunchedEffect(musicId, navController.size) {
         viewModel.loadSongDetail(musicId)
     }
     val uiState by viewModel.uiState.collectAsState()
@@ -91,6 +92,16 @@ fun SongDetailScreen(
     SubScreen(
         onBackClick = { navController.popBackStack() },
         title = title,
+        trailingContent = {
+            if (uiState is UiState.Success) {
+                TextButton(onClick = {
+                    haptic.performClick()
+                    navController.navigate(Routes.Library.EditMusicTags(musicId))
+                }) {
+                    Text(stringResource(Res.string.edit_music_tags))
+                }
+            }
+        }
     ) {
         val windowInfo = LocalWindowInfo.current
         val density = LocalDensity.current

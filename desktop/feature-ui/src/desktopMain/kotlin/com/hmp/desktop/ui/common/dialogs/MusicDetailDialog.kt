@@ -41,6 +41,7 @@ import com.hmp.desktop.ui.common.util.ProvideHazeRenderSettings
 import com.hmp.desktop.ui.common.navigation.Routes
 import com.hmp.desktop.ui.common.util.hazeStyleForIntensity
 import com.hmp.desktop.ui.common.util.hazeTintAlpha
+import com.hmp.desktop.ui.common.util.rememberHapticFeedback
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hmp.desktop.ui.common.navigation.NavController
 import dev.chrisbanes.haze.HazeState
@@ -57,6 +58,7 @@ fun MusicDetailDialog(
     hazeState: HazeState? = null,
     hazeRenderSettings: HazeRenderSettings? = null
 ) {
+    val haptic = rememberHapticFeedback()
     val musicDetailState by dialogViewModel.musicDetailState.collectAsState()
     val musicInfo = musicDetailState?.musicInfo
     val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
@@ -111,7 +113,10 @@ fun MusicDetailDialog(
                         )
                         // 收藏状态图标
                         IconButton(
-                            onClick = { dialogViewModel.toggleFavorite() },
+                            onClick = {
+                                haptic.performClick()
+                                dialogViewModel.toggleFavorite()
+                            },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(

@@ -13,6 +13,7 @@ import com.hmp.desktop.ui.settings.pages.AudioEffectsScreen
 import com.hmp.desktop.ui.library.pages.CustomScreen
 import com.hmp.desktop.ui.library.pages.SearchScreen
 import com.hmp.desktop.ui.library.pages.SongDetailScreen
+import com.hmp.desktop.ui.library.pages.EditMusicTagsScreen
 import com.hmp.desktop.ui.settings.pages.UserUsageDataScreen
 import com.hmp.desktop.ui.common.pages.TabsHost
 import com.hmp.desktop.ui.player.pages.LyricsScreen
@@ -84,6 +85,13 @@ fun navigationGraph(
     
     entry<Routes.Library.SongDetail> { route ->
         SongDetailScreen(
+            navController = navController,
+            musicId = route.musicId,
+        )
+    }
+
+    entry<Routes.Library.EditMusicTags> { route ->
+        EditMusicTagsScreen(
             navController = navController,
             musicId = route.musicId,
         )

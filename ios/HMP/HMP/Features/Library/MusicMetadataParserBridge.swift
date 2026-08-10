@@ -99,11 +99,15 @@ class MusicMetadataParser: MetadataParserBridgeParser {
             title: title ?? fallbackTitle,
             artist: artist ?? "Unknown Artist",
             album: album ?? "Unknown Album",
+            year: nil,
+            genre: nil,
+            track: nil,
             duration: durationMs.map { KotlinLong(longLong: $0) },
             bitRate: bitRate.map { KotlinInt(int: $0) },
             sampleRate: sampleRate.map { KotlinInt(int: $0) },
             format: format,
-            lyrics: lyrics
+            lyrics: lyrics,
+            albumArt: nil
         )
         print("[MetadataParser] result: title=\(result.title), artist=\(result.artist), album=\(result.album), lyrics=\(lyrics != nil ? "\(lyrics!.prefix(30))..." : "nil")")
         return result

@@ -262,7 +262,7 @@
     <string name="ai_fetch_models">Verfügbare Modelle abrufen</string>
     <string name="scene">Szenario</string>
     <string name="play_source_breakdown">Aufschlüsselung der Abspielquelle</string>
-    <string name="more_settings">Weitere Einstellungen\n→</string>
+    <string name="more_settings">Weitere Einstellungen\n→</string>
     <string name="album_label_en">Album</string>
     <string name="removed_from_current_list">Aus aktueller Liste entfernt</string>
     <string name="backup_failed">Backup fehlgeschlagen: %1$s</string>
@@ -394,7 +394,7 @@
     <string name="resume">Fortsetzen</string>
     <string name="current_setting_time">Aktuell: Alle %1$d Stunden aktualisieren</string>
     <string name="backup_desc">Daten sichern</string>
-    <string name="add_to_specific_playlist">Zu %1$s hinzufügen</string>
+    <string name="add_to_specific_playlist">Zu einer bestimmten Wiedergabeliste hinzufügen</string>
     <string name="end">Ende</string>
     <string name="highlight_line">Zeile hervorheben</string>
     <string name="api_key">API-Schlüssel</string>
@@ -449,4 +449,25 @@
     <string name="edit_desc">Bearbeiten</string>
     <string name="music_info_completion">Musikinfo-Vervollständigung</string>
     <string name="playlist_updated">Playlist aktualisiert</string>
+    <string name="edit_music_tags">Tags bearbeiten</string>
+    <string name="tag_title">Titel</string>
+    <string name="tag_artist">Künstler</string>
+    <string name="tag_album">Album</string>
+    <string name="tags_saved">Tags aktualisiert</string>
+    <string name="tags_save_failed">Tags konnten nicht aktualisiert werden: %1$s</string>
+    <string name="edit_tags_hint">Feld leer lassen, um es unverändert zu lassen</string>
+    <string name="tag_year">Jahr</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_track">Track</string>
+    <string name="tag_lyrics">Songtext</string>
+    <string name="tag_cover">Cover</string>
+    <string name="choose_cover">Cover auswählen</string>
+    <string name="remove_cover">Cover entfernen</string>
+    <string name="no_changes">Keine Änderungen zu speichern</string>
+    <string name="storage_permission_title">Speicherzugriff erforderlich</string>
+    <string name="storage_permission_message">Zum Bearbeiten von Musik-Tags müssen Musikdateien geändert werden. Bitte gewähren Sie in den Einstellungen "Zugriff auf alle Dateien".</string>
+    <string name="go_to_settings">Zu den Einstellungen</string>
+    <string name="song_added">Hinzugefügt</string>
+    <string name="explore">ENTDECKEN</string>
+    <string name="switched_to">Gewechselt zu: %1$s</string>
 </resources>

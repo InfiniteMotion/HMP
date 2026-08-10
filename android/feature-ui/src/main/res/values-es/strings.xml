@@ -155,7 +155,7 @@
     <string name="add_to_playlist">Agregar a la lista de reproducción</string>
     <string name="add_to_playlist_desc">Agregar a la lista de reproducción</string>
     <string name="add_to_favorites">Agregar a favoritos</string>
-    <string name="add_to_specific_playlist">Agregar a %1$s</string>
+    <string name="add_to_specific_playlist">Agregar a lista de reproducción específica</string>
     <string name="select_playlist">Seleccionar lista de reproducción</string>
     <string name="added_to_playlist">Agregado a la lista de reproducción</string>
     <string name="added_to_next_play">Agregado para reproducir siguiente</string>
@@ -449,4 +449,25 @@
     <string name="failed_to_load_artist_music">Error al cargar la música del artista</string>
     <string name="failed_to_load_playlist">Error al cargar la lista de reproducción</string>
     <string name="failed_to_load_playlists">Error al cargar las listas de reproducción</string>
+    <string name="edit_music_tags">Editar etiquetas</string>
+    <string name="tag_title">Título</string>
+    <string name="tag_artist">Artista</string>
+    <string name="tag_album">Álbum</string>
+    <string name="tags_saved">Etiquetas actualizadas</string>
+    <string name="tags_save_failed">No se pudieron actualizar las etiquetas: %1$s</string>
+    <string name="edit_tags_hint">Deja un campo vacío para no cambiarlo</string>
+    <string name="tag_year">Año</string>
+    <string name="tag_genre">Género</string>
+    <string name="tag_track">Pista</string>
+    <string name="tag_lyrics">Letra</string>
+    <string name="tag_cover">Carátula</string>
+    <string name="choose_cover">Seleccionar carátula</string>
+    <string name="remove_cover">Quitar carátula</string>
+    <string name="no_changes">Sin cambios para guardar</string>
+    <string name="storage_permission_title">Se requiere acceso al almacenamiento</string>
+    <string name="storage_permission_message">Editar etiquetas de música requiere modificar archivos de música. Concede "Acceso a todos los archivos" en Ajustes.</string>
+    <string name="go_to_settings">Ir a Ajustes</string>
+    <string name="song_added">Añadido</string>
+    <string name="explore">EXPLORAR</string>
+    <string name="switched_to">Cambiado a: %1$s</string>
 </resources>

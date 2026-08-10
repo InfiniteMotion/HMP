@@ -163,7 +163,7 @@
 <string name="add_to_playlist">Tambahkan ke daftar putar</string>    
 <string name="add_to_playlist_desc">Tambahkan ke daftar putar</string>    
 <string name="add_to_favorites">Tambahkan ke favatauit</string>    
-<string name="add_to_specific_playlist">Add to %1$s</string>    
+<string name="add_to_specific_playlist">Tambahkan ke Daftar Putar Tertentu</string>    
 <string name="select_playlist">Pilih Daftar Putar</string>    
 <string name="added_to_playlist">Ditambahkan ke daftar putar</string>    
 <string name="added_to_next_play">Ditambahkan untuk diputar berikutnya</string>    
@@ -481,4 +481,25 @@
 <string name="failed_to_load_artist_music">Gagal memuat musik artis</string>    
 <string name="failed_to_load_playlist">Gagal memuat daftar putar</string>    
 <string name="failed_to_load_playlists">Gagal memuat daftar putar</string>
+    <string name="edit_music_tags">Edit Tag</string>
+    <string name="tag_title">Judul</string>
+    <string name="tag_artist">Artis</string>
+    <string name="tag_album">Album</string>
+    <string name="tags_saved">Tag diperbarui</string>
+    <string name="tags_save_failed">Gagal memperbarui tag: %1$s</string>
+    <string name="edit_tags_hint">Biarkan bidang kosong agar tidak diubah</string>
+    <string name="tag_year">Tahun</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_track">Lagu</string>
+    <string name="tag_lyrics">Lirik</string>
+    <string name="tag_cover">Sampul</string>
+    <string name="choose_cover">Pilih Sampul</string>
+    <string name="remove_cover">Hapus Sampul</string>
+    <string name="no_changes">Tidak ada perubahan untuk disimpan</string>
+    <string name="storage_permission_title">Akses penyimpanan diperlukan</string>
+    <string name="storage_permission_message">Mengedit tag musik memerlukan mengubah file musik. Berikan "Akses ke semua file" di Pengaturan.</string>
+    <string name="go_to_settings">Buka Pengaturan</string>
+    <string name="song_added">Ditambahkan</string>
+    <string name="explore">JELAJAHI</string>
+    <string name="switched_to">Beralih ke: %1$s</string>
 </resources>

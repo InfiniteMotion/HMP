@@ -155,7 +155,7 @@
     <string name="add_to_playlist">प्लेलिस्ट में जोड़ें</string>
     <string name="add_to_playlist_desc">प्लेलिस्ट में जोड़ें</string>
     <string name="add_to_favorites">पसंदीदा में जोड़ें</string>
-    <string name="add_to_specific_playlist">%1$s में जोड़ें</string>
+    <string name="add_to_specific_playlist">विशिष्ट प्लेलिस्ट में जोड़ें</string>
     <string name="select_playlist">प्लेलिस्ट चुनें</string>
     <string name="added_to_playlist">प्लेलिस्ट में जोड़ा गया</string>
     <string name="added_to_next_play">अगला चलाने के लिए जोड़ा गया</string>
@@ -257,7 +257,7 @@
     <string name="increase">बढ़ाएं</string>
     <string name="decrease">घटाएं</string>
     <string name="highlight_line">पंक्ति हाइलाइट करें</string>
-    <string name="more_settings">और सेटिंग्स\n→</string>
+    <string name="more_settings">और सेटिंग्स\n→</string>
     <string name="reset_all">सभी रीसेट करें</string>
     <string name="reset_component_to_default">%1$s को डिफ़ॉल्ट पर रीसेट करें</string>
     <string name="audio_effects">ऑडियो प्रभाव</string>
@@ -449,4 +449,25 @@
     <string name="failed_to_load_artist_music">कलाकार संगीत लोड करने में विफल</string>
     <string name="failed_to_load_playlist">प्लेलिस्ट लोड करने में विफल</string>
     <string name="failed_to_load_playlists">प्लेलिस्ट लोड करने में विफल</string>
+    <string name="edit_music_tags">टैग संपादित करें</string>
+    <string name="tag_title">शीर्षक</string>
+    <string name="tag_artist">कलाकार</string>
+    <string name="tag_album">एल्बम</string>
+    <string name="tags_saved">टैग अपडेट हो गए</string>
+    <string name="tags_save_failed">टैग अपडेट विफल: %1$s</string>
+    <string name="edit_tags_hint">किसी फ़ील्ड को अपरिवर्तित रखने के लिए उसे खाली छोड़ें</string>
+    <string name="tag_year">वर्ष</string>
+    <string name="tag_genre">शैली</string>
+    <string name="tag_track">ट्रैक</string>
+    <string name="tag_lyrics">गीत</string>
+    <string name="tag_cover">कवर</string>
+    <string name="choose_cover">कवर चुनें</string>
+    <string name="remove_cover">कवर हटाएं</string>
+    <string name="no_changes">सहेजने के लिए कोई बदलाव नहीं</string>
+    <string name="storage_permission_title">स्टोरेज एक्सेस आवश्यक</string>
+    <string name="storage_permission_message">संगीत टैग संपादित करने के लिए संगीत फ़ाइलें संशोधित करनी होंगी। कृपया सेटिंग्स में "सभी फ़ाइलों तक पहुंच" दें।</string>
+    <string name="go_to_settings">सेटिंग्स पर जाएं</string>
+    <string name="song_added">जोड़ा गया</string>
+    <string name="explore">खोजें</string>
+    <string name="switched_to">%1$s पर स्विच किया गया</string>
 </resources>

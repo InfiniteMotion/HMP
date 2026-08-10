@@ -46,6 +46,30 @@ data class MusicLabel(
     val label: LabelName
 )
 
+/**
+ * 可编辑的单曲标签（ID3 元数据）。
+ * 为 null 的字段表示该项保持不变。
+ */
+data class EditableMusicTags(
+    val title: String? = null,
+    val artist: String? = null,
+    val album: String? = null,
+    val year: String? = null,
+    val genre: String? = null,
+    val track: String? = null,
+    val lyrics: String? = null,
+    /**
+     * 新专辑封面（JPEG/PNG 字节）。null 表示不修改；
+     * 空数组表示移除封面；非空数组表示替换封面。
+     */
+    val albumArt: ByteArray? = null,
+) {
+    val hasChanges: Boolean
+        get() = title != null || artist != null || album != null ||
+            year != null || genre != null || track != null ||
+            lyrics != null || albumArt != null
+}
+
 data class UserInfo(
     val id: Long,
     val liked: Boolean = false,

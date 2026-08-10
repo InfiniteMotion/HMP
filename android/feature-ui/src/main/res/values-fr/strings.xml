@@ -302,7 +302,7 @@
     <string name="current_setting_time">Actuel : actualiser toutes les %1$d heures</string>
     <string name="backup_desc">Sauvegarder vos données</string>
     <string name="album_art">Pochette d\'album</string>
-    <string name="add_to_specific_playlist">Ajouter à %1$s</string>
+    <string name="add_to_specific_playlist">Ajouter à une liste de lecture spécifique</string>
     <string name="end">Fin</string>
     <string name="highlight_line">Surligner la ligne</string>
     <string name="api_key">Clé API</string>
@@ -449,4 +449,25 @@
     <string name="no_results_found">Aucun résultat trouvé</string>
     <string name="artist_label">Artiste</string>
     <string name="music_title_placeholder">Titre de la musique</string>
+    <string name="edit_music_tags">Modifier les balises</string>
+    <string name="tag_title">Titre</string>
+    <string name="tag_artist">Artiste</string>
+    <string name="tag_album">Album</string>
+    <string name="tags_saved">Balises mises à jour</string>
+    <string name="tags_save_failed">Échec de la mise à jour des balises : %1$s</string>
+    <string name="edit_tags_hint">Laissez un champ vide pour le conserver</string>
+    <string name="tag_year">Année</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_track">Piste</string>
+    <string name="tag_lyrics">Paroles</string>
+    <string name="tag_cover">Couverture</string>
+    <string name="choose_cover">Choisir une couverture</string>
+    <string name="remove_cover">Retirer la couverture</string>
+    <string name="no_changes">Aucune modification à enregistrer</string>
+    <string name="storage_permission_title">Accès au stockage requis</string>
+    <string name="storage_permission_message">La modification des balises musicales nécessite de modifier les fichiers musicaux. Accordez « Accès à tous les fichiers » dans les réglages.</string>
+    <string name="go_to_settings">Aller aux réglages</string>
+    <string name="song_added">Ajouté</string>
+    <string name="explore">EXPLORER</string>
+    <string name="switched_to">Basculé vers : %1$s</string>
 </resources>

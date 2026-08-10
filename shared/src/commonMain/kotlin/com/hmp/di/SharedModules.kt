@@ -7,6 +7,7 @@ import com.hmp.domain.music.usecase.GetAllMusicUseCase
 import com.hmp.domain.music.usecase.GetDailyMusicRecommendationUseCase
 import com.hmp.domain.music.usecase.GetDeletedMusicIdsGroupedByFolderUseCase
 import com.hmp.domain.music.usecase.LoadMusicFromDeviceUseCase
+import com.hmp.domain.music.usecase.EditMusicTagsUseCase
 import com.hmp.domain.music.usecase.MusicLabelUseCase
 import com.hmp.domain.music.usecase.RemoveFromLibraryUseCase
 import com.hmp.domain.music.usecase.RestoreToLibraryUseCase
@@ -47,6 +48,7 @@ val sharedModule = module {
     single { RestoreToLibraryUseCase(get()) }
     single { GetDeletedMusicIdsGroupedByFolderUseCase(get()) }
     single { MusicLabelUseCase(get(), get()) }
+    single { EditMusicTagsUseCase(get()) }
     single { GetDailyMusicRecommendationUseCase(get(), get(), get()) }
     single { ManagePlaylistUseCase(get(), get()) }
     single { GeneratePlaylistUseCase(get(), get()) }
