@@ -18,7 +18,7 @@ class RouterTest {
 
     @Before
     fun setUp() {
-        mockNavBackStack = mockk()
+        mockNavBackStack = mockk(relaxed = true)
         router = Router(mockNavBackStack)
     }
 
