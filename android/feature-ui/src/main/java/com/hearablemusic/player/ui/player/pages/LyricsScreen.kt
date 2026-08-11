@@ -25,6 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -84,6 +87,7 @@ fun LyricsScreen(
     val lineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
     val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val karaokeEnabled by settingsViewModel.lyricsKaraokeEnabled.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     var isControlsVisible by remember { mutableStateOf(true) }
@@ -162,6 +166,8 @@ fun LyricsScreen(
                 translatedTextSize = translatedTextSize,
                 currentTimeTextSize = currentTimeTextSize,
                 lineSpacing = lineSpacing,
+                totalDurationMs = duration,
+                karaokeEnabled = karaokeEnabled,
                 displayMode = displayMode,
                 alignment = alignment
             )
@@ -183,6 +189,8 @@ fun LyricsScreen(
                 lineSpacing = lineSpacing,
                 displayMode = displayMode,
                 alignment = alignment,
+                karaokeEnabled = karaokeEnabled,
+                onKaraokeEnabledChange = { settingsViewModel.saveLyricsKaraokeEnabled(it) },
                 onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
                 onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
                 onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
@@ -233,6 +241,8 @@ private fun LyricsSettingsPanel(
     lineSpacing: Int,
     displayMode: DisplayMode,
     alignment: LyricsAlignment,
+    karaokeEnabled: Boolean,
+    onKaraokeEnabledChange: (Boolean) -> Unit,
     onOriginalTextSizeChange: (Int) -> Unit,
     onTranslatedTextSizeChange: (Int) -> Unit,
     onCurrentTimeTextSizeChange: (Int) -> Unit,
@@ -247,12 +257,16 @@ private fun LyricsSettingsPanel(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
         VerticalSegmentedControl(
             modifier = Modifier.weight(1f),
             options = listOf(
@@ -320,23 +334,51 @@ private fun LyricsSettingsPanel(
             onValueChange = onLineSpacingChange
         )
 
-		// 更多设置入口
-		TextButton(
-			onClick = {
-				haptic.performLightClick()
-				onNavigateToSettings()
-			},
-			modifier = Modifier.weight(1f)
-		) {
-			Text(
-				stringResource(R.string.more_settings),
-				style = MaterialTheme.typography.labelMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				textAlign = TextAlign.Center
-			)
-		}
+            // 更多设置入口
+            TextButton(
+                onClick = {
+                    haptic.performLightClick()
+                    onNavigateToSettings()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    stringResource(R.string.more_settings),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+            }
 
-
+            // 逐字显示开关
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.karaoke_lyrics),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = karaokeEnabled,
+                        onCheckedChange = onKaraokeEnabledChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+            }
         }
     }
 }

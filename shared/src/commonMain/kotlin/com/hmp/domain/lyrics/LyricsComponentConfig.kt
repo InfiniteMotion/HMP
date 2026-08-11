@@ -21,6 +21,7 @@ data class LyricsComponentConfig(
     val translatedTextSize: Int = 14,
     val currentTimeTextSize: Int = 16,
     val lineSpacing: Int = 6,
+    val karaokeEnabled: Boolean = true,
     val displayMode: DisplayMode = DisplayMode.DUAL,
     val alignment: LyricsAlignment = LyricsAlignment.CENTER,
     val linkedTo: String? = null
@@ -30,6 +31,7 @@ data class LyricsComponentConfig(
         translatedTextSize = translatedTextSize,
         currentTimeTextSize = currentTimeTextSize,
         lineSpacing = lineSpacing,
+        karaokeEnabled = karaokeEnabled,
         displayMode = displayMode,
         alignment = alignment
     )

@@ -248,6 +248,10 @@ class SettingsViewModel(
     val lyricsAlignment = lyricsSettingsUseCase.alignment
         .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), LyricsAlignment.CENTER)
 
+    // 逐字（卡拉 OK）显示开关
+    val lyricsKaraokeEnabled = lyricsSettingsUseCase.karaokeEnabled
+        .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), true)
+
     // ==================== 歌词配置操作方法 ====================
 
     fun saveLyricsOriginalTextSize(size: Int) {
@@ -286,6 +290,12 @@ class SettingsViewModel(
         }
     }
 
+    fun saveLyricsKaraokeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            lyricsSettingsUseCase.saveKaraokeEnabled(enabled)
+        }
+    }
+
     /**
      * 获取完整的歌词配置
      */
@@ -296,7 +306,8 @@ class SettingsViewModel(
             currentTimeTextSize = lyricsCurrentTimeTextSize.value,
             lineSpacing = lyricsLineSpacing.value,
             displayMode = lyricsDisplayMode.value,
-            alignment = lyricsAlignment.value
+            alignment = lyricsAlignment.value,
+            karaokeEnabled = lyricsKaraokeEnabled.value
         )
     }
 

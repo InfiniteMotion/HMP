@@ -27,6 +27,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -77,6 +80,7 @@ fun LyricsScreen(
     val lineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
     val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val karaokeEnabled by settingsViewModel.lyricsKaraokeEnabled.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
@@ -145,7 +149,9 @@ fun LyricsScreen(
                 currentTimeTextSize = currentTimeTextSize,
                 lineSpacing = lineSpacing,
                 displayMode = displayMode,
-                alignment = alignment
+                alignment = alignment,
+                totalDurationMs = duration,
+                karaokeEnabled = karaokeEnabled
             )
         }
         // 悬浮设置面板（右下角，控制卡片上方）
@@ -167,7 +173,7 @@ fun LyricsScreen(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.size(width = 400.dp, height = 176.dp)
+                modifier = Modifier.size(width = 400.dp, height = 216.dp)
             ) {
                 LyricsSettingsPanel(
                     originalTextSize = originalTextSize,
@@ -176,6 +182,8 @@ fun LyricsScreen(
                     lineSpacing = lineSpacing,
                     displayMode = displayMode,
                     alignment = alignment,
+                    karaokeEnabled = karaokeEnabled,
+                    onKaraokeEnabledChange = { settingsViewModel.saveLyricsKaraokeEnabled(it) },
                     onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
                     onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
                     onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
@@ -252,6 +260,8 @@ private fun LyricsSettingsPanel(
     lineSpacing: Int,
     displayMode: DisplayMode,
     alignment: LyricsAlignment,
+    karaokeEnabled: Boolean,
+    onKaraokeEnabledChange: (Boolean) -> Unit,
     onOriginalTextSizeChange: (Int) -> Unit,
     onTranslatedTextSizeChange: (Int) -> Unit,
     onCurrentTimeTextSizeChange: (Int) -> Unit,
@@ -265,10 +275,14 @@ private fun LyricsSettingsPanel(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
         VerticalSegmentedControl(
@@ -338,6 +352,35 @@ private fun LyricsSettingsPanel(
             onValueChange = onLineSpacingChange
         )
 
+        }
+        // 逐字显示开关
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "逐字显示",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Switch(
+                    checked = karaokeEnabled,
+                    onCheckedChange = onKaraokeEnabledChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    )
+                )
+            }
+        }
         }
     }
 }

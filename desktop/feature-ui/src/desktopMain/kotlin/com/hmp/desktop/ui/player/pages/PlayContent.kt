@@ -152,6 +152,7 @@ fun PlayContent(
     val lyricsLineSpacing = lyricsSettingsState.lyricsLineSpacing
     val lyricsDisplayMode = lyricsSettingsState.lyricsDisplayMode
     val lyricsAlignment = lyricsSettingsState.lyricsAlignment
+    val lyricsKaraokeEnabled = lyricsSettingsState.lyricsKaraokeEnabled
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val sizeClass = widthSizeClass(maxWidth)
@@ -279,7 +280,9 @@ fun PlayContent(
                                                     currentTimeTextSize = lyricsCurrentTimeTextSize,
                                                     lineSpacing = lyricsLineSpacing,
                                                     displayMode = lyricsDisplayMode,
-                                                    alignment = lyricsAlignment
+                                                    alignment = lyricsAlignment,
+                                                    totalDurationMs = duration,
+                                                    karaokeEnabled = lyricsKaraokeEnabled
                                                 )
                                             }
                                         }
@@ -476,7 +479,9 @@ fun PlayContent(
                                                 currentTimeTextSize = lyricsCurrentTimeTextSize,
                                                 lineSpacing = lyricsLineSpacing,
                                                 displayMode = lyricsDisplayMode,
-                                                alignment = lyricsAlignment
+                                                alignment = lyricsAlignment,
+                                                totalDurationMs = duration,
+                                                karaokeEnabled = lyricsKaraokeEnabled
                                             )
                                         }
 

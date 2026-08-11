@@ -392,12 +392,26 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun saveFloatingLyricsEnabled() = runTest {
-        repo.saveFloatingLyricsEnabled(true)
-        assertTrue(repo.floatingLyricsEnabled.first())
-    }
+      fun saveFloatingLyricsEnabled() = runTest {
+          repo.saveFloatingLyricsEnabled(true)
+          assertTrue(repo.floatingLyricsEnabled.first())
+      }
 
-    // ===== Export/Import Snapshot =====
+      // ===== Karaoke Lyrics =====
+
+      @Test
+      fun lyricsKaraokeEnabled_defaultTrue() = runTest {
+          assertTrue(repo.lyricsKaraokeEnabled.first())
+      }
+
+      @Test
+      fun saveLyricsKaraokeEnabled() = runTest {
+          repo.saveLyricsKaraokeEnabled(false)
+          assertFalse(repo.lyricsKaraokeEnabled.first())
+          assertFalse(repo.getLyricsKaraokeEnabled())
+      }
+
+      // ===== Export/Import Snapshot =====
 
     @Test
     fun exportAppSettingsSnapshot_containsDefaults() = runTest {

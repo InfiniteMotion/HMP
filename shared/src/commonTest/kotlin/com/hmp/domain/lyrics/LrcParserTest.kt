@@ -91,6 +91,70 @@ class LrcParserTest {
         val result = LrcParser.parse(lrc)
         assertEquals(330000L, result[0].timestamp)
     }
+
+    @Test
+    fun parse_enhancedNetEaseStyle_buildsCharTimings() {
+        val lrc = "[00:12.34]<00:12.34>我 <00:12.78>爱"
+        val result = LrcParser.parse(lrc)
+        assertEquals(1, result.size)
+        assertEquals(12340L, result[0].timestamp)
+        assertEquals("我 爱", result[0].originalText)
+        assertEquals(2, result[0].charTimings.size)
+        assertEquals(12340L, result[0].charTimings[0].startMs)
+        assertEquals(12780L, result[0].charTimings[0].endMs)
+        assertEquals("我 ", result[0].charTimings[0].text)
+        assertEquals(12780L, result[0].charTimings[1].startMs)
+        assertEquals(-1L, result[0].charTimings[1].endMs)
+    }
+
+    @Test
+    fun parse_enhancedA2Range_usesExplicitEnd() {
+        val lrc = "[00:12.34]<00:12.34,00:12.78>我爱你<00:13.00>"
+        val result = LrcParser.parse(lrc)
+        assertEquals(1, result.size)
+        assertEquals("我爱你", result[0].originalText)
+        assertEquals(1, result[0].charTimings.size)
+        assertEquals(12340L, result[0].charTimings[0].startMs)
+        assertEquals(12780L, result[0].charTimings[0].endMs)
+    }
+
+    @Test
+    fun parse_enhancedDoubleTimestamp_buildsCharTimings() {
+        val lrc = "[00:12.34][00:12.78]我 爱"
+        val result = LrcParser.parse(lrc)
+        assertEquals(1, result.size)
+        assertEquals(12340L, result[0].timestamp)
+        assertEquals("我 爱", result[0].originalText)
+        assertEquals(1, result[0].charTimings.size)
+        assertEquals(12780L, result[0].charTimings[0].startMs)
+    }
+
+    @Test
+    fun parse_enhancedTrailingEndTimestamp_closesPreviousSegment() {
+        val lrc = "[00:12.34]我爱你<00:12.78>"
+        val result = LrcParser.parse(lrc)
+        assertEquals(1, result.size)
+        assertEquals("我爱你", result[0].originalText)
+        assertEquals(1, result[0].charTimings.size)
+        assertEquals(12340L, result[0].charTimings[0].startMs)
+        assertEquals(12780L, result[0].charTimings[0].endMs)
+    }
+
+    @Test
+    fun parse_plainLine_hasEmptyCharTimings() {
+        val lrc = "[00:12.34]Hello World"
+        val result = LrcParser.parse(lrc)
+        assertTrue(result[0].charTimings.isEmpty())
+        assertTrue(result[0].translatedCharTimings.isEmpty())
+    }
+
+    @Test
+    fun parse_enhancedWithMalformedMarker_fallsBackToPlainText() {
+        val lrc = "[00:12.34]<12:34>bad marker"
+        val result = LrcParser.parse(lrc)
+        assertEquals(1, result.size)
+        assertTrue(result[0].charTimings.isEmpty())
+    }
 }
 
 class FindCurrentLyricIndexTest {

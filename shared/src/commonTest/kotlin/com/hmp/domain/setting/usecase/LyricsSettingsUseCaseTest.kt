@@ -195,6 +195,24 @@ class LyricsSettingsUseCaseTest {
         assertFalse(useCase.floatingLyricsEnabled.first())
     }
 
+    // ===== karaokeEnabled =====
+
+    @Test
+    fun karaokeEnabled_defaultIsTrue() = runTest {
+        val enabled = useCase.karaokeEnabled.first()
+        assertTrue(enabled)
+    }
+
+    @Test
+    fun karaokeEnabled_saveAndRetrieve() = runTest {
+        useCase.saveKaraokeEnabled(false)
+        assertFalse(useCase.karaokeEnabled.first())
+        assertFalse(useCase.getKaraokeEnabled())
+
+        useCase.saveKaraokeEnabled(true)
+        assertTrue(useCase.karaokeEnabled.first())
+    }
+
     // ===== Legacy API =====
 
     @Test
@@ -225,6 +243,20 @@ class LyricsSettingsUseCaseTest {
     fun legacy_saveAlignment_persists() = runTest {
         useCase.saveAlignment(LyricsAlignment.LEFT)
         assertEquals(LyricsAlignment.LEFT, settingsRepository.getLyricsAlignment())
+    }
+
+    @Test
+    fun legacy_getLyricsConfig_includesKaraokeEnabled() = runTest {
+        useCase.saveKaraokeEnabled(false)
+        val config = useCase.getLyricsConfig()
+        assertFalse(config.karaokeEnabled)
+    }
+
+    @Test
+    fun legacy_saveLyricsConfig_persistsKaraokeEnabled() = runTest {
+        val config = com.hmp.domain.config.LyricsConfig(karaokeEnabled = false)
+        useCase.saveLyricsConfig(config)
+        assertFalse(settingsRepository.getLyricsKaraokeEnabled())
     }
 
     @Test

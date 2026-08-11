@@ -41,11 +41,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
+import com.hmp.domain.lyrics.CharTiming
 import com.hmp.domain.lyrics.LrcParser
 import com.hmp.domain.lyrics.LyricLineData
+import com.hmp.domain.lyrics.LyricsTimingGenerator
 import com.hmp.domain.lyrics.findCurrentLyricIndex
+import com.hmp.domain.lyrics.findKaraokeProgress
 import com.hearablemusic.player.ui.R
 
 /**
@@ -62,6 +66,8 @@ fun AdvancedLyrics(
     translatedTextSize: Int = 14,
     currentTimeTextSize: Int = 16,
     lineSpacing: Int = 6,
+    totalDurationMs: Long = 0L,
+    karaokeEnabled: Boolean = true,
     displayMode: DisplayMode = DisplayMode.DUAL,
     alignment: LyricsAlignment = LyricsAlignment.CENTER
 ) {
@@ -71,6 +77,10 @@ fun AdvancedLyrics(
     }
 
     val parsedLyrics = remember(lyrics) { LrcParser.parse(lyrics) }
+    // 为逐字显示生成/规整片段时间（增强 LRC 优先，普通 LRC 走 S2 行尾对齐等分）
+    val timedLyrics = remember(parsedLyrics, totalDurationMs) {
+        LyricsTimingGenerator.resolve(parsedLyrics, totalDurationMs.takeIf { it > 0 })
+    }
     val scrollState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -95,7 +105,7 @@ fun AdvancedLyrics(
     ) {
         // 自动滚动到当前行，居中显示（contentPadding 已提供上下对称空间）
         LaunchedEffect(currentIndex, containerHeightPx) {
-            if (currentIndex >= 0 && currentIndex < parsedLyrics.size && containerHeightPx > 0) {
+            if (currentIndex >= 0 && currentIndex < timedLyrics.size && containerHeightPx > 0) {
                 scrollState.animateScrollToItem(
                     index = currentIndex,
                     scrollOffset = 0
@@ -110,13 +120,24 @@ fun AdvancedLyrics(
             contentPadding = PaddingValues(vertical = with(density) { (containerHeightPx / 2).let { if(it > 0) it.toDp() else 300.dp } })
         ) {
             itemsIndexed(
-                items = parsedLyrics,
+                items = timedLyrics,
                 key = { index, item -> "${item.timestamp}_${index}" }
             ) { index, lyricLine ->
                     val isCurrent = index == currentIndex && currentIndex >= 0
+                val lineEndMs = LyricsTimingGenerator.lineEndMs(
+                    timedLyrics,
+                    index,
+                    totalDurationMs.takeIf { it > 0 }
+                )
                 AdvancedLyricItem(
                     lyricLine = lyricLine,
                     isCurrent = isCurrent,
+                    karaokeEnabled = karaokeEnabled,
+                    charTimings = lyricLine.charTimings,
+                    translatedCharTimings = lyricLine.translatedCharTimings,
+                    lineStartMs = lyricLine.timestamp,
+                    lineEndMs = lineEndMs,
+                    currentPosition = currentPosition,
                     displayMode = displayMode,
                     originalTextSize = originalTextSize,
                     translatedTextSize = translatedTextSize,
@@ -140,6 +161,12 @@ fun AdvancedLyrics(
 private fun AdvancedLyricItem(
     lyricLine: LyricLineData,
     isCurrent: Boolean,
+    karaokeEnabled: Boolean = true,
+    charTimings: List<CharTiming> = emptyList(),
+    translatedCharTimings: List<CharTiming> = emptyList(),
+    lineStartMs: Long = 0L,
+    lineEndMs: Long = 0L,
+    currentPosition: Long = 0L,
     displayMode: DisplayMode,
     originalTextSize: Int = 14,
     translatedTextSize: Int = 14,
@@ -187,69 +214,134 @@ private fun AdvancedLyricItem(
         ) {
             when (displayMode) {
                 DisplayMode.LANG1 -> {
-                    Text(
+                    LyricText(
                         text = lyricLine.originalText,
+                        isCurrent = isCurrent,
+                        karaokeEnabled = karaokeEnabled,
+                        charTimings = charTimings,
+                        lineStartMs = lineStartMs,
+                        lineEndMs = lineEndMs,
+                        currentPosition = currentPosition,
                         textAlign = textAlign,
-                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = originalTextSize.sp,
-                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                     )
                 }
                 DisplayMode.LANG2 -> {
                     if (translated != null) {
-                        Text(
+                        LyricText(
                             text = translated,
+                            isCurrent = isCurrent,
+                            karaokeEnabled = karaokeEnabled,
+                            charTimings = translatedCharTimings,
+                            lineStartMs = lineStartMs,
+                            lineEndMs = lineEndMs,
+                            currentPosition = currentPosition,
                             textAlign = textAlign,
-                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = translatedTextSize.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                         )
                     } else {
-                        Text(
+                        LyricText(
                             text = lyricLine.originalText,
+                            isCurrent = isCurrent,
+                            karaokeEnabled = karaokeEnabled,
+                            charTimings = charTimings,
+                            lineStartMs = lineStartMs,
+                            lineEndMs = lineEndMs,
+                            currentPosition = currentPosition,
                             textAlign = textAlign,
-                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = originalTextSize.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 }
                 DisplayMode.DUAL -> {
                     if (translated == null) {
-                        Text(
+                        LyricText(
                             text = lyricLine.originalText,
+                            isCurrent = isCurrent,
+                            karaokeEnabled = karaokeEnabled,
+                            charTimings = charTimings,
+                            lineStartMs = lineStartMs,
+                            lineEndMs = lineEndMs,
+                            currentPosition = currentPosition,
                             textAlign = textAlign,
-                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                         )
                     } else {
-                        Text(
+                        LyricText(
                             text = lyricLine.originalText,
+                            isCurrent = isCurrent,
+                            karaokeEnabled = karaokeEnabled,
+                            charTimings = charTimings,
+                            lineStartMs = lineStartMs,
+                            lineEndMs = lineEndMs,
+                            currentPosition = currentPosition,
                             textAlign = textAlign,
-                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
+                        LyricText(
                             text = translated,
+                            isCurrent = isCurrent,
+                            karaokeEnabled = karaokeEnabled,
+                            charTimings = translatedCharTimings,
+                            lineStartMs = lineStartMs,
+                            lineEndMs = lineEndMs,
+                            currentPosition = currentPosition,
                             textAlign = textAlign,
-                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = translatedTextSize.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * 歌词文本：当前行且开启逐字时使用卡拉 OK 渐变，否则保持原有整行样式。
+ */
+@Composable
+private fun LyricText(
+    text: String,
+    isCurrent: Boolean,
+    karaokeEnabled: Boolean,
+    charTimings: List<CharTiming>,
+    lineStartMs: Long,
+    lineEndMs: Long,
+    currentPosition: Long,
+    fontSize: TextUnit,
+    fontWeight: FontWeight,
+    textAlign: TextAlign,
+    modifier: Modifier = Modifier
+) {
+    if (isCurrent && karaokeEnabled && text.isNotBlank()) {
+        val progress = findKaraokeProgress(charTimings, lineStartMs, lineEndMs, currentPosition)
+        KaraokeLyricText(
+            text = text,
+            progress = progress,
+            activeColor = MaterialTheme.colorScheme.primary,
+            inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            textAlign = textAlign,
+            modifier = modifier
+        )
+    } else {
+        Text(
+            text = text,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            textAlign = textAlign,
+            modifier = modifier
+        )
     }
 }
 

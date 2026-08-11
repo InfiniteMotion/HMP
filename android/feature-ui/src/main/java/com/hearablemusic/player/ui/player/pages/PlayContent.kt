@@ -134,6 +134,7 @@ fun PlayContent(
     val lyricsLineSpacing = lyricsSettingsState.lyricsLineSpacing
     val lyricsDisplayMode = lyricsSettingsState.lyricsDisplayMode
     val lyricsAlignment = lyricsSettingsState.lyricsAlignment
+    val lyricsKaraokeEnabled = lyricsSettingsState.lyricsKaraokeEnabled
 
     val songDetailViewModel: SongDetailViewModel = koinViewModel()
     val songDetailState by songDetailViewModel.uiState.collectAsState()
@@ -212,7 +213,7 @@ fun PlayContent(
                                     "generate" -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                         GeneratePlaylistComboButtons(musicInfo?.music?.id ?: 0L, defaultAlgorithmType, defaultTemplate, onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) }, onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) })
                                     }
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, lyricsDisplayMode, lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                                 } // center Box
                             }
@@ -257,7 +258,7 @@ fun PlayContent(
                                 when (tabs[page]) {
                                     "playlist" -> PlaylistTabContent(playlist, currentIndex ?: 0, musicInfo?.music?.id, defaultAlgorithmType, defaultTemplate, { callbacks.onGeneratePlaylist(it) }, { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }, { callbacks.onPlayItem(it) }, { callbacks.onMoveToTop(it) }, { callbacks.onRemoveFromPlaylist(it) }, { callbacks.onClearPlaylist() })
                                     "info" -> SongDetailInfoTab(songDetailState, musicInfo?.extra, musicInfo?.userInfo)
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, lyricsDisplayMode, lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                             }
                             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)) { PlayerTabBar(selectedTab, { selectedTab = it }) }
@@ -297,10 +298,12 @@ fun PlayContent(
                             originalTextSize = lyricsOriginalTextSize,
                             translatedTextSize = lyricsTranslatedTextSize,
                             currentTimeTextSize = lyricsCurrentTimeTextSize,
-                            lineSpacing = lyricsLineSpacing,
-                            displayMode = lyricsDisplayMode,
-                            alignment = lyricsAlignment,
-                            onSeek = { callbacks.onSeek(it) },
+                              lineSpacing = lyricsLineSpacing,
+                              displayMode = lyricsDisplayMode,
+                              alignment = lyricsAlignment,
+                              totalDurationMs = duration,
+                              karaokeEnabled = lyricsKaraokeEnabled,
+                              onSeek = { callbacks.onSeek(it) },
                             onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
                             onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) },
                             modifier = Modifier.weight(1f)
@@ -444,6 +447,8 @@ fun MusicInfoExtra(
     lineSpacing: Int = 6,
     displayMode: DisplayMode = DisplayMode.DUAL,
     alignment: LyricsAlignment = LyricsAlignment.CENTER,
+    totalDurationMs: Long = 0L,
+    karaokeEnabled: Boolean = true,
     onSeek: (Long) -> Unit,
     onGeneratePlaylist: (Long) -> Unit,
     onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
@@ -485,6 +490,8 @@ fun MusicInfoExtra(
                 translatedTextSize = translatedTextSize,
                 currentTimeTextSize = currentTimeTextSize,
                 lineSpacing = lineSpacing,
+                totalDurationMs = totalDurationMs,
+                karaokeEnabled = karaokeEnabled,
                 displayMode = displayMode,
                 alignment = alignment
             )
