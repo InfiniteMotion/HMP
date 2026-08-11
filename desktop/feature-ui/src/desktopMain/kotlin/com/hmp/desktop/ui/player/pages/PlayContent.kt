@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
+import com.hmp.desktop.ui.common.viewmodel.PaletteColors
 import com.hmp.domain.enum.PlaybackMode
 import com.hmp.domain.music.Music
 import com.hmp.domain.music.MusicExtra
@@ -114,6 +115,7 @@ fun formatTime(millis: Long): String {
 fun PlayContent(
     playerUiState: PlayerUiState,
     lyricsSettingsState: LyricsSettingsState,
+    paletteColors: PaletteColors? = null,
     callbacks: PlayerCallbacks,
     hazeState: HazeState? = null,
     modifier: Modifier = Modifier
@@ -283,6 +285,7 @@ fun PlayContent(
                                                     alignment = lyricsAlignment,
                                                     totalDurationMs = duration,
                                                     karaokeEnabled = lyricsKaraokeEnabled,
+                                                    paletteColors = paletteColors,
                                                     isPlaying = isPlaying
                                                 )
                                             }
@@ -483,6 +486,7 @@ fun PlayContent(
                                                 alignment = lyricsAlignment,
                                                 totalDurationMs = duration,
                                                 karaokeEnabled = lyricsKaraokeEnabled,
+                                                paletteColors = paletteColors,
                                                 isPlaying = isPlaying
                                             )
                                         }

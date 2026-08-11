@@ -57,6 +57,7 @@ import com.hmp.domain.config.LyricsAlignment
 import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.SegmentedOption
 import com.hearablemusic.player.ui.common.components.VerticalSegmentedControl
+import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
@@ -89,6 +90,8 @@ fun LyricsScreen(
     val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
     val karaokeEnabled by settingsViewModel.lyricsKaraokeEnabled.collectAsState()
+    val themeViewModel: ThemeViewModel = koinViewModel()
+    val paletteColors by themeViewModel.paletteColors.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     var isControlsVisible by remember { mutableStateOf(true) }
@@ -169,6 +172,7 @@ fun LyricsScreen(
                 lineSpacing = lineSpacing,
                 totalDurationMs = duration,
                 karaokeEnabled = karaokeEnabled,
+                paletteColors = paletteColors,
                 isPlaying = isPlaying,
                 displayMode = displayMode,
                 alignment = alignment

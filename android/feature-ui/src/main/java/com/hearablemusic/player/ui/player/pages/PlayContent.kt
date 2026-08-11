@@ -76,6 +76,7 @@ import com.hearablemusic.player.ui.library.pages.components.musiclist.defaultMus
 import com.hearablemusic.player.ui.library.viewmodel.SongDetailData
 import com.hearablemusic.player.ui.library.viewmodel.SongDetailViewModel
 import com.hearablemusic.player.ui.player.components.DotPager
+import com.hearablemusic.player.ui.common.viewmodel.PaletteColors
 import com.hearablemusic.player.ui.player.viewmodel.LyricsSettingsState
 import com.hearablemusic.player.ui.player.viewmodel.PlayerCallbacks
 import com.hearablemusic.player.ui.player.viewmodel.PlayerUiState
@@ -105,6 +106,7 @@ fun formatTime(millis: Long): String {
 fun PlayContent(
     playerUiState: PlayerUiState,
     lyricsSettingsState: LyricsSettingsState,
+    paletteColors: PaletteColors? = null,
     callbacks: PlayerCallbacks,
     hazeState: HazeState? = null,
     modifier: Modifier = Modifier
@@ -213,7 +215,7 @@ fun PlayContent(
                                     "generate" -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                         GeneratePlaylistComboButtons(musicInfo?.music?.id ?: 0L, defaultAlgorithmType, defaultTemplate, onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) }, onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) })
                                     }
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, paletteColors = paletteColors, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                                 } // center Box
                             }
@@ -258,7 +260,7 @@ fun PlayContent(
                                 when (tabs[page]) {
                                     "playlist" -> PlaylistTabContent(playlist, currentIndex ?: 0, musicInfo?.music?.id, defaultAlgorithmType, defaultTemplate, { callbacks.onGeneratePlaylist(it) }, { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }, { callbacks.onPlayItem(it) }, { callbacks.onMoveToTop(it) }, { callbacks.onRemoveFromPlaylist(it) }, { callbacks.onClearPlaylist() })
                                     "info" -> SongDetailInfoTab(songDetailState, musicInfo?.extra, musicInfo?.userInfo)
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, paletteColors = paletteColors, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                             }
                             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)) { PlayerTabBar(selectedTab, { selectedTab = it }) }
@@ -303,6 +305,7 @@ fun PlayContent(
                               alignment = lyricsAlignment,
                               totalDurationMs = duration,
                               karaokeEnabled = lyricsKaraokeEnabled,
+                              paletteColors = paletteColors,
                               isPlaying = isPlaying,
                               onSeek = { callbacks.onSeek(it) },
                             onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
@@ -450,6 +453,7 @@ fun MusicInfoExtra(
     alignment: LyricsAlignment = LyricsAlignment.CENTER,
     totalDurationMs: Long = 0L,
     karaokeEnabled: Boolean = true,
+    paletteColors: PaletteColors? = null,
     isPlaying: Boolean = true,
     onSeek: (Long) -> Unit,
     onGeneratePlaylist: (Long) -> Unit,
@@ -494,6 +498,7 @@ fun MusicInfoExtra(
                 lineSpacing = lineSpacing,
                 totalDurationMs = totalDurationMs,
                 karaokeEnabled = karaokeEnabled,
+                paletteColors = paletteColors,
                 isPlaying = isPlaying,
                 displayMode = displayMode,
                 alignment = alignment

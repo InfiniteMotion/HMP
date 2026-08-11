@@ -52,6 +52,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
 import com.hmp.desktop.ui.common.components.SegmentedOption
 import com.hmp.desktop.ui.common.components.VerticalSegmentedControl
+import com.hmp.desktop.ui.common.viewmodel.ThemeViewModel
 import com.hmp.desktop.ui.common.util.rememberHapticFeedback
 import com.hmp.desktop.ui.player.viewmodel.PlaybackViewModel
 import com.hmp.desktop.ui.player.viewmodel.PlaylistQueueViewModel
@@ -82,6 +83,8 @@ fun LyricsScreen(
     val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val alignment by settingsViewModel.lyricsAlignment.collectAsState()
     val karaokeEnabled by settingsViewModel.lyricsKaraokeEnabled.collectAsState()
+    val themeViewModel: ThemeViewModel = koinInject()
+    val paletteColors by themeViewModel.paletteColors.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
@@ -153,6 +156,7 @@ fun LyricsScreen(
                 alignment = alignment,
                 totalDurationMs = duration,
                 karaokeEnabled = karaokeEnabled,
+                paletteColors = paletteColors,
                 isPlaying = isPlaying
             )
         }
