@@ -72,6 +72,7 @@ fun LyricsScreen(
     val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
     val currentPosition by playbackViewModel.currentPosition.collectAsState()
     val duration by playbackViewModel.duration.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
 
     // 歌词参数 - 从设置中获取
     val originalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
@@ -151,7 +152,8 @@ fun LyricsScreen(
                 displayMode = displayMode,
                 alignment = alignment,
                 totalDurationMs = duration,
-                karaokeEnabled = karaokeEnabled
+                karaokeEnabled = karaokeEnabled,
+                isPlaying = isPlaying
             )
         }
         // 悬浮设置面板（右下角，控制卡片上方）

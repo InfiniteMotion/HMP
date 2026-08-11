@@ -45,7 +45,6 @@ import com.hmp.domain.lyrics.LrcParser
 import com.hmp.domain.lyrics.LyricLineData
 import com.hmp.domain.lyrics.LyricsTimingGenerator
 import com.hmp.domain.lyrics.findCurrentLyricIndex
-import com.hmp.domain.lyrics.findKaraokeProgress
 import com.hmp.desktop.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.painterResource
@@ -66,6 +65,7 @@ fun AdvancedLyrics(
     lineSpacing: Int = 6,
     totalDurationMs: Long = 0L,
     karaokeEnabled: Boolean = true,
+    isPlaying: Boolean = true,
     displayMode: DisplayMode = DisplayMode.DUAL,
     alignment: LyricsAlignment = LyricsAlignment.CENTER
 ) {
@@ -132,6 +132,7 @@ fun AdvancedLyrics(
                     lineStartMs = lyricLine.timestamp,
                     lineEndMs = lineEndMs,
                     currentPosition = currentPosition,
+                    isPlaying = isPlaying,
                     displayMode = displayMode,
                     originalTextSize = originalTextSize,
                     translatedTextSize = translatedTextSize,
@@ -160,6 +161,7 @@ private fun AdvancedLyricItem(
     lineStartMs: Long = 0L,
     lineEndMs: Long = 0L,
     currentPosition: Long = 0L,
+    isPlaying: Boolean = true,
     displayMode: DisplayMode,
     originalTextSize: Int = 14,
     translatedTextSize: Int = 14,
@@ -215,6 +217,7 @@ private fun AdvancedLyricItem(
                         lineStartMs = lineStartMs,
                         lineEndMs = lineEndMs,
                         currentPosition = currentPosition,
+                        isPlaying = isPlaying,
                         textAlign = textAlign,
                         fontSize = originalTextSize.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -230,6 +233,7 @@ private fun AdvancedLyricItem(
                             lineStartMs = lineStartMs,
                             lineEndMs = lineEndMs,
                             currentPosition = currentPosition,
+                            isPlaying = isPlaying,
                             textAlign = textAlign,
                             fontSize = translatedTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -243,6 +247,7 @@ private fun AdvancedLyricItem(
                             lineStartMs = lineStartMs,
                             lineEndMs = lineEndMs,
                             currentPosition = currentPosition,
+                            isPlaying = isPlaying,
                             textAlign = textAlign,
                             fontSize = originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -259,6 +264,7 @@ private fun AdvancedLyricItem(
                             lineStartMs = lineStartMs,
                             lineEndMs = lineEndMs,
                             currentPosition = currentPosition,
+                            isPlaying = isPlaying,
                             textAlign = textAlign,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -272,6 +278,7 @@ private fun AdvancedLyricItem(
                             lineStartMs = lineStartMs,
                             lineEndMs = lineEndMs,
                             currentPosition = currentPosition,
+                            isPlaying = isPlaying,
                             textAlign = textAlign,
                             fontSize = if (isCurrent) currentTimeTextSize.sp else originalTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -286,6 +293,7 @@ private fun AdvancedLyricItem(
                             lineStartMs = lineStartMs,
                             lineEndMs = lineEndMs,
                             currentPosition = currentPosition,
+                            isPlaying = isPlaying,
                             textAlign = textAlign,
                             fontSize = translatedTextSize.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
@@ -309,16 +317,20 @@ private fun LyricText(
     lineStartMs: Long,
     lineEndMs: Long,
     currentPosition: Long,
+    isPlaying: Boolean,
     fontSize: TextUnit,
     fontWeight: FontWeight,
     textAlign: TextAlign,
     modifier: Modifier = Modifier
 ) {
     if (isCurrent && karaokeEnabled && text.isNotBlank()) {
-        val progress = findKaraokeProgress(charTimings, lineStartMs, lineEndMs, currentPosition)
         KaraokeLyricText(
             text = text,
-            progress = progress,
+            currentPosition = currentPosition,
+            isPlaying = isPlaying,
+            charTimings = charTimings,
+            lineStartMs = lineStartMs,
+            lineEndMs = lineEndMs,
             activeColor = MaterialTheme.colorScheme.primary,
             inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
             fontSize = fontSize,

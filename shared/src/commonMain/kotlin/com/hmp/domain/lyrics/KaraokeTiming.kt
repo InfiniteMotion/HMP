@@ -160,3 +160,37 @@ fun findKaraokeProgress(
     val within = ((position - timing.startMs).toFloat() / segmentDuration).coerceIn(0f, 1f)
     return ((segmentIndex + within) / count).coerceIn(0f, 1f)
 }
+
+/**
+ * 逐字进度帧间外推器：在两次底层位置采样之间，用单调时钟平滑推进播放位置，
+ * 使卡拉 OK 渐变以渲染帧率连续运动，而不是等低频采样阶跃。
+ *
+ * 用法：收到新采样时以 `(采样值, 当前帧时间)` 作为基准，之后每帧调用本函数
+ * 计算外推位置；播放暂停时冻结，恢复/seek 时由调用方重置基准。
+ */
+object KaraokePositionInterpolator {
+
+    /** 纳秒转毫秒 */
+    private const val NANOS_PER_MILLI = 1_000_000L
+
+    /**
+     * 由上一帧基准计算当前外推位置。
+     * @param lastPositionMs 最近一次采样（或上一帧外推）的位置，毫秒
+     * @param lastTimestampNanos 该位置对应的帧时间戳（纳秒）
+     * @param nowNanos 当前帧时间戳（纳秒）
+     * @param isPlaying 是否正在播放；暂停时返回 [lastPositionMs] 原值
+     * @param speed 播放速率（默认 1.0；预留变速支持）
+     */
+    fun interpolatePosition(
+        lastPositionMs: Long,
+        lastTimestampNanos: Long,
+        nowNanos: Long,
+        isPlaying: Boolean,
+        speed: Float = 1f
+    ): Long {
+        if (!isPlaying) return lastPositionMs
+        val deltaNanos = (nowNanos - lastTimestampNanos).coerceAtLeast(0L)
+        val deltaMs = (deltaNanos * speed.toDouble() / NANOS_PER_MILLI).toLong()
+        return lastPositionMs + deltaMs
+    }
+}

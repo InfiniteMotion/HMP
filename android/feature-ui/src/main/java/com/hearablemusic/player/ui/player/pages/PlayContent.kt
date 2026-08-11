@@ -213,7 +213,7 @@ fun PlayContent(
                                     "generate" -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                         GeneratePlaylistComboButtons(musicInfo?.music?.id ?: 0L, defaultAlgorithmType, defaultTemplate, onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) }, onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) })
                                     }
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                                 } // center Box
                             }
@@ -258,7 +258,7 @@ fun PlayContent(
                                 when (tabs[page]) {
                                     "playlist" -> PlaylistTabContent(playlist, currentIndex ?: 0, musicInfo?.music?.id, defaultAlgorithmType, defaultTemplate, { callbacks.onGeneratePlaylist(it) }, { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) }, { callbacks.onPlayItem(it) }, { callbacks.onMoveToTop(it) }, { callbacks.onRemoveFromPlaylist(it) }, { callbacks.onClearPlaylist() })
                                     "info" -> SongDetailInfoTab(songDetailState, musicInfo?.extra, musicInfo?.userInfo)
-                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
+                                    else -> AdvancedLyrics(Modifier.fillMaxSize().padding(vertical = 16.dp), lyrics, currentPosition, { callbacks.onSeek(it) }, lyricsOriginalTextSize, lyricsTranslatedTextSize, lyricsCurrentTimeTextSize, lyricsLineSpacing, totalDurationMs = duration, karaokeEnabled = lyricsKaraokeEnabled, isPlaying = isPlaying, displayMode = lyricsDisplayMode, alignment = lyricsAlignment)
                                 }
                             }
                             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)) { PlayerTabBar(selectedTab, { selectedTab = it }) }
@@ -303,6 +303,7 @@ fun PlayContent(
                               alignment = lyricsAlignment,
                               totalDurationMs = duration,
                               karaokeEnabled = lyricsKaraokeEnabled,
+                              isPlaying = isPlaying,
                               onSeek = { callbacks.onSeek(it) },
                             onGeneratePlaylist = { callbacks.onGeneratePlaylist(it) },
                             onSaveDefaultConfig = { a, b, c -> callbacks.onSaveDefaultConfig(a, b, c) },
@@ -449,6 +450,7 @@ fun MusicInfoExtra(
     alignment: LyricsAlignment = LyricsAlignment.CENTER,
     totalDurationMs: Long = 0L,
     karaokeEnabled: Boolean = true,
+    isPlaying: Boolean = true,
     onSeek: (Long) -> Unit,
     onGeneratePlaylist: (Long) -> Unit,
     onSaveDefaultConfig: (AlgorithmType, WeightTemplate, ExtensionConfig) -> Unit
@@ -492,6 +494,7 @@ fun MusicInfoExtra(
                 lineSpacing = lineSpacing,
                 totalDurationMs = totalDurationMs,
                 karaokeEnabled = karaokeEnabled,
+                isPlaying = isPlaying,
                 displayMode = displayMode,
                 alignment = alignment
             )

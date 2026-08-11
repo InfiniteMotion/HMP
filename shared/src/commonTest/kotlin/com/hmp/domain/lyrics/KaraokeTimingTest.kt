@@ -130,3 +130,63 @@ class FindKaraokeProgressTest {
         assertEquals(1f, findKaraokeProgress(emptyList(), 1000L, 1000L, 500L))
     }
 }
+
+class KaraokePositionInterpolatorTest {
+
+    @Test
+    fun playing_advancesByElapsedNanos() {
+        val position = KaraokePositionInterpolator.interpolatePosition(
+            lastPositionMs = 10_000L,
+            lastTimestampNanos = 1_000_000_000L,
+            nowNanos = 1_500_000_000L,
+            isPlaying = true
+        )
+        assertEquals(10_500L, position)
+    }
+
+    @Test
+    fun paused_returnsLastPosition() {
+        val position = KaraokePositionInterpolator.interpolatePosition(
+            lastPositionMs = 10_000L,
+            lastTimestampNanos = 1_000_000_000L,
+            nowNanos = 2_000_000_000L,
+            isPlaying = false
+        )
+        assertEquals(10_000L, position)
+    }
+
+    @Test
+    fun zeroElapsed_returnsLastPosition() {
+        val position = KaraokePositionInterpolator.interpolatePosition(
+            lastPositionMs = 7_000L,
+            lastTimestampNanos = 5_000_000_000L,
+            nowNanos = 5_000_000_000L,
+            isPlaying = true
+        )
+        assertEquals(7_000L, position)
+    }
+
+    @Test
+    fun speed_appliesToAdvancement() {
+        val position = KaraokePositionInterpolator.interpolatePosition(
+            lastPositionMs = 10_000L,
+            lastTimestampNanos = 1_000_000_000L,
+            nowNanos = 1_500_000_000L,
+            isPlaying = true,
+            speed = 2f
+        )
+        assertEquals(11_000L, position)
+    }
+
+    @Test
+    fun monotonic_neverGoesBackwards() {
+        // 帧时钟回退等异常情况下不倒退
+        val position = KaraokePositionInterpolator.interpolatePosition(
+            lastPositionMs = 10_000L,
+            lastTimestampNanos = 2_000_000_000L,
+            nowNanos = 1_000_000_000L,
+            isPlaying = true
+        )
+        assertEquals(10_000L, position)
+    }
+}

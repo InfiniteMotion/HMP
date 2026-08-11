@@ -282,7 +282,8 @@ fun PlayContent(
                                                     displayMode = lyricsDisplayMode,
                                                     alignment = lyricsAlignment,
                                                     totalDurationMs = duration,
-                                                    karaokeEnabled = lyricsKaraokeEnabled
+                                                    karaokeEnabled = lyricsKaraokeEnabled,
+                                                    isPlaying = isPlaying
                                                 )
                                             }
                                         }
@@ -481,7 +482,8 @@ fun PlayContent(
                                                 displayMode = lyricsDisplayMode,
                                                 alignment = lyricsAlignment,
                                                 totalDurationMs = duration,
-                                                karaokeEnabled = lyricsKaraokeEnabled
+                                                karaokeEnabled = lyricsKaraokeEnabled,
+                                                isPlaying = isPlaying
                                             )
                                         }
 
