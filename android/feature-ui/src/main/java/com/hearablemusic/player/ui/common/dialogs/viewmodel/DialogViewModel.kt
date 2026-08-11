@@ -42,13 +42,6 @@ class DialogViewModel(
     private val _activeDialog = MutableStateFlow<DialogUiState?>(null)
     val activeDialog: StateFlow<DialogUiState?> = _activeDialog.asStateFlow()
 
-    // 路由导航器，用于页面跳转
-    private var router: RouteNavigator? = null
-
-    fun setRouter(router: RouteNavigator) {
-        this.router = router
-    }
-
     // 向后兼容：按类型导出子状态，供现有组件复用
     val musicDetailState: StateFlow<MusicDetailState?> = activeDialog
         .map { (it as? DialogUiState.MusicDetail)?.state }
@@ -214,9 +207,7 @@ class DialogViewModel(
     fun viewDetail() {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
         val musicInfo = currentState.musicInfo
-        val navigator = router ?: return
-
-        navigator.navigateTo(Routes.Library.SongDetail(musicInfo.music.id))
+        dialogManager.showDialog(DialogEvent.NavRequest(Routes.Library.SongDetail(musicInfo.music.id)))
         dismissMusicDetailDialog()
     }
 
@@ -226,21 +217,13 @@ class DialogViewModel(
         dismissMusicDetailDialog()
     }
 
-    // 设置路由导航器（向后兼容，已合并到setRouter）
-    // 设置路由导航器
-    fun setRouteNavigator(navigator: RouteNavigator) {
-        this.router = navigator
-    }
-
     // 获取菜单选项
     fun getMenuOptions(onComplete: () -> Unit): List<Triple<Int, Int, () -> Unit>> {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return emptyList()
         val menuConfig = currentState.menuConfig
         val menuOptions = mutableListOf<Triple<Int, Int, () -> Unit>>()
-        val navigator = this.router
-
         // 音乐详情
-        if (menuConfig.showViewDetail && navigator != null) {
+        if (menuConfig.showViewDetail) {
             menuOptions.add(Triple(R.drawable.music, R.string.title_song_detail) {
                 viewDetail()
             })

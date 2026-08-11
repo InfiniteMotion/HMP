@@ -25,15 +25,6 @@ import com.hearablemusic.player.ui.settings.pages.BackupSettingsScreen
 import com.hearablemusic.player.ui.settings.pages.LibrarySettingsScreen
 import com.hearablemusic.player.ui.settings.pages.ProfileSettingsScreen
 import com.hearablemusic.player.ui.settings.pages.SettingScreen
-import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
-import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
-import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
-import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
-import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
-import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
-import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
-import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
-import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
 import org.koin.compose.koinInject
 
@@ -48,19 +39,10 @@ import org.koin.compose.koinInject
  * 1. 使用 `entry<路由类型> { ... }` 注册页面，其中 lambda 接收路由参数（如果是 data class）
  * 2. 可以通过 `deepLinks` 参数为路由添加深层链接支持
  * 3. 可以通过 `metadata` 参数配置转场动画（进入、退出、预测性返回）
- * 4. 所有页面所需的依赖应通过参数传入，避免在 NavigationGraph 内部直接使用 koinViewModel()
+ * 4. 页面所需 ViewModel 由页面自行获取（koinViewModel/activityViewModel），导航图不传递 VM 实例
  *
  * @param navController 导航控制器
  * @param pagerState 标签页的Pager状态（用于TabsHost）
- * @param libraryViewModel 音乐库ViewModel
- * @param recommendationViewModel 推荐ViewModel
- * @param settingsViewModel 设置ViewModel
- * @param playbackViewModel 播放控制ViewModel
- * @param playlistQueueViewModel 播放队列ViewModel
- * @param playlistViewModel 播放列表ViewModel
- * @param themeViewModel 主题ViewModel
- * @param dialogManagerViewModel 对话框管理ViewModel
- * @param dialogViewModel 对话框ViewModel
  * @param tabHeader 标签页头部内容，默认为空
  */
 @OptIn(UnstableApi::class)
@@ -68,15 +50,6 @@ import org.koin.compose.koinInject
 fun navigationGraph(
     navController: NavBackStack<NavKey>,
     pagerState: PagerState,
-    libraryViewModel: LibraryViewModel,
-    recommendationViewModel: RecommendationViewModel,
-    settingsViewModel: SettingsViewModel,
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    playlistViewModel: PlaylistViewModel,
-    themeViewModel: ThemeViewModel,
-    dialogManagerViewModel: DialogManagerViewModel,
-    dialogViewModel: DialogViewModel,
     tabHeader: @Composable () -> Unit = {}
 ) = entryProvider {
     // Main 模块
@@ -84,12 +57,7 @@ fun navigationGraph(
         TabsHost(
             navController = navController,
             pagerState = pagerState,
-            tabHeader = tabHeader,
-            recommendationViewModel = recommendationViewModel,
-            settingsViewModel = settingsViewModel,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel,
+            tabHeader = tabHeader
         )
     }
 
@@ -103,11 +71,6 @@ fun navigationGraph(
     // Player 模块
     entry<Routes.Player.Player> {
         PlayerScreen(
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            playlistViewModel = playlistViewModel,
-            settingsViewModel = settingsViewModel,
-            themeViewModel = themeViewModel,
             navController = navController
         )
     }
@@ -140,30 +103,21 @@ fun navigationGraph(
     // Library 模块
     entry<Routes.Library.Search> {
         SearchScreen(
-            navController = navController,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel
+            navController = navController
         )
     }
     
     entry<Routes.Playlist.Playlist> { route ->
         PlaylistScreen(
             navController = navController,
-            playlistName = route.name,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel,
+            playlistName = route.name
         )
     }
     
     entry<Routes.Playlist.CustomPlaylist> { route ->
         PlaylistScreen(
             navController = navController,
-            playlistId = route.playlistId,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel
+            playlistId = route.playlistId
         )
     }
     
@@ -174,20 +128,14 @@ fun navigationGraph(
     entry<Routes.Library.Artist> { route ->
         ArtistScreen(
             navController = navController,
-            artistName = route.name,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel
+            artistName = route.name
         )
     }
     
     entry<Routes.Library.Album> { route ->
         AlbumScreen(
             navController = navController,
-            albumName = route.name,
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
-            dialogViewModel = dialogViewModel
+            albumName = route.name
         )
     }
     
@@ -198,8 +146,6 @@ fun navigationGraph(
     
     entry<Routes.Player.Lyrics> {
         LyricsScreen(
-            playbackViewModel = playbackViewModel,
-            playlistQueueViewModel = playlistQueueViewModel,
             onNavigateToSettings = { navController.add(Routes.Settings.LyricsSettings) }
         )
     }
@@ -207,17 +153,13 @@ fun navigationGraph(
     // AI 模块
     entry<Routes.AI.AI> {
         AIScreen(
-            settingsViewModel,
-            recommendationViewModel,
-            libraryViewModel,
-            dialogManagerViewModel.dialogManager,
-            navController
+            navController = navController
         )
     }
     
     // Custom 模块
     entry<Routes.Custom.Custom> {
-        CustomScreen(settingsViewModel, navController)
+        CustomScreen(navController = navController)
     }
     
     // UserData 模块

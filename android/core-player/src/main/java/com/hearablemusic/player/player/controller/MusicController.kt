@@ -916,6 +916,8 @@ class MusicController(
     }
     
     fun release() {
+        timerJob?.cancel()
+        timerJob = null
         endCurrentPlaybackSession(isCompleted = false)
         stopProgressTracking()
         unbindService()

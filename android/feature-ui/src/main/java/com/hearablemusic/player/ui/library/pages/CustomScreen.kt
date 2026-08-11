@@ -39,6 +39,7 @@ import androidx.navigation3.runtime.NavKey
 import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.base.TitleWidget
 import com.hearablemusic.player.ui.common.pages.base.SubScreen
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.util.DEFAULT_HAZE_BLUR_RADIUS
 import com.hearablemusic.player.ui.common.util.DEFAULT_HAZE_MATERIAL_PRESET
@@ -60,7 +61,7 @@ import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun CustomScreen(
-    settingsViewModel: SettingsViewModel,
+    settingsViewModel: SettingsViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val customMode by settingsViewModel.customMode.collectAsState("default")

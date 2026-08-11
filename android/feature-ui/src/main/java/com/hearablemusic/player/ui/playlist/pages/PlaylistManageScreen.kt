@@ -38,7 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
@@ -53,8 +53,8 @@ import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
 
 @Composable
 fun PlaylistManageScreen(
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    dialogViewModel: DialogViewModel = koinViewModel(),
+    playlistViewModel: PlaylistViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val userCustomPlaylistsState by playlistViewModel.userCustomPlaylistsState.collectAsState()

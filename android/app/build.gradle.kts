@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
 
     implementation(libs.koin.android)
+    implementation(libs.koin.compose.viewmodel)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

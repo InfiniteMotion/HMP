@@ -39,7 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
@@ -60,8 +60,8 @@ import java.io.IOException
 @Composable
 fun ProfileSettingsScreen(
     navController: NavBackStack<NavKey>,
-    settingsViewModel: SettingsViewModel = koinViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = koinViewModel()
+    settingsViewModel: SettingsViewModel = activityViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     val avatarUri by settingsViewModel.avatarUri.collectAsState("")

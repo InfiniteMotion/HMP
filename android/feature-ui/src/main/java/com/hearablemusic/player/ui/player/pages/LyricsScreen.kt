@@ -48,6 +48,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
@@ -59,6 +60,7 @@ import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import com.hearablemusic.player.ui.settings.viewmodel.LyricsSettingsViewModel
 import kotlinx.coroutines.delay
 
 /**
@@ -68,9 +70,9 @@ import kotlinx.coroutines.delay
 @OptIn(UnstableApi::class)
 @Composable
 fun LyricsScreen(
-    playbackViewModel: PlaybackViewModel = koinViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    lyricsSettingsViewModel: LyricsSettingsViewModel = koinViewModel(),
     onNavigateToSettings: () -> Unit = {}
 ) {
     val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
@@ -78,12 +80,12 @@ fun LyricsScreen(
     val duration by playbackViewModel.duration.collectAsState()
 
     // 歌词参数 - 从设置中获取
-    val originalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
-    val translatedTextSize by settingsViewModel.lyricsTranslatedTextSize.collectAsState()
-    val currentTimeTextSize by settingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
-    val lineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
-    val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
-    val alignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val originalTextSize by lyricsSettingsViewModel.lyricsOriginalTextSize.collectAsState()
+    val translatedTextSize by lyricsSettingsViewModel.lyricsTranslatedTextSize.collectAsState()
+    val currentTimeTextSize by lyricsSettingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
+    val lineSpacing by lyricsSettingsViewModel.lyricsLineSpacing.collectAsState()
+    val displayMode by lyricsSettingsViewModel.lyricsDisplayMode.collectAsState()
+    val alignment by lyricsSettingsViewModel.lyricsAlignment.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     var isControlsVisible by remember { mutableStateOf(true) }
@@ -183,12 +185,12 @@ fun LyricsScreen(
                 lineSpacing = lineSpacing,
                 displayMode = displayMode,
                 alignment = alignment,
-                onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
-                onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
-                onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
-                onLineSpacingChange = { settingsViewModel.saveLyricsLineSpacing(it) },
-                onDisplayModeChange = { settingsViewModel.saveLyricsDisplayMode(it) },
-                onAlignmentChange = { settingsViewModel.saveLyricsAlignment(it) }
+                onOriginalTextSizeChange = { lyricsSettingsViewModel.saveLyricsOriginalTextSize(it) },
+                onTranslatedTextSizeChange = { lyricsSettingsViewModel.saveLyricsTranslatedTextSize(it) },
+                onCurrentTimeTextSizeChange = { lyricsSettingsViewModel.saveLyricsCurrentTimeTextSize(it) },
+                onLineSpacingChange = { lyricsSettingsViewModel.saveLyricsLineSpacing(it) },
+                onDisplayModeChange = { lyricsSettingsViewModel.saveLyricsDisplayMode(it) },
+                onAlignmentChange = { lyricsSettingsViewModel.saveLyricsAlignment(it) }
             )
         }
 

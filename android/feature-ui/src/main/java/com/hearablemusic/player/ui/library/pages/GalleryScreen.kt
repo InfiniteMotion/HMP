@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -51,12 +51,12 @@ import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun GalleryScreen(
-    libraryViewModel: LibraryViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    dialogViewModel: DialogViewModel,
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = koinViewModel(),
+    libraryViewModel: LibraryViewModel = activityViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
+    playlistViewModel: PlaylistViewModel = activityViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val isPlaying by playbackViewModel.isPlaying.collectAsState()

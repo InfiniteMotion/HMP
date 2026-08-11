@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -32,6 +33,7 @@ import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
 import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
+import com.hearablemusic.player.ui.playlist.viewmodel.ArtistAlbumViewModel
 import kotlinx.coroutines.launch
 import com.hearablemusic.player.ui.common.pages.base.SubScreen
 import com.hearablemusic.player.ui.common.navigation.Routes
@@ -41,17 +43,17 @@ import com.hearablemusic.player.ui.common.navigation.Routes
 fun ArtistScreen(
     navController: NavBackStack<NavKey>,
     artistName: String,
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    dialogViewModel: DialogViewModel,
+    artistAlbumViewModel: ArtistAlbumViewModel = koinViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
 ) {
     LaunchedEffect(artistName) {
-        playlistViewModel.getSelectedArtistMusicList(artistName)
+        artistAlbumViewModel.getSelectedArtistMusicList(artistName)
     }
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
-    val displayArtistName by playlistViewModel.selectedArtistName.collectAsState()
-    val artistMusicListState by playlistViewModel.selectedArtistMusicListState.collectAsState()
+    val displayArtistName by artistAlbumViewModel.selectedArtistName.collectAsState()
+    val artistMusicListState by artistAlbumViewModel.selectedArtistMusicListState.collectAsState()
     val currentPlayingMusic by playlistQueueViewModel.currentPlayingMusic.collectAsState(null)
     ArtistScreenContent(
         isPlaying = isPlaying,

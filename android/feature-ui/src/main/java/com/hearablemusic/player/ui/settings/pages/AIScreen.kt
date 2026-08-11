@@ -62,37 +62,40 @@ import com.hearablemusic.player.ui.common.components.SegmentedControl
 import com.hearablemusic.player.ui.common.components.SegmentedOption
 import com.hearablemusic.player.ui.common.components.base.TitleWidget
 import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
+import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hearablemusic.player.ui.common.pages.base.SubScreen
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
+import com.hearablemusic.player.ui.settings.viewmodel.AiSettingsViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
-import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AIScreen(
-    settingsViewModel: SettingsViewModel,
-    recommendationViewModel: RecommendationViewModel,
-    libraryViewModel: LibraryViewModel,
-    dialogManager: DialogManager,
+    aiSettingsViewModel: AiSettingsViewModel = koinViewModel(),
+    recommendationViewModel: RecommendationViewModel = activityViewModel(),
+    libraryViewModel: LibraryViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
+    val dialogManager = activityViewModel<DialogManagerViewModel>().dialogManager
     LaunchedEffect(Unit) {
-        settingsViewModel.loadCustomAiConfig()
+        aiSettingsViewModel.loadCustomAiConfig()
     }
 
     val musicWithExtraCount by libraryViewModel.musicWithExtraCount.collectAsState(initial = 0)
     val pendingCount by recommendationViewModel.pendingMusicCount.collectAsState(initial = 0)
-    val aiAccessMode by settingsViewModel.aiAccessMode.collectAsState()
-    val freeTrialRemaining by settingsViewModel.aiFreeTrialRemainingCount.collectAsState()
-    val customConfig by settingsViewModel.customAiConfig.collectAsState()
-    val availableModels by settingsViewModel.availableModels.collectAsState()
-    val isTestingApi by settingsViewModel.isTestingApi.collectAsState()
-    val apiTestResult by settingsViewModel.apiTestResult.collectAsState()
+    val aiAccessMode by aiSettingsViewModel.aiAccessMode.collectAsState()
+    val freeTrialRemaining by aiSettingsViewModel.aiFreeTrialRemainingCount.collectAsState()
+    val customConfig by aiSettingsViewModel.customAiConfig.collectAsState()
+    val availableModels by aiSettingsViewModel.availableModels.collectAsState()
+    val isTestingApi by aiSettingsViewModel.isTestingApi.collectAsState()
+    val apiTestResult by aiSettingsViewModel.apiTestResult.collectAsState()
     val progress by recommendationViewModel.processingProgress.collectAsState()
-    val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState()
-    val refreshMode by settingsViewModel.dailyRefreshMode.collectAsState()
-    val refreshHours by settingsViewModel.dailyRefreshHours.collectAsState()
-    val startupCount by settingsViewModel.dailyRefreshStartupCount.collectAsState()
+    val autoBatchProcess by aiSettingsViewModel.autoBatchProcess.collectAsState()
+    val refreshMode by aiSettingsViewModel.dailyRefreshMode.collectAsState()
+    val refreshHours by aiSettingsViewModel.dailyRefreshHours.collectAsState()
+    val startupCount by aiSettingsViewModel.dailyRefreshStartupCount.collectAsState()
 
     AIScreenContent(
         aiAccessMode = aiAccessMode,
@@ -108,19 +111,19 @@ fun AIScreen(
         refreshMode = refreshMode,
         refreshHours = refreshHours,
         startupCount = startupCount,
-        onModeChange = settingsViewModel::switchAiAccessMode,
-        onSaveCustomConfig = settingsViewModel::saveCustomAiConfig,
-        onFetchModels = settingsViewModel::fetchAvailableModels,
-        onTestConnection = settingsViewModel::testAiConnection,
-        onClearTestResult = settingsViewModel::clearApiTestResult,
-        onAutoBatchProcessChange = settingsViewModel::saveAutoBatchProcess,
+        onModeChange = aiSettingsViewModel::switchAiAccessMode,
+        onSaveCustomConfig = aiSettingsViewModel::saveCustomAiConfig,
+        onFetchModels = aiSettingsViewModel::fetchAvailableModels,
+        onTestConnection = aiSettingsViewModel::testAiConnection,
+        onClearTestResult = aiSettingsViewModel::clearApiTestResult,
+        onAutoBatchProcessChange = aiSettingsViewModel::saveAutoBatchProcess,
         startAutoProcessExtraInfo = recommendationViewModel::startAutoProcessWithCurrentProvider,
         pauseProcess = recommendationViewModel::pauseProcessing,
         resumeProcess = recommendationViewModel::resumeProcessing,
         cancelProcess = recommendationViewModel::cancelProcessing,
-        onSaveDailyRefreshMode = settingsViewModel::saveDailyRefreshMode,
-        onSaveDailyRefreshHours = settingsViewModel::saveDailyRefreshHours,
-        onSaveDailyRefreshStartupCount = settingsViewModel::saveDailyRefreshStartupCount,
+        onSaveDailyRefreshMode = aiSettingsViewModel::saveDailyRefreshMode,
+        onSaveDailyRefreshHours = aiSettingsViewModel::saveDailyRefreshHours,
+        onSaveDailyRefreshStartupCount = aiSettingsViewModel::saveDailyRefreshStartupCount,
         dialogManager = dialogManager,
         onBackClick = { navController.removeLastOrNull() }
     )
@@ -134,7 +137,7 @@ private fun AIScreenContent(
     customConfig: AiEndpointConfig,
     availableModels: List<String>,
     isTestingApi: Boolean,
-    apiTestResult: SettingsViewModel.ApiTestResult?,
+    apiTestResult: AiSettingsViewModel.ApiTestResult?,
     musicWithExtraCount: Int,
     pendingCount: Int,
     progress: RecommendationViewModel.BatchProcessingProgress,
@@ -164,8 +167,8 @@ private fun AIScreenContent(
     LaunchedEffect(apiTestResult) {
         apiTestResult?.let { result ->
             val message = when (result) {
-                is SettingsViewModel.ApiTestResult.Success -> result.message
-                is SettingsViewModel.ApiTestResult.Error -> result.message
+                is AiSettingsViewModel.ApiTestResult.Success -> result.message
+                is AiSettingsViewModel.ApiTestResult.Error -> result.message
             }
             dialogManager.showMessage(message)
             onClearTestResult()

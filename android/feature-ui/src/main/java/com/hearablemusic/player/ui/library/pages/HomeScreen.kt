@@ -68,16 +68,16 @@ import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hmp.domain.music.MusicInfo
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import com.hearablemusic.player.ui.common.navigation.Routes as NavRoutes
 
 @OptIn(UnstableApi::class)
 @Composable
 fun HomeScreen(
-    recommendationViewModel: RecommendationViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    dialogViewModel: DialogViewModel,
+    recommendationViewModel: RecommendationViewModel = activityViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val scope = rememberCoroutineScope()

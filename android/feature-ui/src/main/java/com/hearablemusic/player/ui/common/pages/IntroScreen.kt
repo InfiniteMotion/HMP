@@ -64,9 +64,11 @@ import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
 import com.hmp.domain.setting.model.AiAccessMode
+import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import org.koin.compose.koinInject
 
 @Composable
 fun IntroScreen(
@@ -79,7 +81,8 @@ fun IntroScreen(
     val isPermissionGiven = remember { mutableStateOf(false) }
     val showScanDialog = remember { mutableStateOf(false) }
     val isScanCompleted = remember { mutableStateOf(false) }
-    val aiAccessMode by settingsViewModel.aiAccessMode.collectAsState(AiAccessMode.FREE)
+    val userSettingsUseCase: UserSettingsUseCase = koinInject()
+    val aiAccessMode by userSettingsUseCase.aiAccessMode.collectAsState(AiAccessMode.FREE)
     val hazeMode by settingsViewModel.hazeMode.collectAsState(DEFAULT_HAZE_MODE)
     val hazeMaterialPreset by settingsViewModel.hazeMaterialPreset.collectAsState(DEFAULT_HAZE_MATERIAL_PRESET)
     val hazeBlurRadius by settingsViewModel.hazeBlurRadius.collectAsState(DEFAULT_HAZE_BLUR_RADIUS)

@@ -44,8 +44,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.hearablemusicplayer.ui.player.floating.FloatingLyricsService
 import com.hearablemusic.player.ui.R
@@ -80,6 +82,7 @@ import com.hearablemusic.player.ui.common.util.DEFAULT_HAZE_NOISE_FACTOR
 import com.hearablemusic.player.ui.common.util.DEFAULT_HAZE_TINT_ALPHA
 import com.hearablemusic.player.ui.common.util.HazeRenderSettings
 import com.hearablemusic.player.ui.common.util.ProvideHazeRenderSettings
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
@@ -91,7 +94,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import com.hmp.domain.setting.usecase.LyricsSettingsUseCase
 
@@ -101,15 +103,12 @@ import com.hearablemusic.player.ui.common.navigation.Routes as NavRoutes
 @OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
-    libraryViewModel: LibraryViewModel = koinViewModel(),
-    recommendationViewModel: RecommendationViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel = koinViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    themeViewModel: ThemeViewModel = koinViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = koinViewModel(),
-    dialogViewModel: DialogViewModel = koinViewModel()
+    settingsViewModel: SettingsViewModel = activityViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    themeViewModel: ThemeViewModel = activityViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
     // 订阅调色板、当前曲目与播放状态
@@ -222,6 +221,12 @@ fun MainScreen(
     val navController = rememberNavBackStack(defaultScreen)
     val router = rememberRouter(navController)
     val deepLinkHandler = remember { DeepLinkHandler(router) }
+    // 消费 ViewModel 发起的导航请求（ViewModel 不持有导航器引用）
+    LaunchedEffect(dialogEvent) {
+        if (dialogEvent is DialogEvent.NavRequest) {
+            navController.add((dialogEvent as DialogEvent.NavRequest).route)
+        }
+    }
     LaunchedEffect(activity.intent) {
         activity.intent?.data?.let { uri ->
             deepLinkHandler.handleDeepLink(uri)
@@ -314,6 +319,10 @@ fun MainScreen(
                             backStack = navController,
                             onBack = { navController.removeLastOrNull() },
                             modifier = Modifier.fillMaxSize(),
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator()
+                            ),
                             transitionSpec = {
                                 fadeIn(
                                     animationSpec = tween(
@@ -392,15 +401,6 @@ fun MainScreen(
                             entryProvider = navigationGraph(
                                 navController = navController,
                                 pagerState = pagerState,
-                                libraryViewModel = libraryViewModel,
-                                recommendationViewModel = recommendationViewModel,
-                                settingsViewModel = settingsViewModel,
-                                playbackViewModel = playbackViewModel,
-                                playlistQueueViewModel = playlistQueueViewModel,
-                                playlistViewModel = playlistViewModel,
-                                themeViewModel = themeViewModel,
-                                dialogManagerViewModel = dialogManagerViewModel,
-                                dialogViewModel = dialogViewModel,
                                 tabHeader = tabHeader
                             )
                         )

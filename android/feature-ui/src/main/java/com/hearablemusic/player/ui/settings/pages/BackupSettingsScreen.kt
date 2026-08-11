@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.hearablemusic.player.ui.R
@@ -47,7 +48,7 @@ import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
 import com.hearablemusic.player.ui.common.pages.base.SubScreen
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
-import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import com.hearablemusic.player.ui.settings.viewmodel.BackupViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -57,11 +58,11 @@ import java.util.Locale
 @Composable
 fun BackupSettingsScreen(
     navController: NavBackStack<NavKey>,
-    settingsViewModel: SettingsViewModel = koinViewModel(),
-    dialogManagerViewModel: DialogManagerViewModel = koinViewModel()
+    backupViewModel: BackupViewModel = koinViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel()
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
-    val localBackups by settingsViewModel.localBackups.collectAsState()
+    val localBackups by backupViewModel.localBackups.collectAsState()
 
     SubScreen(
         onBackClick = { navController.removeLastOrNull() },
@@ -82,20 +83,20 @@ fun BackupSettingsScreen(
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                         ExportBackupSection(
-                            onExportBackup = settingsViewModel::exportBackup,
+                            onExportBackup = backupViewModel::exportBackup,
                             dialogManager = dialogManager
                         )
                         ImportBackupSection(
-                            onRestoreBackup = settingsViewModel::restoreBackup,
+                            onRestoreBackup = backupViewModel::restoreBackup,
                             dialogManager = dialogManager
                         )
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                         ManageBackupsSection(
                             localBackups = localBackups,
-                            onRestoreBackup = settingsViewModel::restoreBackup,
-                            onDeleteBackup = settingsViewModel::deleteLocalBackup,
-                            onRefreshBackups = settingsViewModel::loadLocalBackups,
+                            onRestoreBackup = backupViewModel::restoreBackup,
+                            onDeleteBackup = backupViewModel::deleteLocalBackup,
+                            onRefreshBackups = backupViewModel::loadLocalBackups,
                             dialogManager = dialogManager
                         )
                     }
@@ -103,22 +104,22 @@ fun BackupSettingsScreen(
             } else {
             // 1. 生成备份
             ExportBackupSection(
-                onExportBackup = settingsViewModel::exportBackup,
+                onExportBackup = backupViewModel::exportBackup,
                 dialogManager = dialogManager
             )
             
             // 2. 导入备份
             ImportBackupSection(
-                onRestoreBackup = settingsViewModel::restoreBackup,
+                onRestoreBackup = backupViewModel::restoreBackup,
                 dialogManager = dialogManager
             )
             
             // 3. 备份管理
             ManageBackupsSection(
                 localBackups = localBackups,
-                onRestoreBackup = settingsViewModel::restoreBackup,
-                onDeleteBackup = settingsViewModel::deleteLocalBackup,
-                onRefreshBackups = settingsViewModel::loadLocalBackups,
+                onRestoreBackup = backupViewModel::restoreBackup,
+                onDeleteBackup = backupViewModel::deleteLocalBackup,
+                onRefreshBackups = backupViewModel::loadLocalBackups,
                 dialogManager = dialogManager
             )
             } // else

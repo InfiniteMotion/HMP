@@ -54,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -84,24 +84,20 @@ fun PlaylistScreen(
     navController: NavBackStack<NavKey>,
     playlistId: Long? = null,
     playlistName: String? = null,
-    artistName: String? = null,
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    dialogViewModel: DialogViewModel,
-    dialogManagerViewModel: DialogManagerViewModel = koinViewModel(),
+    playlistViewModel: PlaylistViewModel = activityViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel(),
 ) {
     val dialogManager = dialogManagerViewModel.dialogManager
-    LaunchedEffect(playlistId, playlistName, artistName) {
+    LaunchedEffect(playlistId, playlistName) {
         when {
             playlistId != null -> {
                 playlistViewModel.loadPlaylistById(playlistId)
             }
             playlistName != null -> {
                 playlistViewModel.getSelectedPlaylist(playlistName)
-            }
-            artistName != null -> {
-                playlistViewModel.getSelectedArtistMusicList(artistName)
             }
         }
     }

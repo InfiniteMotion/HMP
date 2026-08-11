@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -35,6 +36,7 @@ import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
 import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import com.hearablemusic.player.ui.settings.viewmodel.LyricsSettingsViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.playlist.AlgorithmType
@@ -45,12 +47,12 @@ import dev.chrisbanes.haze.rememberHazeState
 // 播放器主界面
 @Composable
 fun PlayerScreen(
-    playbackViewModel: PlaybackViewModel = koinViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel(),
-    themeViewModel: ThemeViewModel = koinViewModel(),
-    dialogViewModel: DialogViewModel = koinViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    playlistViewModel: PlaylistViewModel = activityViewModel(),
+    lyricsSettingsViewModel: LyricsSettingsViewModel = koinViewModel(),
+    themeViewModel: ThemeViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val density = LocalDensity.current
@@ -86,12 +88,12 @@ fun PlayerScreen(
     val defaultTemplate by playlistQueueViewModel.defaultWeightTemplate.collectAsState()
 
     // 歌词配置
-    val lyricsOriginalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
-    val lyricsTranslatedTextSize by settingsViewModel.lyricsTranslatedTextSize.collectAsState()
-    val lyricsCurrentTimeTextSize by settingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
-    val lyricsLineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
-    val lyricsDisplayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
-    val lyricsAlignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val lyricsOriginalTextSize by lyricsSettingsViewModel.lyricsOriginalTextSize.collectAsState()
+    val lyricsTranslatedTextSize by lyricsSettingsViewModel.lyricsTranslatedTextSize.collectAsState()
+    val lyricsCurrentTimeTextSize by lyricsSettingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
+    val lyricsLineSpacing by lyricsSettingsViewModel.lyricsLineSpacing.collectAsState()
+    val lyricsDisplayMode by lyricsSettingsViewModel.lyricsDisplayMode.collectAsState()
+    val lyricsAlignment by lyricsSettingsViewModel.lyricsAlignment.collectAsState()
 
     val playerUiState = PlayerUiState(
         musicInfo = musicInfo,
@@ -139,7 +141,7 @@ fun PlayerScreen(
         override fun onHeartMode() { navController.add(Routes.Player.Lyrics) }
         override fun onGeneratePlaylist(seedMusicId: Long) { playlistQueueViewModel.generatePlaylist(seedMusicId) }
         override fun onSaveDefaultConfig(algorithmType: AlgorithmType, weightTemplate: WeightTemplate, extensionConfig: ExtensionConfig) { playlistQueueViewModel.saveAlgorithmConfig(algorithmType, weightTemplate, extensionConfig) }
-        override fun onArtistClick(artistName: String) { playlistViewModel.getSelectedArtistMusicList(artistName); navController.add(Routes.Library.Artist(artistName)) }
+        override fun onArtistClick(artistName: String) { navController.add(Routes.Library.Artist(artistName)) }
         override fun onClearPlaylist() { playlistQueueViewModel.clearPlaylist() }
         override fun onPlayItem(musicInfo: MusicInfo) { playlistQueueViewModel.playAt(musicInfo) }
         override fun onMoveToTop(musicInfo: MusicInfo) { playlistQueueViewModel.moveToTop(musicInfo) }

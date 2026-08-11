@@ -63,9 +63,6 @@ fun MusicDetailDialog(
     val musicInfo = musicDetailState?.musicInfo
     val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
     
-    // 设置导航控制器
-    dialogViewModel.setRouter(router)
-    
     if (musicInfo == null || !musicDetailState!!.isVisible) return
 
     ProvideHazeRenderSettings(settings = resolvedHazeRenderSettings) {
