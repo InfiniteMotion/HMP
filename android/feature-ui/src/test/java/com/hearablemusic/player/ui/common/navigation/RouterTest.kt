@@ -2,265 +2,136 @@ package com.hearablemusic.player.ui.common.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import io.mockk.*
 import org.junit.Assert.*
-import org.junit.Before
 import org.junit.Test
 
 /**
- * Router 单元测试
- * 测试 navigateTo、popBackStack 等导航方法
+ * Router 单元测试（基于真实 NavBackStack，避免 mockk 对 Compose 快照类的挂起问题）
  */
 class RouterTest {
 
-    private lateinit var mockNavBackStack: NavBackStack<NavKey>
-    private lateinit var router: Router
-
-    @Before
-    fun setUp() {
-        mockNavBackStack = mockk(relaxed = true)
-        router = Router(mockNavBackStack)
+    private fun createRouter(vararg initial: NavKey): Pair<Router, NavBackStack<NavKey>> {
+        val stack = NavBackStack<NavKey>()
+        initial.forEach { stack.add(it) }
+        return Router(stack) to stack
     }
 
     @Test
-    fun `navigateTo should call add on NavBackStack`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.add(route) } just Awaits
-
-        // When
-        router.navigateTo(route)
-
-        // Then
-        verify { mockNavBackStack.add(route) }
+    fun `navigateTo should add route`() {
+        val (router, stack) = createRouter(Routes.Main.Tabs)
+        router.navigateTo(Routes.Library.Search)
+        assertEquals(Routes.Library.Search, stack.last())
     }
 
     @Test
     fun `navigateReplace should remove last and add when stack not empty`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.size } returns 2
-        every { mockNavBackStack.removeLastOrNull() } returns null
-        every { mockNavBackStack.add(route) } just Awaits
-
-        // When
-        router.navigateReplace(route)
-
-        // Then
-        verifyOrder {
-            mockNavBackStack.size
-            mockNavBackStack.removeLastOrNull()
-            mockNavBackStack.add(route)
-        }
+        val (router, stack) = createRouter(Routes.Main.Tabs, Routes.Library.Search)
+        router.navigateReplace(Routes.Player.Player)
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs, Routes.Player.Player), stack.toList())
     }
 
     @Test
     fun `navigateReplace should only add when stack empty`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.size } returns 0
-        every { mockNavBackStack.add(route) } just Awaits
-
-        // When
-        router.navigateReplace(route)
-
-        // Then
-        verify(exactly = 0) { mockNavBackStack.removeLastOrNull() }
-        verify { mockNavBackStack.add(route) }
+        val (router, stack) = createRouter()
+        router.navigateReplace(Routes.Main.Tabs)
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 
     @Test
     fun `navigateSingleTop should not add if already on top`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.lastOrNull() } returns route
-        every { mockNavBackStack.indexOfFirst(any()) } returns 0
-        every { mockNavBackStack.size } returns 1
-
-        // When
-        router.navigateSingleTop(route)
-
-        // Then
-        verify(exactly = 0) { mockNavBackStack.add(any()) }
+        val (router, stack) = createRouter(Routes.Main.Tabs)
+        router.navigateSingleTop(Routes.Main.Tabs)
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 
     @Test
-    fun `navigateSingleTop should remove existing route and add if not on top`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.lastOrNull() } returns Routes.Main.Home
-        every { mockNavBackStack.indexOfFirst(any()) } returns 1
-        every { mockNavBackStack.size } returns 3
-        every { mockNavBackStack.removeLastOrNull() } returns null
-        every { mockNavBackStack.add(route) } just Awaits
-
-        // When
-        router.navigateSingleTop(route)
-
-        // Then
-        verify(exactly = 1) { mockNavBackStack.removeLastOrNull() }
-        verify { mockNavBackStack.add(route) }
+    fun `navigateSingleTop should remove routes above existing target`() {
+        val (router, stack) = createRouter(Routes.Main.Tabs, Routes.Library.Search, Routes.Library.Album("Album"))
+        router.navigateSingleTop(Routes.Library.Search)
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs, Routes.Library.Search), stack.toList())
     }
 
     @Test
     fun `navigateSingleTop should add new route if not in stack`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.lastOrNull() } returns Routes.Main.Home
-        every { mockNavBackStack.indexOfFirst(any()) } returns -1
-        every { mockNavBackStack.add(route) } just Awaits
-
-        // When
-        router.navigateSingleTop(route)
-
-        // Then
-        verify { mockNavBackStack.add(route) }
+        val (router, stack) = createRouter(Routes.Main.Tabs)
+        router.navigateSingleTop(Routes.Library.Search)
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs, Routes.Library.Search), stack.toList())
     }
 
     @Test
-    fun `popBackStack should call removeLastOrNull and return true when successful`() {
-        // Given
-        every { mockNavBackStack.removeLastOrNull() } returns Routes.Main.Home
-
-        // When
-        val result = router.popBackStack()
-
-        // Then
-        assertTrue(result)
-        verify { mockNavBackStack.removeLastOrNull() }
+    fun `popBackStack should return true and remove last when successful`() {
+        val (router, stack) = createRouter(Routes.Main.Tabs, Routes.Library.Search)
+        assertTrue(router.popBackStack())
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 
     @Test
     fun `popBackStack should return false when stack empty`() {
-        // Given
-        every { mockNavBackStack.removeLastOrNull() } returns null
-
-        // When
-        val result = router.popBackStack()
-
-        // Then
-        assertFalse(result)
-        verify { mockNavBackStack.removeLastOrNull() }
+        val (router, _) = createRouter()
+        assertFalse(router.popBackStack())
     }
 
     @Test
     fun `popBackStackTo should return false when route not found`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.indexOfFirst(any()) } returns -1
-
-        // When
-        val result = router.popBackStackTo(route)
-
-        // Then
-        assertFalse(result)
+        val (router, _) = createRouter(Routes.Main.Tabs)
+        assertFalse(router.popBackStackTo(Routes.Library.Search))
     }
 
     @Test
     fun `popBackStackTo should remove routes above target when inclusive false`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.indexOfFirst(any()) } returns 2
-        every { mockNavBackStack.size } returns 5
-        every { mockNavBackStack.removeLastOrNull() } returns null
-
-        // When
-        val result = router.popBackStackTo(route, inclusive = false)
-
-        // Then
-        assertTrue(result)
-        verify(exactly = 2) { mockNavBackStack.removeLastOrNull() } // 从索引4和3移除（大小为5，目标索引2+1=3，需要移除2个元素）
+        val (router, stack) = createRouter(
+            Routes.Main.Tabs, Routes.Library.Search, Routes.Library.Album("Album"), Routes.Library.Artist("Artist")
+        )
+        assertTrue(router.popBackStackTo(Routes.Library.Search))
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs, Routes.Library.Search), stack.toList())
     }
 
     @Test
     fun `popBackStackTo should remove routes including target when inclusive true`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.indexOfFirst(any()) } returns 2
-        every { mockNavBackStack.size } returns 5
-        every { mockNavBackStack.removeLastOrNull() } returns null
-
-        // When
-        val result = router.popBackStackTo(route, inclusive = true)
-
-        // Then
-        assertTrue(result)
-        verify(exactly = 3) { mockNavBackStack.removeLastOrNull() } // 从索引4、3、2移除（大小为5，目标索引2，需要移除3个元素）
+        val (router, stack) = createRouter(
+            Routes.Main.Tabs, Routes.Library.Search, Routes.Library.Album("Album"), Routes.Library.Artist("Artist")
+        )
+        assertTrue(router.popBackStackTo(Routes.Library.Search, inclusive = true))
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 
     @Test
     fun `currentRoute should return last element`() {
-        // Given
-        val expectedRoute = Routes.Main.Tabs
-        every { mockNavBackStack.lastOrNull() } returns expectedRoute
-
-        // When
-        val result = router.currentRoute()
-
-        // Then
-        assertEquals(expectedRoute, result)
+        val (router, _) = createRouter(Routes.Main.Tabs, Routes.Library.Search)
+        assertEquals(Routes.Library.Search, router.currentRoute())
     }
 
     @Test
     fun `currentRoute should return null when stack empty`() {
-        // Given
-        every { mockNavBackStack.lastOrNull() } returns null
-
-        // When
-        val result = router.currentRoute()
-
-        // Then
-        assertNull(result)
+        val (router, _) = createRouter()
+        assertNull(router.currentRoute())
     }
 
     @Test
     fun `containsRoute should return true when route exists`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.any(any()) } returns true
-
-        // When
-        val result = router.containsRoute(route)
-
-        // Then
-        assertTrue(result)
+        val (router, _) = createRouter(Routes.Main.Tabs, Routes.Library.Search)
+        assertTrue(router.containsRoute(Routes.Library.Search))
     }
 
     @Test
     fun `containsRoute should return false when route not exists`() {
-        // Given
-        val route = Routes.Main.Tabs
-        every { mockNavBackStack.any(any()) } returns false
-
-        // When
-        val result = router.containsRoute(route)
-
-        // Then
-        assertFalse(result)
+        val (router, _) = createRouter(Routes.Main.Tabs)
+        assertFalse(router.containsRoute(Routes.Library.Search))
     }
 
     @Test
     fun `clearBackStack should remove all except first`() {
-        // Given
-        every { mockNavBackStack.size } returns 5
-        every { mockNavBackStack.removeLastOrNull() } returns null
-
-        // When
+        val (router, stack) = createRouter(
+            Routes.Main.Tabs, Routes.Library.Search, Routes.Library.Album("Album"), Routes.Library.Artist("Artist")
+        )
         router.clearBackStack()
-
-        // Then
-        verify(exactly = 4) { mockNavBackStack.removeLastOrNull() }
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 
     @Test
     fun `clearBackStack should do nothing when size 0 or 1`() {
-        // Given
-        every { mockNavBackStack.size } returns 1
-
-        // When
+        val (router, stack) = createRouter(Routes.Main.Tabs)
         router.clearBackStack()
-
-        // Then
-        verify(exactly = 0) { mockNavBackStack.removeLastOrNull() }
+        assertEquals(listOf<NavKey>(Routes.Main.Tabs), stack.toList())
     }
 }
