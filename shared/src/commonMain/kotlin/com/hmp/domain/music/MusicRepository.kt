@@ -46,6 +46,11 @@ interface MusicRepository {
     /** 编辑单曲标签（ID3 元数据），写入文件成功后同步更新本地曲库记录。 */
     suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit>
 
+    /**
+     * 标签文件已由调用方写入（如 Android SAF 授权后直接写入），仅同步本地曲库记录。
+     */
+    suspend fun refreshMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit>
+
     // 相似度推荐 (Similarity)
     suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int = 10): List<MusicInfo>
 

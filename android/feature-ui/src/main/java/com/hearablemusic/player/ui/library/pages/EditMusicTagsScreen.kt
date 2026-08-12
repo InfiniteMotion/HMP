@@ -1,12 +1,11 @@
 package com.hearablemusic.player.ui.library.pages
 
-import android.content.Intent
+import android.app.Activity
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,6 +65,7 @@ import com.hearablemusic.player.ui.library.pages.components.AlbumCover
 import com.hearablemusic.player.ui.library.viewmodel.EditMusicTagsViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SaveTagsResult
 import com.hearablemusic.player.ui.player.components.MiniPlayerSafeSpacer
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -80,7 +80,8 @@ fun EditMusicTagsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val saveResult by viewModel.saveResult.collectAsState()
-    var showPermissionDialog by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var pendingWriteUri by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(musicId) {
         viewModel.loadTags(musicId)
@@ -110,11 +111,35 @@ fun EditMusicTagsScreen(
         uri?.let { viewModel.onCoverSelected(it) }
     }
 
+    // MediaStore：请求修改当前这一首歌的写权限（系统确认框）
+    val writeRequestLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            pendingWriteUri?.let { viewModel.saveWithUri(it) }
+        }
+        pendingWriteUri = null
+    }
+
     val onSaveClick: () -> Unit = {
-        if (hasStorageManagerPermission()) {
+        if (uiState.isFileWritable) {
             viewModel.save()
         } else {
-            showPermissionDialog = true
+            scope.launch {
+                val uri = viewModel.resolveWriteUri()
+                if (uri == null) {
+                    dialogManager.showMessage(context.getString(R.string.music_not_found))
+                    return@launch
+                }
+                pendingWriteUri = uri
+                val pendingIntent = MediaStore.createWriteRequest(
+                    context.contentResolver,
+                    listOf(uri)
+                )
+                writeRequestLauncher.launch(
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                )
+            }
         }
     }
 
@@ -268,26 +293,6 @@ fun EditMusicTagsScreen(
         }
     }
 
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text(stringResource(R.string.storage_permission_title)) },
-            text = { Text(stringResource(R.string.storage_permission_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPermissionDialog = false
-                    openStorageManagerSettings(context)
-                }) {
-                    Text(stringResource(R.string.go_to_settings))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
 }
 
 @Composable
@@ -456,14 +461,3 @@ private fun UnsavedChangesHint() {
     }
 }
 
-private fun hasStorageManagerPermission(): Boolean {
-    return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Environment.isExternalStorageManager()
-}
-
-private fun openStorageManagerSettings(context: android.content.Context) {
-    val intent = Intent(
-        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-        Uri.parse("package:${context.packageName}")
-    )
-    context.startActivity(intent)
-}
