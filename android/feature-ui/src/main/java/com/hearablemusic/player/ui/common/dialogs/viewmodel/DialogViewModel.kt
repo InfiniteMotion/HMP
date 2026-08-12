@@ -215,9 +215,7 @@ class DialogViewModel(
     fun editTags() {
         val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
         val musicInfo = currentState.musicInfo
-        val navigator = router ?: return
-
-        navigator.navigateTo(Routes.Library.EditMusicTags(musicInfo.music.id))
+        dialogManager.showDialog(DialogEvent.NavRequest(Routes.Library.EditMusicTags(musicInfo.music.id)))
         dismissMusicDetailDialog()
     }
 

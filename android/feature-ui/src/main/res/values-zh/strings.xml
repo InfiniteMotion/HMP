@@ -29,7 +29,7 @@
     <string name="welcome_to">欢迎来到</string>
     <!-- ==================== 导航标签 ==================== -->
     <string name="tab_home">首页</string>
-    <string name="tab_gallery">图库</string>
+    <string name="tab_gallery">音乐库</string>
     <string name="tab_player">播放器</string>
     <string name="tab_list">列表</string>
     <string name="tab_user">用户</string>
@@ -70,7 +70,7 @@
     <string name="banner_heart">心动</string>
     <string name="banner_history">历史</string>
     <!-- ==================== 图库 ==================== -->
-    <string name="title_gallery">图库</string>
+    <string name="title_gallery">音乐库</string>
     <string name="scan">扫描</string>
     <string name="scanning">扫描中</string>
     <string name="scanning_desc">正在扫描音乐文件…</string>
@@ -163,7 +163,7 @@
     <string name="add_to_playlist">添加到歌单</string>
     <string name="add_to_playlist_desc">添加到歌单</string>
     <string name="add_to_favorites">添加到收藏</string>
-    <string name="add_to_specific_playlist">添加到 %1$s</string>
+    <string name="add_to_specific_playlist">添加到指定音乐列表</string>
     <string name="select_playlist">选择播放列表</string>
     <string name="added_to_playlist">已添加到播放列表</string>
     <string name="added_to_next_play">已添加到下一首播放</string>
@@ -501,7 +501,7 @@
     <string name="remove_cover">移除封面</string>
     <string name="no_changes">没有需要保存的更改</string>
     <string name="storage_permission_title">需要存储访问权限</string>
-    <string name="storage_permission_message">编辑音乐标签需要修改音乐文件。请在系统设置中允许“所有文件访问”权限。</string>
+    <string name="storage_permission_message">编t辑音乐标签需要修改音乐文件。请在系统设置中允许“所有文件访问”权限。</string>
     <string name="go_to_settings">前往设置</string>
 
     <string name="section_basic_info">基本信息</string>

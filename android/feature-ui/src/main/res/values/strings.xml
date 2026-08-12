@@ -163,7 +163,7 @@
     <string name="add_to_playlist">Add to playlist</string>
     <string name="add_to_playlist_desc">Add to playlist</string>
     <string name="add_to_favorites">Add to favorites</string>
-    <string name="add_to_specific_playlist">Add to %1$s</string>
+    <string name="add_to_specific_playlist">Add to Specific Playlist</string>
     <string name="select_playlist">Select Playlist</string>
     <string name="added_to_playlist">Added to playlist</string>
     <string name="added_to_next_play">Added to play next</string>
