@@ -361,4 +361,27 @@
     <string name="taste_card">Listening Taste</string>
     <string name="ranking_and_history">Ranking &amp; History</string>
     <string name="tab_playlists">Playlists</string>
+    <string name="edit_music_tags">Edit Tags</string>
+    <string name="tag_title">Title</string>
+    <string name="tag_artist">Artist</string>
+    <string name="tag_album">Album</string>
+    <string name="tags_saved">Tags updated</string>
+    <string name="tags_save_failed">Failed to update tags: %1$s</string>
+    <string name="edit_tags_hint">Leave a field empty to keep it unchanged</string>
+    <string name="tag_year">Year</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_track">Track</string>
+    <string name="tag_lyrics">Lyrics</string>
+    <string name="tag_cover">Cover</string>
+    <string name="choose_cover">Choose Cover</string>
+    <string name="remove_cover">Remove Cover</string>
+    <string name="no_changes">No changes to save</string>
+    <string name="storage_permission_title">Storage access required</string>
+    <string name="storage_permission_message">Editing music tags requires modifying music files. Please grant "All files access" in Settings.</string>
+    <string name="go_to_settings">Go to Settings</string>
+
+    <string name="section_basic_info">Basic Info</string>
+    <string name="section_detail_info">Details</string>
+    <string name="unsaved_changes">Unsaved changes</string>
+    <string name="no_lyrics">No lyrics</string>
 </resources>

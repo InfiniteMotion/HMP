@@ -189,6 +189,22 @@
   - 补全单元测试 650+ 用例，覆盖 shared（commonTest/desktopTest）、desktop（feature-ui/core-player）、android（feature-ui/core-player）全模块
   - 引入 FakeRepository、FakeAudioEngine、Room in-memory 测试库、Robolectric + MockK 等测试基础设施
 
+### v6.13.0 (2026-08-12)
+- **歌词逐字显示（卡拉 OK）**：
+  - 新增歌词逐字高亮显示功能，支持逐字跟随当前播放进度
+  - 逐字显示平滑优化，歌词默认呈现升级
+  - 新增 KaraokeTiming、LyricsPresentationParams 等领域模型与对应单元测试
+- **音乐标签编辑**：
+  - 支持编辑单曲 ID3 标签（标题、艺术家、专辑、年份、流派、音轨、歌词、封面）
+  - 优化标签编辑页 UI 与交互
+  - Android / Desktop / iOS 三平台 MusicTagEditor 实现
+- **架构优化（ViewModel 重构）**：
+  - ViewModel 生命周期修复、作用域统一与上帝对象拆分
+  - SettingsViewModel 拆分为 AiSettingsViewModel、BackupViewModel、LyricsSettingsViewModel、ArtistAlbumViewModel 等
+  - 修复导航包单元测试挂起与预存断言缺陷，归档重构方案文档
+- **质量保障**：
+  - 新增歌词逐字与标签编辑相关单元测试
+
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -363,8 +379,8 @@
 
 ---
 
-**最后更新时间**: 2026-08-10
-**当前版本**: v6.12.0
+**最后更新时间**: 2026-08-12
+**当前版本**: v6.13.0
 
 ---
 

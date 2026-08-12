@@ -95,16 +95,6 @@ class PlaylistViewModel(
     private val _userCustomPlaylistsState = MutableStateFlow<UiState<List<Playlist>>>(UiState.Idle)
     val userCustomPlaylistsState: StateFlow<UiState<List<Playlist>>> = _userCustomPlaylistsState
 
-    private val _selectedArtistName = MutableStateFlow("")
-    val selectedArtistName: StateFlow<String> = _selectedArtistName
-    private val _selectedArtistMusicListState = MutableStateFlow<UiState<List<MusicInfo>>>(UiState.Idle)
-    val selectedArtistMusicListState: StateFlow<UiState<List<MusicInfo>>> = _selectedArtistMusicListState
-
-    private val _selectedAlbumName = MutableStateFlow("")
-    val selectedAlbumName: StateFlow<String> = _selectedAlbumName
-    private val _selectedAlbumMusicListState = MutableStateFlow<UiState<List<MusicInfo>>>(UiState.Idle)
-    val selectedAlbumMusicListState: StateFlow<UiState<List<MusicInfo>>> = _selectedAlbumMusicListState
-
     private val _allMusicForAddPickerState = MutableStateFlow<UiState<List<MusicInfo>>>(UiState.Idle)
     val allMusicForAddPickerState: StateFlow<UiState<List<MusicInfo>>> = _allMusicForAddPickerState
 
@@ -389,39 +379,4 @@ class PlaylistViewModel(
         }
     }
 
-    fun getSelectedArtistMusicList(artistName: String) {
-        currentPlaylistJob?.cancel()
-        _selectedArtistName.value = artistName
-        _selectedArtistMusicListState.value = UiState.Loading
-        viewModelScope.launch {
-            try {
-                val musicList = getAllMusicUseCase.getMusicListByArtist(artistName)
-                _selectedArtistMusicListState.value = if (musicList.isEmpty()) {
-                    UiState.Empty
-                } else {
-                    UiState.Success(musicList)
-                }
-            } catch (e: Exception) {
-                _selectedArtistMusicListState.value = UiState.Error(e.message ?: "Failed to load artist music")
-            }
-        }
-    }
-
-    fun getSelectedAlbumMusicList(albumName: String) {
-        currentPlaylistJob?.cancel()
-        _selectedAlbumName.value = albumName
-        _selectedAlbumMusicListState.value = UiState.Loading
-        viewModelScope.launch {
-            try {
-                val musicList = getAllMusicUseCase.getMusicListByAlbum(albumName)
-                _selectedAlbumMusicListState.value = if (musicList.isEmpty()) {
-                    UiState.Empty
-                } else {
-                    UiState.Success(musicList)
-                }
-            } catch (e: Exception) {
-                _selectedAlbumMusicListState.value = UiState.Error(e.message ?: "Failed to load album music")
-            }
-        }
-    }
 }

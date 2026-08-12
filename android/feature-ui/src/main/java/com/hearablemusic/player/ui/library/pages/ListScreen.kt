@@ -67,12 +67,12 @@ import com.hearablemusic.player.ui.library.pages.components.ListGroupName
 import com.hearablemusic.player.ui.playlist.viewmodel.PlaylistViewModel
 import com.hmp.domain.enum.LabelName
 import com.hmp.domain.playlist.Playlist
-import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 
 @Composable
 fun ListScreen(
-    playlistViewModel: PlaylistViewModel = koinViewModel(),
-    dialogViewModel: DialogViewModel = koinViewModel(),
+    playlistViewModel: PlaylistViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ) {
     val genreList by playlistViewModel.genrePlaylistName.collectAsState()

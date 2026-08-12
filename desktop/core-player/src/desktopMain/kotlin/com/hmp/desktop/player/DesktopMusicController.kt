@@ -43,6 +43,13 @@ class DesktopMusicController(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    private companion object {
+        /** 播放进度采集间隔：保证逐字（卡拉 OK）渐变足够平滑 */
+        const val PROGRESS_TRACKING_INTERVAL_MS = 100L
+        /** 播放位置持久化节流间隔 */
+        const val PROGRESS_PERSIST_INTERVAL_MS = 5_000L
+    }
+
     // Events
     sealed class UiEvent {
         data class ShowToast(val message: String) : UiEvent()
@@ -339,12 +346,18 @@ class DesktopMusicController(
         if (progressJob?.isActive == true) return
 
         progressJob = scope.launch {
+            var lastPersistMs = 0L
             while (isActive) {
                 val pos = audioEngine.getCurrentPosition()
                 _currentPosition.value = pos
-                persistCurrentPosition(pos)
+                // 持久化当前播放进度（节流，避免高频写盘）
+                val now = System.currentTimeMillis()
+                if (now - lastPersistMs >= PROGRESS_PERSIST_INTERVAL_MS) {
+                    lastPersistMs = now
+                    persistCurrentPosition(pos)
+                }
                 recordListeningDurationPeriodically()
-                delay(250)
+                delay(PROGRESS_TRACKING_INTERVAL_MS)
             }
         }
     }

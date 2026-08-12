@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -61,9 +62,9 @@ import com.hearablemusic.player.ui.common.pages.base.SubScreen
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
-    playbackViewModel: PlaybackViewModel,
-    playlistQueueViewModel: PlaylistQueueViewModel,
-    dialogViewModel: DialogViewModel,
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    dialogViewModel: DialogViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>
 ){
     val isPlaying by playbackViewModel.isPlaying.collectAsState()
@@ -93,7 +94,6 @@ fun SearchScreen(
         addToPlaylist = playlistQueueViewModel::addToPlaylist,
         onShowMusicDetailDialog = { musicInfo ->
             val menuConfig = DialogViewModel.MusicDetailMenuConfig(
-                showAddToPlaylist = true,
                 showAddToSpecificPlaylist = true,
                 showShare = true,
                 showViewDetail = true,

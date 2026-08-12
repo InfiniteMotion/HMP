@@ -6,6 +6,7 @@ import com.hearablemusic.player.ui.di.uiModule
 import com.hmp.data.di.androidPlatformModule
 import com.hmp.data.di.sharedModule
 import com.hmp.data.network.BuiltInApiKeyProvider
+import com.hmp.data.util.MusicTagEditor
 import com.hmp.shared.resource.SharedIconLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -24,6 +25,7 @@ class MusicApplication : Application() {
         super.onCreate()
         instance = this
         SharedIconLoader.init(this)
+        MusicTagEditor.init(this)
         val builtInAiModule = module {
             single {
                 BuiltInApiKeyProvider(

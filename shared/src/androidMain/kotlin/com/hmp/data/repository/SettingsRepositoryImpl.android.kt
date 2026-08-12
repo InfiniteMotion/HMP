@@ -87,6 +87,7 @@ class SettingsRepositoryImpl(
         val LYRICS_LINE_SPACING = intPreferencesKey("lyrics_line_spacing")
         val LYRICS_DISPLAY_MODE = stringPreferencesKey("lyrics_display_mode")
         val LYRICS_ALIGNMENT = stringPreferencesKey("lyrics_alignment")
+        val LYRICS_KARAOKE_ENABLED = booleanPreferencesKey("lyrics_karaoke_enabled")
         val LYRICS_PLAYER_CONFIG = stringPreferencesKey("lyrics_player_config")
         val LYRICS_FULLSCREEN_CONFIG = stringPreferencesKey("lyrics_fullscreen_config")
         val LYRICS_FLOATING_CONFIG = stringPreferencesKey("lyrics_floating_config")
@@ -153,6 +154,9 @@ class SettingsRepositoryImpl(
     override val lyricsAlignment: Flow<LyricsAlignment> = dataStore.data.map { prefs ->
         val alignmentStr = prefs[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
+    }
+    override val lyricsKaraokeEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PreferencesKeys.LYRICS_KARAOKE_ENABLED] ?: true
     }
     override val lyricsPlayerConfig: Flow<String> = dataStore.data.map { prefs ->
         prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] ?: json.encodeToString(LyricsComponentConfig.DEFAULT)
@@ -428,6 +432,11 @@ class SettingsRepositoryImpl(
         val alignmentStr = dataStore.data.first()[PreferencesKeys.LYRICS_ALIGNMENT] ?: "CENTER"
         return try { LyricsAlignment.valueOf(alignmentStr) } catch (e: IllegalArgumentException) { LyricsAlignment.CENTER }
     }
+    override suspend fun saveLyricsKaraokeEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_KARAOKE_ENABLED] = enabled }
+    }
+    override suspend fun getLyricsKaraokeEnabled(): Boolean =
+        dataStore.data.first()[PreferencesKeys.LYRICS_KARAOKE_ENABLED] ?: true
 
     override suspend fun saveLyricsPlayerConfig(json: String) {
         dataStore.edit { prefs -> prefs[PreferencesKeys.LYRICS_PLAYER_CONFIG] = json }

@@ -155,7 +155,7 @@
     <string name="add_to_playlist">Add to playlist</string>
     <string name="add_to_playlist_desc">Add to playlist</string>
     <string name="add_to_favorites">Add to favorites</string>
-    <string name="add_to_specific_playlist">Add to %1$s</string>
+    <string name="add_to_specific_playlist">เพิ่มไปยังเพลย์ลิสต์ที่กำหนด</string>
     <string name="select_playlist">Select Playlist</string>
     <string name="added_to_playlist">Added to playlist</string>
     <string name="added_to_next_play">Added to play next</string>
@@ -449,4 +449,29 @@
     <string name="failed_to_load_artist_music">Failed to load artist music</string>
     <string name="failed_to_load_playlist">Failed to load playlist</string>
     <string name="failed_to_load_playlists">Failed to load playlists</string>
+    <string name="edit_music_tags">แก้ไขแท็ก</string>
+    <string name="tag_title">ชื่อเพลง</string>
+    <string name="tag_artist">ศิลปิน</string>
+    <string name="tag_album">อัลบั้ม</string>
+    <string name="tags_saved">อัปเดตแท็กแล้ว</string>
+    <string name="tags_save_failed">อัปเดตแท็กล้มเหลว: %1$s</string>
+    <string name="edit_tags_hint">เว้นว่างเพื่อไม่ให้เปลี่ยนแปลง</string>
+    <string name="tag_year">ปี</string>
+    <string name="tag_genre">แนวเพลง</string>
+    <string name="tag_track">แทร็ก</string>
+    <string name="tag_lyrics">เนื้อเพลง</string>
+    <string name="tag_cover">ปก</string>
+    <string name="choose_cover">เลือกปก</string>
+    <string name="remove_cover">ลบปก</string>
+    <string name="no_changes">ไม่มีการเปลี่ยนแปลงที่จะบันทึก</string>
+    <string name="storage_permission_title">ต้องเข้าถึงที่เก็บข้อมูล</string>
+    <string name="storage_permission_message">การแก้ไขแท็กเพลงต้องแก้ไขไฟล์เพลง โปรดอนุญาต "การเข้าถึงไฟล์ทั้งหมด" ในการตั้งค่า</string>
+    <string name="go_to_settings">ไปที่การตั้งค่า</string>
+    <string name="song_added">เพิ่มแล้ว</string>
+    <string name="explore">สำรวจ</string>
+    <string name="switched_to">สลับไปที่: %1$s</string>
+
+    <string name="section_basic_info">ข้อมูลพื้นฐาน</string>
+    <string name="section_detail_info">รายละเอียด</string>
+    <string name="unsaved_changes">การเปลี่ยนแปลงที่ยังไม่บันทึก</string>
 </resources>

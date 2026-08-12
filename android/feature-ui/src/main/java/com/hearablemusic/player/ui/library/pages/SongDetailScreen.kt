@@ -24,7 +24,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +79,8 @@ fun SongDetailScreen(
     viewModel: SongDetailViewModel = koinViewModel()
 ) {
     // 手动调用 loadSongDetail 方法，传入 musicId
-    LaunchedEffect(musicId) {
+    // 同时监听返回栈变化：从标签编辑页返回后重新加载，展示最新标签
+    LaunchedEffect(musicId, navController.size) {
         viewModel.loadSongDetail(musicId)
     }
     val uiState by viewModel.uiState.collectAsState()
@@ -89,6 +94,27 @@ fun SongDetailScreen(
     SubScreen(
         onBackClick = { navController.removeLastOrNull() },
         title = title,
+        trailingContent = {
+            if (uiState is UiState.Success) {
+                FilledIconButton(
+                    onClick = {
+                        haptic.performClick()
+                        navController.add(Routes.Library.EditMusicTags(musicId))
+                    },
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.rename),
+                        contentDescription = stringResource(R.string.edit_music_tags),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
     ) {
         val isLandscape = LocalWindowSizeInfo.current.isLandscape
         val dimens = LocalHMPDimens.current

@@ -53,6 +53,7 @@ import com.hearablemusic.player.ui.settings.viewmodel.UserUsageDataViewModel
 import com.hmp.domain.setting.model.ListeningDuration
 import com.hmp.domain.setting.model.UserUsageAnalytics
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import kotlin.math.abs
 
 private data class SettingsEntry(
@@ -127,8 +128,8 @@ private fun SettingsListCard(
 
 @Composable
 fun UserScreen(
-    settingsViewModel: SettingsViewModel,
-    recommendationViewModel: RecommendationViewModel,
+    settingsViewModel: SettingsViewModel = activityViewModel(),
+    recommendationViewModel: RecommendationViewModel = activityViewModel(),
     navController: NavBackStack<NavKey>,
     usageDataViewModel: UserUsageDataViewModel = koinViewModel(),
 ) {

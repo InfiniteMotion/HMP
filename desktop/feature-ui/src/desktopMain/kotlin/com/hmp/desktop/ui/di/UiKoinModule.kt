@@ -6,6 +6,7 @@ import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hmp.desktop.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hmp.desktop.ui.common.viewmodel.ThemeViewModel
 import com.hmp.desktop.ui.library.viewmodel.LibraryViewModel
+import com.hmp.desktop.ui.library.viewmodel.EditMusicTagsViewModel
 import com.hmp.desktop.ui.library.viewmodel.SearchViewModel
 import com.hmp.desktop.ui.library.viewmodel.SongDetailViewModel
 import com.hmp.desktop.ui.player.viewmodel.PlaybackViewModel
@@ -25,6 +26,7 @@ val uiModule = module {
     single { LibraryViewModel(get(), get(), get(), get(), get(), get(), get()) }
     single { SearchViewModel(get()) }
     single { SongDetailViewModel(get(), get()) }
+    single { EditMusicTagsViewModel(get(), get()) }
     single { PlaybackViewModel(get()) }
     single { PlaylistQueueViewModel(get(), get(), get(), get()) }
     single { PlaylistViewModel(get(), get(), get(), get()) }

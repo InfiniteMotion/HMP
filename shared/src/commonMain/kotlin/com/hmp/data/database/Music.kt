@@ -110,6 +110,8 @@ interface MusicDao {
     @Query("SELECT id, path FROM music WHERE isDeleted = 1")
     suspend fun getDeletedMusicIdAndPath(): List<MusicIdPath>
 
+    @Query("UPDATE music SET title = :title, artist = :artist, album = :album WHERE id = :id")
+    suspend fun updateMusicTags(id: Long, title: String, artist: String, album: String)
 }
 
 @Dao

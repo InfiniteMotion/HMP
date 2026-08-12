@@ -213,6 +213,11 @@ class FakeSettingsRepository : SettingsRepository {
     @Suppress("DEPRECATION")
     override suspend fun getLyricsAlignment(): LyricsAlignment = _lyricsAlignment.value
 
+    private val _lyricsKaraokeEnabled = MutableStateFlow(true)
+    override val lyricsKaraokeEnabled: Flow<Boolean> = _lyricsKaraokeEnabled.asStateFlow()
+    override suspend fun saveLyricsKaraokeEnabled(enabled: Boolean) { _lyricsKaraokeEnabled.value = enabled }
+    override suspend fun getLyricsKaraokeEnabled(): Boolean = _lyricsKaraokeEnabled.value
+
     private val _dailyRefreshHours = MutableStateFlow(8)
     override val dailyRefreshHours: Flow<Int> = _dailyRefreshHours.asStateFlow()
     override suspend fun saveDailyRefreshHours(hours: Int) { _dailyRefreshHours.value = hours }

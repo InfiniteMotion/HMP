@@ -25,6 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,17 +51,19 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.koin.androidx.compose.koinViewModel
+import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.media3.common.util.UnstableApi
 import com.hmp.domain.config.DisplayMode
 import com.hmp.domain.config.LyricsAlignment
 import com.hearablemusic.player.ui.R
 import com.hearablemusic.player.ui.common.components.SegmentedOption
 import com.hearablemusic.player.ui.common.components.VerticalSegmentedControl
+import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaylistQueueViewModel
-import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import com.hearablemusic.player.ui.settings.viewmodel.LyricsSettingsViewModel
 import kotlinx.coroutines.delay
 
 /**
@@ -68,22 +73,26 @@ import kotlinx.coroutines.delay
 @OptIn(UnstableApi::class)
 @Composable
 fun LyricsScreen(
-    playbackViewModel: PlaybackViewModel = koinViewModel(),
-    playlistQueueViewModel: PlaylistQueueViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel(),
+    playbackViewModel: PlaybackViewModel = activityViewModel(),
+    playlistQueueViewModel: PlaylistQueueViewModel = activityViewModel(),
+    lyricsSettingsViewModel: LyricsSettingsViewModel = koinViewModel(),
     onNavigateToSettings: () -> Unit = {}
 ) {
     val lyrics by playlistQueueViewModel.currentMusicLyrics.collectAsState()
     val currentPosition by playbackViewModel.currentPosition.collectAsState()
     val duration by playbackViewModel.duration.collectAsState()
+    val isPlaying by playbackViewModel.isPlaying.collectAsState()
 
     // 歌词参数 - 从设置中获取
-    val originalTextSize by settingsViewModel.lyricsOriginalTextSize.collectAsState()
-    val translatedTextSize by settingsViewModel.lyricsTranslatedTextSize.collectAsState()
-    val currentTimeTextSize by settingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
-    val lineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
-    val displayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
-    val alignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val originalTextSize by lyricsSettingsViewModel.lyricsOriginalTextSize.collectAsState()
+    val translatedTextSize by lyricsSettingsViewModel.lyricsTranslatedTextSize.collectAsState()
+    val currentTimeTextSize by lyricsSettingsViewModel.lyricsCurrentTimeTextSize.collectAsState()
+    val lineSpacing by lyricsSettingsViewModel.lyricsLineSpacing.collectAsState()
+    val displayMode by lyricsSettingsViewModel.lyricsDisplayMode.collectAsState()
+    val alignment by lyricsSettingsViewModel.lyricsAlignment.collectAsState()
+    val karaokeEnabled by lyricsSettingsViewModel.lyricsKaraokeEnabled.collectAsState()
+    val themeViewModel: ThemeViewModel = koinViewModel()
+    val paletteColors by themeViewModel.paletteColors.collectAsState()
 
     var isSettingsPanelVisible by remember { mutableStateOf(false) }
     var isControlsVisible by remember { mutableStateOf(true) }
@@ -162,6 +171,10 @@ fun LyricsScreen(
                 translatedTextSize = translatedTextSize,
                 currentTimeTextSize = currentTimeTextSize,
                 lineSpacing = lineSpacing,
+                totalDurationMs = duration,
+                karaokeEnabled = karaokeEnabled,
+                paletteColors = paletteColors,
+                isPlaying = isPlaying,
                 displayMode = displayMode,
                 alignment = alignment
             )
@@ -183,12 +196,14 @@ fun LyricsScreen(
                 lineSpacing = lineSpacing,
                 displayMode = displayMode,
                 alignment = alignment,
-                onOriginalTextSizeChange = { settingsViewModel.saveLyricsOriginalTextSize(it) },
-                onTranslatedTextSizeChange = { settingsViewModel.saveLyricsTranslatedTextSize(it) },
-                onCurrentTimeTextSizeChange = { settingsViewModel.saveLyricsCurrentTimeTextSize(it) },
-                onLineSpacingChange = { settingsViewModel.saveLyricsLineSpacing(it) },
-                onDisplayModeChange = { settingsViewModel.saveLyricsDisplayMode(it) },
-                onAlignmentChange = { settingsViewModel.saveLyricsAlignment(it) }
+                karaokeEnabled = karaokeEnabled,
+                onKaraokeEnabledChange = { lyricsSettingsViewModel.saveLyricsKaraokeEnabled(it) },
+                onOriginalTextSizeChange = { lyricsSettingsViewModel.saveLyricsOriginalTextSize(it) },
+                onTranslatedTextSizeChange = { lyricsSettingsViewModel.saveLyricsTranslatedTextSize(it) },
+                onCurrentTimeTextSizeChange = { lyricsSettingsViewModel.saveLyricsCurrentTimeTextSize(it) },
+                onLineSpacingChange = { lyricsSettingsViewModel.saveLyricsLineSpacing(it) },
+                onDisplayModeChange = { lyricsSettingsViewModel.saveLyricsDisplayMode(it) },
+                onAlignmentChange = { lyricsSettingsViewModel.saveLyricsAlignment(it) }
             )
         }
 
@@ -233,6 +248,8 @@ private fun LyricsSettingsPanel(
     lineSpacing: Int,
     displayMode: DisplayMode,
     alignment: LyricsAlignment,
+    karaokeEnabled: Boolean,
+    onKaraokeEnabledChange: (Boolean) -> Unit,
     onOriginalTextSizeChange: (Int) -> Unit,
     onTranslatedTextSizeChange: (Int) -> Unit,
     onCurrentTimeTextSizeChange: (Int) -> Unit,
@@ -247,12 +264,16 @@ private fun LyricsSettingsPanel(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
         VerticalSegmentedControl(
             modifier = Modifier.weight(1f),
             options = listOf(
@@ -320,23 +341,51 @@ private fun LyricsSettingsPanel(
             onValueChange = onLineSpacingChange
         )
 
-		// 更多设置入口
-		TextButton(
-			onClick = {
-				haptic.performLightClick()
-				onNavigateToSettings()
-			},
-			modifier = Modifier.weight(1f)
-		) {
-			Text(
-				stringResource(R.string.more_settings),
-				style = MaterialTheme.typography.labelMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				textAlign = TextAlign.Center
-			)
-		}
+            // 更多设置入口
+            TextButton(
+                onClick = {
+                    haptic.performLightClick()
+                    onNavigateToSettings()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    stringResource(R.string.more_settings),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+            }
 
-
+            // 逐字显示开关
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.karaoke_lyrics),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = karaokeEnabled,
+                        onCheckedChange = onKaraokeEnabledChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+            }
         }
     }
 }

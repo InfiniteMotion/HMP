@@ -63,6 +63,12 @@ object Routes {
          * @param musicId 歌曲的唯一标识符
          */
         @Serializable data class SongDetail(val musicId: Long) : NavKey
+
+        /**
+         * 音乐标签编辑页路由
+         * @param musicId 歌曲的唯一标识符
+         */
+        @Serializable data class EditMusicTags(val musicId: Long) : NavKey
         
         /**
          * 艺术家页路由

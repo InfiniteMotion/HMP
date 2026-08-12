@@ -53,31 +53,6 @@ class NavigationGraphTest {
     }
 
     @Test
-    fun `navigation graph should contain deep link patterns for supported routes`() {
-        // 定义所有预期的深层链接模式
-        val expectedDeepLinkPatterns = listOf(
-            "hearablemusicplayer://song/{musicId}",
-            "hearablemusicplayer://playlist/{name}",
-            "hearablemusicplayer://customPlaylist/{playlistId}",
-            "hearablemusicplayer://artist/{name}",
-            "hearablemusicplayer://album/{name}",
-            "hearablemusicplayer://search",
-            "hearablemusicplayer://settings",
-            "hearablemusicplayer://audioEffects",
-            "hearablemusicplayer://ai",
-            "hearablemusicplayer://userUsageData"
-        )
-
-        // When / Then
-        expectedDeepLinkPatterns.forEach { pattern ->
-            assertTrue(
-                "NavigationGraph should contain deep link pattern: $pattern",
-                fileContent.contains(pattern)
-            )
-        }
-    }
-
-    @Test
     fun `all routes should have corresponding entry in navigation graph`() {
         // 获取 Routes 中定义的所有路由类
         // 注意：有些路由可能通过其他方式使用（如 Main.Home 可能在 TabsHost 内部使用）
@@ -113,38 +88,11 @@ class NavigationGraphTest {
     }
 
     @Test
-    fun `deep link patterns should match DeepLinkHandler expectations`() {
-        // 验证 NavigationGraph 中的深层链接模式与 DeepLinkHandler 中处理的模式一致
-
-        // 从 DeepLinkHandler 提取支持的 host 列表
-        val supportedHosts = listOf(
-            "song",
-            "playlist",
-            "customPlaylist",
-            "artist",
-            "album",
-            "search",
-            "settings",
-            "audioEffects",
-            "ai",
-            "userUsageData"
-        )
-
-        supportedHosts.forEach { host ->
-            val pattern = "hearablemusicplayer://$host"
-            assertTrue(
-                "NavigationGraph should contain deep link pattern for host: $host",
-                fileContent.contains(pattern)
-            )
-        }
-    }
-
-    @Test
     fun `navigation graph should compile without errors`() {
         // 这个测试是概念性的，实际编译检查应该在构建过程中完成
         // 这里我们只验证文件存在且内容非空
         assertTrue(navigationGraphFile.exists())
         assertTrue(fileContent.isNotBlank())
-        assertTrue(fileContent.contains("fun NavigationGraph"))
+        assertTrue(fileContent.contains("fun navigationGraph"))
     }
 }

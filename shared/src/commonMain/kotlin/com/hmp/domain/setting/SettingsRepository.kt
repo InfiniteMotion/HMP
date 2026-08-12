@@ -172,6 +172,10 @@ interface SettingsRepository {
     @Deprecated("Use lyricsPlayerConfig instead")
     suspend fun getLyricsAlignment(): LyricsAlignment
 
+    val lyricsKaraokeEnabled: Flow<Boolean>
+    suspend fun saveLyricsKaraokeEnabled(enabled: Boolean)
+    suspend fun getLyricsKaraokeEnabled(): Boolean
+
     val dailyRefreshHours: Flow<Int>
     suspend fun saveDailyRefreshHours(hours: Int)
 

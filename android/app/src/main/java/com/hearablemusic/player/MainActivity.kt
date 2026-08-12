@@ -25,17 +25,20 @@ import com.hearablemusic.player.ui.common.design.theme.HearableMusicPlayerTheme
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.RecommendationViewModel
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
+import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import kotlinx.coroutines.delay
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 @UnstableApi
 class MainActivity : ComponentActivity() {
 
     private val musicController: MusicController by inject()
+    private val userSettingsUseCase: UserSettingsUseCase by inject()
 
-    private val settingsViewModel: SettingsViewModel by inject()
-    private val libraryViewModel: LibraryViewModel by inject()
-    private val recommendationViewModel: RecommendationViewModel by inject()
+    private val settingsViewModel: SettingsViewModel by viewModel()
+    private val libraryViewModel: LibraryViewModel by viewModel()
+    private val recommendationViewModel: RecommendationViewModel by viewModel()
 
 
     @OptIn(UnstableApi::class)
@@ -78,7 +81,7 @@ class MainActivity : ComponentActivity() {
                 // 初始值给 true：避免冷启动第一帧因默认 false 误判为非首次启动而跳过 Intro
                 // DataStore 异步加载后会更新为真实值（老用户为 false，新用户为 true）
                 val isFirstLaunch by settingsViewModel.isFirstLaunch.collectAsState(true)
-                val autoBatchProcess by settingsViewModel.autoBatchProcess.collectAsState(false)
+                val autoBatchProcess by userSettingsUseCase.autoBatchProcess.collectAsState(false)
                 val context = LocalContext.current
 
                 LaunchedEffect(Unit) {

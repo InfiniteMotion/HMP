@@ -101,6 +101,23 @@ class MusicDaoTest {
     }
 
     @Test
+    fun updateMusicTags_updatesFields() = runTest {
+        musicDao.insert(music(1, title = "Old Title", artist = "Old Artist"))
+        musicDao.updateMusicTags(id = 1, title = "New Title", artist = "New Artist", album = "New Album")
+        val result = musicDao.getMusicById(1).first()
+        assertNotNull(result)
+        assertEquals("New Title", result.title)
+        assertEquals("New Artist", result.artist)
+        assertEquals("New Album", result.album)
+    }
+
+    @Test
+    fun updateMusicTags_missingId_doesNothing() = runTest {
+        musicDao.updateMusicTags(id = 999, title = "T", artist = "A", album = "B")
+        assertNull(musicDao.getMusicById(999).first())
+    }
+
+    @Test
     fun getDeletedMusicIdAndPath() = runTest {
         musicDao.insertAll(listOf(music(1, path = "/a.mp3"), music(2, path = "/b.mp3")))
         musicDao.markDeletedByIds(listOf(1))

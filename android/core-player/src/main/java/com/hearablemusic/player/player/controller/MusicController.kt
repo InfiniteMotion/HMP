@@ -55,6 +55,13 @@ class MusicController(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    private companion object {
+        /** 播放进度采集间隔：保证逐字（卡拉 OK）渐变足够平滑 */
+        const val PROGRESS_TRACKING_INTERVAL_MS = 100L
+        /** 播放位置持久化节流间隔 */
+        const val PROGRESS_PERSIST_INTERVAL_MS = 5_000L
+    }
+
     private var playControl: PlayControl? = null
     private var activityClass: Class<*>? = null
 
@@ -302,15 +309,20 @@ class MusicController(
         if (progressJob?.isActive == true) return
 
         progressJob = scope.launch {
+            var lastPersistMs = 0L
             while (isActive) {
                 playControl?.let { svc ->
                     val pos = svc.getCurrentPosition()
                     _currentPosition.value = pos
-                    // 持久化当前播放进度
-                    persistCurrentPosition(pos)
+                    // 持久化当前播放进度（节流，避免高频写盘）
+                    val now = System.currentTimeMillis()
+                    if (now - lastPersistMs >= PROGRESS_PERSIST_INTERVAL_MS) {
+                        lastPersistMs = now
+                        persistCurrentPosition(pos)
+                    }
                     recordListeningDurationPeriodically()
                 }
-                delay(500)
+                delay(PROGRESS_TRACKING_INTERVAL_MS)
             }
         }
     }
@@ -916,6 +928,8 @@ class MusicController(
     }
     
     fun release() {
+        timerJob?.cancel()
+        timerJob = null
         endCurrentPlaybackSession(isCompleted = false)
         stopProgressTracking()
         unbindService()
