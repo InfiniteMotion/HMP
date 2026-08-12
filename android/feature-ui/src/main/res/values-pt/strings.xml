@@ -464,9 +464,6 @@
     <string name="choose_cover">Escolher capa</string>
     <string name="remove_cover">Remover capa</string>
     <string name="no_changes">Nenhuma alteração para salvar</string>
-    <string name="storage_permission_title">Acesso ao armazenamento necessário</string>
-    <string name="storage_permission_message">Editar tags de música requer modificar arquivos de música. Conceda "Acesso a todos os arquivos" nas Configurações.</string>
-    <string name="go_to_settings">Ir para Configurações</string>
     <string name="song_added">Adicionado</string>
     <string name="explore">EXPLORAR</string>
     <string name="switched_to">Alternado para: %1$s</string>

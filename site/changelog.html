@@ -85,12 +85,35 @@
 
   <div class="changelog-timeline">
 
+    <!-- v6.13.1 -->
+    <div class="cl-entry">
+      <div class="cl-head">
+        <span class="cl-version">v6.13.1</span>
+        <span class="cl-date">2026-08-12</span>
+        <span class="cl-latest">Latest</span>
+      </div>
+      <div class="cl-card">
+        <div class="cl-section">
+          <div class="cl-section-title">Google Play 合规</div>
+          <ul>
+            <li>移除 <strong>MANAGE_EXTERNAL_STORAGE</strong>（“所有文件访问”）权限，符合 Google Play 政策</li>
+            <li>音乐标签编辑改用 <strong>Storage Access Framework（SAF）</strong>：保存时通过系统文件选择器授权，写入后自动刷新媒体库</li>
+          </ul>
+        </div>
+        <div class="cl-section">
+          <div class="cl-section-title">质量保障</div>
+          <ul>
+            <li>新增 SAF 写入路径与曲库刷新单元测试</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <!-- v6.13.0 -->
     <div class="cl-entry">
       <div class="cl-head">
         <span class="cl-version">v6.13.0</span>
         <span class="cl-date">2026-08-12</span>
-        <span class="cl-latest">Latest</span>
       </div>
       <div class="cl-card">
         <div class="cl-section">

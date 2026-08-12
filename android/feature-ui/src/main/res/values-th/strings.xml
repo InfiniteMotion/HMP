@@ -464,9 +464,6 @@
     <string name="choose_cover">เลือกปก</string>
     <string name="remove_cover">ลบปก</string>
     <string name="no_changes">ไม่มีการเปลี่ยนแปลงที่จะบันทึก</string>
-    <string name="storage_permission_title">ต้องเข้าถึงที่เก็บข้อมูล</string>
-    <string name="storage_permission_message">การแก้ไขแท็กเพลงต้องแก้ไขไฟล์เพลง โปรดอนุญาต "การเข้าถึงไฟล์ทั้งหมด" ในการตั้งค่า</string>
-    <string name="go_to_settings">ไปที่การตั้งค่า</string>
     <string name="song_added">เพิ่มแล้ว</string>
     <string name="explore">สำรวจ</string>
     <string name="switched_to">สลับไปที่: %1$s</string>

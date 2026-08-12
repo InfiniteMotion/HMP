@@ -142,6 +142,9 @@ class FakeMusicRepository : MusicRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun refreshMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> =
+        updateMusicTags(musicId, tags)
+
     override suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int): List<MusicInfo> =
         musicList.filter { it.music.id != musicId }.take(limit)
 
