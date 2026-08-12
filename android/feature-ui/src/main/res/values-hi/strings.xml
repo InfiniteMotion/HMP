@@ -464,9 +464,6 @@
     <string name="choose_cover">कवर चुनें</string>
     <string name="remove_cover">कवर हटाएं</string>
     <string name="no_changes">सहेजने के लिए कोई बदलाव नहीं</string>
-    <string name="storage_permission_title">स्टोरेज एक्सेस आवश्यक</string>
-    <string name="storage_permission_message">संगीत टैग संपादित करने के लिए संगीत फ़ाइलें संशोधित करनी होंगी। कृपया सेटिंग्स में "सभी फ़ाइलों तक पहुंच" दें।</string>
-    <string name="go_to_settings">सेटिंग्स पर जाएं</string>
     <string name="song_added">जोड़ा गया</string>
     <string name="explore">खोजें</string>
     <string name="switched_to">%1$s पर स्विच किया गया</string>

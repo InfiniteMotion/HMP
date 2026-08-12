@@ -1,11 +1,6 @@
 package com.hearablemusic.player.ui.library.pages
 
-import android.content.Intent
 import android.graphics.BitmapFactory
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -25,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -80,7 +74,6 @@ fun EditMusicTagsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val saveResult by viewModel.saveResult.collectAsState()
-    var showPermissionDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(musicId) {
         viewModel.loadTags(musicId)
@@ -110,11 +103,18 @@ fun EditMusicTagsScreen(
         uri?.let { viewModel.onCoverSelected(it) }
     }
 
+    // SAF：文件不可直接写入时，由用户选择并授权目标音乐文件后保存
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.saveWithUri(it) }
+    }
+
     val onSaveClick: () -> Unit = {
-        if (hasStorageManagerPermission()) {
+        if (uiState.isFileWritable) {
             viewModel.save()
         } else {
-            showPermissionDialog = true
+            openDocumentLauncher.launch(arrayOf("audio/*"))
         }
     }
 
@@ -268,26 +268,6 @@ fun EditMusicTagsScreen(
         }
     }
 
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text(stringResource(R.string.storage_permission_title)) },
-            text = { Text(stringResource(R.string.storage_permission_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPermissionDialog = false
-                    openStorageManagerSettings(context)
-                }) {
-                    Text(stringResource(R.string.go_to_settings))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
 }
 
 @Composable
@@ -456,14 +436,3 @@ private fun UnsavedChangesHint() {
     }
 }
 
-private fun hasStorageManagerPermission(): Boolean {
-    return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Environment.isExternalStorageManager()
-}
-
-private fun openStorageManagerSettings(context: android.content.Context) {
-    val intent = Intent(
-        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-        Uri.parse("package:${context.packageName}")
-    )
-    context.startActivity(intent)
-}

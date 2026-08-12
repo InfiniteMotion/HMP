@@ -81,6 +81,19 @@ class EditMusicTagsUseCaseTest {
     }
 
     @Test
+    fun refreshAfterFileWrite_updatesLibraryWithoutRecheckingFile() = runTest {
+        repository.addMusic(music(1))
+        val result = useCase.refreshAfterFileWrite(
+            1,
+            EditableMusicTags(title = "New Title", lyrics = "new lyrics")
+        )
+        assertTrue(result.isSuccess)
+        val updated = repository.getMusicInfoById(1).first()!!
+        assertEquals("New Title", updated.music.title)
+        assertEquals("new lyrics", repository.getMusicLyrics(1))
+    }
+
+    @Test
     fun editableMusicTags_hasChanges_reflectsNullFields() {
         assertFalse(EditableMusicTags().hasChanges)
         assertTrue(EditableMusicTags(title = "T").hasChanges)

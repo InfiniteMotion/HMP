@@ -496,9 +496,6 @@
     <string name="choose_cover">Pilih Sampul</string>
     <string name="remove_cover">Hapus Sampul</string>
     <string name="no_changes">Tidak ada perubahan untuk disimpan</string>
-    <string name="storage_permission_title">Akses penyimpanan diperlukan</string>
-    <string name="storage_permission_message">Mengedit tag musik memerlukan mengubah file musik. Berikan "Akses ke semua file" di Pengaturan.</string>
-    <string name="go_to_settings">Buka Pengaturan</string>
     <string name="song_added">Ditambahkan</string>
     <string name="explore">JELAJAHI</string>
     <string name="switched_to">Beralih ke: %1$s</string>

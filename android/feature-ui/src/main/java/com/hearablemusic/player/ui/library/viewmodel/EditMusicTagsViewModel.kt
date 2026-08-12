@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hearablemusic.player.ui.R
+import com.hmp.data.util.MusicTagEditor
 import com.hmp.data.util.MusicTagParser
 import com.hmp.domain.music.EditableMusicTags
 import com.hmp.domain.music.usecase.EditMusicTagsUseCase
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 data class EditMusicTagsUiState(
     val isLoading: Boolean = true,
@@ -33,6 +35,8 @@ data class EditMusicTagsUiState(
     val newAlbumArtBytes: ByteArray? = null,
     /** 是否有未保存的更改 */
     val hasChanges: Boolean = false,
+    /** 音乐文件是否可直接写入；不可写时需通过 SAF 授权后保存 */
+    val isFileWritable: Boolean = false,
     val error: String? = null
 )
 
@@ -57,6 +61,7 @@ class EditMusicTagsViewModel(
     val saveResult: StateFlow<SaveTagsResult?> = _saveResult.asStateFlow()
 
     private var currentMusicId: Long? = null
+    private var currentMusicPath: String? = null
     private var originalTitle = ""
     private var originalArtist = ""
     private var originalAlbum = ""
@@ -81,6 +86,7 @@ class EditMusicTagsViewModel(
                     return@launch
                 }
                 val music = musicInfo.music
+                currentMusicPath = music.path
                 val lyrics = musicInfo.extra?.lyrics.orEmpty()
                 originalTitle = music.title
                 originalArtist = music.artist
@@ -91,7 +97,9 @@ class EditMusicTagsViewModel(
                 var year = ""
                 var genre = ""
                 var track = ""
+                var fileWritable = false
                 withContext(Dispatchers.IO) {
+                    fileWritable = File(music.path).canWrite()
                     MusicTagParser.parseMetadata(music.path)?.let { meta ->
                         year = meta.year.orEmpty()
                         genre = meta.genre.orEmpty()
@@ -113,7 +121,8 @@ class EditMusicTagsViewModel(
                         track = track,
                         lyrics = lyrics,
                         albumArtUri = music.albumArtUri,
-                        hasChanges = false
+                        hasChanges = false,
+                        isFileWritable = fileWritable
                     )
                 }
             } catch (e: Exception) {
@@ -171,25 +180,7 @@ class EditMusicTagsViewModel(
     fun save() {
         val musicId = currentMusicId ?: return
         if (_isSaving.value || _uiState.value.isLoading) return
-        val state = _uiState.value
-
-        val tags = EditableMusicTags(
-            title = state.title.trim().takeIf { it.isNotEmpty() && it != originalTitle },
-            artist = state.artist.trim().takeIf { it.isNotEmpty() && it != originalArtist },
-            album = state.album.trim().takeIf { it.isNotEmpty() && it != originalAlbum },
-            year = state.year.trim().takeIf { it.isNotEmpty() && it != originalYear },
-            genre = state.genre.trim().takeIf { it.isNotEmpty() && it != originalGenre },
-            track = state.track.trim().takeIf { it.isNotEmpty() && it != originalTrack },
-            lyrics = state.lyrics.takeIf { it.isNotEmpty() && it != originalLyrics },
-            albumArt = state.newAlbumArtBytes
-        )
-
-        if (!tags.hasChanges) {
-            _saveResult.value = SaveTagsResult.Error(
-                getApplication<Application>().getString(R.string.no_changes)
-            )
-            return
-        }
+        val tags = buildTags(_uiState.value) ?: return
 
         viewModelScope.launch {
             _isSaving.value = true
@@ -206,8 +197,64 @@ class EditMusicTagsViewModel(
         }
     }
 
+    /**
+     * 通过 SAF 授权的内容 Uri 写入标签文件，随后仅刷新本地曲库记录。
+     */
+    fun saveWithUri(uri: Uri) {
+        val musicId = currentMusicId ?: return
+        if (_isSaving.value || _uiState.value.isLoading) return
+        val tags = buildTags(_uiState.value) ?: return
+
+        viewModelScope.launch {
+            _isSaving.value = true
+            MusicTagEditor.writeTags(uri, tags, scanPath = currentMusicPath)
+                .fold(
+                    onSuccess = {
+                        editMusicTagsUseCase.refreshAfterFileWrite(musicId, tags)
+                            .onSuccess {
+                                _saveResult.value = SaveTagsResult.Success
+                            }
+                            .onFailure { e ->
+                                _saveResult.value = SaveTagsResult.Error(
+                                    e.message
+                                        ?: getApplication<Application>()
+                                            .getString(R.string.unknown_error)
+                                )
+                            }
+                    },
+                    onFailure = { e ->
+                        _saveResult.value = SaveTagsResult.Error(
+                            e.message
+                                ?: getApplication<Application>().getString(R.string.unknown_error)
+                        )
+                    }
+                )
+            _isSaving.value = false
+        }
+    }
+
     fun clearSaveResult() {
         _saveResult.value = null
+    }
+
+    private fun buildTags(state: EditMusicTagsUiState): EditableMusicTags? {
+        val tags = EditableMusicTags(
+            title = state.title.trim().takeIf { it.isNotEmpty() && it != originalTitle },
+            artist = state.artist.trim().takeIf { it.isNotEmpty() && it != originalArtist },
+            album = state.album.trim().takeIf { it.isNotEmpty() && it != originalAlbum },
+            year = state.year.trim().takeIf { it.isNotEmpty() && it != originalYear },
+            genre = state.genre.trim().takeIf { it.isNotEmpty() && it != originalGenre },
+            track = state.track.trim().takeIf { it.isNotEmpty() && it != originalTrack },
+            lyrics = state.lyrics.takeIf { it.isNotEmpty() && it != originalLyrics },
+            albumArt = state.newAlbumArtBytes
+        )
+        if (!tags.hasChanges) {
+            _saveResult.value = SaveTagsResult.Error(
+                getApplication<Application>().getString(R.string.no_changes)
+            )
+            return null
+        }
+        return tags
     }
 
     private fun computeHasChanges(state: EditMusicTagsUiState): Boolean {
