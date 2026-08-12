@@ -464,6 +464,9 @@
     <string name="choose_cover">カバーを選択</string>
     <string name="remove_cover">カバーを削除</string>
     <string name="no_changes">保存する変更はありません</string>
+    <string name="storage_permission_title">ストレージへのアクセスが必要です</string>
+    <string name="storage_permission_message">音楽タグの編集には音楽ファイルの変更が必要です。設定で「すべてのファイルへのアクセス」を許可してください。</string>
+    <string name="go_to_settings">設定へ移動</string>
     <string name="song_added">追加しました</string>
     <string name="explore">探索</string>
     <string name="switched_to">%1$s に切り替えました</string>

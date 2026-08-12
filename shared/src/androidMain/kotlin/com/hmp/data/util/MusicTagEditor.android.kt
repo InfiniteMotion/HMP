@@ -1,8 +1,12 @@
 package com.hmp.data.util
 
+import android.content.ContentResolver
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.net.Uri
+import android.provider.MediaStore
 import com.hmp.domain.music.EditableMusicTags
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
@@ -10,21 +14,13 @@ import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.ArtworkFactory
 import java.io.File
 
-/**
- * 文件不可直接写入（Android 分区存储下的用户共享媒体），
- * 需要通过 SAF 授权后使用 [MusicTagEditor.writeTags] 的 Uri 重载写入。
- */
-class NeedsStorageAccessException(
-    filePath: String
-) : IllegalStateException("Storage access required to edit: $filePath")
-
 actual object MusicTagEditor {
 
     @Volatile
     private var appContext: Context? = null
 
     /**
-     * 由 Application 启动时调用，用于 SAF 读写与媒体库刷新。
+     * 由 Application 启动时调用，用于 MediaStore 读写与媒体库刷新。
      */
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -40,11 +36,14 @@ actual object MusicTagEditor {
             if (!file.exists()) {
                 return Result.failure(IllegalStateException("Music file not found: $filePath"))
             }
-            if (!file.canWrite()) {
-                // 分区存储下无直接写权限，需通过 SAF 授权后调用 writeTags(Uri, ...)
-                return Result.failure(NeedsStorageAccessException(filePath))
+            if (file.canWrite()) {
+                // 已具备直接写权限（如已授予“所有文件访问”）
+                writeTagsToFile(file, tags)
+            } else {
+                // 分区存储：先写临时副本，再通过 MediaStore 流写回
+                writeViaMediaStore(context, file, tags)
             }
-            writeTagsToFile(file, tags)
+            // 通知媒体库刷新，重建专辑封面等派生数据
             MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), null, null)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -52,53 +51,56 @@ actual object MusicTagEditor {
         }
     }
 
-    /**
-     * 通过 SAF 授权的内容 Uri 写入标签（Android 特有）。
-     *
-     * 文件内容先复制到带正确音频扩展名的临时文件，由 jaudiotagger 改写后写回 [uri]；
-     * 完成后按 [scanPath]（原始文件路径）刷新媒体库索引。
-     */
-    fun writeTags(uri: Uri, tags: EditableMusicTags, scanPath: String? = null): Result<Unit> {
-        val context = appContext
-            ?: return Result.failure(
-                IllegalStateException("MusicTagEditor has not been initialized")
-            )
+    private fun writeViaMediaStore(context: Context, file: File, tags: EditableMusicTags) {
         val resolver = context.contentResolver
-        return try {
-            val tempFile = createTempFileFor(scanPath, context)
-            try {
-                resolver.openInputStream(uri)?.use { input ->
-                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                } ?: return Result.failure(
-                    IllegalStateException("Cannot open input stream for: $uri")
-                )
-                writeTagsToFile(tempFile, tags)
-                resolver.openOutputStream(uri, "w")?.use { output ->
-                    tempFile.inputStream().use { input -> input.copyTo(output) }
-                } ?: return Result.failure(
-                    IllegalStateException("Cannot open output stream for: $uri")
-                )
-            } finally {
-                tempFile.delete()
+        val uri = queryContentUri(resolver, file.absolutePath)
+            ?: throw IllegalStateException("Cannot find media store entry for: ${file.absolutePath}")
+
+        val tempFile = File.createTempFile("hmp_tag_edit_", ".tmp", context.cacheDir)
+        try {
+            file.copyTo(tempFile, overwrite = true)
+            writeTagsToFile(tempFile, tags)
+
+            resolver.openOutputStream(uri, "w")?.use { out ->
+                tempFile.inputStream().use { it.copyTo(out) }
+            } ?: throw IllegalStateException("Cannot open output stream for: $uri")
+
+            val values = ContentValues().apply {
+                tags.title?.takeIf { it.isNotBlank() }?.let { put(MediaStore.Audio.Media.TITLE, it) }
+                tags.artist?.takeIf { it.isNotBlank() }?.let { put(MediaStore.Audio.Media.ARTIST, it) }
+                tags.album?.takeIf { it.isNotBlank() }?.let { put(MediaStore.Audio.Media.ALBUM, it) }
+                tags.year?.takeIf { it.isNotBlank() }?.let {
+                    put(MediaStore.Audio.Media.YEAR, it.toIntOrNull() ?: 0)
+                }
+                tags.genre?.takeIf { it.isNotBlank() }?.let { put(MediaStore.Audio.Media.GENRE, it) }
+                tags.track?.takeIf { it.isNotBlank() }?.let {
+                    put(MediaStore.Audio.Media.TRACK, it.toIntOrNull() ?: 0)
+                }
             }
-            scanPath?.let { path ->
-                MediaScannerConnection.scanFile(context, arrayOf(path), null, null)
+            if (values.size() > 0) {
+                resolver.update(uri, values, null, null)
             }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } finally {
+            tempFile.delete()
         }
     }
 
-    /**
-     * jaudiotagger 按文件扩展名识别音频格式，临时文件必须保留原扩展名。
-     */
-    private fun createTempFileFor(originalPath: String?, context: Context): File {
-        val extension = originalPath
-            ?.substringAfterLast('.', missingDelimiterValue = "")
-            ?.takeIf { it.isNotBlank() && it.length <= 8 }
-            ?: "bin"
-        return File.createTempFile("hmp_tag_edit_", ".$extension", context.cacheDir)
+    private fun queryContentUri(resolver: ContentResolver, path: String): Uri? {
+        val projection = arrayOf(MediaStore.Audio.Media._ID)
+        val selection = "${MediaStore.Audio.Media.DATA} = ?"
+        resolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            arrayOf(path),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
+                return ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+            }
+        }
+        return null
     }
 
     private fun writeTagsToFile(file: File, tags: EditableMusicTags) {

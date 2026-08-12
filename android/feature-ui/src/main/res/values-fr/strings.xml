@@ -464,6 +464,9 @@
     <string name="choose_cover">Choisir une couverture</string>
     <string name="remove_cover">Retirer la couverture</string>
     <string name="no_changes">Aucune modification à enregistrer</string>
+    <string name="storage_permission_title">Accès au stockage requis</string>
+    <string name="storage_permission_message">La modification des balises musicales nécessite de modifier les fichiers musicaux. Accordez « Accès à tous les fichiers » dans les réglages.</string>
+    <string name="go_to_settings">Aller aux réglages</string>
     <string name="song_added">Ajouté</string>
     <string name="explore">EXPLORER</string>
     <string name="switched_to">Basculé vers : %1$s</string>
