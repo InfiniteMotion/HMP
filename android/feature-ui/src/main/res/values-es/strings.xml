@@ -464,6 +464,9 @@
     <string name="choose_cover">Seleccionar carátula</string>
     <string name="remove_cover">Quitar carátula</string>
     <string name="no_changes">Sin cambios para guardar</string>
+    <string name="storage_permission_title">Se requiere acceso al almacenamiento</string>
+    <string name="storage_permission_message">Editar etiquetas de música requiere modificar archivos de música. Concede "Acceso a todos los archivos" en Ajustes.</string>
+    <string name="go_to_settings">Ir a Ajustes</string>
     <string name="song_added">Añadido</string>
     <string name="explore">EXPLORAR</string>
     <string name="switched_to">Cambiado a: %1$s</string>

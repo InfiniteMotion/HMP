@@ -464,6 +464,9 @@
     <string name="choose_cover">Cover auswählen</string>
     <string name="remove_cover">Cover entfernen</string>
     <string name="no_changes">Keine Änderungen zu speichern</string>
+    <string name="storage_permission_title">Speicherzugriff erforderlich</string>
+    <string name="storage_permission_message">Zum Bearbeiten von Musik-Tags müssen Musikdateien geändert werden. Bitte gewähren Sie in den Einstellungen "Zugriff auf alle Dateien".</string>
+    <string name="go_to_settings">Zu den Einstellungen</string>
     <string name="song_added">Hinzugefügt</string>
     <string name="explore">ENTDECKEN</string>
     <string name="switched_to">Gewechselt zu: %1$s</string>

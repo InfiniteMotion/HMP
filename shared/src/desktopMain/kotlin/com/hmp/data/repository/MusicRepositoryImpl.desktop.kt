@@ -412,30 +412,6 @@ class MusicRepositoryImpl(
             }
         }
 
-    override suspend fun refreshMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> =
-        withContext(Dispatchers.Default) {
-            try {
-                val music = musicDao.getMusicById(musicId).firstOrNull()
-                    ?: return@withContext Result.failure(
-                        IllegalArgumentException("Music not found: $musicId")
-                    )
-                val newTitle = tags.title?.takeIf { it.isNotBlank() } ?: music.title
-                val newArtist = tags.artist?.takeIf { it.isNotBlank() } ?: music.artist
-                val newAlbum = tags.album?.takeIf { it.isNotBlank() } ?: music.album
-                musicDao.updateMusicTags(musicId, newTitle, newArtist, newAlbum)
-                tags.lyrics?.takeIf { it.isNotBlank() }?.let { newLyrics ->
-                    val existing = musicExtraDao.getExtraFieldsById(musicId)
-                    musicExtraDao.insert(
-                        (existing ?: MusicExtra(id = musicId, isGetExtraInfo = false))
-                            .copy(lyrics = newLyrics)
-                    )
-                }
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
     override suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int): List<MusicInfo> {
         val baseLabels = getMusicLabels(musicId)
         if (baseLabels.isEmpty()) return emptyList()
