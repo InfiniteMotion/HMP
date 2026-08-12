@@ -42,6 +42,10 @@ class LyricsSettingsViewModel(
     val lyricsAlignment: StateFlow<LyricsAlignment> = lyricsSettingsUseCase.alignment
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsAlignment.CENTER)
 
+    // 逐字（卡拉 OK）显示开关
+    val lyricsKaraokeEnabled: StateFlow<Boolean> = lyricsSettingsUseCase.karaokeEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun saveLyricsOriginalTextSize(size: Int) {
         viewModelScope.launch { lyricsSettingsUseCase.saveOriginalTextSize(size) }
     }
@@ -66,6 +70,10 @@ class LyricsSettingsViewModel(
         viewModelScope.launch { lyricsSettingsUseCase.saveAlignment(alignment) }
     }
 
+    fun saveLyricsKaraokeEnabled(enabled: Boolean) {
+        viewModelScope.launch { lyricsSettingsUseCase.saveKaraokeEnabled(enabled) }
+    }
+
     fun getLyricsConfig(): LyricsConfig {
         return LyricsConfig(
             originalTextSize = lyricsOriginalTextSize.value,
@@ -73,7 +81,8 @@ class LyricsSettingsViewModel(
             currentTimeTextSize = lyricsCurrentTimeTextSize.value,
             lineSpacing = lyricsLineSpacing.value,
             displayMode = lyricsDisplayMode.value,
-            alignment = lyricsAlignment.value
+            alignment = lyricsAlignment.value,
+            karaokeEnabled = lyricsKaraokeEnabled.value
         )
     }
 

@@ -15,6 +15,9 @@ data class LyricsConfig(
     // 间距配置
     val lineSpacing: Int = 6,
 
+    // 逐字（卡拉 OK）显示开关
+    val karaokeEnabled: Boolean = true,
+
     // 显示模式配置
     val displayMode: DisplayMode = DisplayMode.DUAL,
 

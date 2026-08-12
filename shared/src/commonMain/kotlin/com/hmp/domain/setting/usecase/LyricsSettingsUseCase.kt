@@ -100,6 +100,8 @@ class LyricsSettingsUseCase(
     @Deprecated("Use getComponentConfig(LyricsComponent.PLAYER) instead")
     val alignment: Flow<LyricsAlignment> = settingsRepository.lyricsAlignment
 
+    val karaokeEnabled: Flow<Boolean> = settingsRepository.lyricsKaraokeEnabled
+
     @Deprecated("Use saveComponentConfig() instead")
     suspend fun saveOriginalTextSize(size: Int) { settingsRepository.saveLyricsOriginalTextSize(size) }
 
@@ -118,6 +120,12 @@ class LyricsSettingsUseCase(
     @Deprecated("Use saveComponentConfig() instead")
     suspend fun saveAlignment(alignment: LyricsAlignment) { settingsRepository.saveLyricsAlignment(alignment) }
 
+    suspend fun saveKaraokeEnabled(enabled: Boolean) {
+        settingsRepository.saveLyricsKaraokeEnabled(enabled)
+    }
+
+    suspend fun getKaraokeEnabled(): Boolean = settingsRepository.getLyricsKaraokeEnabled()
+
     @Deprecated("Use resolveConfig(LyricsComponent.PLAYER) instead")
     suspend fun getLyricsConfig(): LyricsConfig {
         return LyricsConfig(
@@ -126,7 +134,8 @@ class LyricsSettingsUseCase(
             currentTimeTextSize = settingsRepository.getLyricsCurrentTimeTextSize(),
             lineSpacing = settingsRepository.getLyricsLineSpacing(),
             displayMode = settingsRepository.getLyricsDisplayMode(),
-            alignment = settingsRepository.getLyricsAlignment()
+            alignment = settingsRepository.getLyricsAlignment(),
+            karaokeEnabled = settingsRepository.getLyricsKaraokeEnabled()
         )
     }
 
@@ -138,6 +147,7 @@ class LyricsSettingsUseCase(
         saveLineSpacing(config.lineSpacing)
         saveDisplayMode(config.displayMode)
         saveAlignment(config.alignment)
+        saveKaraokeEnabled(config.karaokeEnabled)
     }
 
     @Deprecated("Use resetComponentToDefault() instead")

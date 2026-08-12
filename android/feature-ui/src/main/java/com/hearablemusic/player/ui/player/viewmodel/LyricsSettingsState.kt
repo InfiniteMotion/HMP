@@ -10,6 +10,7 @@ data class LyricsSettingsState(
     val lyricsTranslatedTextSize: Int = 14,
     val lyricsCurrentTimeTextSize: Int = 16,
     val lyricsLineSpacing: Int = 6,
+    val lyricsKaraokeEnabled: Boolean = true,
     val lyricsDisplayMode: DisplayMode = DisplayMode.DUAL,
     val lyricsAlignment: LyricsAlignment = LyricsAlignment.CENTER
 )

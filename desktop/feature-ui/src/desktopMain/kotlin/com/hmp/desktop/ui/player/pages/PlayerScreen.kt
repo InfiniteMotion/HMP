@@ -81,6 +81,8 @@ fun PlayerScreen(
     val lyricsLineSpacing by settingsViewModel.lyricsLineSpacing.collectAsState()
     val lyricsDisplayMode by settingsViewModel.lyricsDisplayMode.collectAsState()
     val lyricsAlignment by settingsViewModel.lyricsAlignment.collectAsState()
+    val lyricsKaraokeEnabled by settingsViewModel.lyricsKaraokeEnabled.collectAsState()
+    val paletteColors by themeViewModel.paletteColors.collectAsState()
 
     val playerUiState = PlayerUiState(
         musicInfo = musicInfo,
@@ -103,7 +105,8 @@ fun PlayerScreen(
         lyricsCurrentTimeTextSize = lyricsCurrentTimeTextSize,
         lyricsLineSpacing = lyricsLineSpacing,
         lyricsDisplayMode = lyricsDisplayMode,
-        lyricsAlignment = lyricsAlignment
+        lyricsAlignment = lyricsAlignment,
+        lyricsKaraokeEnabled = lyricsKaraokeEnabled
     )
 
     val playerCallbacks = object : PlayerCallbacks {
@@ -163,6 +166,7 @@ fun PlayerScreen(
         PlayContent(
             playerUiState = playerUiState,
             lyricsSettingsState = lyricsSettingsState,
+            paletteColors = paletteColors,
             callbacks = playerCallbacks,
             hazeState = hazeState
         )
