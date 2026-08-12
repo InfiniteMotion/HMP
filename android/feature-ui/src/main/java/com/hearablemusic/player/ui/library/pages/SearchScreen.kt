@@ -94,7 +94,6 @@ fun SearchScreen(
         addToPlaylist = playlistQueueViewModel::addToPlaylist,
         onShowMusicDetailDialog = { musicInfo ->
             val menuConfig = DialogViewModel.MusicDetailMenuConfig(
-                showAddToPlaylist = true,
                 showAddToSpecificPlaylist = true,
                 showShare = true,
                 showViewDetail = true,

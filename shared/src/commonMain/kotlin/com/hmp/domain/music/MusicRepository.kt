@@ -43,6 +43,9 @@ interface MusicRepository {
     suspend fun getMusicIdListByType(label: LabelName): List<Long>
     suspend fun getMusicLabels(musicId: Long): List<MusicLabel>
 
+    /** 编辑单曲标签（ID3 元数据），写入文件成功后同步更新本地曲库记录。 */
+    suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit>
+
     // 相似度推荐 (Similarity)
     suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int = 10): List<MusicInfo>
 

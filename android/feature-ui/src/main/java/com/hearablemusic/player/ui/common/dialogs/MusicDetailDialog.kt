@@ -42,6 +42,7 @@ import com.hearablemusic.player.ui.common.util.ProvideHazeRenderSettings
 import com.hearablemusic.player.ui.common.navigation.Routes
 import com.hearablemusic.player.ui.common.util.hazeStyleForIntensity
 import com.hearablemusic.player.ui.common.util.hazeTintAlpha
+import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hearablemusic.player.ui.common.navigation.RouteNavigator
 import dev.chrisbanes.haze.HazeState
@@ -59,6 +60,7 @@ fun MusicDetailDialog(
     hazeState: HazeState? = null,
     hazeRenderSettings: HazeRenderSettings? = null
 ) {
+    val haptic = rememberHapticFeedback()
     val musicDetailState by dialogViewModel.musicDetailState.collectAsState()
     val musicInfo = musicDetailState?.musicInfo
     val resolvedHazeRenderSettings = hazeRenderSettings ?: LocalHazeRenderSettings.current
@@ -110,7 +112,10 @@ fun MusicDetailDialog(
                         )
                         // 收藏状态图标
                         IconButton(
-                            onClick = { dialogViewModel.toggleFavorite() },
+                            onClick = {
+                                haptic.performClick()
+                                dialogViewModel.toggleFavorite()
+                            },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(

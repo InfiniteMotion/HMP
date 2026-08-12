@@ -155,7 +155,7 @@
     <string name="add_to_playlist">Добавить в плейлист</string>
     <string name="add_to_playlist_desc">Добавить в плейлист</string>
     <string name="add_to_favorites">Добавить в избранное</string>
-    <string name="add_to_specific_playlist">Добавить в %1$s</string>
+    <string name="add_to_specific_playlist">Добавить в конкретный плейлист</string>
     <string name="select_playlist">Выбрать плейлист</string>
     <string name="added_to_playlist">Добавлено в плейлист</string>
     <string name="added_to_next_play">Добавлено для воспроизведения следующей</string>
@@ -257,7 +257,7 @@
     <string name="increase">Увеличить</string>
     <string name="decrease">Уменьшить</string>
     <string name="highlight_line">Подсветка строки</string>
-    <string name="more_settings">Дополнительные настройки\n→</string>
+    <string name="more_settings">Дополнительные настройки\n→</string>
     <string name="reset_all">Сбросить всё</string>
     <string name="reset_component_to_default">Сбросить %1$s по умолчанию</string>
     <string name="audio_effects">Звуковые эффекты</string>
@@ -449,4 +449,29 @@
     <string name="failed_to_load_artist_music">Не удалось загрузить музыку исполнителя</string>
     <string name="failed_to_load_playlist">Не удалось загрузить плейлист</string>
     <string name="failed_to_load_playlists">Не удалось загрузить плейлисты</string>
+    <string name="edit_music_tags">Изменить теги</string>
+    <string name="tag_title">Название</string>
+    <string name="tag_artist">Исполнитель</string>
+    <string name="tag_album">Альбом</string>
+    <string name="tags_saved">Теги обновлены</string>
+    <string name="tags_save_failed">Не удалось обновить теги: %1$s</string>
+    <string name="edit_tags_hint">Оставьте поле пустым, чтобы не изменять его</string>
+    <string name="tag_year">Год</string>
+    <string name="tag_genre">Жанр</string>
+    <string name="tag_track">Трек</string>
+    <string name="tag_lyrics">Текст</string>
+    <string name="tag_cover">Обложка</string>
+    <string name="choose_cover">Выбрать обложку</string>
+    <string name="remove_cover">Удалить обложку</string>
+    <string name="no_changes">Нет изменений для сохранения</string>
+    <string name="storage_permission_title">Требуется доступ к хранилищу</string>
+    <string name="storage_permission_message">Для редактирования тегов музыки необходимо изменять музыкальные файлы. Разрешите «Доступ ко всем файлам» в настройках.</string>
+    <string name="go_to_settings">Перейти в настройки</string>
+    <string name="song_added">Добавлено</string>
+    <string name="explore">ИССЛЕДОВАТЬ</string>
+    <string name="switched_to">Переключено на: %1$s</string>
+
+    <string name="section_basic_info">Основная информация</string>
+    <string name="section_detail_info">Детали</string>
+    <string name="unsaved_changes">Несохраненные изменения</string>
 </resources>

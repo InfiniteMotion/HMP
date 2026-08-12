@@ -7,6 +7,7 @@ import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewMod
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
+import com.hearablemusic.player.ui.library.viewmodel.EditMusicTagsViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SearchViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SongDetailViewModel
 import com.hearablemusic.player.ui.player.viewmodel.PlaybackViewModel
@@ -32,6 +33,7 @@ val uiModule = module {
     viewModel { LibraryViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SearchViewModel(androidApplication(), get()) }
     viewModel { SongDetailViewModel(androidApplication(), get(), get()) }
+    viewModel { EditMusicTagsViewModel(androidApplication(), get(), get()) }
     viewModel { PlaybackViewModel(get()) }
     viewModel { PlaylistQueueViewModel(androidApplication(), get(), get(), get(), get()) }
     viewModel { PlaylistViewModel(androidApplication(), get(), get(), get(), get()) }

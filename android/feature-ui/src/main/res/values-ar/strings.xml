@@ -155,7 +155,7 @@
     <string name="add_to_playlist">إضافة إلى قائمة التشغيل</string>
     <string name="add_to_playlist_desc">إضافة إلى قائمة التشغيل</string>
     <string name="add_to_favorites">إضافة إلى المفضلة</string>
-    <string name="add_to_specific_playlist">إضافة إلى %1$s</string>
+    <string name="add_to_specific_playlist">إضافة إلى قائمة تشغيل محددة</string>
     <string name="select_playlist">اختيار قائمة التشغيل</string>
     <string name="added_to_playlist">تمت الإضافة إلى قائمة التشغيل</string>
     <string name="added_to_next_play">تمت الإضافة للتشغيل التالي</string>
@@ -449,4 +449,29 @@
     <string name="failed_to_load_artist_music">فشل تحميل موسيقى الفنان</string>
     <string name="failed_to_load_playlist">فشل تحميل قائمة التشغيل</string>
     <string name="failed_to_load_playlists">فشل تحميل قوائم التشغيل</string>
+    <string name="edit_music_tags">تحرير العلامات</string>
+    <string name="tag_title">العنوان</string>
+    <string name="tag_artist">الفنان</string>
+    <string name="tag_album">الألبوم</string>
+    <string name="tags_saved">تم تحديث العلامات</string>
+    <string name="tags_save_failed">فشل تحديث العلامات: %1$s</string>
+    <string name="edit_tags_hint">اترك الحقل فارغًا لإبقائه دون تغيير</string>
+    <string name="tag_year">سنة</string>
+    <string name="tag_genre">النوع</string>
+    <string name="tag_track">المسار</string>
+    <string name="tag_lyrics">كلمات الأغنية</string>
+    <string name="tag_cover">الغلاف</string>
+    <string name="choose_cover">اختيار الغلاف</string>
+    <string name="remove_cover">إزالة الغلاف</string>
+    <string name="no_changes">لا توجد تغييرات للحفظ</string>
+    <string name="storage_permission_title">مطلوب الوصول إلى التخزين</string>
+    <string name="storage_permission_message">يتطلب تحرير علامات الموسيقى تعديل ملفات الموسيقى. يرجى منح "الوصول إلى جميع الملفات" في الإعدادات.</string>
+    <string name="go_to_settings">الانتقال إلى الإعدادات</string>
+    <string name="song_added">تمت الإضافة</string>
+    <string name="explore">استكشف</string>
+    <string name="switched_to">تم التبديل إلى: %1$s</string>
+
+    <string name="section_basic_info">المعلومات الأساسية</string>
+    <string name="section_detail_info">التفاصيل</string>
+    <string name="unsaved_changes">تغييرات غير محفوظة</string>
 </resources>

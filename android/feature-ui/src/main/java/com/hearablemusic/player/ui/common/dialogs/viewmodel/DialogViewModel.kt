@@ -211,6 +211,16 @@ class DialogViewModel(
         dismissMusicDetailDialog()
     }
 
+    // 编辑标签
+    fun editTags() {
+        val currentState = (_activeDialog.value as? DialogUiState.MusicDetail)?.state ?: return
+        val musicInfo = currentState.musicInfo
+        val navigator = router ?: return
+
+        navigator.navigateTo(Routes.Library.EditMusicTags(musicInfo.music.id))
+        dismissMusicDetailDialog()
+    }
+
     // 移除音乐
     fun removeMusic() {
         // 这里可以添加移除逻辑
@@ -234,19 +244,17 @@ class DialogViewModel(
             menuOptions.add(Triple(R.drawable.share, R.string.share) { shareMusic() })
         }
 
+        // 编辑标签
+        if (menuConfig.showEditTags) {
+            menuOptions.add(Triple(R.drawable.rename, R.string.edit_music_tags) {
+                editTags()
+            })
+        }
+
         // 添加到指定音乐列表
         if (menuConfig.showAddToSpecificPlaylist) {
             menuOptions.add(Triple(R.drawable.plus_square, R.string.add_to_specific_playlist) {
                 addToSpecificPlaylist(
-                    onComplete
-                )
-            })
-        }
-
-        // 添加到默认播放列表
-        if (menuConfig.showAddToPlaylist) {
-            menuOptions.add(Triple(R.drawable.plus_square, R.string.add_to_playlist) {
-                addToPlaylist(
                     onComplete
                 )
             })
@@ -646,10 +654,10 @@ class DialogViewModel(
 
     // 音乐详情弹窗菜单配置
     data class MusicDetailMenuConfig(
-        val showAddToPlaylist: Boolean = true,
         val showAddToSpecificPlaylist: Boolean = true,
         val showShare: Boolean = true,
         val showViewDetail: Boolean = true,
+        val showEditTags: Boolean = true,
         val showPlayNext: Boolean = false,
         val showRemoveFromCurrentPlaylist: Boolean = false,
         val showDelete: Boolean = false

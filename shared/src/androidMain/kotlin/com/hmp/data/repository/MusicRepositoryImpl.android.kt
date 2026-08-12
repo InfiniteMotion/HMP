@@ -25,10 +25,12 @@ import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
 import com.hmp.data.mapper.toDomain
 import com.hmp.data.mapper.toEntity
+import com.hmp.data.util.MusicTagEditor
 import com.hmp.data.util.stringToPinyinSortKey
 import com.hmp.data.network.AiApiResult
 import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.dto.MusicInfoResponse
+import com.hmp.domain.music.EditableMusicTags
 import com.hmp.domain.setting.model.ArtistCountEntry
 import com.hmp.domain.setting.model.LabelCountEntry
 import com.hmp.domain.setting.model.RecentPlaybackEntry
@@ -49,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.jaudiotagger.audio.AudioFileIO
@@ -226,6 +229,35 @@ class MusicRepositoryImpl(
     override suspend fun getMusicLabels(musicId: Long): List<MusicLabelDomain> {
         return musicLabelDao.getLabelsById(musicId).map { it.toDomain() }
     }
+
+    override suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> =
+        withContext(Dispatchers.Default) {
+            try {
+                val music = musicDao.getMusicById(musicId).firstOrNull()
+                    ?: return@withContext Result.failure(
+                        IllegalArgumentException("Music not found: $musicId")
+                    )
+                MusicTagEditor.writeTags(music.path, tags).fold(
+                    onSuccess = {
+                        val newTitle = tags.title?.takeIf { it.isNotBlank() } ?: music.title
+                        val newArtist = tags.artist?.takeIf { it.isNotBlank() } ?: music.artist
+                        val newAlbum = tags.album?.takeIf { it.isNotBlank() } ?: music.album
+                        musicDao.updateMusicTags(musicId, newTitle, newArtist, newAlbum)
+                        tags.lyrics?.takeIf { it.isNotBlank() }?.let { newLyrics ->
+                            val existing = musicExtraDao.getExtraFieldsById(musicId)
+                            musicExtraDao.insert(
+                                (existing ?: MusicExtra(id = musicId, isGetExtraInfo = false))
+                                    .copy(lyrics = newLyrics)
+                            )
+                        }
+                        Result.success(Unit)
+                    },
+                    onFailure = { Result.failure(it) }
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getMusicLyrics(musicId: Long): String? {
         return musicExtraDao.getLyricsById(musicId)

@@ -13,6 +13,7 @@ import com.hearablemusic.player.ui.library.pages.AlbumScreen
 import com.hearablemusic.player.ui.library.pages.ArtistScreen
 import com.hearablemusic.player.ui.settings.pages.AudioEffectsScreen
 import com.hearablemusic.player.ui.library.pages.CustomScreen
+import com.hearablemusic.player.ui.library.pages.EditMusicTagsScreen
 import com.hearablemusic.player.ui.library.pages.SearchScreen
 import com.hearablemusic.player.ui.library.pages.SongDetailScreen
 import com.hearablemusic.player.ui.settings.pages.UserUsageDataScreen
@@ -63,6 +64,13 @@ fun navigationGraph(
 
     entry<Routes.Library.SongDetail> { route ->
         SongDetailScreen(
+            navController = navController,
+            musicId = route.musicId,
+        )
+    }
+
+    entry<Routes.Library.EditMusicTags> { route ->
+        EditMusicTagsScreen(
             navController = navController,
             musicId = route.musicId,
         )

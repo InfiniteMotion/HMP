@@ -4,6 +4,7 @@ import com.hmp.domain.backup.ListeningStatsSnapshot
 import com.hmp.domain.backup.MusicUserStateSnapshot
 import com.hmp.domain.enum.LabelCategory
 import com.hmp.domain.enum.LabelName
+import com.hmp.domain.music.EditableMusicTags
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.music.MusicLabel
 import com.hmp.domain.music.MusicRepository
@@ -124,6 +125,22 @@ class FakeMusicRepository : MusicRepository {
 
     override suspend fun getMusicLabels(musicId: Long): List<MusicLabel> =
         labels[musicId] ?: emptyList()
+
+    override suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> {
+        val index = musicList.indexOfFirst { it.music.id == musicId }
+        if (index == -1) {
+            return Result.failure(IllegalArgumentException("Music not found: $musicId"))
+        }
+        val info = musicList[index]
+        val updatedMusic = info.music.copy(
+            title = tags.title?.takeIf { it.isNotBlank() } ?: info.music.title,
+            artist = tags.artist?.takeIf { it.isNotBlank() } ?: info.music.artist,
+            album = tags.album?.takeIf { it.isNotBlank() } ?: info.music.album
+        )
+        musicList[index] = info.copy(music = updatedMusic)
+        tags.lyrics?.takeIf { it.isNotBlank() }?.let { lyrics[musicId] = it }
+        return Result.success(Unit)
+    }
 
     override suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int): List<MusicInfo> =
         musicList.filter { it.music.id != musicId }.take(limit)

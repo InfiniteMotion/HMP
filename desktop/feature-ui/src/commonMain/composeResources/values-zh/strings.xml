@@ -2,7 +2,7 @@
     <string name="app_name">Hearable Music Player</string>
     <!-- Tab labels -->
     <string name="tab_home">首页</string>
-    <string name="tab_gallery">图库</string>
+    <string name="tab_gallery">音乐库</string>
     <string name="tab_player">播放器</string>
     <string name="tab_list">列表</string>
     <string name="tab_user">用户</string>
@@ -347,4 +347,27 @@
     <string name="taste_card">风格偏好</string>
     <string name="ranking_and_history">排行</string>
     <string name="tab_playlists">歌单</string>
+    <string name="edit_music_tags">编辑标签</string>
+    <string name="tag_title">标题</string>
+    <string name="tag_artist">艺术家</string>
+    <string name="tag_album">专辑</string>
+    <string name="tags_saved">标签已更新</string>
+    <string name="tags_save_failed">标签更新失败：%1$s</string>
+    <string name="edit_tags_hint">留空表示不修改该项</string>
+    <string name="tag_year">年份</string>
+    <string name="tag_genre">流派</string>
+    <string name="tag_track">曲目号</string>
+    <string name="tag_lyrics">歌词</string>
+    <string name="tag_cover">封面</string>
+    <string name="choose_cover">选择封面</string>
+    <string name="remove_cover">移除封面</string>
+    <string name="no_changes">没有需要保存的更改</string>
+    <string name="storage_permission_title">需要存储访问权限</string>
+    <string name="storage_permission_message">编辑音乐标签需要修改音乐文件。请在系统设置中允许“所有文件访问”权限。</string>
+    <string name="go_to_settings">前往设置</string>
+
+    <string name="section_basic_info">基本信息</string>
+    <string name="section_detail_info">详细信息</string>
+    <string name="unsaved_changes">有未保存的更改</string>
+    <string name="no_lyrics">暂无歌词</string>
 </resources>

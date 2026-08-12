@@ -155,7 +155,7 @@
     <string name="add_to_playlist">Thêm vào danh sách phát</string>
     <string name="add_to_playlist_desc">Thêm vào danh sách phát</string>
     <string name="add_to_favorites">Thêm vào yêu thích</string>
-    <string name="add_to_specific_playlist">Thêm vào %1$s</string>
+    <string name="add_to_specific_playlist">Thêm vào danh sách phát cụ thể</string>
     <string name="select_playlist">Chọn danh sách phát</string>
     <string name="added_to_playlist">Đã thêm vào danh sách phát</string>
     <string name="added_to_next_play">Đã thêm vào phát tiếp theo</string>
@@ -449,4 +449,29 @@
     <string name="failed_to_load_artist_music">Tải nhạc nghệ sĩ thất bại</string>
     <string name="failed_to_load_playlist">Tải danh sách phát thất bại</string>
     <string name="failed_to_load_playlists">Tải danh sách phát thất bại</string>
+    <string name="edit_music_tags">Chỉnh sửa thẻ</string>
+    <string name="tag_title">Tiêu đề</string>
+    <string name="tag_artist">Nghệ sĩ</string>
+    <string name="tag_album">Album</string>
+    <string name="tags_saved">Đã cập nhật thẻ</string>
+    <string name="tags_save_failed">Không thể cập nhật thẻ: %1$s</string>
+    <string name="edit_tags_hint">Để trống để giữ nguyên</string>
+    <string name="tag_year">Năm</string>
+    <string name="tag_genre">Thể loại</string>
+    <string name="tag_track">Bài hát</string>
+    <string name="tag_lyrics">Lời bài hát</string>
+    <string name="tag_cover">Bìa</string>
+    <string name="choose_cover">Chọn bìa</string>
+    <string name="remove_cover">Xóa bìa</string>
+    <string name="no_changes">Không có thay đổi để lưu</string>
+    <string name="storage_permission_title">Cần quyền truy cập bộ nhớ</string>
+    <string name="storage_permission_message">Chỉnh sửa thẻ nhạc cần sửa đổi tệp nhạc. Vui lòng cấp "Truy cập tất cả tệp" trong Cài đặt.</string>
+    <string name="go_to_settings">Đi tới Cài đặt</string>
+    <string name="song_added">Đã thêm</string>
+    <string name="explore">KHÁM PHÁ</string>
+    <string name="switched_to">Đã chuyển sang: %1$s</string>
+
+    <string name="section_basic_info">Thông tin cơ bản</string>
+    <string name="section_detail_info">Chi tiết</string>
+    <string name="unsaved_changes">Thay đổi chưa lưu</string>
 </resources>

@@ -154,7 +154,6 @@ fun GalleryScreenContent(
         }
         override fun onMenuClick(musicInfo: MusicInfo) {
             val menuConfig = DialogViewModel.MusicDetailMenuConfig(
-                showAddToPlaylist = true,
                 showAddToSpecificPlaylist = true,
                 showShare = true,
                 showViewDetail = true,
