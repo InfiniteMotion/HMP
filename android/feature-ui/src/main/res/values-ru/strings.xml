@@ -464,9 +464,6 @@
     <string name="choose_cover">Выбрать обложку</string>
     <string name="remove_cover">Удалить обложку</string>
     <string name="no_changes">Нет изменений для сохранения</string>
-    <string name="storage_permission_title">Требуется доступ к хранилищу</string>
-    <string name="storage_permission_message">Для редактирования тегов музыки необходимо изменять музыкальные файлы. Разрешите «Доступ ко всем файлам» в настройках.</string>
-    <string name="go_to_settings">Перейти в настройки</string>
     <string name="song_added">Добавлено</string>
     <string name="explore">ИССЛЕДОВАТЬ</string>
     <string name="switched_to">Переключено на: %1$s</string>
