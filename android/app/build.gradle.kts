@@ -91,17 +91,16 @@ android {
 dependencies {
 
     implementation(project(":shared"))
-    implementation(project(":android:feature-ui"))
+    implementation(project(":shared-ui"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    // 依赖替换（方案 §2.2）：app 壳同步对齐 CMP 1.8.2，避免 BOM 拉高 compose 版本与共享层冲突
+    implementation(libs.jetbrains.compose.runtime)
+    implementation(libs.jetbrains.compose.ui)
+    implementation(libs.jetbrains.compose.ui.tooling.preview)
+    implementation(libs.jetbrains.compose.material3)
 
     implementation(libs.androidx.media3.common)
 
@@ -113,6 +112,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.jetbrains.compose.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

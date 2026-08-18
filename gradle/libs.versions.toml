@@ -12,7 +12,7 @@ runtimeLivedata = "1.9.4"
 datastorePreferences = "1.1.7"
 
 foundation = "1.9.4"
-activityCompose = "1.12.0"
+activityCompose = "1.8.2"
 composeBom = "2025.11.00"
 navigation = "2.9.6"
 nav3Version = "1.1.0"
@@ -50,6 +50,13 @@ koin = "4.0.4"
 ktor = "3.1.1"
 sqlite = "2.6.1"
 composeMultiplatform = "1.8.2"
+
+# JetBrains 分发的 KMP 版（依赖替换用，见 docs/shared-ui-extract/方案.md §2.2）
+# navigation3：JetBrains 只分发 UI（runtime 用 google 坐标 androidx.navigation3，其本身即 KMP）
+# lifecycle：viewmodel-navigation3 最低 2.10.0（JetBrains 官方 CMP 文档推荐组合）
+jetbrainsNavigation3 = "1.1.1"
+jetbrainsLifecycle = "2.10.0"
+jetbrainsMaterial3Adaptive = "1.2.0-alpha03"
 
 [libraries]
 androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
@@ -153,6 +160,24 @@ androidx-room-sqlite-wrapper = { module = "androidx.room:room-sqlite-wrapper", v
 
 # DataStore KMP
 androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastorePreferences" }
+
+# ── Compose Multiplatform（JetBrains 分发版，Android 上与 androidx.compose 同包名）──
+jetbrains-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+jetbrains-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+jetbrains-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatform" }
+jetbrains-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+jetbrains-compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
+jetbrains-compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+jetbrains-compose-animation = { module = "org.jetbrains.compose.animation:animation", version.ref = "composeMultiplatform" }
+
+# navigation3 / lifecycle / material3-adaptive 的 JetBrains KMP 分发版（包名保持 androidx.*）
+# 注：navigation3-runtime 无 JetBrains 分发（JetBrains 只分发 UI），用 google 坐标 androidx-navigation3-runtime（本身即 KMP）
+jetbrains-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "jetbrainsNavigation3" }
+jetbrains-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jetbrainsLifecycle" }
+jetbrains-lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "jetbrainsLifecycle" }
+jetbrains-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "jetbrainsMaterial3Adaptive" }
+jetbrains-material3-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "jetbrainsMaterial3Adaptive" }
+jetbrains-material3-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "jetbrainsMaterial3Adaptive" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

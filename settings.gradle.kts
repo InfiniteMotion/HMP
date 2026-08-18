@@ -44,12 +44,12 @@ when (buildTarget) {
     "android" -> {
         include(":android:app")
         include(":android:core-player")
-        include(":android:feature-ui")
+        include(":shared-ui")
     }
     else -> {
         include(":android:app")
         include(":android:core-player")
-        include(":android:feature-ui")
+        include(":shared-ui")
         include(":desktop:app")
         include(":desktop:core-player")
         include(":desktop:feature-ui")

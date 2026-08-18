@@ -78,7 +78,7 @@ Hearable Music Player是我个人开发的一款专注于本地音乐播放的�
 - **shared**：跨平台共享模块，包含业务逻辑和数据模型
 - **android/app**：Android应用入口模块，包含MainActivity和Application类
 - **android/core-player**：Android播放核心模块，包含Media3服务和播放控制逻辑
-- **android/feature-ui**：Android UI功能模块，包含Compose页面和组件
+- **shared-ui**：共享UI模块（KMP化中），包含Compose页面和组件
 - **desktop/app**：Desktop应用入口模块，包含窗口管理和应用生命周期
 - **desktop/core-player**：Desktop播放核心模块，包含FFmpeg音频引擎
 - **desktop/feature-ui**：Desktop UI功能模块，包含Compose Multiplatform页面和组件
