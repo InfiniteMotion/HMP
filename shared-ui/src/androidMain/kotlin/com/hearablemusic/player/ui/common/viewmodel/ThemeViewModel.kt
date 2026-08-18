@@ -22,13 +22,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class PaletteColors(
-    val peaks: List<Color> = emptyList(),      // 封面颜色峰，按权重降序
-    val peakWeights: List<Float> = emptyList(), // 对应峰的权重 (0-1)，可驱动光斑大小/数量
-    val primary: Color = Color(0xFF1E90FF),
-    val background: Color = Color(0xFF121212),
-    val accent: Color = Color(0xFF444444)
-)
+// PaletteColors 已迁 commonMain（同包，无需 import）
 
 @UnstableApi
 class ThemeViewModel(

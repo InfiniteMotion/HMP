@@ -20,7 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -454,7 +454,7 @@ private fun CustomConfigContent(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(type = MenuAnchorType.PrimaryEditable, enabled = true),
+                            .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true),
                         colors = TextFieldDefaults.colors(
                             focusedIndicatorColor = Transparent,
                             unfocusedIndicatorColor = Transparent,
@@ -616,7 +616,7 @@ fun DailyRefreshSettings(
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(
-                            type = MenuAnchorType.PrimaryEditable,
+                            type = ExposedDropdownMenuAnchorType.PrimaryEditable,
                             enabled = true
                         ),
                     colors = TextFieldDefaults.colors(

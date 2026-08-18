@@ -49,14 +49,16 @@ material3Adaptive = "1.2.0"
 koin = "4.0.4"
 ktor = "3.1.1"
 sqlite = "2.6.1"
-composeMultiplatform = "1.8.2"
+composeMultiplatform = "1.9.3"
+# CMP 1.9 起 Material3 版本与 CMP 解耦（decoupled versioning）：material3 独立发版，1.9.0 基于 Jetpack Material3 1.4.0
+composeMaterial3 = "1.9.0"
 
 # JetBrains 分发的 KMP 版（依赖替换用，见 docs/shared-ui-extract/方案.md §2.2）
 # navigation3：JetBrains 只分发 UI（runtime 用 google 坐标 androidx.navigation3，其本身即 KMP）
 # lifecycle：viewmodel-navigation3 最低 2.10.0（JetBrains 官方 CMP 文档推荐组合）
 jetbrainsNavigation3 = "1.1.1"
 jetbrainsLifecycle = "2.10.0"
-jetbrainsMaterial3Adaptive = "1.2.0-alpha03"
+jetbrainsMaterial3Adaptive = "1.2.0"
 
 [libraries]
 androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
@@ -164,7 +166,7 @@ androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-p
 # ── Compose Multiplatform（JetBrains 分发版，Android 上与 androidx.compose 同包名）──
 jetbrains-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 jetbrains-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
-jetbrains-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatform" }
+jetbrains-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
 jetbrains-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 jetbrains-compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 jetbrains-compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
@@ -185,6 +187,7 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 androidx-room = { id = "androidx.room", version.ref = "roomVersion" }

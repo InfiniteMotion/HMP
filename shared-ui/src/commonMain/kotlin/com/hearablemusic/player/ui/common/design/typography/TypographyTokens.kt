@@ -1,26 +1,35 @@
 package com.hearablemusic.player.ui.common.design.typography
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_black
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_bold
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_light
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_medium
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_regular
+import com.hearablemusic.player.ui.generated.resources.harmonyos_sans_thin
+import org.jetbrains.compose.resources.Font
 
 object TypographyTokens {
-    // 定义自定义字体族
-    val MyFontFamily = FontFamily(
-        Font(R.font.harmonyos_sans_black, FontWeight.Black),
-        Font(R.font.harmonyos_sans_bold, FontWeight.Bold),
-        Font(R.font.harmonyos_sans_medium, FontWeight.Medium),
-        Font(R.font.harmonyos_sans_regular, FontWeight.Normal),
-        Font(R.font.harmonyos_sans_light, FontWeight.Light),
-        Font(R.font.harmonyos_sans_thin, FontWeight.Thin)
-    )
-    
+    // CMP 资源 Font() 为 @Composable API（A2：R.font → Res.font），故以 @Composable getter 提供
+    val MyFontFamily: FontFamily
+        @Composable get() = FontFamily(
+            Font(Res.font.harmonyos_sans_black, FontWeight.Black),
+            Font(Res.font.harmonyos_sans_bold, FontWeight.Bold),
+            Font(Res.font.harmonyos_sans_medium, FontWeight.Medium),
+            Font(Res.font.harmonyos_sans_regular, FontWeight.Normal),
+            Font(Res.font.harmonyos_sans_light, FontWeight.Light),
+            Font(Res.font.harmonyos_sans_thin, FontWeight.Thin)
+        )
+
     // 定义自定义 Typography
-    val Typography = Typography(
+    val Typography: Typography
+        @Composable get() = Typography(
         displayLarge = TextStyle(
             fontFamily = MyFontFamily,
             fontWeight = FontWeight.Bold,
