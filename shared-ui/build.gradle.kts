@@ -42,6 +42,11 @@ kotlin {
 
             // nav3 NavKey @Serializable 序列化支持（AppRoot 占位路由）
             implementation(libs.kotlinx.serialization.json)
+
+            // 第 2a 步：Tab 壳组件（BottomFusionBar/TabPageIndicator/AlbumCover/HazeIntensity）迁入 commonMain
+            implementation(libs.coil.compose.kmp)        // Coil3 AsyncImage（KMP）
+            implementation(libs.haze)                    // 底部融合栏毛玻璃（CMP 兼容库）
+            implementation(libs.haze.materials)
         }
 
         androidMain.dependencies {
@@ -62,16 +67,12 @@ kotlin {
             // media3 仅剩 @UnstableApi 注解使用，待第 3 步 PlaybackController 接线时剥离（C4/C12）
             implementation(libs.androidx.media3.common)
 
-            // Coil2 → Coil3（KMP）
-            implementation(libs.coil.compose.kmp)
+            // Android 端网络图片加载注册（coil3 核心 API 已上移 commonMain）
             implementation(libs.coil.network.ktor3)
 
             implementation(libs.koin.android)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
-
-            implementation(libs.haze)
-            implementation(libs.haze.materials)
 
             // Material3 Adaptive → CMP 分发版
             implementation(libs.jetbrains.material3.adaptive)

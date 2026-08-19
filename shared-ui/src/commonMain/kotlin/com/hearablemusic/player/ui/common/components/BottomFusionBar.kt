@@ -1,6 +1,5 @@
-﻿package com.hearablemusic.player.ui.common.components
+package com.hearablemusic.player.ui.common.components
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
@@ -58,23 +57,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hearablemusic.player.ui.R
-import androidx.annotation.StringRes
-import com.hearablemusic.player.ui.common.util.HapticFeedbackHelper
 import com.hearablemusic.player.ui.common.util.hazeStyleForIntensity
 import com.hearablemusic.player.ui.common.util.hazeTintAlpha
-import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
+import com.hearablemusic.player.ui.common.util.rememberPlatformHaptics
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.house
+import com.hearablemusic.player.ui.generated.resources.house_fill
+import com.hearablemusic.player.ui.generated.resources.list_bullet
+import com.hearablemusic.player.ui.generated.resources.pause
+import com.hearablemusic.player.ui.generated.resources.pause_desc
+import com.hearablemusic.player.ui.generated.resources.person
+import com.hearablemusic.player.ui.generated.resources.person_filled_viewfinder
+import com.hearablemusic.player.ui.generated.resources.play_desc
+import com.hearablemusic.player.ui.generated.resources.play_fill
+import com.hearablemusic.player.ui.generated.resources.square_fill_grid_2x2
+import com.hearablemusic.player.ui.generated.resources.square_grid_2x2
+import com.hearablemusic.player.ui.generated.resources.tab_gallery
+import com.hearablemusic.player.ui.generated.resources.tab_home
+import com.hearablemusic.player.ui.generated.resources.tab_list
+import com.hearablemusic.player.ui.generated.resources.tab_user
 import com.hearablemusic.player.ui.library.pages.components.AlbumCover
+import com.hearablemusic.player.ui.platform.HapticEffect
+import com.hearablemusic.player.ui.platform.HapticService
 import com.hmp.domain.music.MusicInfo
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.pow
 
 /** 底部融合栏状态 */
@@ -86,16 +102,16 @@ enum class FusionBarState {
 }
 
 private data class BottomTabItem(
-    @StringRes val label: Int,
-    val selectedIconId: Int,
-    val unselectedIconId: Int
+    val label: StringResource,
+    val selectedIcon: DrawableResource,
+    val unselectedIcon: DrawableResource
 )
 
 private val bottomTabs = listOf(
-    BottomTabItem(R.string.tab_home, R.drawable.house_fill, R.drawable.house),
-    BottomTabItem(R.string.tab_gallery, R.drawable.square_fill_grid_2x2, R.drawable.square_grid_2x2),
-    BottomTabItem(R.string.tab_list, R.drawable.list_bullet, R.drawable.list_bullet),
-    BottomTabItem(R.string.tab_user, R.drawable.person_filled_viewfinder, R.drawable.person)
+    BottomTabItem(Res.string.tab_home, Res.drawable.house_fill, Res.drawable.house),
+    BottomTabItem(Res.string.tab_gallery, Res.drawable.square_fill_grid_2x2, Res.drawable.square_grid_2x2),
+    BottomTabItem(Res.string.tab_list, Res.drawable.list_bullet, Res.drawable.list_bullet),
+    BottomTabItem(Res.string.tab_user, Res.drawable.person_filled_viewfinder, Res.drawable.person)
 )
 
 @Composable
@@ -115,7 +131,7 @@ fun BottomFusionBar(
     showNavCapsule: Boolean = true,
     maxWidth: Dp? = null
 ) {
-    val haptic = rememberHapticFeedback()
+    val haptic = rememberPlatformHaptics()
     var initialFusionState = if (showNavCapsule) FusionBarState.NavigationExpanded else FusionBarState.PlaybackExpanded
     var fusionState by remember { mutableStateOf(initialFusionState) }
     var timerKey by remember { mutableIntStateOf(0) }
@@ -195,7 +211,7 @@ fun BottomFusionBar(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
-                            haptic.performLightClick()
+                            haptic.perform(HapticEffect.TICK)
                             fusionState = FusionBarState.NavigationExpanded
                             resetTimer()
                         }
@@ -255,7 +271,7 @@ fun BottomFusionBar(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                haptic.performLightClick()
+                                haptic.perform(HapticEffect.TICK)
                                 fusionState = FusionBarState.PlaybackExpanded
                                 resetTimer()
                             }
@@ -315,7 +331,7 @@ fun BottomFusionBar(
 private fun NavigationExpandedContent(
     selectedIndex: Int,
     onTabSelected: (Int) -> Unit,
-    haptic: HapticFeedbackHelper,
+    haptic: HapticService,
     showNavText: Boolean = true
 ) {
     Row(
@@ -338,14 +354,14 @@ private fun NavigationExpandedContent(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        haptic.performLightClick()
+                        haptic.perform(HapticEffect.TICK)
                         onTabSelected(index)
                     }
                     .padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(if (isSelected) tab.selectedIconId else tab.unselectedIconId),
+                    painter = painterResource(if (isSelected) tab.selectedIcon else tab.unselectedIcon),
                     contentDescription = stringResource(tab.label),
                     tint = contentColor,
                     modifier = Modifier.size(28.dp)
@@ -377,7 +393,7 @@ private fun NavigationCollapsedContent(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painter = painterResource(selectedTab.selectedIconId),
+            painter = painterResource(selectedTab.selectedIcon),
             contentDescription = stringResource(selectedTab.label),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(28.dp)
@@ -428,7 +444,6 @@ private fun PlaybackCollapsedContent(
 
 // ── 播放展开内容 ──
 
-@SuppressLint("AutoboxingStateCreation")
 @Composable
 private fun PlaybackExpandedContent(
     musicInfo: MusicInfo,
@@ -438,7 +453,7 @@ private fun PlaybackExpandedContent(
     onNext: () -> Unit,
     onOpenPlayer: () -> Unit,
     onResetTimer: () -> Unit,
-    haptic: HapticFeedbackHelper
+    haptic: HapticService
 ) {
     val coverRotation = remember { Animatable(0f) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
@@ -488,7 +503,7 @@ private fun PlaybackExpandedContent(
                         onResetTimer()
                         val pastThreshold = kotlin.math.abs(dragOffset) >= thresholdPx
                         if (pastThreshold && !wasPastThreshold) {
-                            haptic.performLightClick()
+                            haptic.perform(HapticEffect.TICK)
                         }
                         wasPastThreshold = pastThreshold
                     }
@@ -549,7 +564,7 @@ private fun PlaybackExpandedContent(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        haptic.performLightClick()
+                        haptic.perform(HapticEffect.TICK)
                         onPlayPause()
                     },
                 contentAlignment = Alignment.Center
@@ -565,9 +580,9 @@ private fun PlaybackExpandedContent(
                 )
                 Icon(
                     painter = painterResource(
-                        if (isPlaying) R.drawable.pause else R.drawable.play_fill
+                        if (isPlaying) Res.drawable.pause else Res.drawable.play_fill
                     ),
-                    contentDescription = if (isPlaying) stringResource(R.string.pause_desc) else stringResource(R.string.play_desc),
+                    contentDescription = if (isPlaying) stringResource(Res.string.pause_desc) else stringResource(Res.string.play_desc),
                     tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )
@@ -584,7 +599,7 @@ private fun PlaybackExpandedContent(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        haptic.performLightClick()
+                        haptic.perform(HapticEffect.TICK)
                         onOpenPlayer()
                     }
             ) {

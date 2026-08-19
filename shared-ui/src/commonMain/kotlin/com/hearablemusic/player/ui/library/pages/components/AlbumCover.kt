@@ -9,11 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.album_art_desc
+import com.hearablemusic.player.ui.generated.resources.none
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AlbumCover(
@@ -26,16 +28,16 @@ fun AlbumCover(
     Crossfade(targetState = uri, label = "AlbumArtCrossroad") {
         AsyncImage(
             model = it,
-            contentDescription = stringResource(R.string.album_art_desc),
+            contentDescription = stringResource(Res.string.album_art_desc),
             modifier = modifier
                 .sizeIn(maxWidth = size, maxHeight = size)
                 .aspectRatio(1f)
                 .shadow(elevation = shadow, shape = RoundedCornerShape(corner))
                 .clip(RoundedCornerShape(corner)),
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(R.drawable.none),
-            error = painterResource(R.drawable.none),
-            fallback = painterResource(R.drawable.none)
+            placeholder = painterResource(Res.drawable.none),
+            error = painterResource(Res.drawable.none),
+            fallback = painterResource(Res.drawable.none)
         )
     }
 }
