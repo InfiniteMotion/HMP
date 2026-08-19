@@ -6,6 +6,8 @@ import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
+import com.hearablemusic.player.ui.platform.MusicControllerPlaybackAdapter
+import com.hearablemusic.player.ui.platform.PlaybackController
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
 import com.hearablemusic.player.ui.library.viewmodel.LibraryListViewModel
 import com.hearablemusic.player.ui.library.viewmodel.EditMusicTagsViewModel
@@ -28,6 +30,8 @@ import org.koin.dsl.module
 
 val uiModule = module {
     single { DialogManager() }
+    // 第 3 步：播放控制平台服务（冻结接口 → Media3 MusicController 薄委托）
+    single<PlaybackController> { MusicControllerPlaybackAdapter(get()) }
     viewModel { DialogManagerViewModel(get()) }
     // 第 2b 步：新层列表主路径（commonMain 类，Android 端注册）
     viewModel { LibraryListViewModel(get()) }

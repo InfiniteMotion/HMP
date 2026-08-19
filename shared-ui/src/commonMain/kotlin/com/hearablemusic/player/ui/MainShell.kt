@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -41,18 +42,20 @@ import com.hearablemusic.player.ui.library.pages.components.musiclist.ItemVarian
 import com.hearablemusic.player.ui.library.pages.components.musiclist.MusicListCallbacksAdapter
 import com.hearablemusic.player.ui.library.pages.components.musiclist.defaultMusicListConfig
 import com.hearablemusic.player.ui.library.viewmodel.LibraryListViewModel
+import com.hearablemusic.player.ui.platform.PlaybackController
 import com.hmp.domain.music.MusicInfo
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Tab 壳 + 首页列表主路径（方案 §7 第 2a/2b 步）。
+ * Tab 壳 + 首页列表主路径 + 播放接线（方案 §7 第 2a/2b/3 步）。
  *
  * 形态：HorizontalPager 4 页 + 顶部 TabPageIndicator + 底部 BottomFusionBar。
- * 首页为真实音乐列表（LibraryListViewModel → MusicList）；列表项点击为占位空实现
- * （仅触觉反馈，播放接线留第 3 步 PlaybackController）；
- * 播放胶囊 musicInfo=null 占位，真实接线同留第 3 步。
+ * 首页为真实音乐列表（LibraryListViewModel → MusicList）；
+ * 第 3 步：经冻结接口 [PlaybackController] 接通播放——
+ * 列表点击 playWith 真播放、播放胶囊实时显示当前曲目/进度、暂停/切歌可用、当前播放行高亮。
  */
 @Composable
 fun MainShell() {
@@ -60,6 +63,11 @@ fun MainShell() {
     val pagerState = rememberPagerState { tabCount }
     val scope = rememberCoroutineScope()
     val windowSizeInfo = rememberAppWindowSizeInfo()
+    val controller: PlaybackController = koinInject()
+    val currentMusic by controller.currentPlayingMusic.collectAsState()
+    val isPlaying by controller.isPlaying.collectAsState()
+    val position by controller.currentPosition.collectAsState()
+    val totalDuration by controller.duration.collectAsState()
 
     CompositionLocalProvider(LocalWindowSizeInfo provides windowSizeInfo) {
         Box(
@@ -83,7 +91,7 @@ fun MainShell() {
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
-                        0 -> HomeTab()
+                        0 -> HomeTab(controller = controller, currentMusic = currentMusic)
                         1 -> SkeletonPlaceholder(title = stringResource(Res.string.tab_gallery))
                         2 -> SkeletonPlaceholder(title = stringResource(Res.string.tab_list))
                         3 -> SkeletonPlaceholder(title = stringResource(Res.string.tab_user))
@@ -91,19 +99,19 @@ fun MainShell() {
                 }
             }
 
-            // 底部融合栏：导航真实可用；播放区占位（musicInfo=null，回调空实现，第 3 步接 PlaybackController）
+            // 底部融合栏（第 3 步接线）：导航 + 播放胶囊实时状态（当前曲目/暂停态/进度环）
             BottomFusionBar(
-                musicInfo = null,
-                isPlaying = false,
-                progress = 0f,
+                musicInfo = currentMusic,
+                isPlaying = isPlaying,
+                progress = if (totalDuration > 0) position.toFloat() / totalDuration else 0f,
                 selectedTabIndex = pagerState.currentPage,
                 onTabSelected = { index ->
                     scope.launch { pagerState.animateScrollToPage(index) }
                 },
-                onPlayPause = {},
-                onNext = {},
-                onPrev = {},
-                onOpenPlayer = {},
+                onPlayPause = { if (isPlaying) controller.pauseMusic() else controller.playOrResume() },
+                onNext = { controller.playNext() },
+                onPrev = { controller.playPrevious() },
+                onOpenPlayer = { /* 播放页第 4 步迁入 */ },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
@@ -120,14 +128,18 @@ fun MainShell() {
 }
 
 /**
- * 首页列表主路径（2b）：真实音乐列表，LazyColumn 可滚动。
- * 点击播放占位：仅触觉反馈（第 3 步接 PlaybackController.playWith）。
+ * 首页列表主路径（2b+3）：真实音乐列表 + 播放接线。
+ * 与旧 UI 页面模式一致：列表加载成功即建播放队列（addAllToPlaylistInOrder），
+ * 点击单曲 playWith 真播放；当前播放行高亮（id 匹配列表下标）。
  */
 @Composable
 private fun HomeTab(
+    controller: PlaybackController,
+    currentMusic: MusicInfo?,
     viewModel: LibraryListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -146,23 +158,39 @@ private fun HomeTab(
                 .fillMaxSize()
                 .padding(top = 8.dp)
         ) { musicList ->
-            MusicListSection(musicList)
+            // 列表加载成功即作为播放队列上下文（与旧 UI ArtistScreen/AlbumScreen 页面模式一致）
+            LaunchedEffect(musicList) {
+                controller.addAllToPlaylistInOrder(musicList)
+            }
+            val currentPlayingIndex = musicList.indexOfFirst {
+                it.music.id == currentMusic?.music?.id
+            }.takeIf { it >= 0 }
+            MusicListSection(
+                musicList = musicList,
+                currentPlayingIndex = currentPlayingIndex,
+                onItemClick = { musicInfo ->
+                    scope.launch { controller.playWith(musicInfo) }
+                },
+            )
         }
     }
 }
 
 /** 与 androidMain 整页列表（ListScreen 等）同构：MusicList 懒加载版，内部 LazyColumn 自滚动。 */
 @Composable
-private fun MusicListSection(musicList: List<MusicInfo>) {
-    // 点击播放占位空实现（方案 2b：真实接线第 3 步 PlaybackController）
-    val callbacks = remember {
+private fun MusicListSection(
+    musicList: List<MusicInfo>,
+    currentPlayingIndex: Int?,
+    onItemClick: (MusicInfo) -> Unit,
+) {
+    val callbacks = remember(onItemClick) {
         object : MusicListCallbacksAdapter() {
             override fun onItemClick(musicInfo: MusicInfo, index: Int) {
-                // TODO(第 3 步): PlaybackController.playWith(musicInfo)
+                onItemClick(musicInfo)
             }
         }
     }
-    val config = remember(callbacks) {
+    val config = remember(callbacks, currentPlayingIndex) {
         defaultMusicListConfig(callbacks).copy(
             header = HeaderConfig.None,
             item = ItemConfig(
@@ -176,7 +204,7 @@ private fun MusicListSection(musicList: List<MusicInfo>) {
             ),
             edit = EditConfig(enabled = false),
             currentPlaying = CurrentPlayingConfig(
-                index = null,
+                index = currentPlayingIndex,
                 autoScrollToCurrent = false
             ),
         )
