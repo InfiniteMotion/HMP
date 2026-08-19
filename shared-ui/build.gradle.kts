@@ -52,6 +52,9 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)  // ViewModel/viewModelScope（KMP 分发）
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)   // koinViewModel()（KMP）
+
+            // 第 4 步批 C：AppRoot（完整导航壳）迁 commonMain，NavDisplay 的 VM decorator 随之上移
+            implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
         }
 
         androidMain.dependencies {

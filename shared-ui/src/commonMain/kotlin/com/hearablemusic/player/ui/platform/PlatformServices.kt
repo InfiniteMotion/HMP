@@ -1,5 +1,7 @@
 package com.hearablemusic.player.ui.platform
 
+import com.hmp.domain.music.EditableMusicTags
+
 /**
  * 平台能力接口组（阶段一第 0 步冻结版，方案 §5.4 + C5）。
  *
@@ -24,6 +26,9 @@ interface ShareService {
     fun shareMusic(request: ShareMusicRequest)
 
     fun shareText(subject: String, text: String)
+
+    /** 分享任意本地文件（备份导出等；FileProvider + ACTION_SEND）。chooserTitle 为分享面板标题。 */
+    fun shareFile(filePath: String, mimeType: String, chooserTitle: String)
 }
 
 /** 文件选择（ActivityResultContracts 的平台无关形态）。 */
@@ -50,6 +55,38 @@ interface PermissionService {
      * 请求对指定曲目文件的写权限（Android: RecoverableSecurityException → IntentSender 流程）。
      */
     fun requestMusicWriteAccess(musicId: Long, onResult: (granted: Boolean) -> Unit)
+}
+
+/** 音乐文件写权限请求结果（MusicTagEditService.requestMusicWriteAccess 回调）。 */
+enum class MusicWriteAccessResult {
+    /** 用户已授权（旧流程 Activity.RESULT_OK），可继续 SAF 写入。 */
+    GRANTED,
+
+    /** 用户拒绝授权（旧流程静默返回，无提示）。 */
+    DENIED,
+
+    /** MediaStore 中查不到该曲目文件（旧流程 music_not_found 提示场景）。 */
+    NOT_FOUND
+}
+
+/** 音乐标签编辑页平台桥：封面选图/解码 + MediaStore 写权限请求 + SAF Uri 写入（EditMusicTagsScreen 迁移引入）。 */
+interface MusicTagEditService {
+    /**
+     * 选封面图（GetContent，MIME 为 image 全类型）：返回按旧逻辑处理（超 512KB 时解码采样压缩为 JPEG 90）的字节；
+     * 取消/失败为 null。
+     */
+    fun pickCoverImage(onResult: (ByteArray?) -> Unit)
+
+    /**
+     * 对指定曲目文件发起写权限请求（旧 MediaStore.createWriteRequest + StartIntentSenderForResult 流程）。
+     */
+    fun requestMusicWriteAccess(filePath: String, onResult: (MusicWriteAccessResult) -> Unit)
+
+    /**
+     * 经 SAF 授权的内容 Uri 写入标签（旧 saveWithUri 的 MusicTagEditor.writeTags(uri, ...) 段；
+     * Uri 由实现内部按 filePath 反查 MediaStore）。
+     */
+    fun writeTagsViaSaf(filePath: String?, tags: EditableMusicTags, onResult: (Result<Unit>) -> Unit)
 }
 
 /** 触觉反馈效果（对应 Android HapticFeedbackConstants）。 */
@@ -90,6 +127,7 @@ interface PlatformServices {
     val share: ShareService
     val filePicker: FilePickerService
     val permission: PermissionService
+    val musicTagEdit: MusicTagEditService
     val haptic: HapticService
     val floatingLyrics: FloatingLyricsController
 }

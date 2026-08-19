@@ -107,6 +107,14 @@ interface PlaybackController {
     fun updateMusicLikedStatus(music: MusicInfo, liked: Boolean)
     fun getLikedStatus(musicId: Long)
 
+    /**
+     * 挂起读取指定曲目的收藏状态（弹窗即时展示用）。
+     *
+     * 冻结接口补充项：第 0 步按 feature-ui 调用点盘点时，DialogViewModel 直连
+     * MusicController 的此处调用被遗漏；第 4 步弹窗系统迁移时发现补入。
+     */
+    suspend fun getCurrentLikedStatus(musicId: Long): Boolean
+
     // ── 曲目元数据 ──
 
     fun getMusicLabels(musicId: Long)

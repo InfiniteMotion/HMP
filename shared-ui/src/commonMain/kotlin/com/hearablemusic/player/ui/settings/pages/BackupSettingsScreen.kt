@@ -1,0 +1,389 @@
+package com.hearablemusic.player.ui.settings.pages
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.hearablemusic.player.ui.common.components.base.TitleWidget
+import com.hearablemusic.player.ui.common.dialogs.controller.DialogManager
+import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
+import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
+import com.hearablemusic.player.ui.common.pages.base.SubScreen
+import com.hearablemusic.player.ui.common.util.activityViewModel
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.backup_settings
+import com.hearablemusic.player.ui.generated.resources.cancel_action
+import com.hearablemusic.player.ui.generated.resources.confirm_restore
+import com.hearablemusic.player.ui.generated.resources.delete
+import com.hearablemusic.player.ui.generated.resources.export_backup
+import com.hearablemusic.player.ui.generated.resources.export_backup_desc
+import com.hearablemusic.player.ui.generated.resources.externaldrive
+import com.hearablemusic.player.ui.generated.resources.ic_gallery_material_select_checkbox
+import com.hearablemusic.player.ui.generated.resources.local_backup
+import com.hearablemusic.player.ui.generated.resources.local_backup_desc
+import com.hearablemusic.player.ui.generated.resources.no_local_backups
+import com.hearablemusic.player.ui.generated.resources.refresh
+import com.hearablemusic.player.ui.generated.resources.restore_action
+import com.hearablemusic.player.ui.generated.resources.restore_backup
+import com.hearablemusic.player.ui.generated.resources.restore_backup_desc
+import com.hearablemusic.player.ui.generated.resources.restore_successful
+import com.hearablemusic.player.ui.generated.resources.trash
+import com.hearablemusic.player.ui.platform.PlatformServices
+import com.hearablemusic.player.ui.player.components.MiniPlayerSafeSpacer
+import com.hearablemusic.player.ui.settings.viewmodel.BackupViewModel
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+
+@Composable
+fun BackupSettingsScreen(
+    navController: NavBackStack<NavKey>,
+    backupViewModel: BackupViewModel = koinViewModel(),
+    dialogManagerViewModel: DialogManagerViewModel = activityViewModel()
+) {
+    val dialogManager = dialogManagerViewModel.dialogManager
+    val localBackups by backupViewModel.localBackups.collectAsState()
+
+    SubScreen(
+        onBackClick = { navController.removeLastOrNull() },
+        title = stringResource(Res.string.backup_settings)
+    ) {
+        val isLandscape = LocalWindowSizeInfo.current.isLandscape
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        ExportBackupSection(
+                            onExportBackup = backupViewModel::exportBackup,
+                            dialogManager = dialogManager
+                        )
+                        ImportBackupSection(
+                            onRestoreBackup = backupViewModel::restoreBackup,
+                            dialogManager = dialogManager
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        ManageBackupsSection(
+                            localBackups = localBackups,
+                            onRestoreBackup = backupViewModel::restoreBackup,
+                            onDeleteBackup = backupViewModel::deleteLocalBackup,
+                            onRefreshBackups = backupViewModel::loadLocalBackups,
+                            dialogManager = dialogManager
+                        )
+                    }
+                }
+            } else {
+            // 1. 生成备份
+            ExportBackupSection(
+                onExportBackup = backupViewModel::exportBackup,
+                dialogManager = dialogManager
+            )
+
+            // 2. 导入备份
+            ImportBackupSection(
+                onRestoreBackup = backupViewModel::restoreBackup,
+                dialogManager = dialogManager
+            )
+
+            // 3. 备份管理
+            ManageBackupsSection(
+                localBackups = localBackups,
+                onRestoreBackup = backupViewModel::restoreBackup,
+                onDeleteBackup = backupViewModel::deleteLocalBackup,
+                onRefreshBackups = backupViewModel::loadLocalBackups,
+                dialogManager = dialogManager
+            )
+            } // else
+            MiniPlayerSafeSpacer(height = 56.dp)
+        }
+    }
+}
+
+@Composable
+private fun ExportBackupSection(
+    onExportBackup: ((String) -> Unit, (String) -> Unit) -> Unit,
+    dialogManager: DialogManager
+) {
+    val platformServices: PlatformServices = koinInject()
+    val chooserTitle = stringResource(Res.string.export_backup)
+
+    TitleWidget(title = stringResource(Res.string.export_backup)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(Res.string.export_backup_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onExportBackup({ filePath ->
+                        platformServices.share.shareFile(filePath, "application/json", chooserTitle)
+                    }, { error ->
+                        dialogManager.showMessage(error)
+                    })
+                }
+            ) {
+                Icon(painter = painterResource(Res.drawable.externaldrive), contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(Res.string.export_backup))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportBackupSection(
+    onRestoreBackup: (String, () -> Unit, (String) -> Unit) -> Unit,
+    dialogManager: DialogManager
+) {
+    val scope = rememberCoroutineScope()
+    val platformServices: PlatformServices = koinInject()
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var selectedBackupFilePath by remember { mutableStateOf<String?>(null) }
+
+    TitleWidget(title = stringResource(Res.string.restore_backup)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.restore_backup_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    // 选择备份文件（复制到 cacheDir/restore_temp.json 由平台实现完成）
+                    platformServices.filePicker.openBackupFile { path ->
+                        if (path != null) {
+                            selectedBackupFilePath = path
+                            showRestoreDialog = true
+                        }
+                    }
+                }
+            ) {
+                Icon(painter = painterResource(Res.drawable.ic_gallery_material_select_checkbox), contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(Res.string.restore_backup))
+            }
+        }
+    }
+
+    if (showRestoreDialog && selectedBackupFilePath != null) {
+        RestoreConfirmDialog(
+            onConfirm = {
+                onRestoreBackup(selectedBackupFilePath!!, {
+                    scope.launch { dialogManager.showMessage(getString(Res.string.restore_successful)) }
+                }, { error ->
+                    dialogManager.showMessage(error)
+                })
+                showRestoreDialog = false
+            },
+            onDismiss = { showRestoreDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun ManageBackupsSection(
+    localBackups: List<String>,
+    onRestoreBackup: (String, () -> Unit, (String) -> Unit) -> Unit,
+    onDeleteBackup: (String) -> Unit,
+    onRefreshBackups: () -> Unit,
+    dialogManager: DialogManager
+) {
+    val scope = rememberCoroutineScope()
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var selectedBackupFilePath by remember { mutableStateOf<String?>(null) }
+
+    TitleWidget(title = stringResource(Res.string.local_backup)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.local_backup_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                IconButton(onClick = onRefreshBackups) {
+                    Icon(
+                        painter = painterResource(Res.drawable.externaldrive),
+                        contentDescription = stringResource(Res.string.refresh),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (localBackups.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.no_local_backups),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
+                )
+            } else {
+                localBackups.forEach { filePath ->
+                    BackupItem(
+                        filePath = filePath,
+                        onRestore = {
+                            selectedBackupFilePath = filePath
+                            showRestoreDialog = true
+                        },
+                        onDelete = { onDeleteBackup(filePath) }
+                    )
+                }
+            }
+        }
+    }
+
+    if (showRestoreDialog && selectedBackupFilePath != null) {
+        RestoreConfirmDialog(
+            onConfirm = {
+                onRestoreBackup(selectedBackupFilePath!!, {
+                    scope.launch { dialogManager.showMessage(getString(Res.string.restore_successful)) }
+                }, { error ->
+                    dialogManager.showMessage(error)
+                })
+                showRestoreDialog = false
+            },
+            onDismiss = { showRestoreDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun BackupItem(
+    filePath: String,
+    onRestore: () -> Unit,
+    onDelete: () -> Unit
+) {
+    // commonMain 不使用平台文件 API：文件名取路径末段；
+    // 备份命名固定为 hearable-backup-v{N}-yyyyMMdd-HHmmss.json，日期从文件名解析（与旧 File.lastModified() 展示一致）
+    val fileName = filePath.substringAfterLast('/')
+    val fileDate = Regex("""(\d{8})-(\d{6})\.json""").find(fileName)?.destructured?.let { (d, t) ->
+        "${d.substring(0, 4)}/${d.substring(4, 6)}/${d.substring(6, 8)} ${t.substring(0, 2)}:${t.substring(2, 4)}"
+    } ?: ""
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = fileName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = fileDate,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onRestore) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_gallery_material_select_checkbox),
+                    contentDescription = stringResource(Res.string.restore_action),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    painter = painterResource(Res.drawable.trash),
+                    contentDescription = stringResource(Res.string.delete),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RestoreConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.confirm_restore)) },
+        text = { Text(stringResource(Res.string.confirm_restore)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(Res.string.restore_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.cancel_action))
+            }
+        }
+    )
+}

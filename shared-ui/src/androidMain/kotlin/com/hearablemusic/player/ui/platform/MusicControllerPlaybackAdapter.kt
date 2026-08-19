@@ -64,6 +64,7 @@ class MusicControllerPlaybackAdapter(
     override fun updateMusicLikedStatus(music: MusicInfo, liked: Boolean) =
         mc.updateMusicLikedStatus(music, liked)
     override fun getLikedStatus(musicId: Long) = mc.getLikedStatus(musicId)
+    override suspend fun getCurrentLikedStatus(musicId: Long): Boolean = mc.getCurrentLikedStatus(musicId)
 
     // ── 曲目元数据 ──
     override fun getMusicLabels(musicId: Long) = mc.getMusicLabels(musicId)

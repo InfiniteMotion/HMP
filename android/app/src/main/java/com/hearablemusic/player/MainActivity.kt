@@ -12,9 +12,14 @@ import androidx.compose.runtime.getValue
 import androidx.media3.common.util.UnstableApi
 import com.hearablemusic.player.player.controller.MusicController
 import com.hearablemusic.player.ui.AppRoot
+import com.hearablemusic.player.ui.common.util.LocalAppViewModelStoreOwner
+import com.hearablemusic.player.ui.platform.AndroidPlatformServices
+import com.hearablemusic.player.ui.platform.PlatformServices
 import com.hearablemusic.player.ui.settings.viewmodel.SettingsViewModel
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.context.loadKoinModules
+import org.koin.dsl.module
 
 @UnstableApi
 class MainActivity : ComponentActivity() {
@@ -41,6 +46,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 第 4 步批 C：平台服务注册（分享/文件选择/悬浮窗权限/标签编辑桥/触觉/悬浮歌词）。
+        // 构造需宿主 Activity（launcher 挂其 registry），故在 Activity 侧注册而非 UiKoinModule。
+        val platformServices = AndroidPlatformServices(applicationContext, this)
+        loadKoinModules(
+            module {
+                single<PlatformServices> { platformServices }
+            }
+        )
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,
@@ -53,14 +68,18 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            val customMode by settingsViewModel.customMode.collectAsState("default")
-            val darkTheme = when (customMode) {
-                "light" -> false
-                "dark" -> true
-                else -> isSystemInDarkTheme()
+            androidx.compose.runtime.CompositionLocalProvider(
+                LocalAppViewModelStoreOwner provides this
+            ) {
+                val customMode by settingsViewModel.customMode.collectAsState("default")
+                val darkTheme = when (customMode) {
+                    "light" -> false
+                    "dark" -> true
+                    else -> isSystemInDarkTheme()
+                }
+                // 第 1 步（C9）：入口切至新共享层空壳；旧 MainScreen/IntroScreen 不再被引用（冷死，androidMain 保留可对照）
+                AppRoot(darkTheme = darkTheme)
             }
-            // 第 1 步（C9）：入口切至新共享层空壳；旧 MainScreen/IntroScreen 不再被引用（冷死，androidMain 保留可对照）
-            AppRoot(darkTheme = darkTheme)
         }
     }
 }
