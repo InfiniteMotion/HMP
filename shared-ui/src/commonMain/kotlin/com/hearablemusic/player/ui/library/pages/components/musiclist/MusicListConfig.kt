@@ -1,6 +1,7 @@
 package com.hearablemusic.player.ui.library.pages.components.musiclist
 
-import java.util.Calendar
+import com.hearablemusic.player.ui.common.util.epochMillisToYearMonth
+import com.hearablemusic.player.ui.common.util.nowEpochMillis
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -412,11 +413,9 @@ private fun computeDateSmartAnchors(
     orderType: String,
 ): Pair<List<String>, Map<Int, Int>> {
     if (list.isEmpty()) return Pair(emptyList(), emptyMap())
-    val cal = Calendar.getInstance()
     fun getYearMonth(info: MusicInfo): Pair<Int, Int> {
         val ts = info.extra?.date ?: return -1 to 1
-        cal.timeInMillis = ts
-        return cal.get(Calendar.YEAR) to (cal.get(Calendar.MONTH) + 1)
+        return epochMillisToYearMonth(ts)
     }
     val pairs = list.map(::getYearMonth).distinct()
     if (pairs.isEmpty()) return Pair(emptyList(), emptyMap())
@@ -452,10 +451,9 @@ private fun computeAddOrderYearMonthAnchors(
 ): Pair<List<String>, Map<Int, Int>> {
     if (list.isEmpty()) return Pair(emptyList(), emptyMap())
     val n = list.size
-    val cal = Calendar.getInstance()
-    val endMs = cal.timeInMillis
-    cal.add(Calendar.YEAR, -2)
-    val startMs = cal.timeInMillis
+    // 虚拟时间线跨度 ≈ 2 年（原 Calendar.add(YEAR,-2)，此处用近似值；仅用于锚点标签，无闰日精确性要求）
+    val endMs = nowEpochMillis()
+    val startMs = endMs - 2L * 365 * 24 * 3600 * 1000
     val spanMs = (endMs - startMs).toDouble().coerceAtLeast(1.0)
     val desc = orderType.uppercase() == "DESC"
     fun virtualYearMonth(listIndex: Int): Pair<Int, Int> {
@@ -464,8 +462,7 @@ private fun computeAddOrderYearMonthAnchors(
             if (desc) 1.0 - r else r
         }
         val ts = (startMs + ratio * spanMs).toLong()
-        cal.timeInMillis = ts
-        return cal.get(Calendar.YEAR) to (cal.get(Calendar.MONTH) + 1)
+        return epochMillisToYearMonth(ts)
     }
     val indexToYm = (0 until n).map { i -> i to virtualYearMonth(i) }
     val ordered = indexToYm.map { it.second }.distinct().let { distinct ->
@@ -490,10 +487,9 @@ private fun computeDateStylePositionAnchors(
 ): Pair<List<String>, Map<Int, Int>> {
     if (list.isEmpty()) return Pair(emptyList(), emptyMap())
     val n = list.size
-    if (n <= 1) return Pair(listOf(Calendar.getInstance().get(Calendar.YEAR).toString()), mapOf(0 to 0))
+    if (n <= 1) return Pair(listOf(epochMillisToYearMonth(nowEpochMillis()).first.toString()), mapOf(0 to 0))
     val anchorCount = 13
-    val cal = Calendar.getInstance()
-    val currentYear = cal.get(Calendar.YEAR)
+    val currentYear = epochMillisToYearMonth(nowEpochMillis()).first
     val labels = listOf(currentYear.toString()) + (1..12).map { "%02d".format(it) }
     val desc = orderType.uppercase() == "DESC"
     val map = (0 until anchorCount).associate { i ->

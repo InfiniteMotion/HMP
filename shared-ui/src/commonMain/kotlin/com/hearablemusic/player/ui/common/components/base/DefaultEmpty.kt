@@ -4,36 +4,43 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.*
 
 @Composable
-fun DefaultLoading(
-    modifier: Modifier = Modifier,
-    message: String = stringResource(R.string.loading)
+fun DefaultEmpty(
+    message: String = stringResource(Res.string.no_data_available),
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        CircularProgressIndicator(
+        Icon(
+            painter = painterResource(Res.drawable.square),
+            contentDescription = null,
             modifier = Modifier.size(48.dp),
-            color = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }

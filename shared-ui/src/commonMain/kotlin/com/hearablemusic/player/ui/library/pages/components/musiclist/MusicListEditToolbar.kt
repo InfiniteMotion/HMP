@@ -1,4 +1,4 @@
-﻿package com.hearablemusic.player.ui.library.pages.components.musiclist
+package com.hearablemusic.player.ui.library.pages.components.musiclist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,10 +15,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.*
 
 /** 与 MusicListHeader 一致，保证编辑栏与头部高度一致（总高度 48.dp） */
 private val EditToolbarHorizontalPadding = 12.dp
@@ -73,8 +74,8 @@ internal fun MusicListEditToolbar(
         ) {
             Icon(
                 painter = painterResource(
-                    if (allSelected) R.drawable.checkmark_square_on_square_fill
-                    else R.drawable.checkmark_square_on_square
+                    if (allSelected) Res.drawable.checkmark_square_on_square_fill
+                    else Res.drawable.checkmark_square_on_square
                 ),
                 contentDescription = if (allSelected) "Deselect all" else "Select all",
                 modifier = Modifier.size(EditToolbarIconSize),
@@ -86,8 +87,8 @@ internal fun MusicListEditToolbar(
             modifier = Modifier.size(EditToolbarButtonSize),
         ) {
             Icon(
-                painter = painterResource(R.drawable.plus),
-                contentDescription = stringResource(R.string.add_to_playlist_desc),
+                painter = painterResource(Res.drawable.plus),
+                contentDescription = stringResource(Res.string.add_to_playlist_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -97,8 +98,8 @@ internal fun MusicListEditToolbar(
             modifier = Modifier.size(EditToolbarButtonSize),
         ) {
             Icon(
-                painter = painterResource(R.drawable.trash),
-                contentDescription = stringResource(R.string.delete_selected_desc),
+                painter = painterResource(Res.drawable.trash),
+                contentDescription = stringResource(Res.string.delete_selected_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -108,8 +109,8 @@ internal fun MusicListEditToolbar(
             modifier = Modifier.size(EditToolbarButtonSize),
         ) {
             Icon(
-                painter = painterResource(R.drawable.checkmark_circle),
-                contentDescription = stringResource(R.string.confirm_desc),
+                painter = painterResource(Res.drawable.checkmark_circle),
+                contentDescription = stringResource(Res.string.confirm_desc),
                 modifier = Modifier.size(EditToolbarIconSize),
                 tint = MaterialTheme.colorScheme.primary,
             )

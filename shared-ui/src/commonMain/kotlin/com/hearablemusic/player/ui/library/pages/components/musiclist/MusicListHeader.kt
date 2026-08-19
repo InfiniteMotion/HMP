@@ -1,4 +1,4 @@
-﻿package com.hearablemusic.player.ui.library.pages.components.musiclist
+package com.hearablemusic.player.ui.library.pages.components.musiclist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -30,12 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.*
 import com.hearablemusic.player.ui.common.design.animation.AnimationTokens
-import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
+import com.hearablemusic.player.ui.common.util.rememberPlatformHaptics
+import com.hearablemusic.player.ui.platform.HapticEffect
 
 /** 头部/编辑栏统一高度与 padding，保证切换时无高度变化 */
 private val HeaderRowPadding = 12.dp
@@ -97,7 +99,7 @@ private fun SimpleHeader(
     trailing: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val haptic = rememberHapticFeedback()
+    val haptic = rememberPlatformHaptics()
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -118,28 +120,28 @@ private fun SimpleHeader(
         if (trailing != null) trailing()
         IconButton(
             onClick = {
-                haptic.performClick()
+                haptic.perform(HapticEffect.VIRTUAL_KEY)
                 onOrderPlay()
             },
             modifier = Modifier.size(32.dp),
         ) {
             Icon(
-                painter = painterResource(R.drawable.order_play),
-                contentDescription = stringResource(R.string.order_play_desc),
+                painter = painterResource(Res.drawable.order_play),
+                contentDescription = stringResource(Res.string.order_play_desc),
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         IconButton(
             onClick = {
-                haptic.performConfirm()
+                haptic.perform(HapticEffect.CONFIRM)
                 onShufflePlay()
             },
             modifier = Modifier.size(32.dp),
         ) {
             Icon(
-                painter = painterResource(R.drawable.shuffle),
-                contentDescription = stringResource(R.string.shuffle_desc),
+                painter = painterResource(Res.drawable.shuffle),
+                contentDescription = stringResource(Res.string.shuffle_desc),
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
@@ -147,14 +149,14 @@ private fun SimpleHeader(
         if (showEditButton) {
             IconButton(
                 onClick = {
-                    haptic.performClick()
+                    haptic.perform(HapticEffect.VIRTUAL_KEY)
                     onEditClick()
                 },
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.rectangle_on_rectangle),
-                    contentDescription = stringResource(R.string.edit_desc),
+                    painter = painterResource(Res.drawable.rectangle_on_rectangle),
+                    contentDescription = stringResource(Res.string.edit_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -178,7 +180,7 @@ private fun FullHeader(
     singleRowFilter: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val haptic = rememberHapticFeedback()
+    val haptic = rememberPlatformHaptics()
     val transparent = Color.Transparent
 
     Column(modifier = modifier) {
@@ -201,42 +203,42 @@ private fun FullHeader(
             }
             IconButton(
                 onClick = {
-                    haptic.performClick()
+                    haptic.perform(HapticEffect.VIRTUAL_KEY)
                     expanded = !expanded
                 },
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.slider_vertical_3),
-                    contentDescription = stringResource(R.string.expand_sort_desc),
+                    painter = painterResource(Res.drawable.slider_vertical_3),
+                    contentDescription = stringResource(Res.string.expand_sort_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             IconButton(
                 onClick = {
-                    haptic.performClick()
+                    haptic.perform(HapticEffect.VIRTUAL_KEY)
                     onOrderPlay()
                 },
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.order_play),
-                    contentDescription = stringResource(R.string.order_play_desc),
+                    painter = painterResource(Res.drawable.order_play),
+                    contentDescription = stringResource(Res.string.order_play_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             IconButton(
                 onClick = {
-                    haptic.performConfirm()
+                    haptic.perform(HapticEffect.CONFIRM)
                     onShufflePlay()
                 },
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.shuffle),
-                    contentDescription = stringResource(R.string.shuffle_desc),
+                    painter = painterResource(Res.drawable.shuffle),
+                    contentDescription = stringResource(Res.string.shuffle_desc),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -244,14 +246,14 @@ private fun FullHeader(
             if (showEditButton) {
                 IconButton(
                     onClick = {
-                        haptic.performClick()
+                        haptic.perform(HapticEffect.VIRTUAL_KEY)
                         onEditClick()
                     },
                     modifier = Modifier.size(32.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.rectangle_on_rectangle),
-                        contentDescription = stringResource(R.string.edit_desc),
+                        painter = painterResource(Res.drawable.rectangle_on_rectangle),
+                        contentDescription = stringResource(Res.string.edit_desc),
                         modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
@@ -272,16 +274,16 @@ private fun FullHeader(
                 color = transparent,
             ) {
                 val genres = listOf(
-                    stringResource(R.string.sort_title) to "title",
-                    stringResource(R.string.sort_artist) to "artist",
-                    stringResource(R.string.sort_duration) to "duration",
-                    stringResource(R.string.sort_size) to "fileSize",
-                    stringResource(R.string.sort_play_count) to "playCount",
-                    stringResource(R.string.sort_add_time) to "date",
+                    stringResource(Res.string.sort_title) to "title",
+                    stringResource(Res.string.sort_artist) to "artist",
+                    stringResource(Res.string.sort_duration) to "duration",
+                    stringResource(Res.string.sort_size) to "fileSize",
+                    stringResource(Res.string.sort_play_count) to "playCount",
+                    stringResource(Res.string.sort_add_time) to "date",
                 )
                 val orders = listOf(
-                    stringResource(R.string.order_asc) to "ASC",
-                    stringResource(R.string.order_desc) to "DESC",
+                    stringResource(Res.string.order_asc) to "ASC",
+                    stringResource(Res.string.order_desc) to "DESC",
                 )
                 Column(
                     modifier = Modifier.padding(8.dp),
@@ -292,7 +294,7 @@ private fun FullHeader(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = stringResource(R.string.sort),
+                            text = stringResource(Res.string.sort),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp),
@@ -306,7 +308,7 @@ private fun FullHeader(
                                 FilterChip(
                                     selected = selectedGenre == value,
                                     onClick = {
-                                        haptic.performLightClick()
+                                        haptic.perform(HapticEffect.TICK)
                                         if (selectedGenre != value) onFilterGenreChange(value)
                                     },
                                     label = {
@@ -328,7 +330,7 @@ private fun FullHeader(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = stringResource(R.string.order),
+                            text = stringResource(Res.string.order),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 8.dp),
@@ -338,7 +340,7 @@ private fun FullHeader(
                                 FilterChip(
                                     selected = selectedOrder == value,
                                     onClick = {
-                                        haptic.performLightClick()
+                                        haptic.perform(HapticEffect.TICK)
                                         if (selectedOrder != value) onFilterOrderChange(value)
                                     },
                                     label = {

@@ -7,6 +7,7 @@ import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewMod
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
 import com.hearablemusic.player.ui.common.viewmodel.ThemeViewModel
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
+import com.hearablemusic.player.ui.library.viewmodel.LibraryListViewModel
 import com.hearablemusic.player.ui.library.viewmodel.EditMusicTagsViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SearchViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SongDetailViewModel
@@ -28,6 +29,8 @@ import org.koin.dsl.module
 val uiModule = module {
     single { DialogManager() }
     viewModel { DialogManagerViewModel(get()) }
+    // 第 2b 步：新层列表主路径（commonMain 类，Android 端注册）
+    viewModel { LibraryListViewModel(get()) }
     viewModel { DialogViewModel(androidApplication(), get(), get(), get(), get(), get(), get()) }
 
     viewModel { LibraryViewModel(androidApplication(), get(), get(), get(), get(), get(), get(), get()) }

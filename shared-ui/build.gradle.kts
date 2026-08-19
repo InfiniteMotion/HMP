@@ -47,6 +47,11 @@ kotlin {
             implementation(libs.coil.compose.kmp)        // Coil3 AsyncImage（KMP）
             implementation(libs.haze)                    // 底部融合栏毛玻璃（CMP 兼容库）
             implementation(libs.haze.materials)
+
+            // 第 2b 步：列表主路径迁入 commonMain（LibraryListViewModel = KMP ViewModel + Koin）
+            implementation(libs.jetbrains.lifecycle.viewmodel.compose)  // ViewModel/viewModelScope（KMP 分发）
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)   // koinViewModel()（KMP）
         }
 
         androidMain.dependencies {
@@ -60,8 +65,8 @@ kotlin {
 
             // lifecycle / navigation3 → KMP 分发版（包名保持 androidx.*）
             // navigation3-runtime 无 JetBrains 分发，用 google 坐标（本身即 KMP，JetBrains UI 亦依赖它）
-            // nav3 runtime/ui 已上移 commonMain（AppRoot 空壳）；此处仅留旧 UI 所需 lifecycle decorator
-            implementation(libs.jetbrains.lifecycle.viewmodel.compose)
+            // nav3 runtime/ui 与 lifecycle-viewmodel-compose 已上移 commonMain；
+            // 此处仅留旧 UI 所需 lifecycle decorator
             implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
 
             // media3 仅剩 @UnstableApi 注解使用，待第 3 步 PlaybackController 接线时剥离（C4/C12）
@@ -71,8 +76,6 @@ kotlin {
             implementation(libs.coil.network.ktor3)
 
             implementation(libs.koin.android)
-            implementation(libs.koin.compose)
-            implementation(libs.koin.compose.viewmodel)
 
             // Material3 Adaptive → CMP 分发版
             implementation(libs.jetbrains.material3.adaptive)

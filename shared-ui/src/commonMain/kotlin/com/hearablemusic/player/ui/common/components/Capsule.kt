@@ -16,12 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.hmp.domain.music.MusicExtra
 import com.hmp.domain.music.MusicLabel
-import com.hearablemusic.player.ui.R
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.*
 
 @Composable
 fun Capsule(
@@ -61,10 +62,10 @@ fun LabelsCapsule(
         ) {
             extra?.let { it1 ->
                 listOf(
-                    Triple(stringResource(R.string.bitrate) , it1.bitRate.toString(),"kbps"),
-                    Triple(stringResource(R.string.sample_rate) , it1.sampleRate.toString(),"Hz"),
-                    Triple(stringResource(R.string.file_size) , it1.fileSize.toString(),"Byte"),
-                    Triple(stringResource(R.string.format) , it1.format.toString(),"")
+                    Triple(stringResource(Res.string.bitrate) , it1.bitRate.toString(),"kbps"),
+                    Triple(stringResource(Res.string.sample_rate) , it1.sampleRate.toString(),"Hz"),
+                    Triple(stringResource(Res.string.file_size) , it1.fileSize.toString(),"Byte"),
+                    Triple(stringResource(Res.string.format) , it1.format.toString(),"")
                 ).forEach {
                     Capsule(text = "${it.first}: ${it.second} ${it.third}",color=color,style=style)
                 }

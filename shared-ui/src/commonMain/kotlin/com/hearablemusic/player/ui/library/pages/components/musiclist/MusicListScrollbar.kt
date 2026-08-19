@@ -21,7 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
-import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
+import com.hearablemusic.player.ui.common.util.rememberPlatformHaptics
+import com.hearablemusic.player.ui.platform.HapticEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -41,7 +42,7 @@ internal fun MusicListScrollbar(
     val trackColor = config.trackColor ?: Color.Black.copy(alpha = 0.1f)
     val thumbColor = config.thumbColor ?: Color.Black.copy(alpha = 0.4f)
     val scope = rememberCoroutineScope()
-    val haptic = rememberHapticFeedback()
+    val haptic = rememberPlatformHaptics()
     var lastScrollJob by remember { mutableStateOf<Job?>(null) }
 
     val layoutInfo = listState.layoutInfo
@@ -66,7 +67,7 @@ internal fun MusicListScrollbar(
                     val deltaIndex = (moveRatio * total).toInt()
                     val targetIndex = (currentFirst + deltaIndex).coerceIn(0, total - 1)
                     if (targetIndex != currentFirst) {
-                        haptic.performLightClick()
+                        haptic.perform(HapticEffect.TICK)
                         lastScrollJob?.cancel()
                         lastScrollJob = scope.launch {
                             listState.animateScrollToItem(targetIndex)

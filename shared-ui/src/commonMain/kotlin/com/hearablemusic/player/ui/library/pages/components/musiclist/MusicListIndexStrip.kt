@@ -37,7 +37,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmp.domain.music.MusicInfo
-import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
+import com.hearablemusic.player.ui.common.util.rememberPlatformHaptics
+import com.hearablemusic.player.ui.platform.HapticEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -66,7 +67,7 @@ internal fun MusicListIndexStrip(
     val flatFirstVisible = firstVisibleIndex * columns
     var stripSize by remember { mutableStateOf(IntSize.Zero) }
     var lastScrollJob by remember { mutableStateOf<Job?>(null) }
-    val haptic = rememberHapticFeedback()
+    val haptic = rememberPlatformHaptics()
     val density = LocalDensity.current
     val verticalPaddingPx = with(density) { IndexStripVerticalPadding.roundToPx() }
 
@@ -119,7 +120,7 @@ internal fun MusicListIndexStrip(
                             val i = anchorIndexForY(offset.y)
                             dragAnchorIndex = i
                             anchorToIndexMap[i]?.let { idx ->
-                                haptic.performLightClick()
+                                haptic.perform(HapticEffect.TICK)
                                 scrollToIndexAnimated(idx)
                             }
                         },
@@ -129,7 +130,7 @@ internal fun MusicListIndexStrip(
                             if (i != dragAnchorIndex) {
                                 dragAnchorIndex = i
                                 anchorToIndexMap[i]?.let { idx ->
-                                    haptic.performLightClick()
+                                    haptic.perform(HapticEffect.TICK)
                                     scrollToIndexAnimated(idx)
                                 }
                             }
@@ -161,7 +162,7 @@ internal fun MusicListIndexStrip(
                                 enabled = listIndex != null,
                                 onClick = {
                                     listIndex?.let {
-                                        haptic.performLightClick()
+                                        haptic.perform(HapticEffect.TICK)
                                         scrollToIndexAnimated(it)
                                     }
                                 },
@@ -207,7 +208,7 @@ internal fun MusicListIndexStrip(
                         onClick = {
                             if (anchorLabels.isNotEmpty()) {
                                 anchorToIndexMap[anchorLabels.lastIndex]?.let {
-                                    haptic.performLightClick()
+                                    haptic.perform(HapticEffect.TICK)
                                     scrollToIndexAnimated(it)
                                 }
                             }
@@ -246,7 +247,7 @@ internal fun MusicListIndexStrip(
                             val letter = letters[letterIndexForY(offset.y)]
                             dragLetter = letter
                             letterToIndexMap[letter]?.let { idx ->
-                                haptic.performLightClick()
+                                haptic.perform(HapticEffect.TICK)
                                 scrollToIndexAnimated(idx)
                             }
                         },
@@ -256,7 +257,7 @@ internal fun MusicListIndexStrip(
                             if (letter != dragLetter) {
                                 dragLetter = letter
                                 letterToIndexMap[letter]?.let { idx ->
-                                    haptic.performLightClick()
+                                    haptic.perform(HapticEffect.TICK)
                                     scrollToIndexAnimated(idx)
                                 }
                             }
@@ -288,7 +289,7 @@ internal fun MusicListIndexStrip(
                                 enabled = index != null,
                                 onClick = {
                                     index?.let {
-                                        haptic.performLightClick()
+                                        haptic.perform(HapticEffect.TICK)
                                         scrollToIndexAnimated(it)
                                     }
                                 },
@@ -333,7 +334,7 @@ internal fun MusicListIndexStrip(
                         onClick = {
                             letters.lastOrNull()?.let { letter ->
                                 letterToIndexMap[letter]?.let {
-                                    haptic.performLightClick()
+                                    haptic.perform(HapticEffect.TICK)
                                     scrollToIndexAnimated(it)
                                 }
                             }
