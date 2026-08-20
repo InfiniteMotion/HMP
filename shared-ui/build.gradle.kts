@@ -29,7 +29,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation(libs.kotlinx.coroutines)
-            // Res 访问器运行时（composeResources 配套，与 :desktop:feature-ui 同用法）
+            // Res 访问器运行时（composeResources 配套，沿用已删除的旧桌面层用法）
             implementation(compose.components.resources)
 
             // 依赖替换（方案 §2.2 / C17）：androidx.compose → Compose Multiplatform（同包名，代码 import 不变）
@@ -106,7 +106,7 @@ kotlin {
         }
 
         // 第 5a 步：desktop actual 所需（skiko 解码 PlatformImage.desktop 用；
-        // 与旧 :desktop:feature-ui 同模式，最终 app 壳重复引入时 Gradle 按版本去重）
+        // 沿用已删除的旧桌面层模式，最终 app 壳重复引入时 Gradle 按版本去重）
         // 命名 target（jvm("desktop")）的源集访问器需 by getting（与 :shared 同模式）
         val desktopMain by getting {
             dependencies {
