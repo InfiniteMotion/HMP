@@ -7,7 +7,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -118,6 +120,11 @@ fun LyricsScreen(
     val haptic = rememberHapticFeedback()
     val statusBars = rememberStatusBarsController()
 
+    // 桌面悬停态（对齐旧桌面版行为）：鼠标在页面上时控件常显，离开后走自动隐藏计时；
+    // 触屏端 isHovered 恒为 false，行为与纯触屏逻辑完全一致
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val isHovered by hoverInteractionSource.collectIsHoveredAsState()
+
     // 开启播放进度跟踪
     DisposableEffect(Unit) {
         playbackViewModel.startProgressTracking()
@@ -128,10 +135,10 @@ fun LyricsScreen(
         }
     }
 
-    // 自动隐藏逻辑：5秒无操作自动隐藏
-    LaunchedEffect(lastInteractionTime, isSettingsPanelVisible) {
-        if (isSettingsPanelVisible) {
-            // 设置面板打开时，始终显示控件
+    // 自动隐藏逻辑：5秒无操作自动隐藏（悬停/设置面板打开时保持常显）
+    LaunchedEffect(lastInteractionTime, isSettingsPanelVisible, isHovered) {
+        if (isSettingsPanelVisible || isHovered) {
+            // 设置面板打开或鼠标悬停时，始终显示控件
             isControlsVisible = true
             statusBars?.show()
         } else {
@@ -155,6 +162,7 @@ fun LyricsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .hoverable(hoverInteractionSource)
             .pointerInput(Unit) {
                 // 点击屏幕切换显示/隐藏状态
                 awaitPointerEventScope {

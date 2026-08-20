@@ -14,6 +14,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
+ * 平台差异化弹窗属性（第 5a 步 desktop 侦察引入）：
+ * Android 侧需 decorFitsSystemWindows=false 实现 edge-to-edge 全屏遮罩
+ * （该参数为 Android 变体专属）；Desktop 无系统栏嵌合概念，仅禁用默认宽度。
+ */
+internal expect fun scrimDialogProperties(): DialogProperties
+
+/**
  * 全屏遮罩弹窗样式：占满宽度、延伸到状态栏/导航栏，背部半透明黑色遮罩，点击遮罩关闭。
  * [content] 为居中展示的弹窗内容（如卡片）。
  * [enableScrimDismiss] 为 false 时点击遮罩不关闭（如扫描中禁止关闭）。
@@ -26,10 +33,7 @@ fun ScrimDialog(
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false,
-        ),
+        properties = scrimDialogProperties(),
     ) {
         Box(
             modifier = Modifier

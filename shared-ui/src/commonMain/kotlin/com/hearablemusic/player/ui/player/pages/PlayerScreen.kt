@@ -13,13 +13,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.hearablemusic.player.ui.common.util.activityViewModel
-import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 
@@ -173,6 +177,19 @@ fun PlayerScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // 键盘快捷键（对齐旧桌面版行为；KMP API，Android 外接键盘同样生效）：
+            // Space 播放/暂停、←/→ 上一首/下一首、L 心动模式（进歌词页）
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.Spacebar -> { playerCallbacks.onPlayPause(); true }
+                        Key.DirectionLeft -> { playerCallbacks.onPrevious(); true }
+                        Key.DirectionRight -> { playerCallbacks.onNext(); true }
+                        Key.L -> { playerCallbacks.onHeartMode(); true }
+                        else -> false
+                    }
+                } else false
+            }
             .offset { IntOffset(0, offsetY.value.toInt()) }
             .graphicsLayer {
                 alpha = 1f - (offsetY.value / (2 * dismissThreshold)).coerceIn(0f, 1f)

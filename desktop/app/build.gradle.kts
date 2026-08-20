@@ -22,7 +22,8 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 implementation(project(":desktop:core-player"))
-                implementation(project(":desktop:feature-ui"))
+                // 第 5c 步：入口切 AppRoot（commonMain 共享层），旧 feature-ui 不再被引用
+                implementation(project(":shared-ui"))
                 implementation(compose.desktop.currentOs)
                 implementation(compose.runtime)
                 implementation(compose.material3)

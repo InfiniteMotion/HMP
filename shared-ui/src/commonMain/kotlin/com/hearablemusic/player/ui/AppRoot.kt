@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.hearablemusic.player.ui.common.components.BottomFusionBar
@@ -57,11 +56,13 @@ import com.hearablemusic.player.ui.common.dialogs.base.MessageToast
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogEvent
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogManagerViewModel
 import com.hearablemusic.player.ui.common.dialogs.viewmodel.DialogViewModel
+import com.hearablemusic.player.ui.common.layout.LocalTitleBarInset
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.layout.WindowWidthSizeClass
 import com.hearablemusic.player.ui.common.layout.rememberAppWindowSizeInfo
 import com.hearablemusic.player.ui.common.navigation.Routes
 import com.hearablemusic.player.ui.common.navigation.navigationGraph
+import com.hearablemusic.player.ui.common.navigation.rememberHmpNavBackStack
 import com.hearablemusic.player.ui.common.navigation.rememberRouter
 import com.hearablemusic.player.ui.common.pages.base.BackgroundStyle
 import com.hearablemusic.player.ui.common.pages.base.DynamicBackground
@@ -184,7 +185,7 @@ fun AppRoot(darkTheme: Boolean) {
         }
     }
 
-    val navController = rememberNavBackStack(Routes.Main.Tabs)
+    val navController = rememberHmpNavBackStack(Routes.Main.Tabs)
     val router = rememberRouter(navController)
     // 消费 ViewModel 发起的导航请求（ViewModel 不持有导航器引用）
     LaunchedEffect(dialogEvent) {
@@ -272,6 +273,8 @@ fun AppRoot(darkTheme: Boolean) {
                                     val contentModifier = Modifier
                                         .padding(it)
                                         .statusBarsPadding()
+                                        // 5d：平台壳悬浮标题栏让位（Desktop 40dp / Android 0）
+                                        .padding(top = LocalTitleBarInset.current)
 
                                     val coroutineScope = rememberCoroutineScope()
 

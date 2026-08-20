@@ -20,6 +20,10 @@ kotlin {
         minSdk = 33
     }
 
+    // 第 5a 步：desktop target 编译侦察（方案 §7 第 5 步）——
+    // commonMain 全量（118 文件）首次编译到 JVM，暴露残留 Android-only API
+    jvm("desktop")
+
     sourceSets {
         // 第 1 步：设计系统+主题已迁 commonMain，compose 基础库随之上移（androidMain 自动继承）
         commonMain.dependencies {
@@ -38,7 +42,9 @@ kotlin {
 
             // navigation3（KMP）：第 1 步空 NavHost 壳（AppRoot）在 commonMain
             implementation(libs.androidx.navigation3.runtime)
-            implementation(libs.jetbrains.navigation3.ui)
+            // api：AppRoot 的公开类型面（NavDisplay）；desktop 壳接 nav3 返回
+            // 需要 navigationevent-compose（本依赖的传递项），implementation 不传递（5c）
+            api(libs.jetbrains.navigation3.ui)
 
             // nav3 NavKey @Serializable 序列化支持（AppRoot 占位路由）
             implementation(libs.kotlinx.serialization.json)
@@ -49,8 +55,12 @@ kotlin {
             implementation(libs.haze.materials)
 
             // 第 2b 步：列表主路径迁入 commonMain（LibraryListViewModel = KMP ViewModel + Koin）
-            implementation(libs.jetbrains.lifecycle.viewmodel.compose)  // ViewModel/viewModelScope（KMP 分发）
-            implementation(libs.koin.compose)
+            // api：LocalAppViewModelStoreOwner 公开类型 ViewModelStoreOwner 的来源（5c：desktop 壳需触达）
+            api(libs.jetbrains.lifecycle.viewmodel.compose)  // ViewModel/viewModelScope（KMP 分发）
+            // 注意：libs.koin.compose 的实际坐标是 koin-androidx-compose（纯 Android AAR），
+            // commonMain 误用它曾致 desktop JavaCompile 变体解析失败（5c 发现）；
+            // KMP 版（org.koin.compose.*）在 koin-compose-multiplatform alias 下
+            implementation(libs.koin.compose.multiplatform)
             implementation(libs.koin.compose.viewmodel)   // koinViewModel()（KMP）
 
             // 第 4 步批 C：AppRoot（完整导航壳）迁 commonMain，NavDisplay 的 VM decorator 随之上移
@@ -93,6 +103,18 @@ kotlin {
             implementation(libs.junit)
             implementation(libs.mockk)
             implementation(libs.kotlinx.coroutines.test)
+        }
+
+        // 第 5a 步：desktop actual 所需（skiko 解码 PlatformImage.desktop 用；
+        // 与旧 :desktop:feature-ui 同模式，最终 app 壳重复引入时 Gradle 按版本去重）
+        // 命名 target（jvm("desktop")）的源集访问器需 by getting（与 :shared 同模式）
+        val desktopMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                // 第 5b 步：PlaybackController 桌面适配器委托 FFmpeg 引擎
+                // （与 androidMain 的 api(project(":android:core-player")) 同模式）
+                api(project(":desktop:core-player"))
+            }
         }
     }
 }

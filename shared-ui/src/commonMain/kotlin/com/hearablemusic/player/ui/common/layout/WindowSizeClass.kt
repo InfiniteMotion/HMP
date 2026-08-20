@@ -56,6 +56,13 @@ val LocalWindowSizeInfo = staticCompositionLocalOf<AppWindowSizeInfo> {
     error("AppWindowSizeInfo not provided")
 }
 
+/**
+ * 平台壳层悬浮标题栏的顶部让位高度（5d：Desktop 自绘标题栏叠加在 AppRoot 之上，
+ * 内容需为其让位；Android 由系统状态栏承担该职责，默认 0）。
+ * 由各平台壳在 AppRoot 外层 provides（Desktop: 40dp / Android: 不提供）。
+ */
+val LocalTitleBarInset = staticCompositionLocalOf { 0.dp }
+
 @Composable
 fun rememberAppWindowSizeInfo(): AppWindowSizeInfo {
     val windowInfo = LocalWindowInfo.current

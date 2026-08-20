@@ -31,8 +31,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hmp.desktop.ui.common.components.TITLE_BAR_HEIGHT
-import com.hmp.desktop.ui.common.design.animation.AnimationTokens
+import com.hearablemusic.player.ui.common.design.animation.AnimationTokens
+
+/**
+ * 标题栏高度（第 5c 步：旧 feature-ui DesktopConstants.TITLE_BAR_HEIGHT 随入口切换本地化，
+ * shared-ui 无此桌面专属常量）。
+ * 5d：开放为 internal —— Main.kt 同时将它 provides 给 LocalTitleBarInset，内容区为悬浮标题栏让位。
+ */
+internal val TITLE_BAR_HEIGHT = 40.dp
 
 /**
  * Custom window title bar for undecorated desktop window.
