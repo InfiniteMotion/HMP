@@ -9,9 +9,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
 /**
- * StatusBarsController 的 Android 实现（第 4 步批 B）。
+ * StatusBarsController 的 Android 实现。
  *
- * 行为与旧 androidMain LyricsScreen 内联窗口逻辑一致：
  * show/hide 状态栏；hide 同时设置 BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
  * （隐藏期间滑动可短暂唤出）。
  */

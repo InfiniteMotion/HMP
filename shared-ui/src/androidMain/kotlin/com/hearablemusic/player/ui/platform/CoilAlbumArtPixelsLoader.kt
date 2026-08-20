@@ -11,10 +11,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * AlbumArtPixelsLoader 的 Android 实现（第 4 步批 B）。
+ * AlbumArtPixelsLoader 的 Android 实现。
  *
- * 逻辑与旧 androidMain ThemeViewModel.extractPaletteColors 的取像素段一致：
- * Coil3 软件位图（allowHardware(false)）→ BitmapDrawable 整块 getPixels。
+ * Coil3 软件位图（allowHardware(false)，取像素必须软件位图）→
+ * BitmapDrawable 整块 getPixels。
  */
 class CoilAlbumArtPixelsLoader(
     private val context: Context

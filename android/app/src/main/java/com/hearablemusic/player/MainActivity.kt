@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 第 4 步批 C：平台服务注册（分享/文件选择/悬浮窗权限/标签编辑桥/触觉/悬浮歌词）。
+        // 平台服务注册（分享/文件选择/悬浮窗权限/标签编辑桥/触觉/悬浮歌词）。
         // 构造需宿主 Activity（launcher 挂其 registry），故在 Activity 侧注册而非 UiKoinModule。
         val platformServices = AndroidPlatformServices(applicationContext, this)
         loadKoinModules(
@@ -77,7 +77,6 @@ class MainActivity : ComponentActivity() {
                     "dark" -> true
                     else -> isSystemInDarkTheme()
                 }
-                // 第 1 步（C9）：入口切至新共享层空壳；旧 MainScreen/IntroScreen 不再被引用（冷死，androidMain 保留可对照）
                 AppRoot(darkTheme = darkTheme)
             }
         }

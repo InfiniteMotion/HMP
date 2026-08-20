@@ -11,7 +11,8 @@ import kotlinx.serialization.Serializable
  * 1. 所有路由均为 NavKey 的子类，无参数路由使用 object，带参数路由使用 data class
  * 2. 路由参数必须使用 @Serializable 注解，以便 Navigation3 序列化/反序列化
  * 3. 导航时通过 Routes.模块名.路由名 引用，如 Routes.Library.SongDetail(musicId = 123)
- * 4. 添加新路由时，需同时在 NavigationGraph.kt 中注册页面映射
+ * 4. 添加新路由时，需同时在 NavigationGraph.kt 注册页面映射，
+ *    并在 HmpNavBackStack.kt 的 serializer 注册表补 subclass（漏注册仅运行时报错）
  */
 object Routes {
     /**

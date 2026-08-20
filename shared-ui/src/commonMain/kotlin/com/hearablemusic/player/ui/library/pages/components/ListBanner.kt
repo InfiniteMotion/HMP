@@ -21,8 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * 列表页分组标题（第 4 步随 ListScreen 迁入 commonMain）。
- * 平台依赖处置：colorResource(@ColorRes) → 直接传 Compose Color（HD 色板 Kotlin 常量化）。
+ * 列表页分组标题。
  */
 @Composable
 fun ListGroupName(

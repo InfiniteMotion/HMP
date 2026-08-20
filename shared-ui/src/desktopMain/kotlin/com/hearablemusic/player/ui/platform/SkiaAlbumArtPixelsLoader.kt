@@ -9,9 +9,8 @@ import org.jetbrains.skia.ImageInfo
 import java.io.File
 
 /**
- * AlbumArtPixelsLoader 的 Desktop 实现（第 5b 步）。
+ * AlbumArtPixelsLoader 的 Desktop 实现。
  *
- * 逻辑对齐旧 desktop/feature-ui PaletteExtractor.extract 的取像素段：
  * skiko Image.makeFromEncoded 解码 → Bitmap/Canvas 读像素 → 步进采样
  * （min 边 / 32，约 32×32 个采样点，量级与 Android 侧 150×150 缩略图同档），
  * 供 commonMain ThemeViewModel 的直方图取色分析。

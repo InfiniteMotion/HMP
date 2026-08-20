@@ -32,19 +32,19 @@ import kotlinx.coroutines.withContext
 /**
  * PlatformServices 的 Android 实现（契约见 commonMain PlatformServices.kt）。
  *
- * 分享/文件选择/悬浮窗权限沿用旧 androidMain 页面内散落的 FileProvider +
- * ACTION_SEND / ActivityResultContracts / ACTION_MANAGE_OVERLAY_PERMISSION 写法（保行为迁移）。
+ * 分享/文件选择/悬浮窗权限基于 FileProvider + ACTION_SEND /
+ * ActivityResultContracts / ACTION_MANAGE_OVERLAY_PERMISSION 实现。
  * 文件选择与悬浮窗权限的 launcher 需挂在宿主 Activity 的 ActivityResultRegistry 上：
  * 由 AndroidPlatformServices 构造时传入 activity 并 register。
  */
 
-/** 分享：FileProvider + ACTION_SEND（旧 MainScreen 分享音乐 / BackupSettingsScreen 导出备份的模式）。 */
+/** 分享：FileProvider + ACTION_SEND。 */
 class ShareServiceImpl(private val context: Context) : ShareService {
 
     override fun shareMusic(request: ShareMusicRequest) {
         val file = File(request.filePath)
         if (!file.exists()) {
-            // 文件不存在：退化为分享文本（旧 MainScreen 行为：title - artist (album)）
+            // 文件不存在：退化为分享文本（title - artist (album)）
             shareText(request.title, "${request.title} - ${request.artist} (${request.album})")
             return
         }
@@ -219,9 +219,9 @@ class PermissionServiceImpl(private val context: Context) : PermissionService {
 }
 
 /**
- * 音乐标签编辑页平台桥（旧 EditMusicTagsScreen/ViewModel 平台段收口，保行为迁移）：
- * 封面选图 + 解码压缩（旧 readAndCompressCover）、MediaStore.createWriteRequest 写权限请求、
- * SAF Uri 写入（旧 saveWithUri 的 MusicTagEditor.writeTags(uri, ...) 段）。
+ * 音乐标签编辑页平台桥：
+ * 封面选图 + 解码压缩、MediaStore.createWriteRequest 写权限请求、SAF Uri 写入
+ * （MusicTagEditor.writeTags(uri, ...)）。
  */
 class MusicTagEditServiceImpl(private val context: Context) : MusicTagEditService {
 

@@ -88,13 +88,14 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
- * 新 UI 共享层应用壳（方案 §7 第 4 步批 C：旧 MainScreen 的 commonMain 等价物）。
+ * 新 UI 共享层应用壳。
  *
  * 职责：完整导航宿主——NavDisplay（转场动画）+ Tabs（MainShell）+ 全部二级页；
  * 播放态动态主题与动态背景；TabPageIndicator / BottomFusionBar / FusionSidebar 自适应布局；
  * 全局 DialogHost 与 Toast；分享/悬浮歌词等平台能力经 PlatformServices。
  *
- * 深层链接（DeepLinkHandler，android.net.Uri）为 Android 专属能力，本步未迁，后续按平台侧接线。
+ * 深层链接（DeepLinkHandler，android.net.Uri）为 Android 专属能力，保留在
+ * androidMain，尚未接入本导航宿主。
  *
  * @param darkTheme 由 app 壳（MainActivity）按用户主题偏好计算后传入
  */
@@ -213,8 +214,8 @@ fun AppRoot(darkTheme: Boolean) {
 
     val windowSizeInfo = rememberAppWindowSizeInfo()
 
-    // 应用主题(根据播放状态切换)；typography 补齐原入口 HearableMusicPlayerTheme 的字体配置
-    // （HarmonyOS Sans 家族 + 自定义字重字号，迁移时曾丢失导致字体回退 M3 默认）
+    // 应用主题(根据播放状态切换)；typography 必须显式传自定义字体配置
+    // （HarmonyOS Sans 家族 + 自定义字重字号），缺省会回退 M3 默认字体
     MaterialTheme(
         colorScheme = colorScheme,
         typography = TypographyTokens.Typography

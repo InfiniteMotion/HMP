@@ -17,13 +17,12 @@ import kotlinx.coroutines.withContext
 import kotlin.math.pow
 
 /**
- * 封面取色主题 VM（第 4 步批 B 迁 commonMain）。
+ * 封面取色主题 VM。
  *
- * 拆分说明：原 androidMain 版本将「像素获取（Coil3/Bitmap，平台基础设施）」
- * 与「取色算法（纯 Kotlin）」耦合在一个类里；迁移时按方案 §5.3 模式拆为：
- * - 像素获取 → [AlbumArtPixelsLoader] 接口（Android 实现 CoilAlbumArtPixelsLoader）
- * - 播放状态 → 冻结接口 [PlaybackController]（替代直连 MusicController）
- * - 取色算法 → 本类（3D 直方图峰值检测 + WCAG 对比度，逻辑与旧版一致）
+ * 架构分层：
+ * - 像素获取 → [AlbumArtPixelsLoader]（平台基础设施，各平台实现）
+ * - 播放状态 → 冻结接口 [PlaybackController]
+ * - 取色算法 → 本类（3D 直方图峰值检测 + WCAG 对比度）
  */
 class ThemeViewModel(
     private val pixelsLoader: AlbumArtPixelsLoader,

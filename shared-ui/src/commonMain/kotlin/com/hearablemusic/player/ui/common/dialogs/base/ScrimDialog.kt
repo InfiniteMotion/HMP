@@ -14,7 +14,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * 平台差异化弹窗属性（第 5a 步 desktop 侦察引入）：
+ * 平台差异化弹窗属性：
  * Android 侧需 decorFitsSystemWindows=false 实现 edge-to-edge 全屏遮罩
  * （该参数为 Android 变体专属）；Desktop 无系统栏嵌合概念，仅禁用默认宽度。
  */

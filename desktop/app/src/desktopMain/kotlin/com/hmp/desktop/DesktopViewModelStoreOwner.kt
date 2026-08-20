@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 
 /**
- * Desktop 应用级 ViewModelStoreOwner（第 5c 步）。
+ * Desktop 应用级 ViewModelStoreOwner。
  *
  * Android 侧该角色由 MainActivity 承担（CompositionLocal provides this）；
  * Desktop 无 Activity 概念，主窗口生命周期 == 应用生命周期，

@@ -17,10 +17,10 @@ import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 
 /**
- * PlatformServices 的 Desktop 实现（第 5b 步，契约见 commonMain PlatformServices.kt）。
+ * PlatformServices 的 Desktop 实现（契约见 commonMain PlatformServices.kt）。
  *
  * 与 Android 实现的差异（均记录于各 Impl KDoc）：
- * - 分享：无系统分享面板（旧 desktop MainScreen 仅弹提示）——文件用系统默认程序打开、
+ * - 分享：无系统分享面板——文件用系统默认程序打开、
  *   文本走剪贴板，为「等价实现」
  * - 文件选择：JFileChooser（线程模型见 FilePickerServiceImpl）
  * - 权限：桌面无运行时权限体系，恒授权
@@ -214,7 +214,7 @@ class DesktopHapticServiceImpl : HapticService {
     override fun perform(effect: HapticEffect) {}
 }
 
-/** 悬浮歌词：桌面无悬浮窗体系（旧 desktop 无此功能），空实现。 */
+/** 悬浮歌词：桌面无悬浮窗体系，空实现。 */
 class DesktopFloatingLyricsServiceImpl : FloatingLyricsController {
     override fun start() {}
     override fun stop() {}

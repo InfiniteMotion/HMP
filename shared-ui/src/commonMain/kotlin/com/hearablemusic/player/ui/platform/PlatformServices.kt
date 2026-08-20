@@ -3,7 +3,7 @@ package com.hearablemusic.player.ui.platform
 import com.hmp.domain.music.EditableMusicTags
 
 /**
- * 平台能力接口组（阶段一第 0 步冻结版，方案 §5.4 + C5）。
+ * 平台能力接口组（冻结版，方案 §5.4）。
  *
  * 收口 UI 中散落的 Context/Intent 调用（分享/文件选择/权限/触觉/悬浮歌词），
  * 接口 + Koin 注入，非 expect/actual——expect/actual 只留给无状态纯逻辑。

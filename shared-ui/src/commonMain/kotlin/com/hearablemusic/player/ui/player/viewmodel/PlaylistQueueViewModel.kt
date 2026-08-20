@@ -25,10 +25,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
 /**
- * 播放队列 ViewModel（第 4 步迁入 commonMain）。
- *
- * 平台依赖处置：MusicController → PlaybackController 冻结接口；
- * Application.getString（含格式化参数）→ CMP 挂起 getString(Res..., args)。
+ * 播放队列 ViewModel。
  */
 class PlaylistQueueViewModel(
     private val playbackController: PlaybackController,

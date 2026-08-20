@@ -21,8 +21,7 @@ import org.jetbrains.compose.resources.getString
 
 /**
  * AI 设置页（AIScreen）的页面级 ViewModel。
- * 包含 AI 接入配置、自动批处理与每日刷新策略，从 SettingsViewModel 中拆出。
- * 第 4 步迁入 commonMain：Application.getString（含格式化参数）→ CMP 挂起 getString(Res..., args)。
+ * 包含 AI 接入配置、自动批处理与每日刷新策略。
  */
 class AiSettingsViewModel(
     private val userSettingsUseCase: UserSettingsUseCase,

@@ -8,7 +8,7 @@ import com.hmp.domain.music.MusicInfo
  * PlaybackController 的 Android 实现（方案 §5.3 / C12）。
  *
  * 薄委托层：将冻结接口 1:1 转发给 Media3 体系的 [MusicController]，
- * 使 commonMain UI 不感知平台播放引擎。Desktop（第 5 步）由 FFmpeg 适配器实现同名接口。
+ * 使 commonMain UI 不感知平台播放引擎。
  */
 @UnstableApi
 class MusicControllerPlaybackAdapter(

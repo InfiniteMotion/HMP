@@ -14,8 +14,7 @@ import com.hmp.shared.resource.SharedIconLoader
 import com.hearablemusic.player.ui.common.util.decodeToImageBitmap
 
 /**
- * 标签图标展示（第 4 步随 ListScreen 迁入 commonMain）。
- * 平台依赖处置：BitmapFactory 解码 → ByteArray.decodeToImageBitmap() expect/actual。
+ * 标签图标展示。
  */
 @Composable
 fun SharedLabelIcon(

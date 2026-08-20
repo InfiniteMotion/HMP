@@ -87,9 +87,6 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * 独立歌词页面
  * 提供全屏歌词展示和实时参数调节功能
- *
- * 第 4 步批 B 迁 commonMain：窗口沉浸控制改走 rememberStatusBarsController
- * （expect/actual），System.currentTimeMillis 改走 nowEpochMillis()。
  */
 @Composable
 fun LyricsScreen(

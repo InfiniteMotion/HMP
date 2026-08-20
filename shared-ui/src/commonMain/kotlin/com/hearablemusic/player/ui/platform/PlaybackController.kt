@@ -7,14 +7,14 @@ import com.hmp.domain.setting.model.AudioEffectSettings
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * 播放控制接口（阶段一第 0 步冻结版，方案 §5.3 + C15）。
+ * 播放控制接口（冻结版，方案 §5.3）。
  *
  * UI/presentation 只依赖此接口；Media3 / FFmpeg 实现类型不得外泄到 commonMain。
- * 成员面按 feature-ui 全量真实调用点一次补全后冻结，阶段一不再增补。
+ * 成员面按全量调用点盘点后冻结，增补成员需同步两侧适配器。
  *
- * 实现落点（C12/D12）：
- * - Android：android:app（适配 Media3 MusicController）
- * - Desktop：desktop:app（适配 FFmpeg 引擎）
+ * 实现落点：
+ * - Android：androidMain MusicControllerPlaybackAdapter（适配 Media3）
+ * - Desktop：desktopMain DesktopMusicControllerPlaybackAdapter（适配 FFmpeg）
  *
  * 调用点映射表：docs/shared-ui-extract/接口冻结-调用点映射表.md
  */
@@ -107,12 +107,7 @@ interface PlaybackController {
     fun updateMusicLikedStatus(music: MusicInfo, liked: Boolean)
     fun getLikedStatus(musicId: Long)
 
-    /**
-     * 挂起读取指定曲目的收藏状态（弹窗即时展示用）。
-     *
-     * 冻结接口补充项：第 0 步按 feature-ui 调用点盘点时，DialogViewModel 直连
-     * MusicController 的此处调用被遗漏；第 4 步弹窗系统迁移时发现补入。
-     */
+    /** 挂起读取指定曲目的收藏状态（弹窗即时展示用）。 */
     suspend fun getCurrentLikedStatus(musicId: Long): Boolean
 
     // ── 曲目元数据 ──

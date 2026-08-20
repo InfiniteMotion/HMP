@@ -5,10 +5,9 @@ import androidx.compose.runtime.Composable
 /**
  * 触觉反馈助手（commonMain 契约）。
  *
- * 与 rememberPlatformHaptics() 同模式（见 PlatformHaptics.kt 说明）：
  * 触觉依赖窗口 View（平台 UI 基础设施），用 expect/actual composable 隔离；
- * Android actual 包装 LocalView.performHapticFeedback，Desktop（第 5 步）actual 给空实现。
- * 迁移中的 commonMain 组件与 androidMain 旧页面共用同一入口。
+ * Android actual 包装 LocalView.performHapticFeedback，Desktop actual 给空实现。
+ * 与 rememberPlatformHaptics()（PlatformServices.haptic 契约版）并存，本入口面向组件手势语义。
  */
 interface HapticFeedbackHelper {
     /** 轻触反馈 - 一般点击操作 */

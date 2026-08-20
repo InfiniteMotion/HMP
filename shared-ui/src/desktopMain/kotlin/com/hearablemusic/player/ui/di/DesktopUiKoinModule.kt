@@ -11,7 +11,6 @@ import com.hearablemusic.player.ui.platform.PlaybackController
 import com.hearablemusic.player.ui.platform.PlatformServices
 import com.hearablemusic.player.ui.platform.SkiaAlbumArtPixelsLoader
 import com.hearablemusic.player.ui.library.viewmodel.LibraryViewModel
-import com.hearablemusic.player.ui.library.viewmodel.LibraryListViewModel
 import com.hearablemusic.player.ui.library.viewmodel.EditMusicTagsViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SearchViewModel
 import com.hearablemusic.player.ui.library.viewmodel.SongDetailViewModel
@@ -30,7 +29,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
- * desktopMain 的 UI Koin 模块（第 5b 步）。
+ * desktopMain 的 UI Koin 模块。
  *
  * 注册面镜像 androidMain UiKoinModule（commonMain 的 VM 类完全相同，构造参数一致），
  * 差异仅平台桥三件：
@@ -40,18 +39,17 @@ import org.koin.dsl.module
  * - PlatformServices → 桌面聚合实现（无宿主 Activity，可直接注册；Android 侧因
  *   launcher 需挂 Activity registry 而在 MainActivity 动态注册）
  *
- * 装配时机：desktop/app 壳（第 5c 步）连同 desktopPlayerModule 等既有模块一起加载。
+ * 装配时机：desktop/app 壳连同 desktopPlayerModule 等既有模块一起加载。
  */
 val desktopUiModule = module {
     single { DialogManager() }
 
-    // 平台桥三件（第 5b 步）
+    // 平台桥三件
     single<PlaybackController> { DesktopMusicControllerPlaybackAdapter(get()) }
     single<AlbumArtPixelsLoader> { SkiaAlbumArtPixelsLoader() }
     single<PlatformServices> { DesktopPlatformServices() }
 
     viewModel { DialogManagerViewModel(get()) }
-    viewModel { LibraryListViewModel(get()) }
     viewModel { DialogViewModel(get(), get(), get(), get(), get(), get()) }
 
     viewModel { LibraryViewModel(get(), get(), get(), get(), get(), get(), get()) }

@@ -11,14 +11,11 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
 /**
- * 跨平台 NavBackStack 工厂（第 5a 步 desktop 侦察引入）。
+ * 跨平台 NavBackStack 工厂。
  *
  * nav3 的 rememberNavBackStack(vararg)（无 SavedStateConfiguration 的重载）是
- * Android 专属反射实现（1.1.1 源码 KDoc 明示 "not available on other platforms"）；
- * 非 Android 平台必须走显式注册了 NavKey 多态 serializer 的版本（否则运行时
- * rememberNavBackStack 内部 require 抛异常）。
- * 本函数统一两侧实现：全部走显式注册版（Android 亦支持），避免平台行为分叉。
- * 写法对照 nav3 官方 sample rememberNavBackStack_withSerializersModule。
+ * Android 专属反射实现；非 Android 平台必须走显式注册了 NavKey 多态
+ * serializer 的版本。本函数统一两侧都走显式注册版，避免平台行为分叉。
  *
  * 维护约束：新增路由时需在此补 subclass 注册——漏注册无编译期报错，
  * 仅在该 key 参与保存/恢复（进程重建/配置变更）时运行时报错。

@@ -42,10 +42,7 @@ data class ScanResult(
 )
 
 /**
- * 音乐库 ViewModel（第 4 步迁入 commonMain）。
- *
- * 平台依赖处置：Application/R.string → CMP Res；java.io.File.parent →
- * fileParentOf expect/actual；Dispatchers.Default（JVM-only）→ Dispatchers.Default。
+ * 音乐库 ViewModel。
  */
 class LibraryViewModel(
     private val getAllMusicUseCase: GetAllMusicUseCase,

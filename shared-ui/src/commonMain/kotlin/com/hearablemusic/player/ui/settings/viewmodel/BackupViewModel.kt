@@ -19,8 +19,7 @@ import org.jetbrains.compose.resources.getString
 
 /**
  * 备份与恢复设置页的页面级 ViewModel。
- * 从 SettingsViewModel 中拆出，随 BackupSettings 页面生命周期创建/清理。
- * 第 4 步迁入 commonMain：Application.getString（含格式化参数）→ CMP 挂起 getString(Res..., args)。
+ * 随 BackupSettings 页面生命周期创建/清理。
  */
 class BackupViewModel(
     private val exportUserDataBackupUseCase: ExportUserDataBackupUseCase,

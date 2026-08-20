@@ -4,7 +4,7 @@ import com.hmp.desktop.player.DesktopMusicController
 import com.hmp.domain.music.MusicInfo
 
 /**
- * PlaybackController 的 Desktop 实现（第 5b 步，方案 §5.3 / C12）。
+ * PlaybackController 的 Desktop 实现（方案 §5.3 / C12）。
  *
  * 薄委托层：将冻结接口转发给 FFmpeg 体系的 [DesktopMusicController]，
  * 与 Android 侧 MusicControllerPlaybackAdapter 同构。

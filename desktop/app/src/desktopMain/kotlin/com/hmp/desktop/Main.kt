@@ -119,7 +119,7 @@ fun main() {
             position = WindowPosition(Alignment.Center)
         )
 
-        // 第 5c 步：nav3 desktop 返回接线——
+        // nav3 desktop 返回接线——
         // NavDisplay 内部经 NavigationBackHandler 消费返回；非 Android 侧无系统返回手势，
         // 由根 DirectNavigationEventInput 驱动（Escape 键 → backCompleted → pop 栈）。
         // parent = null：显式声明根 dispatcher（默认从 CompositionLocal 找 parent，
@@ -131,7 +131,7 @@ fun main() {
             onDispose { navEventOwner.navigationEventDispatcher.removeInput(backInput) }
         }
 
-        // 第 5c 步：应用级 VM owner（commonMain activityViewModel() 的 desktop 宿主）
+        // 应用级 VM owner（commonMain activityViewModel() 的 desktop 宿主）
         val appViewModelStoreOwner = remember { DesktopViewModelStoreOwner() }
 
         // Live system dark mode state — updated by platform theme watcher
@@ -177,7 +177,7 @@ fun main() {
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.Escape -> {
-                            // 第 5c 步：nav3 返回（NavDisplay 内部 pop back stack）
+                            // nav3 返回（NavDisplay 内部 pop back stack）
                             backInput.backCompleted()
                             true
                         }
@@ -263,10 +263,10 @@ fun main() {
                         }
                     }
 
-                    // 第 5c 步：入口切 commonMain 共享层 AppRoot——
+                    // 入口 commonMain 共享层 AppRoot——
                     // 双 provides：应用级 VM owner（activityViewModel 契约）+ nav3 返回 dispatcher
                     //（NavDisplay 的 NavigationBackHandler 在非 Android 上从该 CompositionLocal 发现 dispatcher）
-                    // 5d：LocalTitleBarInset —— CustomTitleBar 悬浮叠加在 AppRoot 之上，内容需为其让位
+                    // LocalTitleBarInset：CustomTitleBar 悬浮叠加在 AppRoot 之上，内容需为其让位
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalAppViewModelStoreOwner provides appViewModelStoreOwner,
                         LocalNavigationEventDispatcherOwner provides navEventOwner,

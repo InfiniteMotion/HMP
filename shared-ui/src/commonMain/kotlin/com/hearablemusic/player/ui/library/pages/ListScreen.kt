@@ -86,7 +86,7 @@ import com.hmp.domain.playlist.Playlist
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-/** HD 强调色板（原 androidMain res/values/colors.xml，第 4 步 Kotlin 常量化随迁）。 */
+/** HD 强调色板。 */
 private val HDGreen = Color(0xFF4E6E45)
 private val HDBlue = Color(0xFF002FA7)
 private val HDPurple = Color(0xFF6A0DAD)

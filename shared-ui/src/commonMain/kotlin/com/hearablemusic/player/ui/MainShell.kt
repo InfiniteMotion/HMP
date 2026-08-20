@@ -17,7 +17,7 @@ import com.hearablemusic.player.ui.library.pages.ListScreen
 import com.hearablemusic.player.ui.settings.pages.UserScreen
 
 /**
- * Tab 壳（方案 §7 第 4 步批 C：旧 TabsHost 的 commonMain 等价物）。
+ * Tab 壳。
  *
  * 形态：HorizontalPager 4 页（Home/Gallery/List/User 真实页面），
  * 切页触觉反馈；TabPageIndicator 浮层与 BottomFusionBar 由 AppRoot 持有

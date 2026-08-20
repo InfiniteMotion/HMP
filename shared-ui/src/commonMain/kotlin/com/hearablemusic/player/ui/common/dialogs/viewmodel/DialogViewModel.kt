@@ -53,15 +53,12 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
 /**
- * 统一弹窗 ViewModel（第 4 步迁入 commonMain）。
+ * 统一弹窗 ViewModel。
  *
- * 平台依赖处置：
- * - Application.getString(R.string.x) → CMP 挂起 getString(Res.string.x)；
- *   同步校验路径（歌单名校验）改为挂起函数，由调用点在 viewModelScope 内调用。
- * - MusicController → PlaybackController 冻结接口（收藏状态读取经接口补口
- *   getCurrentLikedStatus，见 PlaybackController KDoc）。
- * - 菜单项由 Triple<Int, Int, () -> Unit>（资源 ID）改为
- *   Triple<DrawableResource, StringResource, () -> Unit>，由渲染端 Compose 解析。
+ * - 文案经 CMP 挂起 getString 获取；歌单名校验为挂起函数，
+ *   调用点需在协程内调用。
+ * - 菜单项为 Triple<DrawableResource, StringResource, () -> Unit>，
+ *   由渲染端 Compose 解析。
  */
 class DialogViewModel(
     private val playbackController: PlaybackController,

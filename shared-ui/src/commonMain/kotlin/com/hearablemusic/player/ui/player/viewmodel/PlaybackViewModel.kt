@@ -6,7 +6,7 @@ import com.hmp.domain.music.MusicInfo
 import com.hearablemusic.player.ui.platform.PlaybackController
 import kotlinx.coroutines.flow.StateFlow
 
-/** 播放控制薄包装（第 4 步迁入 commonMain）：MusicController → PlaybackController 冻结接口。 */
+/** 播放控制薄包装：转发 [PlaybackController] 冻结接口的状态流。 */
 class PlaybackViewModel(
     private val playbackController: PlaybackController
 ) : ViewModel() {
