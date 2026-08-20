@@ -2,42 +2,25 @@ package com.hearablemusic.player.ui.common.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import com.hmp.shared.resource.SharedIconLoader
-import com.hearablemusic.player.ui.common.util.decodeToImageBitmap
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 /**
- * 标签图标展示。
+ * 标签图标展示（同步 painterResource 渲染，替代旧异步 SharedIconLoader + 手动解码链路）。
  */
 @Composable
 fun SharedLabelIcon(
-    iconName: String,
+    iconRes: DrawableResource,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop
 ) {
-    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
-
-    LaunchedEffect(iconName) {
-        val bytes = SharedIconLoader.loadIcon(iconName.lowercase())
-        if (bytes != null) {
-            bitmap = bytes.decodeToImageBitmap()
-        }
-    }
-
-    bitmap?.let {
-        Image(
-            bitmap = it,
-            contentDescription = contentDescription,
-            modifier = modifier,
-            contentScale = contentScale
-        )
-    }
+    Image(
+        painter = painterResource(iconRes),
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale
+    )
 }

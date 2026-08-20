@@ -86,6 +86,15 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // AGP 9 KMP + CMP 双打包修复：composeResources 同时进 APK 根（Java resources）
+    // 与 assets/composeResources（CMP 在 Android 的运行时读取路径），净增 ~12.6MB。
+    // 排除根级重复份；shared 模块的 icons/ pinyindb/ 走 classLoader 读取，不可排除。
+    packaging {
+        resources {
+            excludes += "composeResources/**"
+        }
+    }
 }
 
 dependencies {

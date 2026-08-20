@@ -58,7 +58,7 @@ import com.hearablemusic.player.ui.common.navigation.Routes
 import com.hearablemusic.player.ui.common.pages.base.TabScreen
 import com.hearablemusic.player.ui.common.util.UiState
 import com.hearablemusic.player.ui.common.util.activityViewModel
-import com.hearablemusic.player.ui.common.util.iconName
+import com.hearablemusic.player.ui.common.util.iconRes
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
 import com.hearablemusic.player.ui.generated.resources.Res
 import com.hearablemusic.player.ui.generated.resources.album_art_desc
@@ -369,7 +369,7 @@ private fun GenreCard(
         Box(modifier = Modifier.fillMaxSize()) {
             // 背景图
             SharedLabelIcon(
-                iconName = label.iconName,
+                iconRes = label.iconRes,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -415,7 +415,7 @@ private fun MoodCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             SharedLabelIcon(
-                iconName = label.iconName,
+                iconRes = label.iconRes,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -445,7 +445,7 @@ private fun ScenarioCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             SharedLabelIcon(
-                iconName = label.iconName,
+                iconRes = label.iconRes,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
