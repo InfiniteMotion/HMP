@@ -71,7 +71,7 @@ interface RouteNavigator {
  * 封装 NavBackStack 提供具体的导航操作
  *
  * 该类实现了 RouteNavigator 接口，将高层导航操作映射到底层 NavBackStack 的堆栈管理。
- * 注意：该类不处理动画或深层链接，这些由 NavigationGraph 和 DeepLinkHandler 分别处理。
+ * 注意：该类不处理动画，动画由 NavigationGraph 配置。
  */
 class Router(
     private val navBackStack: NavBackStack<NavKey>

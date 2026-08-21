@@ -90,12 +90,9 @@ import org.koin.compose.koinInject
 /**
  * 新 UI 共享层应用壳。
  *
- * 职责：完整导航宿主——NavDisplay（转场动画）+ Tabs（MainShell）+ 全部二级页；
+ * 责任：完整导航宿主——NavDisplay（转场动画）+ Tabs（MainShell）+ 全部二级页；
  * 播放态动态主题与动态背景；TabPageIndicator / BottomFusionBar / FusionSidebar 自适应布局；
  * 全局 DialogHost 与 Toast；分享/悬浮歌词等平台能力经 PlatformServices。
- *
- * 深层链接（DeepLinkHandler，android.net.Uri）为 Android 专属能力，保留在
- * androidMain，尚未接入本导航宿主。
  *
  * @param darkTheme 由 app 壳（MainActivity）按用户主题偏好计算后传入
  */
