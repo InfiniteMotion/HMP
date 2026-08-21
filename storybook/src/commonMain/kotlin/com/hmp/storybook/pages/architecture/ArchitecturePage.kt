@@ -67,9 +67,9 @@ fun ArchitecturePage(onBack: () -> Unit) {
         ComponentShowcase(
             title = Strings.moduleStructure(lang),
             description = if (lang == AppLanguage.ZH)
-                "Monorepo 结构: :shared, :android:app, :android:core-player, :android:feature-ui, :ios, :storybook"
+                "Monorepo 结构: :shared, :android:app, :android:core-player, :shared-ui, :ios, :storybook"
             else
-                "Monorepo: :shared, :android:app, :android:core-player, :android:feature-ui, :ios, :storybook",
+                "Monorepo: :shared, :android:app, :android:core-player, :shared-ui, :ios, :storybook",
         ) {
             ModuleStructureDiagram(lang)
         }

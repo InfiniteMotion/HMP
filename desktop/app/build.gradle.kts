@@ -22,7 +22,7 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 implementation(project(":desktop:core-player"))
-                implementation(project(":desktop:feature-ui"))
+                implementation(project(":shared-ui"))
                 implementation(compose.desktop.currentOs)
                 implementation(compose.runtime)
                 implementation(compose.material3)

@@ -55,10 +55,10 @@ cd ios && pod install
 ### 运行单个测试
 ```bash
 # 运行指定测试类
-./gradlew :android:feature-ui:test --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest"
+./gradlew :shared-ui:testDebugUnitTest --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest"
 
 # 运行指定测试方法
-./gradlew :android:feature-ui:test --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest.testRouteDefinition"
+./gradlew :shared-ui:testDebugUnitTest --tests "com.hearablemusic.player.ui.common.navigation.RoutesTest.testRouteDefinition"
 ```
 
 ### 发布构建
@@ -88,8 +88,11 @@ HMP/
 │       └── iosMain/           # iOS 特定实现
 ├── android/                   # Android 平台
 │   ├── app/                   # 入口模块 (MainActivity, Application)
-│   ├── core-player/           # 播放核心 (Media3 服务, 播放控制)
-│   └── feature-ui/            # UI 模块 (Compose 页面, ViewModel)
+│   └── core-player/           # 播放核心 (Media3 服务, 播放控制)
+├── shared-ui/                 # 共享 UI 模块 (KMP 化中: Compose 页面, ViewModel)
+│   └── src/
+│       ├── commonMain/        # 跨平台共享 UI（逐步迁移中）
+│       └── androidMain/       # Android UI 现有代码
 └── ios/                       # iOS 平台 (SwiftUI)
     └── HMP/                   # Xcode 项目
 ├── storybook/                 # 组件展示 (Kotlin/Wasm)
@@ -97,8 +100,8 @@ HMP/
 
 ### 模块依赖关系
 ```
-:android:feature-ui ──▶ :android:core-player
-:android:feature-ui ──▶ :shared
+:shared-ui ──▶ :android:core-player
+:shared-ui ──▶ :shared
 :android:core-player ──▶ :shared
 :ios ──▶ :shared (via CocoaPods)
 ```

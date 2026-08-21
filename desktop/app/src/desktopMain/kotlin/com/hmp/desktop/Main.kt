@@ -28,10 +28,15 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.hmp.desktop.player.DesktopMusicController
-import com.hmp.desktop.ui.common.design.theme.ThemeExtensionManager
-import com.hmp.desktop.ui.common.pages.MainScreen
+import com.hearablemusic.player.ui.AppRoot
+import com.hearablemusic.player.ui.common.design.theme.ThemeExtensionManager
+import com.hearablemusic.player.ui.common.layout.LocalTitleBarInset
+import com.hearablemusic.player.ui.common.util.LocalAppViewModelStoreOwner
 import com.hmp.desktop.DwmHelper
 import com.sun.jna.platform.win32.WinDef
+import androidx.navigationevent.DirectNavigationEventInput
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
 import org.koin.core.context.GlobalContext
 import java.awt.EventQueue
 import java.io.File
@@ -114,7 +119,20 @@ fun main() {
             position = WindowPosition(Alignment.Center)
         )
 
-        val backHandler = remember { mutableStateOf<(() -> Unit)?>(null) }
+        // nav3 desktop 返回接线——
+        // NavDisplay 内部经 NavigationBackHandler 消费返回；非 Android 侧无系统返回手势，
+        // 由根 DirectNavigationEventInput 驱动（Escape 键 → backCompleted → pop 栈）。
+        // parent = null：显式声明根 dispatcher（默认从 CompositionLocal 找 parent，
+        // 但此处正是 provides 之前，必须显式 null 才不抛 ISE）
+        val backInput = remember { DirectNavigationEventInput() }
+        val navEventOwner = rememberNavigationEventDispatcherOwner(parent = null)
+        DisposableEffect(navEventOwner) {
+            navEventOwner.navigationEventDispatcher.addInput(backInput)
+            onDispose { navEventOwner.navigationEventDispatcher.removeInput(backInput) }
+        }
+
+        // 应用级 VM owner（commonMain activityViewModel() 的 desktop 宿主）
+        val appViewModelStoreOwner = remember { DesktopViewModelStoreOwner() }
 
         // Live system dark mode state — updated by platform theme watcher
         var systemIsDark by remember { mutableStateOf(detectSystemDarkMode()) }
@@ -159,7 +177,8 @@ fun main() {
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.Escape -> {
-                            backHandler.value?.invoke()
+                            // nav3 返回（NavDisplay 内部 pop back stack）
+                            backInput.backCompleted()
                             true
                         }
                         else -> false
@@ -244,11 +263,17 @@ fun main() {
                         }
                     }
 
-                    // MainScreen fills entire window — background extends behind title bar
-                    MainScreen(
-                        onBackHandlerReady = { handler -> backHandler.value = handler },
-                        systemIsDark = systemIsDark
-                    )
+                    // 入口 commonMain 共享层 AppRoot——
+                    // 双 provides：应用级 VM owner（activityViewModel 契约）+ nav3 返回 dispatcher
+                    //（NavDisplay 的 NavigationBackHandler 在非 Android 上从该 CompositionLocal 发现 dispatcher）
+                    // LocalTitleBarInset：CustomTitleBar 悬浮叠加在 AppRoot 之上，内容需为其让位
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalAppViewModelStoreOwner provides appViewModelStoreOwner,
+                        LocalNavigationEventDispatcherOwner provides navEventOwner,
+                        LocalTitleBarInset provides TITLE_BAR_HEIGHT,
+                    ) {
+                        AppRoot(darkTheme = appIsDark)
+                    }
 
                     // Collect playback state reactively for immersive title bar
                     // Uses collectAsState to stay in sync with MainScreen's same underlying StateFlow

@@ -48,7 +48,7 @@ jobs:
 
       - name: Run unit tests
         continue-on-error: true
-        run: ./gradlew :shared:test :android:feature-ui:test --no-daemon --no-configuration-cache
+        run: ./gradlew :shared:test :shared-ui:testDebugUnitTest --no-daemon --no-configuration-cache
 
       - name: Validate version
         run: |

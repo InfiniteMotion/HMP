@@ -39,7 +39,7 @@
 - **shared**: 跨平台共享模块，包含业务逻辑、数据模型、Repository接口和Koin依赖注入配置
 - **android/app**: Android应用入口模块，包含MainActivity和Application类
 - **android/core-player**: Android播放核心模块，包含Media3服务和播放控制逻辑
-- **android/feature-ui**: Android UI功能模块，包含Compose页面和组件
+- **shared-ui**: 共享UI模块（KMP化中），包含Compose页面和组件，现位于androidMain，逐步迁移至commonMain
 - **desktop/app**: Desktop应用入口模块，包含窗口管理、系统托盘和应用生命周期
 - **desktop/core-player**: Desktop播放核心模块，包含FFmpeg音频引擎和播放控制逻辑
 - **desktop/feature-ui**: Desktop UI功能模块，包含Compose Multiplatform页面和组件
@@ -49,8 +49,8 @@
 ### 模块间依赖关系
 
 ```
-:android/feature-ui ──▶ :android/core-player
-:android/feature-ui ──▶ :shared
+:shared-ui ──▶ :android/core-player
+:shared-ui ──▶ :shared
 :android/core-player ──▶ :shared
 :desktop/feature-ui ──▶ :desktop/core-player
 :desktop/feature-ui ──▶ :shared

@@ -37,21 +37,25 @@ include(":shared")
 
 when (buildTarget) {
     "desktop" -> {
+        include(":shared-ui")
         include(":desktop:app")
         include(":desktop:core-player")
-        include(":desktop:feature-ui")
+        // 仅为 shared-ui androidMain 的 project() 声明提供存在性（configure-on-demand 下
+        // desktop 任务链不解析 android 变体，本模块不会被配置，无需 Android SDK）
+        include(":android:core-player")
     }
     "android" -> {
         include(":android:app")
         include(":android:core-player")
-        include(":android:feature-ui")
+        include(":shared-ui")
+        // 仅为 shared-ui desktopMain 的 project() 声明提供存在性（android 任务链不配置本模块）
+        include(":desktop:core-player")
     }
     else -> {
         include(":android:app")
         include(":android:core-player")
-        include(":android:feature-ui")
+        include(":shared-ui")
         include(":desktop:app")
         include(":desktop:core-player")
-        include(":desktop:feature-ui")
     }
 }
