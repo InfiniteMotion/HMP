@@ -198,29 +198,79 @@
 
 v5.10 是 v5 系列的最后一个版本，标志着跨平台架构搭建完成。v6 阶段将聚焦 iOS 侧不完善部分的补全，以及双平台功能对齐。
 
-### P8: iOS 存根替换
+### P8: iOS 存根替换（2026-08 复核更新）
 
-- [ ] **P8.1** SecureStorageHelper.ios.kt — 实现 Keychain 加密存储（当前 encrypt/decrypt 返回原文）
-- [ ] **P8.2** PinyinSortKey.ios.kt — 实现 CFStringTransform 拼音转换（当前返回原字符串）
-- [ ] **P8.3** BackupFileRepositoryImpl.ios.kt — 实现真实备份文件读写（当前为存根）
+- [ ] **P8.1** SecureStorageHelper.ios.kt — 升级为真加密：现实现为 XOR 伪加密 + 明文密钥文件，应改为 CryptoKit AES-GCM + Keychain 存密钥（shared 层代码，方向 A 重写后仍保留，优先级高）
+- [x] **P8.2** PinyinSortKey.ios.kt — 已实现内置 PinyinLookupTable 拼音查表（原「返回原字符串」描述过时）
+- [x] **P8.3** BackupFileRepositoryImpl.ios.kt — 已实现真实备份文件读写（NSFileManager JSON 落盘，非存根）
 
-### P9: iOS 设置页面后端实现
+### P9: iOS 设置页面后端实现（❄️ 冻结，由方向 A 取代）
 
-- [ ] **P9.1** AIScreen — 替换模拟数据，接入真实 API 调用
-- [ ] **P9.2** BackupSettingsScreen — 替换模拟 exportBackup/restoreBackup
-- [ ] **P9.3** LibrarySettingsScreen — 补全隐藏文件夹等操作的实际实现
-- [ ] **P9.4** UserUsageDataScreen — 替换模拟数据，接入真实 ViewModel 数据
-- [ ] **P9.5** UserUsageDataViewModel — 独立实现使用数据统计 ViewModel
+> KMP 重写后这些 SwiftUI 页面将被删除，在其后端投入属一次性投入，故冻结；如方向 A 计划变更再重启。
 
-### P10: iOS 验证与清理
+- ~~P9.1 AIScreen — 替换模拟数据，接入真实 API 调用~~
+- ~~P9.2 BackupSettingsScreen — 替换模拟 exportBackup/restoreBackup~~
+- ~~P9.3 LibrarySettingsScreen — 补全隐藏文件夹等操作的实际实现~~
+- ~~P9.4 UserUsageDataScreen — 替换模拟数据，接入真实 ViewModel 数据~~
+- ~~P9.5 UserUsageDataViewModel — 独立实现使用数据统计 ViewModel~~
 
-- [ ] **P10.1** 真机验证 — 锁屏控制 + Live Activity 需真机验证
+### P10: iOS 验证与清理（部分并入 v7.x）
+
+- [ ] **P10.1** 真机验证 — 锁屏控制 + Live Activity（方向 A 后播放引擎仍为 Swift 层，长期有效）
 - [ ] **P10.2** MusicPlayService.swift 清理 — 已被 PlayerEngine 替代，可删除
-- [ ] **P10.3** 双平台功能对齐验证 — 逐模块对比 Android/iOS 功能完整性
+- [x] **P10.3** 双平台功能对齐验证 — 由 v7.x 方向 A（KMP 重写 iOS）从架构上消除双实现，自然达成
 
 ### 技术债务
 
-- [ ] **T3** Repository 通用逻辑提取到 commonMain 共享基类，减少平台 actual 中的重复实现
+- [ ] **T3** Repository 通用逻辑提取到 commonMain 共享基类，减少平台 actual 中的重复实现（SettingsRepositoryImpl 三平台各 ~500 行高度重复）
+
+---
+
+## v7.x 阶段：三大方向任务分解（2026-08 制定）
+
+> 方向论证见 ROADMAP.md「未来发展方向 · v7.x 阶段」。版本编排：**7.1** = A-Phase1 + C-批1；**7.2** = A-Phase2/3 + C-批2；**7.3** = B；**7.4** = 收尾。
+
+### 方向 A：KMP 重写 iOS UI（Compose 取代 SwiftUI）
+
+**Phase 1 — 地基（7.1）**
+- [ ] **A1** shared-ui 增加 iOS targets（iosArm64/iosX64/iosSimulatorArm64）编译通过，CocoaPods 导出接入 ios 工程
+- [ ] **A2** spike：navigation3 在 iOS 端可用性验证（返回手势 / 转场 / 与现有 SwiftUI 壳共存）
+- [ ] **A3** shared-ui iosMain 桥接层（以 desktopMain 12 文件为模板）：PlaybackController / AlbumArtPixelsLoader / PlatformServices + 触觉 / 状态栏 / 对话框适配
+- [ ] **A4** 桥接包装 Swift 播放引擎（PlayerEngine → PlaybackController 实现，保留 NowPlayingInfo / RemoteCommand）
+- [ ] **A5** 试点页面：设置中心 + 一个子页在 iOS 真机跑通，验证 Liquid Glass 观感取舍
+
+**Phase 2/3 — 按模块迁移（7.2）**
+- [ ] **A6** 库模块（Library / Home / Search / SongDetail）
+- [ ] **A7** 播放器模块（Player / Lyrics / 队列）
+- [ ] **A8** 播放列表模块
+- [ ] **A9** 设置与用户模块（完成后删除对应 SwiftUI 页面与 9 个重复 Swift ViewModel）
+- [ ] **A10** iOS 壳收敛：仅保留 AppDelegate / 播放引擎 / LiveActivity / WidgetKit 等原生层
+
+### 方向 B：AI 功能 Agent 化（7.3）
+
+- [ ] **B1** OpenAiCompatibleAdapter 扩展：tools（function-calling）参数 + SSE 流式解析，保持 5 家服务商兼容
+- [ ] **B2** 本地工具注册表：searchLibrary / getListenStats / createPlaylist / addToPlaylist / controlPlayback / getNowPlayingContext（每个工具 = schema + suspend 调既有 UseCase）
+- [ ] **B3** AgentOrchestrator（shared domain 层）：agent loop（tool_call → 执行 → 回传 → 循环至最终答复）+ 护栏（破坏性操作 UI 确认 / 工具白名单 / 步数上限）
+- [ ] **B4** 对话式 UI（shared-ui commonMain，三端共享）+ 工具执行过程可视化
+- [ ] **B5** 场景落地：自然语言歌单生成、曲库问答
+- [ ] **B6** AI 电台：播完基于上下文（时段 + 历史 + 当前曲目）自动续队列
+
+### 方向 C：播放功能增强补齐
+
+**第一批（7.1，纯引擎层，与方向 A 并行）**
+- [ ] **C1** 播放速度：PlaybackController 接口扩展 + 三端实现（Media3 setPlaybackSpeed / FFmpeg atempo / AVPlayer rate）+ shared-ui UI
+- [ ] **C2** 音频格式白名单统一到 commonMain 常量；iOS 补 opus（现 7 种 vs Desktop 9 种不一致）
+- [ ] **C3** Gapless 无缝播放：Android（Media3 原生）+ Desktop（FFmpeg 预加载下一曲）+ iOS（AVPlayer 衔接）
+
+**第二批（7.2）**
+- [ ] **C4** Desktop 音效系统：FFmpeg avfilter（EQ / 低音 / 环绕），接 shared-ui AudioEffectViewModel 共享 UI
+- [ ] **C5** ReplayGain：标签读取（扫描器）+ 播放增益应用（三端）
+- [ ] **C6** 交叉淡入淡出（切歌 fade，三端引擎）
+- [ ] **C7** Desktop 放行 DSD(DSF/DFF) / APE / WV（FFmpeg 原生可解，白名单 + 标签解析验证）
+
+**待评估**
+- [ ] **C8** bit-perfect 输出（Windows WASAPI 独占等）
+- [ ] **C9** 桌面小组件（Android Glance / iOS WidgetKit）与手势操作
 
 ---
 

@@ -325,10 +325,11 @@
 - ✅ CI/CD自动发布（GitHub Actions）
 - ✅ 单元测试覆盖（650+ 用例）
 
-### 计划中功能
-- 🔄 桌面小组件
-- 🔄 音乐标签编辑
-- 🔄 性能优化
+### 计划中功能（v7.x 三大方向，详见「未来发展方向」）
+- 🔄 方向 A：KMP 重写 iOS UI（Compose 取代 SwiftUI）
+- 🔄 方向 B：AI 功能 Agent 化（工具调用 + 编排）
+- 🔄 方向 C：播放增强（播放速度 / Gapless / ReplayGain / 交叉淡入 / Desktop 音效 / 格式扩展）
+- 🔄 桌面小组件 / 手势操作（README 既定承诺）
 
 ## 📊 开发里程碑
 
@@ -377,29 +378,44 @@
 - iOS SwiftUI 界面大规模实现
 - 发布流程重构与 CI/CD 自动发布
 
-### 阶段8：iOS 功能补全与双平台对齐 (v6.x)
-- iOS 存根实现替换（SecureStorageHelper / PinyinSortKey / BackupFileRepository）
-- iOS 设置页面后端模拟→真实实现（AI/备份/音乐库/使用数据）
-- iOS 真机验证（锁屏控制 + Live Activity）
-- Repository 通用逻辑提取到 commonMain 共享基类
-- 双平台功能对齐验证
+### 阶段8：iOS 功能补全与双平台对齐 (v6.x，剩余部分并入 v7.x)
+- iOS 存根实现替换：拼音排序与备份读写已完成；安全存储现为 XOR 伪加密，待升级 AES-GCM + Keychain
+- iOS 设置页面后端与双平台对齐：由 v7.x 方向 A（KMP 重写 iOS）取代，避免在将被删除的 SwiftUI 页面上重复投入
+- iOS 真机验证（锁屏控制 + Live Activity）保留（重写后播放引擎仍为 Swift 层）
+- Repository 通用逻辑提取到 commonMain 共享基类（T3，持续）
 
 ## 🚀 未来发展方向
 
 **产品边界**：坚持纯本地，不做在线/云同步、不引入账号、不做社交；仅保留用户自填 API 的 AI 推荐。
 
-### v6 阶段：iOS 功能补全与双平台对齐
-1. iOS 存根替换为真实实现（SecureStorageHelper / PinyinSortKey / BackupFileRepository）
-2. iOS 设置页面后端模拟→真实 API（AI 配置/备份还原/音乐库管理/使用数据）
-3. iOS 真机验证（锁屏控制 + Live Activity + 后台播放）
-4. Repository 通用逻辑提取到 commonMain 共享基类
-5. 双平台功能完整对齐验证
+### v7.x 阶段：三大方向（2026-08 制定，任务分解见 TODO.md）
+
+**方向 A — KMP 重写 iOS，Compose 取代 SwiftUI**
+- shared-ui 增加 iOS targets；现有依赖栈（CMP 1.9.3 / navigation3 KMP / koin-compose-multiplatform / coil3 / haze）均已具备 iOS 构件，v7.0 的 Android/Desktop 迁移已验证同款路径
+- 新增 shared-ui iosMain 桥接层（以 desktopMain 12 文件为模板）：PlaybackController / AlbumArtPixelsLoader / PlatformServices 等
+- Swift 播放引擎层保留（PlayerEngine / NowPlayingInfo / RemoteCommand / LiveActivity / 独占能力），由桥接层包装
+- 逐模块迁移 UI（设置试点 → 库 → 播放器 → 播放列表 → 设置/用户），最终删除 9 个重复 Swift ViewModel 与对应 SwiftUI 页面
+- 收益：P8/P9/P10 一类「iOS 双实现对齐」债务永久消失，新功能默认三端交付
+- 决策点：Liquid Glass 观感取舍（CMP 近似 vs 关键页保留 SwiftUI）；渐进双轨 vs 一次性替换
+
+**方向 B — AI 功能 Agent 化**
+- OpenAiCompatibleAdapter 扩展 tools（function-calling）与 SSE 流式；现有 5 家服务商均走 OpenAI 兼容协议，协议层只改一处
+- shared domain 层新增 AgentOrchestrator：本地工具注册表（曲库检索/听歌统计/歌单管理/播放控制）+ agent loop + 护栏（破坏性操作 UI 确认、工具白名单、步数上限）
+- 场景：自然语言曲库操作与歌单生成、曲库问答、AI 电台（播完基于上下文自动续队列）
+- 排在方向 A 之后：对话 UI 届时三端共享，只写一次
+
+**方向 C — 播放功能增强补齐**（引擎层工作，与方向 A 正交可并行）
+- 三端空白补齐：播放速度、Gapless 无缝、ReplayGain 音量均衡、交叉淡入淡出
+- Desktop 音效系统：FFmpeg avfilter（EQ/低音/环绕），复用 shared-ui AudioEffectViewModel 共享 UI
+- 格式支持：三端白名单统一到 commonMain 常量；Desktop 放行 DSD/APE/WV（FFmpeg 原生可解）；iOS 补 opus
+- 进阶（待评估）：bit-perfect 输出（WASAPI 独占等，发烧友向）
+
+**版本编排**：7.1 地基与快赢（A-Phase1 + C-批1）→ 7.2 迁移主线（A-Phase2/3 + C-批2）→ 7.3 智能化（B）→ 7.4 收尾打磨（遗留 SwiftUI 清理 / 观感 / 真机验证）
 
 ### 中期目标
-1. 实现桌面小组件
-2. 添加音乐标签编辑功能
-3. 优化电池续航
-4. 完善单元测试覆盖
+1. 桌面小组件与手势操作（README 既定承诺，穿插于 v7.x）
+2. 优化电池续航
+3. 完善单元测试覆盖（shared-ui / desktop 为薄弱区）
 
 ### 长期目标
 1. 发布到应用商店（可选）

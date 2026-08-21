@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Hearable Music Player (HMP) — 一款跨平台本地音乐播放器，Android (Jetpack Compose) + iOS (SwiftUI)，共享业务层基于 Kotlin Multiplatform。当前版本 v5.10，正在进行 iOS 平台适配。
+Hearable Music Player (HMP) — 一款跨平台本地音乐播放器，Android (Jetpack Compose) / Desktop (Compose Multiplatform) / iOS (SwiftUI) 三端，共享业务层与 Android/Desktop 共享 UI 均基于 Kotlin Multiplatform。当前版本 v7.0.0。
 
 **产品边界**：纯本地，不做在线/云同步、不引入账号、不做社交；仅保留用户自填 API 的 AI 推荐。
 
@@ -43,6 +43,18 @@ cd ios && pod install
 ./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosX64
 ```
 
+### Desktop 构建
+```bash
+# 运行 Desktop 应用（开发调试）
+./gradlew :desktop:app:run
+
+# 构建当前 OS 安装包 (macOS DMG / Windows MSI / Linux DEB+AppImage)
+./gradlew :desktop:app:packageDistributionForCurrentOS
+```
+
+### 单端构建
+通过环境变量 `HMP_BUILD_TARGET`（`android` / `desktop` / `all`，默认 `all`）只包含对应平台的模块（见 `settings.gradle.kts`），单端任务链不需要另一端的构建产物，可加快配置与构建。
+
 ### 测试与检查
 ```bash
 # 运行单元测试
@@ -69,6 +81,9 @@ cd ios && pod install
 # 仅构建 Android Release (APK + AAB)
 ./gradlew releaseAndroid
 
+# 仅构建 Desktop Release 分发包 (DMG/MSI/DEB/AppImage)
+./gradlew releaseDesktop
+
 # 仅构建 iOS Release Archive (需 macOS)
 ./gradlew releaseIos
 
@@ -81,37 +96,46 @@ cd ios && pod install
 ### 目录结构
 ```
 HMP/
-├── shared/                    # KMP 共享模块 (domain + data 层)
+├── shared/                    # KMP 共享业务模块 (domain + data 层)
 │   └── src/
 │       ├── commonMain/        # 跨平台共享代码
 │       ├── androidMain/       # Android 特定实现
+│       ├── desktopMain/       # Desktop (JVM) 特定实现
 │       └── iosMain/           # iOS 特定实现
+├── shared-ui/                 # 共享 UI 模块 (Compose 页面, ViewModel)
+│   └── src/
+│       ├── commonMain/        # Android/Desktop 双端共享 UI（v7.0 完成迁移）
+│       ├── androidMain/       # Android 桥接层
+│       └── desktopMain/       # Desktop 桥接层
 ├── android/                   # Android 平台
 │   ├── app/                   # 入口模块 (MainActivity, Application)
 │   └── core-player/           # 播放核心 (Media3 服务, 播放控制)
-├── shared-ui/                 # 共享 UI 模块 (KMP 化中: Compose 页面, ViewModel)
-│   └── src/
-│       ├── commonMain/        # 跨平台共享 UI（逐步迁移中）
-│       └── androidMain/       # Android UI 现有代码
-└── ios/                       # iOS 平台 (SwiftUI)
-    └── HMP/                   # Xcode 项目
-├── storybook/                 # 组件展示 (Kotlin/Wasm)
+├── desktop/                   # Desktop 平台 (Compose Multiplatform)
+│   ├── app/                   # 入口模块 (Main.kt, 无边框窗口, 托盘, 单实例)
+│   └── core-player/           # 播放核心 (FFmpeg + JNA 音频引擎)
+├── ios/                       # iOS 平台 (SwiftUI)
+│   └── HMP/                   # Xcode 项目
+└── storybook/                 # 组件展示 (Kotlin/Wasm)
 ```
 
 ### 模块依赖关系
 ```
-:shared-ui ──▶ :android:core-player
 :shared-ui ──▶ :shared
+:shared-ui ──▶ :android:core-player   (androidMain 桥接)
+:shared-ui ──▶ :desktop:core-player   (desktopMain 桥接)
+:android:app ──▶ :shared + :shared-ui
+:desktop:app ──▶ :shared + :shared-ui + :desktop:core-player
 :android:core-player ──▶ :shared
+:desktop:core-player ──▶ :shared
 :ios ──▶ :shared (via CocoaPods)
 ```
 
 ### 架构分层
-- **UI 层**: Android (Jetpack Compose + Navigation 3) / iOS (SwiftUI + NavigationStack)
-- **ViewModel 层**: Koin 注入 (`koinViewModel()`)，StateFlow 状态管理
+- **UI 层**: Android + Desktop 共享 `shared-ui` commonMain（Compose，平台差异收口到 androidMain/desktopMain 桥接层：`PlaybackController` / `AlbumArtPixelsLoader` / `PlatformServices` 接口，位于 `ui/platform/`）/ iOS (SwiftUI + NavigationStack)
+- **ViewModel 层**: 位于 shared-ui，Koin 注入 (`koinViewModel()`)，StateFlow 状态管理
 - **Domain 层**: Use Cases + 领域模型，位于 `shared/src/commonMain/kotlin/com/hmp/domain/`
 - **Data 层**: Repository + Room Database + Ktor 网络，位于 `shared/src/commonMain/kotlin/com/hmp/data/`
-- **播放引擎**: Android (Media3 ExoPlayer) / iOS (AVFoundation)
+- **播放引擎**: Android (Media3 ExoPlayer) / Desktop (FFmpeg + JNA 自研引擎) / iOS (AVFoundation)
 
 ### 依赖注入
 - **Shared 模块**: Koin (`io.insert-koin:koin-core`)
@@ -119,7 +143,7 @@ HMP/
 - iOS 端通过 `AppDelegate` 调用 `KoinKt.doInitKoin()` 初始化
 
 ### 跨平台机制 (expect/actual)
-以下接口通过 `expect` 在 commonMain 声明，`actual` 在 androidMain/iosMain 分别实现：
+以下接口通过 `expect` 在 commonMain 声明，`actual` 在 androidMain/desktopMain/iosMain 分别实现：
 - `DeviceMusicScanner` — 设备音乐扫描
 - `MusicTagParser` — 音乐标签解析
 - `SecureStorageHelper` — 安全存储 (API Key 加密)
@@ -129,26 +153,29 @@ HMP/
 - `DataStoreFactory` — DataStore 构建
 - `createHttpClient()` / `createJson()` — Ktor HTTP 客户端 + JSON 配置 (Android: OkHttp engine / iOS: Darwin engine)
 - `currentTimeMillis()` — 平台时间戳
-- `SharedIconLoader` — 共享图标资源加载
+
+图标资源已迁移至 `shared-ui` 的 composeResources 编译期资源（exhaustive when 映射，不再运行时动态加载）
 
 ## 关键技术栈
 
-| 领域 | Android | Shared (KMP) | iOS |
-|------|---------|--------------|-----|
-| UI | Jetpack Compose + Material3 + Haze 毛玻璃 | — | SwiftUI + Liquid Glass |
-| 导航 | Navigation 3 (类型安全) | — | NavigationStack |
-| 播放 | Media3 ExoPlayer | — | AVFoundation |
-| 数据库 | Room KMP | Room KMP | Room KMP |
-| 偏好存储 | DataStore | DataStore KMP | UserDefaults |
-| 网络 | — | Ktor Client | Ktor (Darwin engine) |
-| 序列化 | kotlinx.serialization | kotlinx.serialization | — |
-| DI | Koin | Koin | Koin |
-| 图片加载 | Coil | — | AsyncImage |
-| 标签解析 | Jaudiotagger + pinyin4j | 平台特定 | AVAsset 元数据 |
+| 领域 | Android | Desktop | Shared (KMP) | iOS |
+|------|---------|---------|--------------|-----|
+| UI | shared-ui Compose + Material3 + Haze 毛玻璃 | shared-ui Compose (响应式 Compact/Expanded) | — | SwiftUI + Liquid Glass |
+| 导航 | shared-ui 共享导航 (Navigation 3 类型安全) | 与 Android 共用 shared-ui | — | NavigationStack |
+| 播放 | Media3 ExoPlayer | FFmpeg + JNA 自研引擎 | — | AVFoundation |
+| 数据库 | Room KMP | Room KMP | Room KMP | Room KMP |
+| 偏好存储 | DataStore | DataStore KMP | DataStore KMP | UserDefaults |
+| 网络 | — | — | Ktor Client | Ktor (Darwin engine) |
+| 序列化 | kotlinx.serialization | kotlinx.serialization | kotlinx.serialization | — |
+| DI | Koin | Koin | Koin | Koin |
+| 图片加载 | Coil | — | — | AsyncImage |
+| 标签解析 | Jaudiotagger + pinyin4j | — | 平台特定 | AVAsset 元数据 |
 
 ## 开发注意事项
 
 ### 版本信息
+- 应用版本: 7.0.0 (versionCode 70000)
+- JDK 工具链: 21（Desktop jpackage 要求 Gradle Daemon 运行于 JDK 21，配置说明见 `gradle.properties` 注释）
 - Kotlin: 2.2.21
 - AGP: 9.0.0
 - Gradle: 9.x
@@ -164,28 +191,29 @@ HMP/
 
 ### 分支策略
 - `master`: 已发布版本
-- `develop-android` / `develop-ios` / `develop-desktop` / `develop-shared`: 各平台独立开发分支
-- `release/X.Y`: 发版集成分支，各 develop 合入后 PR 到 master
+- `release/X.Y`: 发版集成分支，feature 分支合入后 PR 到 master 触发自动发布（合并后远程 release 分支删除）
 - `feature/*`: 功能分支
 - `fix/*`: 修复分支
+
+> 无长期存活的 develop-* 分支；历史文档中提到的 develop 系列分支已不再使用。
 
 ### 版本号管理
 版本号集中维护在 `gradle.properties` 中 (`hmp.versionCode` / `hmp.versionName`)，各模块通过 `project.findProperty()` 引用。
 
 ### 发布与 CI/CD
-- 本地构建：`./gradlew release`（输出到 `releases/`，含 Android APK+AAB / iOS Archive / Storybook）
-- 自动发布：`release/*` 分支 PR 合并到 `master` 时，`.github/workflows/release.yml` 自动构建并发布 GitHub Release + 部署 Storybook 到 GitHub Pages
-- 发版流程：各 develop 分支合入 `release/X.Y` → 验证通过 → PR 到 master 触发发布
+- 本地构建：`./gradlew release`（输出到 `releases/`，含 Android APK+AAB / Desktop DMG+MSI+DEB+AppImage / Storybook；iOS Archive 仅 macOS）
+- 自动发布：`release/*` 分支 PR 合并到 `master` 时，`.github/workflows/release.yml` 自动构建并发布 GitHub Release（Android + Desktop 产物 + SHA256 校验）+ 部署 Storybook 到 GitHub Pages
+- 发版流程：feature/* 合入 `release/X.Y` → 验证通过（单测 + 版本号重复检测）→ PR 到 master 触发发布
 - 详见 [docs/VERSIONING.md](docs/VERSIONING.md)
 
 ### 已知待完成任务 (TODO.md)
-- P6: iOS 端编译修复与核心功能实现 ✅ 已完成
-- P7: iOS SwiftUI 界面迁移 ✅ 已完成
-- P8-P10: v6 阶段 iOS 功能补全与双平台对齐
+- v7.x 三大方向：A) KMP 重写 iOS UI / B) AI 功能 Agent 化 / C) 播放功能增强补齐（编排 7.1-7.4，方向论证见 ROADMAP「未来发展方向」，任务分解见 TODO.md「v7.x 阶段」）
+- v6 遗留：P8.1 iOS 安全存储真加密（现 XOR 伪加密 → CryptoKit AES-GCM + Keychain）；P9 已由方向 A 取代冻结
 - T3: Repository 通用逻辑提取到 commonMain 共享基类
 
 ### 文档索引
 - [README.md](README.md) — 项目概览
+- [docs/README.md](docs/README.md) — 项目文档索引与各文档职责
 - [DEVELOP.md](DEVELOP.md) — 技术架构与开发流程
 - [ROADMAP.md](ROADMAP.md) — 版本历史与功能状态 (单一事实来源)
 - [TODO.md](TODO.md) — 可执行任务列表
