@@ -214,6 +214,25 @@
 - **质量保障**：
   - 新增 refreshAfterFileWrite 单元测试
 
+### v7.0.0 (2026-08-21)
+- **shared-ui 跨平台架构迁移**：
+  - UI 层从单平台实现迁移至 commonMain，Android/Desktop 双端共用一套 UI 代码
+  - 118 个 UI 文件迁移至 commonMain，平台差异收口到 androidMain/desktopMain 桥接层
+  - 新增平台桥接三件套：PlaybackController / AlbumArtPixelsLoader / PlatformServices
+  - 删除旧 desktop/feature-ui 和 android/feature-ui 模块，统一由 shared-ui 承载
+- **图标资源治理**：
+  - 图标架构从运行时动态加载（jar + SharedIconLoader）迁移至 composeResources 编译期资源
+  - 使用 exhaustive when 映射替代异步加载，消除平台样板代码和静默失败风险
+  - 58 个 PNG 图标转换为 WebP 格式，删除 19 个无用图标
+  - APK 体积从 46.9MB 优化至 13.2MB（下载包 7.1MB）
+- **代码清理与质量保障**：
+  - 删除 6 个死文件 + 约 180 个冗余资源 + 18 个空目录
+  - 移除 72 处迁移相关注释，总代码量减少 2521 行
+  - 恢复首启 IntroScreen 引导流程（入口切 AppRoot 时丢失的行为）
+  - 删除未接线的 DeepLinkHandler 死代码
+  - 单测基建修复（AGP 9 KMP 库插件 host test 接入）
+  - 双端编译验证通过，单测 81/81 全绿
+
 ## 🛠️ 关键技术演进
 
 ### 架构演进
@@ -388,8 +407,8 @@
 
 ---
 
-**最后更新时间**: 2026-08-12
-**当前版本**: v6.13.1
+**最后更新时间**: 2026-08-21
+**当前版本**: v7.0.0
 
 ---
 
