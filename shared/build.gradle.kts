@@ -82,13 +82,17 @@ dependencies {
 }
 
 room {
-    schemaDirectory("/schemas")
+    // exportSchema=false，此目录仅占位（绝对路径 /schemas 会与 copyIconsToIos 冲突触发
+    // Gradle 输出位置重叠校验，改为模块相对路径）
+    schemaDirectory("schemas")
 }
 
 // Copy shared icons to iOS project bundle resources
+// 源目录 shared/src/commonMain/resources/icons 当前不存在（历史遗留），任务保持空转；
+// 仅确保 iOS 编译任务链的输入/输出位置合法（绝对路径会触发隐式依赖校验失败）
 val copyIconsToIos by tasks.registering(Copy::class) {
-    from("/src/commonMain/resources/icons")
-    into("/../ios/HMP/HMP/icons")
+    from(layout.projectDirectory.dir("src/commonMain/resources/icons"))
+    into(layout.projectDirectory.dir("../ios/HMP/HMP/icons"))
 }
 
 tasks.matching { it.name == "compileKotlinIosSimulatorArm64" }.configureEach {

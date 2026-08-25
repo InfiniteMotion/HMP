@@ -12,6 +12,7 @@ import com.hmp.domain.playlist.Playlist
 import com.hmp.domain.playlist.usecase.ManagePlaylistUseCase
 import com.hmp.domain.setting.SettingsRepository
 import com.hearablemusic.player.ui.common.util.UiState
+import com.hearablemusic.player.ui.common.util.nowEpochMillis
 import com.hearablemusic.player.ui.generated.resources.Res
 import com.hearablemusic.player.ui.generated.resources.default_list
 import com.hearablemusic.player.ui.generated.resources.default_playlist
@@ -278,7 +279,7 @@ class PlaylistViewModel(
     fun recordPlaylistPlay(playlistId: Long) {
         viewModelScope.launch {
             managePlaylistUseCase.incrementPlaylistPlayCount(playlistId)
-            managePlaylistUseCase.setPlaylistLastPlayedAt(playlistId, System.currentTimeMillis())
+            managePlaylistUseCase.setPlaylistLastPlayedAt(playlistId, nowEpochMillis())
             if (playlistId == _selectedPlaylistId.value) refreshSelectedPlaylistMeta()
         }
     }

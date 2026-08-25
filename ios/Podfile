@@ -5,25 +5,87 @@ use_frameworks!
 
 project 'HMP/HMP.xcodeproj'
 
+# 方向 A Phase 1（A1）：iOS 聚合框架（shared + shared-ui 链接为单一 sharedIos 框架，
+# 避免双静态框架的 duplicate symbol / 动态框架的 Koin 全局分裂，见 shared-ios/README）
 target 'HMP' do
-  pod 'shared', :path => '../shared'
+  pod 'shared_ios', :path => '../shared-ios'
 end
 
 post_install do |installer|
     installer.pods_project.targets.each do |target|
-        if target.name == 'shared'
+        if target.name == 'shared_ios'
             target.build_phases.each do |phase|
-                if phase.name == '[CP-User] Build shared'
+                if phase.name == '[CP-User] Build shared_ios'
                     phase.shell_script = <<-SCRIPT
+if [ "YES" = "$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED" ]; then
+  echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\"YES\\""
+  exit 0
+fi
 set -ev
 REPO_ROOT="$PODS_TARGET_SRCROOT"
-"$REPO_ROOT/../gradlew" -p "$REPO_ROOT" $KOTLIN_PROJECT_PATH:syncFramework \
-    -Pkotlin.native.cocoapods.platform=$PLATFORM_NAME \
-    -Pkotlin.native.cocoapods.archs="$ARCHS" \
-    -Pkotlin.native.cocoapods.configuration="$CONFIGURATION"
+CFG="${CONFIGURATION:-Debug}"
+case "$CFG" in
+  Release*) TASK_CFG=Release ;;
+  *) TASK_CFG=Debug ;;
+esac
+if [ "$PLATFORM_NAME" = "iphoneos" ]; then
+  TASK_TARGET=IosArm64
+else
+  # 模拟器固定 SimulatorArm64：navigation3-ui 无 iosX64 构件；Intel Mac 走 Rosetta
+  TASK_TARGET=IosSimulatorArm64
+fi
+"$REPO_ROOT/../gradlew" -p "$REPO_ROOT" $KOTLIN_PROJECT_PATH:linkPod${TASK_CFG}Framework${TASK_TARGET}
+# Kotlin 2.3 起 pod 框架产出到 build/bin/<target>/podDebugFramework，而 podspec 的
+# vendored_frameworks 仍指向旧布局 build/cocoapods/framework，同步拷贝过去
+case "$TASK_TARGET" in
+  IosArm64) SRC_DIR="$REPO_ROOT/build/bin/iosArm64/podDebugFramework" ;;
+  *) SRC_DIR="$REPO_ROOT/build/bin/iosSimulatorArm64/podDebugFramework" ;;
+esac
+DST="$REPO_ROOT/build/cocoapods/framework"
+rm -rf "$DST/$PRODUCT_MODULE_NAME.framework"
+mkdir -p "$DST"
+cp -R "$SRC_DIR/$PRODUCT_MODULE_NAME.framework" "$DST/"
+# shared-ui 的 Compose 资源聚合进本框架的资源输出目录：
+# iOS 资源加载器按 <bundle>/compose-resources/composeResources/<Res包>/... 解析，
+# 需把 CMP prepared 的资源（composeResources/font|drawable|values-*）归组到
+# com.hearablemusic.player.ui.generated.resources 包目录下（Res 类 publicResClass 包名）
+PKG="com.hearablemusic.player.ui.generated.resources"
+UI_RES="$REPO_ROOT/../shared-ui/build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources"
+AGG_RES="$REPO_ROOT/build/compose/cocoapods/compose-resources"
+if [ -d "$UI_RES" ]; then
+  rm -rf "$AGG_RES"
+  mkdir -p "$AGG_RES/composeResources/$PKG"
+  for d in "$UI_RES"/*/; do
+    [ -d "$d" ] && cp -R "${d%/}" "$AGG_RES/composeResources/$PKG/"
+  done
+fi
 SCRIPT
                 end
             end
         end
+    end
+
+    # [CP] Copy Pods Resources 会把 spec.resources 的目录结构压平（font/ 目录丢失），
+    # 在 app 目标末尾追加一个拷贝阶段，把聚合后的 Compose 资源按原目录树放进
+    # <app>/compose-resources/composeResources（与 CMP iOS 加载器路径一致）
+    installer.aggregate_targets.each do |aggregate|
+        aggregate.user_project.native_targets.each do |nt|
+            next unless nt.name == 'HMP'
+            next if nt.build_phases.any? { |p| p.respond_to?(:name) && p.name == 'Copy KMP Compose Resources' }
+            phase = aggregate.user_project.new(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+            phase.name = 'Copy KMP Compose Resources'
+            phase.shell_script = <<-SCRIPT
+set -e
+SRC="$PODS_ROOT/../shared-ios/build/compose/cocoapods/compose-resources/composeResources"
+DEST="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/compose-resources/composeResources"
+if [ -d "$SRC" ]; then
+  rm -rf "$DEST"
+  mkdir -p "$(dirname "$DEST")"
+  cp -R "$SRC" "$(dirname "$DEST")/"
+fi
+SCRIPT
+            nt.build_phases << phase
+        end
+        aggregate.user_project.save
     end
 end

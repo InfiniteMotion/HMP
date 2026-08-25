@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 import CoreMedia
-import shared
+import sharedIos
 
 class MusicMetadataParser: MetadataParserBridgeParser {
     func parse(filePath: String) -> MusicMetadata? {

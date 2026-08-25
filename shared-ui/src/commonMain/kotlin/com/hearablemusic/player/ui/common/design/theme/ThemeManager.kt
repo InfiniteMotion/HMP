@@ -6,6 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import com.hearablemusic.player.ui.common.design.colors.ColorTokens
 import com.hearablemusic.player.ui.common.viewmodel.PaletteColors
+import kotlin.math.pow
 
 object ThemeManager {
 
@@ -80,7 +81,7 @@ object ThemeManager {
         fun linearize(c: Int): Double {
             val s = c / 255.0
             return if (s <= 0.04045) s / 12.92
-            else Math.pow((s + 0.055) / 1.055, 2.4)
+            else ((s + 0.055) / 1.055).pow(2.4)
         }
         return (0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)).toFloat()
     }

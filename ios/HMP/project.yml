@@ -1,6 +1,6 @@
 name: HMP
 options:
-  bundleIdPrefix: com.hmp
+  bundleIdPrefix: com.hearablemusic
   deploymentTarget:
     iOS: "26.3"
   xcodeVersion: "16.0"
@@ -9,7 +9,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "6MWD22QB9Z"
 
 targets:
   HMP:
@@ -40,9 +40,11 @@ targets:
           - audio
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
+        # Compose Multiplatform iOS 要求（高刷屏性能），缺省会触发 PlistSanityCheck 报错
+        CADisableMinimumFrameDurationOnPhone: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.hmp.HMP
+        PRODUCT_BUNDLE_IDENTIFIER: com.hearablemusic.HMP
         MARKETING_VERSION: "5.10.0"
         CURRENT_PROJECT_VERSION: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

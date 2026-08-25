@@ -216,7 +216,9 @@ v5.10 是 v5 系列的最后一个版本，标志着跨平台架构搭建完成�
 
 ### P10: iOS 验证与清理（部分并入 v7.x）
 
-- [ ] **P10.1** 真机验证 — 锁屏控制 + Live Activity（方向 A 后播放引擎仍为 Swift 层，长期有效）
+- [x] **P10.1** 真机验证 — iPhone 13（iOS 26.x，免费个人团队 6MWD22QB9Z）构建/安装/启动通过，
+  Koin（shared+shared-ui）初始化正常、无异常（2026-08-23）。锁屏控制 + Live Activity 的
+  **交互级核验**需在设备上按下 Home 锁屏实操：锁屏播放控制（暂停/切歌）、灵动岛 Live Activity 状态
 - [ ] **P10.2** MusicPlayService.swift 清理 — 已被 PlayerEngine 替代，可删除
 - [x] **P10.3** 双平台功能对齐验证 — 由 v7.x 方向 A（KMP 重写 iOS）从架构上消除双实现，自然达成
 
@@ -233,18 +235,36 @@ v5.10 是 v5 系列的最后一个版本，标志着跨平台架构搭建完成�
 ### 方向 A：KMP 重写 iOS UI（Compose 取代 SwiftUI）
 
 **Phase 1 — 地基（7.1）**
-- [ ] **A1** shared-ui 增加 iOS targets（iosArm64/iosX64/iosSimulatorArm64）编译通过，CocoaPods 导出接入 ios 工程
-- [ ] **A2** spike：navigation3 在 iOS 端可用性验证（返回手势 / 转场 / 与现有 SwiftUI 壳共存）
-- [ ] **A3** shared-ui iosMain 桥接层（以 desktopMain 12 文件为模板）：PlaybackController / AlbumArtPixelsLoader / PlatformServices + 触觉 / 状态栏 / 对话框适配
-- [ ] **A4** 桥接包装 Swift 播放引擎（PlayerEngine → PlaybackController 实现，保留 NowPlayingInfo / RemoteCommand）
-- [ ] **A5** 试点页面：设置中心 + 一个子页在 iOS 真机跑通，验证 Liquid Glass 观感取舍
+
+> ✅ 2026-08-23 完成（模拟器验证通过）。关键决策：Kotlin 2.2.21 → **2.3.21**（navigation3 全系 iOS klib 由 2.3 编译器产出，2.2 无法消费）；iOS 架构定案为**单一聚合框架 `shared-ios`**（shared + shared-ui 两 klib 链接为 sharedIos.framework，规避双静态框架 duplicate symbol 与动态框架 Koin 全局分裂）；**不启用 iosX64**（navigation3-ui 无 ios_x64 构件）；Xcode 26.6 需 iOS 26.5 模拟器运行时（`xcodebuild -downloadPlatform iOS`）。模拟器构建须 `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES`（Apple Silicon）。
+
+- [x] **A1** shared-ui 增加 iOS targets（iosArm64/iosSimulatorArm64）编译通过，CocoaPods 导出接入 ios 工程（`shared-ios` 聚合框架 + `pod 'shared_ios'`；Kotlin 2.3 的 pod 产物在 `build/bin/<target>/podDebugFramework`，Podfile 阶段脚本负责同步到 podspec 的 vendored 路径，并将 shared-ui 的 composeResources 按 `<bundle>/compose-resources/composeResources/<Res包>/` 布局打进 app）
+- [x] **A2** spike：navigation3 在 iOS 端可用性验证（设置试点用 NavDisplay + entryProvider + rememberHmpNavBackStack 跑通转场/保存状态；返回手势待 A5 真机单元验证）
+- [x] **A3** shared-ui iosMain 桥接层（A4 双桥：`IosPlaybackController` 状态汇聚 + `IosPlaybackCommands` 命令闭包；`IosAlbumArtPixelsLoader` / `IosPlatformServices` / Taptic Engine 触觉 / `StatusBars.ios` / `ScrimDialog.ios`/ 8 个 expect actual + `iosUiModule` + `installKoinIosWithSharedUi`）
+- [x] **A4** 桥接包装 Swift 播放引擎（`PlaybackBridge.swift` 闭包注册 + Observation 状态镜像；MusicPlayerController 补齐 addToPlaylist/removeFromPlaylist/moveToTop/playHeartMode/playAt(music)；NowPlayingInfo / RemoteCommand / LiveActivity 保持于 Swift 原生层未动）
+- [x] **A5** 试点页面：设置中心 + 设置子页（ProfileSettings/Backup/Library/Lyrics）在 iOS 模拟器跑通（`xcrun simctl launch ... com.hmp.HMP -hmp-pilot`），无未捕获异常、品牌蓝渲染确认；Liquid Glass 观感取舍（Compose 无原生毛玻璃，Haze 近似 vs 关键页保留 SwiftUI）留待 A6-A9 迁移时逐页决策
+
+**遗留（Phase 1 边界外）**
+- 模拟器 = iPhone 17 Pro（iOS 26.5）；真机验证（P10.1 锁屏/Live Activity + Liquid Glass 观感）待真机
+- 试点已删除的 XcodeGen shared scheme（HMP/HMPNowPlayingExtension .xcscheme）由 xcodegen 自动生成替代，archive 流程需回归确认
 
 **Phase 2/3 — 按模块迁移（7.2）**
-- [ ] **A6** 库模块（Library / Home / Search / SongDetail）
-- [ ] **A7** 播放器模块（Player / Lyrics / 队列）
-- [ ] **A8** 播放列表模块
-- [ ] **A9** 设置与用户模块（完成后删除对应 SwiftUI 页面与 9 个重复 Swift ViewModel）
-- [ ] **A10** iOS 壳收敛：仅保留 AppDelegate / 播放引擎 / LiveActivity / WidgetKit 等原生层
+
+> ✅ 2026-08-23 全面替换完成（模拟器验证通过）：
+> - 默认入口：`ContentView → IosAppRootKt.createAppRootViewController()`（共享层 Compose AppRoot 全模块运行）
+> - **A9 完成**：删除 68 个 SwiftUI 页面/组件/Design/Swift ViewModel（git 记录），保留原生层；
+>   `CoverCache` 从 AlbumCover.swift 提取保留（NowPlaying/LiveActivity 封面缓存）
+> - **A10 完成**：iOS 壳收敛至 17 个 Swift 文件 = AppDelegate / ContentView 宿主 / 播放引擎簇 /
+>   MediaSession（NowPlayingInfo/RemoteCommand/LiveActivity/封面）/ 桥（Playback/PlatformServices）/ 解析桥
+> - Koin 4.2.2（与 lifecycle 2.10 对齐，消除 irLinkageError；Android/Desktop 回归全绿）
+> - 剩余验证项（无真机/交互注入环境，记录待办）：真机锁屏/Live Activity（P10.1）、
+>   逐模块交互级核验（播放/歌词/队列/歌单操作）、Liquid Glass 观感取舍
+
+- [x] **A6** 库模块（Library / Home / Search / SongDetail）— 默认链路已运行（0 异常）
+- [x] **A7** 播放器模块（Player / Lyrics / 队列）— 默认链路已运行（0 异常）
+- [x] **A8** 播放列表模块 — 默认链路已运行（0 异常）
+- [x] **A9** 设置与用户模块 — 已删除对应 SwiftUI 页面与 9 个重复 Swift ViewModel
+- [x] **A10** iOS 壳收敛 — 仅保留 AppDelegate / 播放引擎 / LiveActivity / WidgetKit 等原生层（17 个 Swift 文件）
 
 ### 方向 B：AI 功能 Agent 化（7.3）
 

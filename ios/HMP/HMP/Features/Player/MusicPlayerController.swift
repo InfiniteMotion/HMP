@@ -1,5 +1,5 @@
 import Foundation
-import shared
+import sharedIos
 import UIKit
 
 /// 播放编排器单例 — 等价于 Android MusicController
@@ -11,9 +11,9 @@ class MusicPlayerController {
     // MARK: - Published State
 
     var isPlaying: Bool = false
-    var currentPlaylist: [MusicInfo_] = []
+    var currentPlaylist: [MusicInfo] = []
     var currentIndex: Int = -1
-    var currentPlayingMusic: MusicInfo_? = nil
+    var currentPlayingMusic: MusicInfo? = nil
     var currentPosition: Int64 = 0
     var duration: Int64 = 0
     var playbackMode: PlaybackMode = .sequential
@@ -127,13 +127,13 @@ class MusicPlayerController {
 
     // MARK: - Playback Controls
 
-    func playWith(_ musicInfo: MusicInfo_) {
+    func playWith(_ musicInfo: MusicInfo) {
         currentPlaylist = [musicInfo]
         currentIndex = 0
         startPlaying(musicInfo)
     }
 
-    func addAllToPlaylistInOrder(_ list: [MusicInfo_]) {
+    func addAllToPlaylistInOrder(_ list: [MusicInfo]) {
         currentPlaylist = list
         if !list.isEmpty {
             currentIndex = 0
@@ -144,7 +144,7 @@ class MusicPlayerController {
         }
     }
 
-    func addAllToPlaylistByShuffle(_ list: [MusicInfo_]) {
+    func addAllToPlaylistByShuffle(_ list: [MusicInfo]) {
         currentPlaylist = list.shuffled()
         if !currentPlaylist.isEmpty {
             currentIndex = 0
@@ -222,12 +222,75 @@ class MusicPlayerController {
         }
     }
 
-    func addToNextPlay(_ musicInfo: MusicInfo_) {
+    func addToNextPlay(_ musicInfo: MusicInfo) {
         let insertIndex = currentIndex + 1
         if insertIndex >= currentPlaylist.count {
             currentPlaylist.append(musicInfo)
         } else {
             currentPlaylist.insert(musicInfo, at: insertIndex)
+        }
+    }
+
+    /// 按曲目播放（PlaybackController.playAt(music) 桥接）
+    func playAt(_ musicInfo: MusicInfo) {
+        guard let idx = currentPlaylist.firstIndex(where: { $0.music.id == musicInfo.music.id }) else { return }
+        playAt(idx)
+    }
+
+    /// 追加到队列尾部（不打断当前播放；PlaybackController.addToPlaylist 桥接）
+    func addToPlaylist(_ musicInfo: MusicInfo) {
+        currentPlaylist.append(musicInfo)
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
+        }
+    }
+
+    /// 从队列移除（PlaybackController.removeFromPlaylist 桥接）
+    func removeFromPlaylist(_ musicInfo: MusicInfo) {
+        guard let idx = currentPlaylist.firstIndex(where: { $0.music.id == musicInfo.music.id }) else { return }
+        currentPlaylist.remove(at: idx)
+        if currentPlayingMusic?.music.id == musicInfo.music.id {
+            // 移除的是当前曲目：切换到同位置（或前一曲）继续，队列空则清空
+            if currentPlaylist.isEmpty {
+                clearPlaylist()
+            } else {
+                currentIndex = min(idx, currentPlaylist.count - 1)
+                startPlaying(currentPlaylist[currentIndex])
+            }
+        } else if currentIndex > idx {
+            currentIndex -= 1
+        }
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
+        }
+    }
+
+    /// 置顶队列（PlaybackController.moveToTop 桥接）
+    func moveToTop(_ musicInfo: MusicInfo) {
+        guard let idx = currentPlaylist.firstIndex(where: { $0.music.id == musicInfo.music.id }) else { return }
+        let item = currentPlaylist.remove(at: idx)
+        currentPlaylist.insert(item, at: 0)
+        if currentIndex == idx {
+            currentIndex = 0
+        } else if currentIndex < idx {
+            currentIndex += 1
+        }
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
+        }
+    }
+
+    /// 心动模式：以当前曲目为种子，其余随机洗牌生成新队列（标签权重算法在桌面端 shared 层，此处近似）
+    func playHeartMode() {
+        guard !currentPlaylist.isEmpty else { return }
+        var list = currentPlaylist
+        let seed = list.removeFirst()
+        list.shuffle()
+        currentPlaylist = [seed] + list
+        currentIndex = 0
+        startPlaying(seed)
+        Task {
+            await persistCurrentPlaylistToDatabaseWithCurrentId()
         }
     }
 
@@ -251,7 +314,7 @@ class MusicPlayerController {
 
     // MARK: - Private Helpers
 
-    private func startPlaying(_ musicInfo: MusicInfo_) {
+    private func startPlaying(_ musicInfo: MusicInfo) {
         if currentPlaybackHistoryId != nil {
             endCurrentPlaybackSession(isCompleted: false)
         }
@@ -282,7 +345,7 @@ class MusicPlayerController {
         HMPMediaSession.shared.onTrackChanged(musicInfo: musicInfo)
     }
 
-    private func loadMetadata(for musicInfo: MusicInfo_) {
+    private func loadMetadata(for musicInfo: MusicInfo) {
         let musicId = musicInfo.music.id
 
         Task {
@@ -323,7 +386,7 @@ class MusicPlayerController {
 
     // MARK: - Playback Session Tracking
 
-    private func startNewPlaybackSession(musicInfo: MusicInfo_) {
+    private func startNewPlaybackSession(musicInfo: MusicInfo) {
         let musicId = musicInfo.music.id
         playbackStartTime = Date()
         listeningDurationAccumulator = 0

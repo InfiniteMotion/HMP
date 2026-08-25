@@ -101,7 +101,7 @@ class EditMusicTagsViewModel(
                 var genre = ""
                 var track = ""
                 var fileWritable = false
-                withContext(Dispatchers.IO) {
+                withContext(Dispatchers.Default) {
                     fileWritable = isFilePathWritable(music.path)
                     MusicTagParser.parseMetadata(music.path)?.let { meta ->
                         year = meta.year.orEmpty()

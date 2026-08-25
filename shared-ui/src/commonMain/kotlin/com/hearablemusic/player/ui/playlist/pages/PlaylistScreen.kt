@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.hearablemusic.player.ui.common.util.commonFormat
 import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -413,7 +414,7 @@ fun PlaylistScreenContent(
                                     playlistId = selectedPlaylist.id,
                                     items = itemsToAdd,
                                     onComplete = {
-                                        dialogManager.showMessage(addedNSongsMessageFormat.format(selectedMusicList.size))
+                                        dialogManager.showMessage(commonFormat(addedNSongsMessageFormat, selectedMusicList.size))
                                     }
                                 )
                             }

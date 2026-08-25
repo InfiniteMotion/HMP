@@ -16,7 +16,7 @@ class MusicTagParserTest {
 
     @Before
     fun setup() {
-        tempDir = createTempDir("music_tag_test")
+        tempDir = kotlin.io.path.createTempDirectory("music_tag_test" + "-").toFile()
     }
 
     @After

@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.hearablemusic.player.ui.common.util.commonFormat
 import com.hearablemusic.player.ui.common.util.activityViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -182,7 +183,7 @@ fun GalleryScreenContent(
                             playlistId = selectedPlaylist.id,
                             items = itemsToAdd,
                             onComplete = {
-                                dialogManager.showMessage(addedNSongsMessageFormat.format(selectedMusicList.size))
+                                dialogManager.showMessage(commonFormat(addedNSongsMessageFormat, selectedMusicList.size))
                             }
                         )
                     }

@@ -43,6 +43,7 @@ when (buildTarget) {
         // 仅为 shared-ui androidMain 的 project() 声明提供存在性（configure-on-demand 下
         // desktop 任务链不解析 android 变体，本模块不会被配置，无需 Android SDK）
         include(":android:core-player")
+        include(":shared-ios")
     }
     "android" -> {
         include(":android:app")
@@ -50,6 +51,7 @@ when (buildTarget) {
         include(":shared-ui")
         // 仅为 shared-ui desktopMain 的 project() 声明提供存在性（android 任务链不配置本模块）
         include(":desktop:core-player")
+        include(":shared-ios")
     }
     else -> {
         include(":android:app")
@@ -57,5 +59,7 @@ when (buildTarget) {
         include(":shared-ui")
         include(":desktop:app")
         include(":desktop:core-player")
+        // 方向 A：iOS 聚合框架（shared + shared-ui 单框架导出，见 shared-ios/README）
+        include(":shared-ios")
     }
 }
