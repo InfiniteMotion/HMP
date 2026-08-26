@@ -1,9 +1,12 @@
 [versions]
 agp = "9.0.0"
-kotlin = "2.2.21"
+# Kotlin 2.3.x（2026-08）：navigation3 全系 iOS klib 由 2.3 编译器产出（google runtime ≥1.1.1 → 2.3.10，
+# JetBrains navigation3-ui 全版本 → 2.3.20），2.2.21 无法消费其 ABI；KSP 亦已切换 2.3.x 顺序版本。
+# 本机 ~/.konan 已有 kotlin-native-prebuilt-2.3.21。
+kotlin = "2.3.21"
 kotlinxCoroutines = "1.10.1"
 serialization = "1.7.3"
-ksp = "2.3.1"
+ksp = "2.3.11"
 coreKtx = "1.15.0"
 lifecycleRuntimeKtx = "2.10.0"
 
@@ -15,7 +18,7 @@ foundation = "1.9.4"
 activityCompose = "1.8.2"
 composeBom = "2025.11.00"
 navigation = "2.9.6"
-nav3Version = "1.1.0"
+nav3Version = "1.1.1"
 material3 = "1.2.1"
 loggingInterceptor = "4.12.0"
 
@@ -46,7 +49,7 @@ uiGraphics = "1.10.2"
 animationCore = "1.10.4"
 material3Adaptive = "1.2.0"
 
-koin = "4.0.4"
+koin = "4.2.2"
 ktor = "3.1.1"
 sqlite = "2.6.1"
 composeMultiplatform = "1.9.3"
@@ -55,6 +58,8 @@ composeMaterial3 = "1.9.0"
 
 # JetBrains 分发的 KMP 版（依赖替换用，见 docs/shared-ui-extract/方案.md §2.2）
 # navigation3：JetBrains 只分发 UI（runtime 用 google 坐标 androidx.navigation3，其本身即 KMP）
+# Kotlin 升至 2.3.21 后恢复 1.1.1（与 shared-ui 代码编写时一致；runtime 同步对齐 1.1.1，
+# 避免 nav3-ui 传递升级产生解析漂移；iOS klib ABI 2.3.0 由 2.3.21 编译器消费）。
 # lifecycle：viewmodel-navigation3 最低 2.10.0（JetBrains 官方 CMP 文档推荐组合）
 jetbrainsNavigation3 = "1.1.1"
 jetbrainsLifecycle = "2.10.0"

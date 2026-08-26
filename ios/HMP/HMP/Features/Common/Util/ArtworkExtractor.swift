@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 import UIKit
-import shared
+import sharedIos
 
 /// 从音频文件提取嵌入封面并保存到磁盘
 /// 实现 KMP ArtworkBridge.ArtworkExtractor 接口

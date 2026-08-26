@@ -434,10 +434,11 @@ fun AppRoot(darkTheme: Boolean) {
                             // 非 Medium 模式始终渲染，Medium 模式仅在子页面渲染（Tab 页面由 FusionSidebar 处理）
                             val bfbIsOnTabPage = navController.size == 1 && navController.lastOrNull() is Routes.Main.Tabs
                             if (!windowSizeInfo.useFusionSidebar || !bfbIsOnTabPage) {
-                                val isMiniPlayerVisible by playbackViewModel.isMiniPlayerVisible.collectAsState()
                                 val bfbScope = rememberCoroutineScope()
+                                // 底部融合栏 = Tab 导航 + 迷你播放器：Tab 页常驻显示（无歌曲时仍提供
+                                // Tab 导航，迷你播放器区显示空态；子页面由进入播放/歌词页才隐藏）
                                 AnimatedVisibility(
-                                    visible = navController.none { it is Routes.Player.Player || it is Routes.Player.Lyrics } && isMiniPlayerVisible,
+                                    visible = navController.none { it is Routes.Player.Player || it is Routes.Player.Lyrics },
                                     enter = slideInVertically(
                                         initialOffsetY = { it },
                                         animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)

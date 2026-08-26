@@ -1,6 +1,7 @@
 package com.hearablemusic.player.ui.library.pages.components.musiclist
 
 import com.hearablemusic.player.ui.common.util.epochMillisToYearMonth
+import com.hearablemusic.player.ui.common.util.commonFormat
 import com.hearablemusic.player.ui.common.util.nowEpochMillis
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -312,7 +313,7 @@ private fun formatDurationMs(ms: Long): String {
     val totalSeconds = (ms / 1000).toInt()
     val m = totalSeconds / 60
     val s = totalSeconds % 60
-    return "%d:%02d".format(m, s)
+    return commonFormat("%d:%02d", m, s)
 }
 
 /** 按列表顺序扫描，记录每个锚点桶首次出现的 list index。桶 i 为 [anchorValues[i], anchorValues[i+1])，最后一桶为 [last, ∞)。 */
@@ -429,7 +430,7 @@ private fun computeDateSmartAnchors(
     }
     if (ordered.isEmpty()) return Pair(emptyList(), emptyMap())
     val labels = ordered.map { (y, m) ->
-        if (m == 1) (if (y == -1) "未知" else y.toString()) else "%02d".format(m)
+        if (m == 1) (if (y == -1) "未知" else y.toString()) else commonFormat("%02d", m)
     }
     if (labels.size <= 1 && labels.getOrNull(0) == "未知") {
         return computeDateStylePositionAnchors(list, orderType)
@@ -470,7 +471,7 @@ private fun computeAddOrderYearMonthAnchors(
         else distinct.sortedWith(compareBy({ it.first }, { it.second }))
     }
     if (ordered.isEmpty()) return Pair(emptyList(), emptyMap())
-    val labels = ordered.map { (y, m) -> if (m == 1) y.toString() else "%02d".format(m) }
+    val labels = ordered.map { (y, m) -> if (m == 1) y.toString() else commonFormat("%02d", m) }
     val map = ordered.mapIndexed { anchorIndex, pair ->
         anchorIndex to indexToYm.indexOfFirst { it.second == pair }
     }.filter { it.second >= 0 }.toMap()
@@ -490,7 +491,7 @@ private fun computeDateStylePositionAnchors(
     if (n <= 1) return Pair(listOf(epochMillisToYearMonth(nowEpochMillis()).first.toString()), mapOf(0 to 0))
     val anchorCount = 13
     val currentYear = epochMillisToYearMonth(nowEpochMillis()).first
-    val labels = listOf(currentYear.toString()) + (1..12).map { "%02d".format(it) }
+    val labels = listOf(currentYear.toString()) + (1..12).map { commonFormat("%02d", it) }
     val desc = orderType.uppercase() == "DESC"
     val map = (0 until anchorCount).associate { i ->
         val pos = (i.toLong() * (n - 1) / (anchorCount - 1).coerceAtLeast(1)).toInt().coerceIn(0, n - 1)

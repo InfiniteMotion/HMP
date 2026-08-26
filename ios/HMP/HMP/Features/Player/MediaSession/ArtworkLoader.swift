@@ -1,10 +1,10 @@
 import UIKit
-import shared
+import sharedIos
 
 class ArtworkLoader {
     private var currentLoadTask: Task<Void, Never>?
 
-    func loadArtwork(musicInfo: MusicInfo_, completion: @escaping (UIImage?) -> Void) {
+    func loadArtwork(musicInfo: MusicInfo, completion: @escaping (UIImage?) -> Void) {
         currentLoadTask?.cancel()
         currentLoadTask = Task {
             let image = await loadArtworkAsync(musicInfo: musicInfo)
@@ -13,7 +13,7 @@ class ArtworkLoader {
         }
     }
 
-    func loadArtworkAsync(musicInfo: MusicInfo_) async -> UIImage? {
+    func loadArtworkAsync(musicInfo: MusicInfo) async -> UIImage? {
         let albumArtUri = musicInfo.music.albumArtUri
         if !albumArtUri.isEmpty {
             if let cached = CoverCache.shared.get(path: albumArtUri) {

@@ -75,7 +75,7 @@ tasks.register("releaseIos") {
     notCompatibleWithConfigurationCache("release copy task")
 
     if (isMacOS) {
-        dependsOn(":shared:linkPodReleaseFrameworkIosArm64")
+        dependsOn(":shared-ios:linkPodReleaseFrameworkIosArm64")
 
         doLast {
             val outDir = projectDirFile.resolve("releases/ios")

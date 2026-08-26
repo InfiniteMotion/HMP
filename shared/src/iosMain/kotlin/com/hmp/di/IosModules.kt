@@ -50,9 +50,9 @@ val iosPlatformModule = module {
     singleOf(::BackupFileRepositoryImpl) bind BackupFileRepository::class
 }
 
-fun initKoinIos() {
+fun initKoinIos(vararg additionalModules: org.koin.core.module.Module) {
     startKoin {
-        modules(sharedModule, iosPlatformModule)
+        modules(sharedModule, iosPlatformModule, *additionalModules)
     }
 }
 

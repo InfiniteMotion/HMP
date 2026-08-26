@@ -1,5 +1,5 @@
 import UIKit
-import shared
+import sharedIos
 import MediaPlayer
 
 /// iOS AppDelegate — 在应用启动时初始化 Koin (KMP DI)
@@ -10,14 +10,25 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         requestMusicLibraryPermission()
         ensureDocumentsFolderVisible()
-        KoinInitializer().doInit()
-        print("[AppDelegate] Koin initialized")
+        // shared（业务+平台）+ shared-ui（Compose UI）一次性装配
+        IosUiKoinModuleKt.installKoinIosWithSharedUi()
+        print("[AppDelegate] Koin initialized (shared + shared-ui)")
         MetadataParserBridge().register(parser: MusicMetadataParser())
         ArtworkBridge().register(extractor: ArtworkExtractor())
 
         // 初始化默认播放列表（这会触发播放状态的恢复）
         Task {
             await MusicPlayerController.shared.initializeDefaultPlaylists()
+        }
+
+        // 方向 A Phase 1：Swift 播放引擎 → Kotlin PlaybackController 双桥
+        Task { @MainActor in
+            PlaybackBridge.install()
+        }
+
+        // 方向 A Phase 1：平台服务桥（分享 / 图库选图 / 备份文件选择 → Compose PlatformServices）
+        Task { @MainActor in
+            PlatformServicesBridge.install()
         }
 
         return true

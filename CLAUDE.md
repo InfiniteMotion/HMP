@@ -30,18 +30,31 @@ Hearable Music Player (HMP) — 一款跨平台本地音乐播放器，Android (
 
 ### iOS 构建
 ```bash
-# 生成共享 Kotlin 框架
-./gradlew :shared:generateDummyFramework
+# 生成聚合框架 + podspec（shared + shared-ui 单框架 sharedIos）
+./gradlew :shared-ios:generateDummyFramework
+./gradlew :shared-ios:podspec
 
-# 安装 CocoaPods 依赖
-cd ios && pod install
-
-# Shared 模块 iOS 编译 (需 macOS + Xcode)
+# shared-ui / shared 模块 iOS 编译
+./gradlew :shared-ui:compileKotlinIosSimulatorArm64
 ./gradlew :shared:compileKotlinIosSimulatorArm64
 
-# 编译全部 iOS 目标
-./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosX64
+# 安装 CocoaPods 依赖（Podfile 已含 pod 'shared_ios'；Pod 脚本阶段自动 link + 同步产物）
+cd ios && pod install
+
+# 构建 iOS 模拟器 App（Apple Silicon；Xcode 26.6 需 iOS 26.5 模拟器运行时，
+# 缺失时先 `xcodebuild -downloadPlatform iOS`；generic 目的地会自动装 26.5）
+xcodebuild -workspace ios/HMP.xcworkspace -scheme HMP -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
 ```
+说明：
+- **聚合框架**：`shared-ios` 模块把 `:shared` + `:shared-ui` 链接为单一 static framework
+  (baseName `sharedIos`)，Swift 统一 `import sharedIos`；避免双静态框架 duplicate symbol 与
+  动态框架的 Koin 全局分裂。Podfile 含 Kotlin 2.3 适配（`syncFramework` 已更名 →
+  `linkPod{Debug|Release}FrameworkIos{...}` + 产物同步到 podspec vendored 路径 +
+  shared-ui composeResources 按 `<bundle>/compose-resources/composeResources/<Res包>/` 布局拷贝）。
+- navigation3-ui 无 ios_x64 构件 → shared-ui/configure `shared-ios` 均不启用 iosX64。
+- 试点入口：`simctl launch ... com.hmp.HMP -hmp-pilot`（AppDelegate 内模态呈现设置中心 Compose 试点）。
 
 ### Desktop 构建
 ```bash
@@ -104,17 +117,19 @@ HMP/
 │       └── iosMain/           # iOS 特定实现
 ├── shared-ui/                 # 共享 UI 模块 (Compose 页面, ViewModel)
 │   └── src/
-│       ├── commonMain/        # Android/Desktop 双端共享 UI（v7.0 完成迁移）
+│       ├── commonMain/        # Android/Desktop/iOS 三端共享 UI（v7.0 Android/Desktop；v7.1 iOS）
 │       ├── androidMain/       # Android 桥接层
-│       └── desktopMain/       # Desktop 桥接层
+│       ├── desktopMain/       # Desktop 桥接层
+│       └── iosMain/           # iOS 桥接层（PlaybackController 双桥 / PlatformServices / 触觉等，A3-A4）
 ├── android/                   # Android 平台
 │   ├── app/                   # 入口模块 (MainActivity, Application)
 │   └── core-player/           # 播放核心 (Media3 服务, 播放控制)
 ├── desktop/                   # Desktop 平台 (Compose Multiplatform)
 │   ├── app/                   # 入口模块 (Main.kt, 无边框窗口, 托盘, 单实例)
 │   └── core-player/           # 播放核心 (FFmpeg + JNA 音频引擎)
-├── ios/                       # iOS 平台 (SwiftUI)
-│   └── HMP/                   # Xcode 项目
+├── ios/                       # iOS 平台 (SwiftUI + Compose 试点)
+│   └── HMP/                   # Xcode 项目（XcodeGen + CocoaPods）
+├── shared-ios/                # iOS 聚合框架（shared + shared-ui → sharedIos，方向 A A1）
 └── storybook/                 # 组件展示 (Kotlin/Wasm)
 ```
 
@@ -127,7 +142,7 @@ HMP/
 :desktop:app ──▶ :shared + :shared-ui + :desktop:core-player
 :android:core-player ──▶ :shared
 :desktop:core-player ──▶ :shared
-:ios ──▶ :shared (via CocoaPods)
+:ios ──▶ :shared-ios (via CocoaPods；聚合 :shared + :shared-ui)
 ```
 
 ### 架构分层
@@ -176,11 +191,11 @@ HMP/
 ### 版本信息
 - 应用版本: 7.0.0 (versionCode 70000)
 - JDK 工具链: 21（Desktop jpackage 要求 Gradle Daemon 运行于 JDK 21，配置说明见 `gradle.properties` 注释）
-- Kotlin: 2.2.21
+- Kotlin: 2.3.21
 - AGP: 9.0.0
 - Gradle: 9.x
 - Android SDK: compileSdk 36, minSdk 33, targetSdk 36
-- Koin: 4.0.4
+- Koin: 4.2.2（4.2.2 起 iOS 端与 lifecycle 2.10 稳定 ID 对齐，修复 Koin 反射探测 SavedStateHandle 的 IrLinkageError）
 - Ktor: 3.1.1
 - Room: 2.8.3
 - iOS 部署目标: 26.3 (应用目标), 16.0 (shared 模块 CocoaPods)
@@ -188,6 +203,7 @@ HMP/
 ### 包名
 - Android: `com.hearablemusic.player`
 - Shared (KMP): `com.hmp`
+- iOS: `com.hearablemusic.HMP`（2026-08-23 真机调试修改：原 com.hmp.HMP 不满足免费团队唯一标识注册，project.yml bundleIdPrefix 同时改为 com.hearablemusic）
 
 ### 分支策略
 - `master`: 已发布版本

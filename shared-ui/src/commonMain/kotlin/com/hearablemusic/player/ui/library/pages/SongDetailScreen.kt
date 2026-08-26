@@ -60,6 +60,7 @@ import com.hearablemusic.player.ui.common.design.dimens.LocalHMPDimens
 import com.hearablemusic.player.ui.player.pages.TechnicalInfoCard
 import com.hearablemusic.player.ui.common.navigation.Routes
 import com.hearablemusic.player.ui.common.util.UiState
+import com.hearablemusic.player.ui.common.util.commonFormat
 import com.hearablemusic.player.ui.common.util.formatEpochMillis
 import com.hearablemusic.player.ui.common.util.nowEpochMillis
 import com.hearablemusic.player.ui.common.util.rememberHapticFeedback
@@ -499,7 +500,7 @@ private fun formatDuration(ms: Long): String {
     val totalSeconds = ms / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    return "%02d:%02d".format(minutes, seconds)
+    return commonFormat("%02d:%02d", minutes, seconds)
 }
 
 @Composable

@@ -26,6 +26,17 @@ kotlin {
 
     jvm("desktop")
 
+    // 方向 A Phase 1（A1）：iOS targets 落地，与 :shared 模块同模式。
+    // 依赖栈（CMP 1.9.3 / navigation3 / koin-compose / coil3 / haze）均具备 iOS 构件。
+    // 注：不启用 iosX64 —— org.jetbrains.androidx.navigation3:navigation3-ui 未发布
+    // ios_x64 构件（仅 iosArm64/iosSimulatorArm64/macosArm64），声明该 target 会导致
+    // compileKotlinIosX64 无法解析依赖；x64 模拟器由 Rosetta 跑 arm64 切片覆盖。
+    iosArm64()
+    iosSimulatorArm64()
+
+    // CocoaPods 导出已收敛到 :shared-ios（聚合框架 sharedIos，见 shared-ios/README）——
+    // 本模块不再单独导出 pod，双框架方案的 duplicate symbol / Koin 全局分裂问题见该模块注释
+
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))

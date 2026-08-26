@@ -18,7 +18,7 @@ class MusicTagEditorTest {
 
     @Before
     fun setup() {
-        tempDir = createTempDir("music_tag_editor_test")
+        tempDir = kotlin.io.path.createTempDirectory("music_tag_editor_test" + "-").toFile()
     }
 
     @After

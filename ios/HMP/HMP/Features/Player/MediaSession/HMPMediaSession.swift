@@ -1,6 +1,6 @@
 import MediaPlayer
 import ActivityKit
-import shared
+import sharedIos
 
 class HMPMediaSession {
     static let shared = HMPMediaSession()
@@ -10,7 +10,7 @@ class HMPMediaSession {
     let artworkLoader: ArtworkLoader
     private var liveActivityManager: Any?
 
-    private var currentMusicInfo: MusicInfo_?
+    private var currentMusicInfo: MusicInfo?
     private var isCurrentlyPlaying: Bool = false
     private var currentPositionMs: Int64 = 0
     private var currentDurationMs: Int64 = 0
@@ -42,7 +42,7 @@ class HMPMediaSession {
 
     // MARK: - Public Interface
 
-    func onTrackChanged(musicInfo: MusicInfo_) {
+    func onTrackChanged(musicInfo: MusicInfo) {
         AudioSessionManager.shared.setupAudioSession()
 
         currentMusicInfo = musicInfo

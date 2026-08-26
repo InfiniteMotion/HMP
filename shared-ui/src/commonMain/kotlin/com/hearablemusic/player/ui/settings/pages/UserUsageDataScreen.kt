@@ -52,6 +52,7 @@ import com.hearablemusic.player.ui.common.design.dimens.LocalHMPDimens
 import com.hearablemusic.player.ui.common.layout.LocalWindowSizeInfo
 import com.hearablemusic.player.ui.common.navigation.Routes
 import com.hearablemusic.player.ui.common.util.UiState
+import com.hearablemusic.player.ui.common.util.commonFormat
 import com.hearablemusic.player.ui.common.components.SegmentedControl
 import com.hearablemusic.player.ui.common.components.SegmentedOption
 import com.hearablemusic.player.ui.common.util.HapticFeedbackHelper
@@ -313,13 +314,13 @@ private fun OverviewCard(analytics: UserUsageAnalytics) {
                 RateProgressRow(
                     label = stringResource(Res.string.completion_rate),
                     rate = analytics.completionRate,
-                    valueLabel = "%.0f%%".format(analytics.completionRate * 100),
+                    valueLabel = commonFormat("%.0f%%", analytics.completionRate * 100),
                     isPositive = true
                 )
                 RateProgressRow(
                     label = stringResource(Res.string.skip_rate),
                     rate = analytics.skipRate,
-                    valueLabel = "%.0f%%".format(analytics.skipRate * 100),
+                    valueLabel = commonFormat("%.0f%%", analytics.skipRate * 100),
                     isPositive = false
                 )
             }
@@ -814,7 +815,7 @@ private fun formatDuration(ms: Long): String {
     val totalSeconds = ms / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    return "%02d:%02d".format(minutes, seconds)
+    return commonFormat("%02d:%02d", minutes, seconds)
 }
 
 private fun formatTimestamp(timestamp: Long): String {

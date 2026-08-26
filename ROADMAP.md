@@ -391,12 +391,17 @@
 ### v7.x 阶段：三大方向（2026-08 制定，任务分解见 TODO.md）
 
 **方向 A — KMP 重写 iOS，Compose 取代 SwiftUI**
-- shared-ui 增加 iOS targets；现有依赖栈（CMP 1.9.3 / navigation3 KMP / koin-compose-multiplatform / coil3 / haze）均已具备 iOS 构件，v7.0 的 Android/Desktop 迁移已验证同款路径
-- 新增 shared-ui iosMain 桥接层（以 desktopMain 12 文件为模板）：PlaybackController / AlbumArtPixelsLoader / PlatformServices 等
-- Swift 播放引擎层保留（PlayerEngine / NowPlayingInfo / RemoteCommand / LiveActivity / 独占能力），由桥接层包装
-- 逐模块迁移 UI（设置试点 → 库 → 播放器 → 播放列表 → 设置/用户），最终删除 9 个重复 Swift ViewModel 与对应 SwiftUI 页面
+
+> **Phase 1 地基 ✅（2026-08-23，v7.1 载体）**：shared-ui iOS targets + 桥接层 + Swift 引擎双桥 + 设置试点在模拟器跑通。定案：**Kotlin 2.3.21**（navigation3 全系 iOS klib 为 2.3 ABI）；**单一聚合框架 `shared-ios`**（shared+shared-ui 链接为一个 sharedIos pod，规避双静态框架 duplicate symbol / 动态框架 Koin 全局分裂）；不启用 iosX64（navigation3-ui 无该构件）。构建注意：Xcode 26.6 需 iOS 26.5 模拟器运行时；Apple Silicon 模拟器构建加 `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES`。
+
+- shared-ui 增加 iOS targets（iosArm64/iosSimulatorArm64）；现有依赖栈（CMP 1.9.3 / navigation3 KMP / koin-compose-multiplatform / coil3 / haze）均已具备 iOS 构件，v7.0 的 Android/Desktop 迁移已验证同款路径
+- 新增 shared-ui iosMain 桥接层：PlaybackController（状态汇聚 + 命令闭包双桥）/ AlbumArtPixelsLoader / PlatformServices / 触觉 / 状态栏 / 对话框
+- Swift 播放引擎层保留（PlayerEngine / NowPlayingInfo / RemoteCommand / LiveActivity / 独占能力），由 PlaybackBridge.swift 闭包 + Observation 状态镜像包装
+- 逐模块迁移 UI：`2026-08-23 全面替换完成`——默认入口已切到共享层 Compose AppRoot（全模块共享 UI），
+  删除 68 个 SwiftUI 页面/组件/Swift ViewModel（A9），壳收敛至 AppDelegate/播放引擎/LiveActivity
+  等原生层 17 个 Swift 文件（A10）；无真机环境的交互级核验（播放/歌词/歌单操作、P10.1 锁屏/Live Activity）记录待办
 - 收益：P8/P9/P10 一类「iOS 双实现对齐」债务永久消失，新功能默认三端交付
-- 决策点：Liquid Glass 观感取舍（CMP 近似 vs 关键页保留 SwiftUI）；渐进双轨 vs 一次性替换
+- 决策点（进行中）：Liquid Glass 观感取舍（Compose Haze 近似 vs 关键页保留 SwiftUI，随 A6-A9 逐页决策）；渐进双轨 vs 一次性替换（当前试点为双轨共存模式验证）
 
 **方向 B — AI 功能 Agent 化**
 - OpenAiCompatibleAdapter 扩展 tools（function-calling）与 SSE 流式；现有 5 家服务商均走 OpenAI 兼容协议，协议层只改一处

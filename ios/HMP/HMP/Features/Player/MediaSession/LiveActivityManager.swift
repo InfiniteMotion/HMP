@@ -1,6 +1,6 @@
 import ActivityKit
 import UIKit
-import shared
+import sharedIos
 
 @available(iOS 16.1, *)
 class LiveActivityManager {
@@ -12,7 +12,7 @@ class LiveActivityManager {
 
     private init() {}
 
-    func startActivity(musicInfo: MusicInfo_, isPlaying: Bool,
+    func startActivity(musicInfo: MusicInfo, isPlaying: Bool,
                        showAnimation: Bool = true, showLyrics: Bool = false) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
@@ -109,7 +109,7 @@ class LiveActivityManager {
         currentActivity = nil
     }
 
-    private func loadCompressedArtwork(musicInfo: MusicInfo_) -> Data? {
+    private func loadCompressedArtwork(musicInfo: MusicInfo) -> Data? {
         var image: UIImage?
 
         if !musicInfo.music.albumArtUri.isEmpty {
