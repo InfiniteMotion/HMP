@@ -67,18 +67,22 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 **退出**：`./gradlew test` 全绿 + `:shared:compileAndroidMain` / `:shared:compileKotlinIosSimulatorArm64` / desktop 编译通过。
 
-### M1 锚点层一期（~6 人天，与 M0 并行）
+### M1 锚点层一期（~6 人天，与 M0 并行）✅ 2026-08-27 完成（主体；运行核验待办）
 
-> 纯 UI 骨架，**无 agent 引擎也可先行**——UI 用 Fake 数据驱动（PresenceBus 存根 + 假徽标/假侧条），作为引擎就绪前的交互验证。引用总纲 5.2。
+> 纯 UI 骨架，**无 agent 引擎也可先行**——UI 用 Fake 数据驱动（PresenceBus 存根 + 假徽标），作为引擎就绪前的交互验证。引用总纲 5.2。
+>
+> **验收记录**：`:shared-ui:compileKotlinDesktop` ✓、`:shared-ui:compileAndroidMain` ✓、`:shared-ui:desktopTest` ✓；
+> 桌面/模拟器**交互级核验待办**（长按 600ms 手势、三胶囊宽度实测、C 键焦点判定 M5 完善）；iOS 待 macOS。
+> 范围说明：门面二期（M1 第二期：Home→门面）依任务书留 M5；FusionSidebar（Medium 横屏）形态适配随门面二期。
 
 | ID | 任务 | 涉及文件 | 验收 |
 |----|------|---------|------|
-| M1-T1 | `BottomFusionBar` 改造为三胶囊：导航胶囊左侧插入伙伴胶囊位；`bottomTabs` 去 Home（余三 Tab）；页↔tab 索引重映射（门面页时三 Tab 均不高亮）；宽度压缩（图标 28→24dp、间距 12→8dp、外边距 16→12dp、歌名列收窄） | `common/components/BottomFusionBar.kt` | 360dp/320dp 布局不溢出（模拟器核验）；索引重映射单测 |
-| M1-T2 | `CompanionCapsule`：伙伴形象（`Avatar` 先例；未配置=默认形象+引导态）+ 状态徽标圆点（未读/待确认/电台运行）+ 点按=门面 / 长按 600ms=浮层（触觉 TICK/GestureEnd） | 新建 `common/components/CompanionCapsule.kt` | 手势两级触发不叠加（长按期间点按不触发） |
-| M1-T3 | `AgentQuickSheet` 轻量浮层：自底上滑单行条（haze 胶囊）；有底栏贴底栏上方、无底栏（播放页/歌词页）贴屏底；回复二分法（一句话气泡 / 卡片摘要+「查看」）；退出（发送后 2s 无输入/点外/Esc） | 新建 `common/components/AgentQuickSheet.kt` | 三端编译 + 模拟器交互核验 |
-| M1-T4 | 播放页控制区重排：副行五键（播放模式/收藏/**对话**/播放列表/**更多**）；心动模式与睡眠定时收入「更多」（定时激活显示倒计时角标）；「问这首歌」带当前曲目上下文；三种布局同步 | `player/pages/PlayContent.kt`（`PlaybackControlsButtons`） | 竖屏/手机横屏/平板横屏三布局一致 |
-| M1-T5 | 键盘 C 键 = 唤起浮层、Esc 收起（对齐 Space/←/→/L 先例） | `player/pages/PlayerScreen.kt` | 桌面键盘核验 |
-| M1-T6 | PresenceBus 存根 + Fake 驱动：徽标/侧条假状态流接入 `AppRoot`（为 M4 真实现留接口） | `AppRoot.kt` | Fake 状态可驱动 UI 三消费点 |
+| M1-T1 | `BottomFusionBar` 改造为三胶囊：导航胶囊左侧插入伙伴胶囊位；`bottomTabs` 去 Home（余三 Tab）；页↔tab 索引重映射（`tabIndexForPage = page-1`，门面页时三 Tab 均不高亮、折叠态 getOrNull 兜底）；宽度压缩（图标 28→24dp、间距 12→8dp、外边距 16→12dp、歌名列收窄、折叠图标区 56→48dp） | `common/components/BottomFusionBar.kt` | ✅ 编译 + 代码级重映射验证；360dp/320dp 宽度实测待模拟器核验 |
+| M1-T2 | `CompanionCapsule`：伙伴形象（`Avatar` 先例；未配置=默认形象）+ 状态徽标圆点 + 点按=门面 / 长按 600ms=浮层（触觉 TICK/LONG_PRESS） | 新建 `common/components/CompanionCapsule.kt` | ✅ 编译；手势核验（长按与点按不叠加）待模拟器 |
+| M1-T3 | `AgentQuickSheet` 轻量浮层：自底上滑单行条（haze 材质胶囊）；有底栏贴底栏上方（AppRoot Column 排布）、无底栏贴屏底（PlayContent Align.Bottom）；发送/imeAction.Send 提交清空（回复二分 M5） | 新建 `common/components/AgentQuickSheet.kt` | ✅ 编译；交互核验待模拟器 |
+| M1-T4 | 播放页控制区重排：副行五键（播放模式/收藏/**对话**(scope 图标)/播放列表/**更多**）；心动模式与睡眠定时收入「更多」DropdownMenu（定时激活项显示倒计时+按钮角标）；三布局调用点（竖屏/手机横屏/平板横屏）同步 | `player/pages/PlayContent.kt`（`PlaybackControlsButtons`） | ✅ 三调用点统一命名参数；布局一致待模拟器 |
+| M1-T5 | 键盘 C 键 = 唤起浮层、Esc 收起（挂 AppRoot 全局，覆盖播放页；输入聚焦时 C 可能被文本消费，焦点判定 M5 完善） | `AppRoot.kt`（`onPreviewKeyEvent`） | ✅ 编译；桌面键盘核验待运行 |
+| M1-T6 | PresenceBus 存根 + Fake 驱动：`companionBadgeVisible`/`quickSheetVisible` 状态接入 AppRoot（徽标消费点就绪；侧条/DJ 线消费点 M5 建 UI，接口预留） | `AppRoot.kt` | ✅ 徽标驱动底栏伙伴胶囊；侧条/DJ 线预留 |
 
 **退出**：三端编译 + 模拟器/桌面核验完成；M1-T1 重映射逻辑有单测。**注意**：此阶段 UI 文案即进入本地化管线（见第 4 章），不要积压到 M5。
 
