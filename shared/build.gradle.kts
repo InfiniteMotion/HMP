@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
             implementation(libs.androidx.room.testing)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

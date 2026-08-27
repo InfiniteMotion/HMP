@@ -82,14 +82,17 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 **退出**：三端编译 + 模拟器/桌面核验完成；M1-T1 重映射逻辑有单测。**注意**：此阶段 UI 文案即进入本地化管线（见第 4 章），不要积压到 M5。
 
-### M2 协议层（B1，~4 人天）
+### M2 协议层（B1，~4 人天）✅ 2026-08-27 完成
+
+> 验收记录：desktopTest 全量 **606 用例全绿**（网络层新增 23 用例）；`:shared:compileAndroidMain` ✓；
+> iOS 编译需 macOS 验证（全部新代码为纯 commonMain，无平台差异面）。
 
 | ID | 任务 | 涉及文件 | 验收 |
 |----|------|---------|------|
-| M2-T1 | `OpenAiCompatibleAdapter` 扩展 tools（function-calling）参数：OpenAiStyleRequest/DTO 增加 tools/tool_choice，保持 5 家服务商兼容（能力探测+降级：不返回 tools 的端点退化纯文本） | `data/network/MultiProviderApiAdapter.kt`、`data/network/dto/ApiDtos.kt` | 协议序列化单测（tools 参数形状 / 无 tools 端点降级） |
-| M2-T2 | 手动 SSE 流式解析（ByteReadChannel 逐行，~80 行）：`LlmTransport` 接口（流式 chunk 回调 + 工具调用事件）；**不升级 Ktor**（3.1.1 锁定，避 Darwin 取消泄漏） | 新建 `domain/agent/port/LlmTransport.kt`、`data/network/SseParser.kt` | SSE 解析单测（分块/中断/畸形行）；流式端到端（对 mock 端点） |
-| M2-T3 | `temperature` 1.3f → 0.2-0.4（JSON 任务过高的遗留修正；对话类任务可用较高值，按任务类型分档） | MultiProviderApiAdapter | 参数单测 |
-| M2-T4 | `FakeLlmTransport`：脚本化响应序列（文本/工具调用/中断/超时） | `commonTest/.../fakes/FakeLlmTransport.kt` | 供 M4/M6 使用 |
+| M2-T1 | `OpenAiCompatibleAdapter` 扩展 tools（function-calling）参数：OpenAiStyleRequest/DTO 增加 tools/tool_choice，保持 5 家服务商兼容（能力探测+降级：不返回 tools 的端点退化纯文本） | `data/network/MultiProviderApiAdapter.kt`、`data/network/dto/ApiDtos.kt` | ✅ `OpenAiRequestDtoTest` 5 用例（tools 形状/tool_choice/工具结果 tool_call_id/温度档位/往返）；`OpenAiLlmTransportTest` 覆盖"请求带 tools 但端点回文本=退化纯文本" |
+| M2-T2 | 手动 SSE 流式解析（ByteReadChannel 逐行，~80 行）：`LlmTransport` 接口（流式 chunk 回调 + 工具调用事件）；**不升级 Ktor**（3.1.1 锁定，避 Darwin 取消泄漏） | 新建 `domain/agent/port/LlmTransport.kt`、`data/network/SseParser.kt`、`data/network/OpenAiLlmTransport.kt` | ✅ `SseParserTest` 10 用例（事件边界/注释/CRLF/分片/流尾/畸形行）；`OpenAiLlmTransportTest` 8 用例（文本流/工具分片组装/兜底 flush/HTTP 错误转 Failed/畸形 chunk 跳过）——MockEngine 端到端 |
+| M2-T3 | `temperature` 1.3f → 0.2-0.4（JSON 任务过高的遗留修正；对话类任务可用较高值，按任务类型分档） | MultiProviderApiAdapter（`callChatApi` 参数化默认 0.3）、ApiDtos（`@EncodeDefault(ALWAYS)` 保证默认值入报文） | ✅ 参数单测（0.3 档/0.7 覆盖/0.25 往返） |
+| M2-T4 | `FakeLlmTransport`：脚本化响应序列（文本/工具调用/中断/超时）+ 调用记录（messages/tools/temperature） | `commonTest/.../fakes/FakeLlmTransport.kt` | ✅ 供 M3/M4/M6 使用（M4 引擎测试前置替身已就位） |
 
 **退出**：协议层单测全绿；现有 AI 功能（富化/每日推荐）回归不破坏。
 

@@ -1,7 +1,10 @@
 package com.hmp.data.network.dto
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 // ========== OpenAI Compatible Request/Response ==========
 
@@ -9,15 +12,45 @@ import kotlinx.serialization.Serializable
 data class OpenAiStyleRequest(
     val model: String,
     val messages: List<OpenAiMessage>,
+    /** 始终序列化：默认值也应出现在报文中（服务端默认 1.0 与调用方任务档位契约不一致）。 */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val temperature: Float = 0.7f,
     @SerialName("response_format")
-    val responseFormat: Map<String, String>? = null
+    val responseFormat: Map<String, String>? = null,
+    /** function-calling 工具定义（M2-T1，B1 协议扩展）；null 时不序列化，保持 5 家服务商兼容 */
+    val tools: List<OpenAiTool>? = null,
+    /** tool_choice：字符串（"auto"/"none"）或函数引用对象；tools 为空时省略 */
+    @SerialName("tool_choice")
+    val toolChoice: JsonElement? = null,
+    /** 流式响应开关（SSE）：流式任务必传 true，否则端点返回普通 JSON 而非 SSE（审查修复） */
+    @SerialName("stream")
+    val stream: Boolean? = null,
 )
 
 @Serializable
 data class OpenAiMessage(
     val role: String,
-    val content: String
+    val content: String,
+    /** function-calling 工具结果消息（role="tool"）时必填 */
+    @SerialName("tool_call_id")
+    val toolCallId: String? = null,
+)
+
+/** function-calling 工具声明（OpenAI 兼容 shape：{"type":"function","function":{name,description,parameters}}）。 */
+@Serializable
+data class OpenAiTool(
+    /** 始终序列化："function"（部分服务商依赖 type 字段路由） */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val type: String = "function",
+    val function: OpenAiFunctionSpec,
+)
+
+@Serializable
+data class OpenAiFunctionSpec(
+    val name: String,
+    val description: String? = null,
+    /** JSON Schema 对象（由 ToolSpec DSL 生成，见 M3） */
+    val parameters: JsonObject? = null,
 )
 
 @Serializable
@@ -29,7 +62,47 @@ data class OpenAiStyleResponse(
 
 @Serializable
 data class OpenAiChoice(
-    val message: OpenAiMessage? = null
+    val message: OpenAiMessage? = null,
+    val finishReason: String? = null
+)
+
+// ========== OpenAI Compatible SSE Stream ==========
+
+/** SSE 流式 chunk（chat/completions stream=true）：delta 承载文本/工具调用的增量。 */
+@Serializable
+data class OpenAiStreamChunk(
+    val id: String? = null,
+    val choices: List<OpenAiStreamChoice>? = null,
+)
+
+@Serializable
+data class OpenAiStreamChoice(
+    val delta: OpenAiStreamDelta? = null,
+    @SerialName("finish_reason")
+    val finishReason: String? = null,
+)
+
+@Serializable
+data class OpenAiStreamDelta(
+    val role: String? = null,
+    val content: String? = null,
+    @SerialName("tool_calls")
+    val toolCalls: List<OpenAiToolCallDelta>? = null,
+)
+
+/** 工具调用增量：arguments 按 index 分片到达（由 LlmTransport 层做分片组装）。 */
+@Serializable
+data class OpenAiToolCallDelta(
+    val index: Int? = null,
+    val id: String? = null,
+    val type: String? = null,
+    val function: OpenAiFunctionDelta? = null,
+)
+
+@Serializable
+data class OpenAiFunctionDelta(
+    val name: String? = null,
+    val arguments: String? = null,
 )
 
 @Serializable
