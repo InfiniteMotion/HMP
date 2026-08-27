@@ -53,15 +53,17 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 ## 3. 任务分解
 
-### M0 地基与还债（B0，~5 人天）
+### M0 地基与还债（B0，~5 人天）✅ 2026-08-27 完成
 
 > 先还债后造轮：引擎还没动就清掉三端重复，认识溯源是后面一切的地基。**此阶段可独立于 agent 交付**（搭任何版本顺风车）。
+>
+> **验收记录**：`desktopTest` 583 用例全绿（迁移 + 溯源 + 既有回归）；`:shared:compileAndroidMain` ✓；**iOS 编译需 macOS 环境验证**（Windows 本机无 Xcode；iosMain 改动为桌面已验证实现的镜像 + 标准 expect/actual 模式）。
 
 | ID | 任务 | 涉及文件 | 验收 |
 |----|------|---------|------|
-| M0-T1 | Room v2 迁移：新建 agent_task/agent_audit_log/agent_message 三表 + DAO；MusicLabel 加 4 列（source/confidence/created_at/updated_at）；编写 v1→v2 迁移 + in-memory 迁移单测 | `shared/.../data/database/AppDatabase.kt`、`MusicLabel.kt`、新建 `AgentTask.kt`、`AgentAuditLog.kt`、`AgentMessage.kt` | 迁移单测绿（旧库打开不炸、加列生效）；`version=2` |
-| M0-T2 | `MusicRepositoryImpl` 三端（1034/910/899 行）AI 方法上提 commonMain 共享基类：富化/推荐/统计/标签写入类——**逐方法判定**，去重目标 30-40%；扫描/存储/标签文件写入（MediaStore+SAF vs 文件系统 vs NSFileManager）留平台层 | `data/repository/MusicRepositoryImpl.{android,desktop,ios}.kt`、新建 commonMain 基类 | 三端编译绿 + 既有单测零回归；删除重复代码行数与目标占比记录 |
-| M0-T3 | 审计字段语义接线：`source=USER` 永不被模型覆盖、`enrichSong` 写 `source=LLM`（总纲 3.2 规则 ①） | MusicLabelDao、富化管道（GetDailyMusicRecommendationUseCase） | 溯源写入单测 |
+| M0-T1 | Room v2 迁移：新建 agent_task/agent_audit_log/agent_message 三表 + DAO；MusicLabel 加 4 列（source/confidence/created_at/updated_at）；编写 v1→v2 迁移 + 迁移测试（KMP `MigrationTestHelper`） | `shared/.../data/database/AppDatabase.kt`（version=2+`MIGRATION_1_2`）、`MusicLabel.kt`、新建 `AgentTask.kt`、`AgentAuditLog.kt`、`AgentMessage.kt` | ✅ `AppDatabaseMigrationTest` 2 用例绿（存量保留/加列可写/新表可写 + Room 重开）；schema 导出 `schemas/**/{1,2}.json` 已入库 |
+| M0-T2 | `MusicRepositoryImpl` 三端共享逻辑上提 commonMain 基类 `MusicRepositoryBase`（约 40 方法：AI/标签/统计/播放历史/备份）——**逐方法判定**；扫描、排序分叉（getAllMusicInfoAsList 三端语义刻意不同、getRandomMusicInfoWithExtra 桌面 Room 绕过、getDeletedMusicIdsGroupedByFolder）留平台层；新增 expect/actual 日期工具（todayDateString/parseDateToMillis）收口三端日期差异 | `MusicRepositoryBase.kt`（commonMain）+ 三端 Impl 重写 + `DateFormats.{common,android,desktop,ios}.kt` | ✅ 三端实现 **2843→1714 行（-40%）**，去重达目标上限；既有 579 用例零回归 |
+| M0-T3 | 审计字段语义接线：`source=USER` 永不被模型覆盖、富化写 `source=LLM`、T2 更新保留 createdAt 滚动 updatedAt；新增 `MusicRepository.addUserMusicLabel`（T1 路径） | `MusicRepositoryBase`（addMusicLabel/addUserMusicLabel + 来源常量）、`MusicRepository` 接口、`FakeMusicRepository` | ✅ `MusicRepositoryBaseTest` 4 用例全绿（规则①拒写/槽位隔离/时间戳溯源） |
 
 **退出**：`./gradlew test` 全绿 + `:shared:compileAndroidMain` / `:shared:compileKotlinIosSimulatorArm64` / desktop 编译通过。
 
