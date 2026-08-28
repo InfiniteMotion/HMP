@@ -771,19 +771,12 @@ fun PlaybackControlsButtons(
                 )
             }
 
-            var isLiked by remember { mutableStateOf(false) }
-            isLiked = isLike
-
-            IconButton(
-                onClick = {
-                    onFavorite()
-                    isLiked = !isLiked
-                },
-            ) {
+            // 收藏态由外部参数单源驱动（review 2026-08-28：移除本地乐观翻转双源真值，状态回传即时反映）
+            IconButton(onClick = onFavorite) {
                 Icon(
-                    painter = painterResource(if (isLiked) Res.drawable.heart_fill else Res.drawable.heart),
+                    painter = painterResource(if (isLike) Res.drawable.heart_fill else Res.drawable.heart),
                     contentDescription = stringResource(Res.string.favorite),
-                    tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    tint = if (isLike) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
             }
 

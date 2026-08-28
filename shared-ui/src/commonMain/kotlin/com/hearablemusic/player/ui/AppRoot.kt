@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.unit.dp
@@ -251,8 +251,11 @@ fun AppRoot(darkTheme: Boolean) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    // M1-T5 键盘锚点：C 唤起轻量浮层（输入聚焦时可能被文本消费，M5 完善焦点判定）、Esc 收起
-                                    .onPreviewKeyEvent { event ->
+                                    // M1-T5 键盘锚点：C 唤起轻量浮层、Esc 收起。
+                                    // 用 onKeyEvent（冒泡阶段）而非 onPreviewKeyEvent（捕获阶段）：
+                                    // 冒泡阶段子节点先消费按键——文本输入聚焦时字母 C/Esc 由输入框先行处理，
+                                    // 根节点只收到未被消费的按键，不会吞掉用户正在输入的字符（review 修复 2026-08-28）
+                                    .onKeyEvent { event ->
                                         when {
                                             event.type == KeyEventType.KeyDown &&
                                                 event.key == Key.C &&

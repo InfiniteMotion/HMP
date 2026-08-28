@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,11 @@ fun AgentQuickSheet(
 ) {
     var text by remember { mutableStateOf("") }
     val haptic = rememberHapticFeedback()
+    // 唤起即聚焦输入框（review 2026-08-28：桌面此前需再点一次才可输入）
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(visible) {
+        if (visible) focusRequester.requestFocus()
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -76,6 +84,7 @@ fun AgentQuickSheet(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
                     .widthIn(max = 560.dp)
                     .clip(RoundedCornerShape(28.dp))
+                    .focusRequester(focusRequester)
                     .onFocusChanged { focusState -> if (focusState.isFocused) haptic.performClick() },
                 placeholder = {
                     Text(stringResource(Res.string.agent_quick_sheet_hint))

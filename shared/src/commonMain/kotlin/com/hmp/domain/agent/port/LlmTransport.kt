@@ -20,11 +20,22 @@ sealed interface LlmEvent {
     data object Completed : LlmEvent
 }
 
-/** 对话消息（role: system/user/assistant/tool；tool 结果消息带 [toolCallId]）。 */
+/**
+ * assistant 消息回传的工具调用（M4 引擎循环：模型发起 tool_call 后，工具执行结果以 role="tool"
+ * 消息回传时，还须原样附带该调用的 assistant 消息——OpenAI 兼容协议的循环回传路径）。
+ */
+data class LlmToolCall(
+    val id: String,
+    val name: String,
+    val argumentsJson: String,
+)
+
+/** 对话消息（role: system/user/assistant/tool；tool 结果消息带 [toolCallId]；assistant 工具调用消息带 [toolCalls]）。 */
 data class LlmMessage(
     val role: String,
-    val content: String,
+    val content: String? = null,
     val toolCallId: String? = null,
+    val toolCalls: List<LlmToolCall>? = null,
 )
 
 /** 工具声明（schema 由 M3 ToolSpec DSL 生成）。 */

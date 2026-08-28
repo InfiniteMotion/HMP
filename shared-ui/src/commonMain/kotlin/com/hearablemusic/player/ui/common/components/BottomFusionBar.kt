@@ -142,7 +142,8 @@ fun BottomFusionBar(
     onCompanionLongPress: () -> Unit = {},
 ) {
     val haptic = rememberPlatformHaptics()
-    var initialFusionState = if (showNavCapsule) FusionBarState.NavigationExpanded else FusionBarState.PlaybackExpanded
+    // 初始态取首次组合值，后续由 LaunchedEffect 校正（review 2026-08-28：var→val，该值不参与赋值）
+    val initialFusionState = if (showNavCapsule) FusionBarState.NavigationExpanded else FusionBarState.PlaybackExpanded
     var fusionState by remember { mutableStateOf(initialFusionState) }
     var timerKey by remember { mutableIntStateOf(0) }
     val hasMusic = musicInfo != null

@@ -1,5 +1,7 @@
 package com.hmp.data.network
 
+import com.hmp.data.network.dto.OpenAiAssistantToolCall
+import com.hmp.data.network.dto.OpenAiFunctionCall
 import com.hmp.data.network.dto.OpenAiFunctionSpec
 import com.hmp.data.network.dto.OpenAiMessage
 import com.hmp.data.network.dto.OpenAiStyleRequest
@@ -9,9 +11,12 @@ import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmToolSpec
 import com.hmp.domain.agent.port.LlmTransport
 import com.hmp.domain.setting.model.AiEndpointConfig
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -28,7 +33,15 @@ class LlmStreamException(message: String) : Exception(message)
 class OpenAiLlmTransport(
     private val adapter: OpenAiCompatibleAdapter,
     private val json: Json,
+    /** 流式调用超时（毫秒）：端点建连后 hang 住（半开连接）时兜底熔断；M4 双层预算的传输层下限。
+     *  `timeoutMillis <= 0` 表示禁用（单测用：runTest 虚拟时间会 auto-advance 触发虚拟超时，须关掉）。 */
+    private val timeoutMillis: Long = DEFAULT_STREAM_TIMEOUT_MILLIS,
 ) : LlmTransport {
+
+    companion object {
+        /** 默认流超时 120s：单轮流式对话（含长回答）的合理上限，工具循环每轮独立计时 */
+        const val DEFAULT_STREAM_TIMEOUT_MILLIS: Long = 120_000
+    }
 
     override suspend fun streamChat(
         config: AiEndpointConfig,
@@ -38,7 +51,19 @@ class OpenAiLlmTransport(
     ): Flow<LlmEvent> = flow {
         val request = OpenAiStyleRequest(
             model = config.selectedModel,
-            messages = messages.map { OpenAiMessage(role = it.role, content = it.content, toolCallId = it.toolCallId) },
+            messages = messages.map { m ->
+                OpenAiMessage(
+                    role = m.role,
+                    content = m.content,
+                    toolCallId = m.toolCallId,
+                    toolCalls = m.toolCalls?.map { tc ->
+                        OpenAiAssistantToolCall(
+                            id = tc.id,
+                            function = OpenAiFunctionCall(name = tc.name, arguments = tc.argumentsJson),
+                        )
+                    },
+                )
+            },
             temperature = temperature,
             tools = tools?.map { spec ->
                 OpenAiTool(function = OpenAiFunctionSpec(name = spec.name, description = spec.description, parameters = spec.parameters))
@@ -48,7 +73,7 @@ class OpenAiLlmTransport(
         )
 
         val toolAccumulators = mutableMapOf<Int, ToolCallAccumulator>()
-        try {
+        suspend fun collectStream() {
             adapter.streamChatCompletion(config, request).collect { chunk ->
                 val choice = chunk.choices?.firstOrNull() ?: return@collect
                 val delta = choice.delta ?: return@collect
@@ -63,13 +88,26 @@ class OpenAiLlmTransport(
                 }
 
                 if (choice.finishReason == "tool_calls") {
-                    flushToolCalls(toolAccumulators, this)
+                    flushToolCalls(toolAccumulators, this@flow)
                     toolAccumulators.clear()
                 }
+            }
+        }
+        try {
+            if (timeoutMillis > 0) {
+                withTimeout(timeoutMillis) { collectStream() }
+            } else {
+                collectStream()
             }
             // 兜底：部分端点不发送 finish_reason=tool_calls，流结束时补发
             flushToolCalls(toolAccumulators, this)
             emit(LlmEvent.Completed)
+        } catch (e: TimeoutCancellationException) {
+            // 超时属于业务失败：转唯一终态 Failed（注意顺序——它是 CancellationException 子类）
+            emit(LlmEvent.Failed("LLM stream timed out after ${timeoutMillis}ms"))
+        } catch (e: CancellationException) {
+            // 协程取消向上传播（M4 预算熔断可能以 cancel 实现），不误转 Failed
+            throw e
         } catch (e: Exception) {
             emit(LlmEvent.Failed(e.message ?: "LLM stream failed"))
         }
@@ -79,12 +117,13 @@ class OpenAiLlmTransport(
         accumulators: Map<Int, ToolCallAccumulator>,
         collector: FlowCollector<LlmEvent>,
     ) {
-        accumulators.values.forEach { acc ->
+        accumulators.entries.forEachIndexed { n, (_, acc) ->
             val name = acc.name
             if (!name.isNullOrBlank()) {
                 collector.emit(
                     LlmEvent.ToolCall(
-                        id = acc.id ?: "",
+                        // 部分怪癖端点不带 id：生成稳定 fallback（M4 回传 tool_call_id 需要 non-blank）
+                        id = acc.id?.takeIf { it.isNotBlank() } ?: "call_$n",
                         name = name,
                         argumentsJson = acc.arguments.toString(),
                     )

@@ -30,10 +30,31 @@ data class OpenAiStyleRequest(
 @Serializable
 data class OpenAiMessage(
     val role: String,
-    val content: String,
+    /** 文本内容；assistant 工具调用消息的 content 可为 null（OpenAI 规范允许省略/空） */
+    val content: String? = null,
     /** function-calling 工具结果消息（role="tool"）时必填 */
     @SerialName("tool_call_id")
     val toolCallId: String? = null,
+    /** assistant 消息的工具调用数组（M4 引擎循环回传路径：工具执行后须原样回传该数组） */
+    @SerialName("tool_calls")
+    val toolCalls: List<OpenAiAssistantToolCall>? = null,
+)
+
+/** assistant 消息携带的工具调用（调用形状，区别于声明形状 [OpenAiTool]）。 */
+@Serializable
+data class OpenAiAssistantToolCall(
+    val id: String,
+    /** 始终序列化："function"（部分服务商依赖 type 字段路由） */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val type: String = "function",
+    val function: OpenAiFunctionCall,
+)
+
+/** 工具调用载荷：name/arguments 必填（arguments 为 JSON 字符串，非结构化对象）。 */
+@Serializable
+data class OpenAiFunctionCall(
+    val name: String,
+    val arguments: String,
 )
 
 /** function-calling 工具声明（OpenAI 兼容 shape：{"type":"function","function":{name,description,parameters}}）。 */
@@ -63,6 +84,8 @@ data class OpenAiStyleResponse(
 @Serializable
 data class OpenAiChoice(
     val message: OpenAiMessage? = null,
+    /** OpenAI 端点发 snake_case；缺 SerialName 时解码恒为 null（review 测试发现 2026-08-28） */
+    @SerialName("finish_reason")
     val finishReason: String? = null
 )
 
