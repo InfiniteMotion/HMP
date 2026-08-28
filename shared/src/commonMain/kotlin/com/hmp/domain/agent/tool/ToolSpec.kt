@@ -242,7 +242,43 @@ fun parseArgs(arguments: JsonObject, params: List<ToolParam>): ToolArgs {
         }
     }
 
-    return ToolArgs(arguments)
+    // 截断（clamp）：越界且 clamp=true → 修正值；修正后的 map 交给 ToolArgs
+    val corrected = arguments.toMutableMap()
+    params.forEach { p ->
+        when (p) {
+            is IntParam -> clampInto(
+                p, arguments, corrected,
+                from = { it.toIntOrNull()?.toLong() }, toJson = { JsonPrimitive(it.toInt()) },
+            )
+            is LongParam -> clampInto(
+                p, arguments, corrected,
+                from = { it.toLongOrNull() }, toJson = { JsonPrimitive(it) },
+            )
+            else -> Unit
+        }
+    }
+
+    return ToolArgs(corrected)
+}
+
+/** clamp 核心：越界时把修正值写进 corrected map。 */
+private inline fun clampInto(
+    p: ToolParam,
+    raw: Map<String, JsonElement>,
+    corrected: MutableMap<String, JsonElement>,
+    from: (String) -> Long?,
+    toJson: (Long) -> JsonElement,
+) {
+    if (!when (p) { is IntParam -> p.clamp; is LongParam -> p.clamp; else -> false }) return
+    val low = when (p) { is IntParam -> p.min?.toLong(); is LongParam -> p.min; else -> null }
+    val high = when (p) { is IntParam -> p.max?.toLong(); is LongParam -> p.max; else -> null }
+    val cur = (raw[p.name] as? JsonPrimitive)?.content?.let(from) ?: return
+    val clamped = when {
+        low != null && cur < low -> low
+        high != null && cur > high -> high
+        else -> cur
+    }
+    if (clamped != cur) corrected[p.name] = toJson(clamped)
 }
 
 /** 生成 OpenAI function-calling 的 object schema（供 [LlmToolSpec.parameters]）。 */

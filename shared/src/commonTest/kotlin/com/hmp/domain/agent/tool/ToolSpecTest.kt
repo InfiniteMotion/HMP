@@ -59,6 +59,27 @@ class ToolSpecTest {
     }
 
     @Test
+    fun `int parameter with clamp on truncates out of range into bounds`() {
+        val params = listOf(IntParam(name = "limit", min = 1, max = 20, clamp = true))
+        // 未越界原样
+        val ok = parseArgs(buildJsonObject { put("limit", JsonPrimitive(5)) }, params)
+        assertEquals(5, ok.requireInt("limit"))
+        // 低于下限 → 截断到 min
+        val low = parseArgs(buildJsonObject { put("limit", JsonPrimitive(-3)) }, params)
+        assertEquals(1, low.requireInt("limit"))
+        // 高于上限 → 截断到 max
+        val high = parseArgs(buildJsonObject { put("limit", JsonPrimitive(999)) }, params)
+        assertEquals(20, high.requireInt("limit"))
+    }
+
+    @Test
+    fun `long parameter with clamp on truncates out of range into bounds`() {
+        val params = listOf(LongParam(name = "ms", min = 0, max = 300_000L, clamp = true))
+        val high = parseArgs(buildJsonObject { put("ms", JsonPrimitive(9_999_999L)) }, params)
+        assertEquals(300_000L, high.requireLong("ms"))
+    }
+
+    @Test
     fun `enum parameter must be on allowed list`() {
         val params = listOf(EnumParam(name = "command", allowed = listOf("play", "pause"), description = "指令"))
         // good
