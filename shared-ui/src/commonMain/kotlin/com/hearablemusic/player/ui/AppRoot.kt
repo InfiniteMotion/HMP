@@ -115,6 +115,7 @@ fun AppRoot(darkTheme: Boolean) {
     val dialogManagerViewModel: DialogManagerViewModel = activityViewModel()
     val dialogViewModel: DialogViewModel = activityViewModel()
     val platformServices = koinInject<com.hearablemusic.player.ui.platform.PlatformServices>()
+    val chatEntryBroker = koinInject<com.hearablemusic.player.ui.chat.ChatEntryBroker>()
 
     val dialogManager = dialogManagerViewModel.dialogManager
     // 订阅调色板、当前曲目与播放状态
@@ -494,8 +495,9 @@ fun AppRoot(darkTheme: Boolean) {
                                         AgentQuickSheet(
                                             visible = companionQuickSheetVisible,
                                             onSubmit = { input ->
-                                                // M5 起接线会话（浮层与对话页同 session_id）；M1 为锚点骨架占位
-                                                println("[M1] agent quick sheet submit: $input")
+                                                // M1 锚点 → M5 对话：带话进对话页（同 session_id 语义）
+                                                chatEntryBroker.pendingInput.value = input
+                                                navController.add(Routes.Companion.Chat)
                                                 companionQuickSheetVisible = false
                                             },
                                             modifier = Modifier.align(Alignment.CenterHorizontally)

@@ -126,19 +126,19 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 **退出**：引擎一切行为确定性可测（步数/许可/拒绝纪律/预算/审计断言全覆盖）；`:shared` 依赖方向铁律守住。
 
-### M5 对话与锚点二期（B4，\~9 人天）——纯文字完整体验
+### M5 对话与锚点二期（B4，\~9 人天）——纯文字完整体验　<span style="color:#2e7d32">✅ T1/T2/T4 交付 2026-08-28（T3/T5/T6/T7 待续——本次收件范围为 Gateway 接口+真实接线）</span>
 
 > **刻意纪律**：确认交互（「有感」）必须在电台隐式接受（「无感」）之前交付——M5 是 M6 的校准基准。
 
-| ID    | 任务                                                                                                                                                                                                   | 涉及文件                                                         | 验收                          |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------- |
-| M5-T1 | `ChatScreen` + `ChatViewModel`：问候区/正在听卡（点按进播放页）/对话流（LazyColumn 自动滚底+回看暂停+顶部翻页）/任务进行条（三点脉动+取消，完成原地替换结果）/常驻输入条（胶囊形+发送）；SubScreen 基座                                                                    | 新建 `chat/ChatScreen.kt`、`chat/ChatViewModel.kt`              | 消息流单测（session 分页/滚底语义）；三端编译 |
-| M5-T2 | `CompanionBubble` 五类气泡：text/song（AlbumCover+题名+菜单）/songlist（FixedMusicList 复用 HomeScreen 心动歌单配置+尾部动作行）/explain（三轮轨迹折叠）/confirm（逐项勾选）；路由注册（Routes.Companion.Chat + NavigationGraph + HmpNavBackStack） | 新建 `chat/CompanionBubble.kt`；`common/navigation/Routes.kt` 等 | render\_hint 驱动渲染单测/快照      |
-| M5-T3 | `AgentNoticeBar` 通知侧条（4s 退场+撤销；撤销窗口后入口转审计页——可逆性非限时优惠）+ 与 MessageToast 分工                                                                                                                             | 新建 `common/components/AgentNoticeBar.kt`                     | 侧条生命周期单测                    |
-| M5-T4 | 确认卡片流：流内非模态（不挡输入条）、逐项可跳过、「照做」只执行选中项、执行后→NOTIFY+卡状态更新「已建 9 首，跳过 3 首」                                                                                                                                  | CompanionBubble.confirm + ChatViewModel                      | 确认流单测（跳过/部分执行/拒绝不纠缠）        |
-| M5-T5 | 门面二期：HomeScreen 改造（问候区+「和伙伴聊聊」触发钮+每日推荐/心动歌单口吻化卡片+认识进度轻提及）；pager 手术 `userScrollEnabled = currentPage != 0`；门面页隐藏 TabPageIndicator 页点；savedTabIndex 保持                                                 | `MainShell.kt`、`library/pages/HomeScreen.kt`                 | 冷启动回门面；门面禁滑出/画廊右滑不受阻        |
-| M5-T6 | 搜索框条带：漏斗未命中+意图特征→条带（「交给伙伴」/「只是搜索」）；空结果页追加「问问伙伴？」；拒绝纪律（本次会话不纠缠）                                                                                                                                       | `library/pages/SearchScreen.kt`                              | 判定逻辑单测                      |
-| M5-T7 | 两级漏斗：高频指令词表直映射（零 token、50ms 内）；模糊意图升级单轮 agent 任务                                                                                                                                                     | 新建 `domain/agent/funnel/CommandLexicon.kt`                   | 漏斗单测（命中/未命中/升级语义）；FREE 模式可用 |
+| ID    | 任务                                                                                                                                                                                                   | 涉及文件                                                         | 验收                                    |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------- |
+| M5-T1 | `ChatScreen` + `ChatViewModel`：问候区/正在听卡（点按进播放页）/对话流（LazyColumn 自动滚底+回看暂停+顶部翻页）/任务进行条（三点脉动+取消，完成原地替换结果）/常驻输入条（胶囊形+发送）；SubScreen 基座                                                                    | 新建 `chat/ChatScreen.kt`、`chat/ChatViewModel.kt`              | 消息流单测（session 分页/滚底语义）；三端编译 ✅（8/8 用例） |
+| M5-T2 | `CompanionBubble` 五类气泡：text/song（AlbumCover+题名+菜单）/songlist（FixedMusicList 复用 HomeScreen 心动歌单配置+尾部动作行）/explain（三轮轨迹折叠）/confirm（逐项勾选）；路由注册（Routes.Companion.Chat + NavigationGraph + HmpNavBackStack） | 新建 `chat/CompanionBubble.kt`；`common/navigation/Routes.kt` 等 | render\_hint 驱动渲染单测/快照 ✅              |
+| M5-T3 | `AgentNoticeBar` 通知侧条（4s 退场+撤销；撤销窗口后入口转审计页——可逆性非限时优惠）+ 与 MessageToast 分工                                                                                                                             | 新建 `common/components/AgentNoticeBar.kt`                     | 侧条生命周期单测                              |
+| M5-T4 | 确认卡片流：流内非模态（不挡输入条）、逐项可跳过、「照做」只执行选中项、执行后→NOTIFY+卡状态更新「已建 9 首，跳过 3 首」                                                                                                                                  | CompanionBubble.confirm + ChatViewModel                      | 确认流单测（跳过/部分执行/拒绝不纠缠） ✅                |
+| M5-T5 | 门面二期：HomeScreen 改造（问候区+「和伙伴聊聊」触发钮+每日推荐/心动歌单口吻化卡片+认识进度轻提及）；pager 手术 `userScrollEnabled = currentPage != 0`；门面页隐藏 TabPageIndicator 页点；savedTabIndex 保持                                                 | `MainShell.kt`、`library/pages/HomeScreen.kt`                 | 冷启动回门面；门面禁滑出/画廊右滑不受阻                  |
+| M5-T6 | 搜索框条带：漏斗未命中+意图特征→条带（「交给伙伴」/「只是搜索」）；空结果页追加「问问伙伴？」；拒绝纪律（本次会话不纠缠）                                                                                                                                       | `library/pages/SearchScreen.kt`                              | 判定逻辑单测                                |
+| M5-T7 | 两级漏斗：高频指令词表直映射（零 token、50ms 内）；模糊意图升级单轮 agent 任务                                                                                                                                                     | 新建 `domain/agent/funnel/CommandLexicon.kt`                   | 漏斗单测（命中/未命中/升级语义）；FREE 模式可用           |
 
 **退出**：纯文字完整闭环三端可用（锚点→对话→任务→确认→回执）；M5 全部交互并入审计。
 
@@ -208,7 +208,9 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 ## 7. 变更记录
 
-| 日期         | 变更                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------- |
-| 2026-08-26 | v1：依据 agent.md（深度合并稿）编制；阶段制 M0-M7，不绑定版本号；B0 归 M0 优先（可在非 agent 版本先行）；语音 gate 明确；挂起参数给建议默认值 |
+| 日期         | 变更                                                                                                                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-26 | v1：依据 agent.md（深度合并稿）编制；阶段制 M0-M7，不绑定版本号；B0 归 M0 优先（可在非 agent 版本先行）；语音 gate 明确；挂起参数给建议默认值                                                                                                           |
+| 2026-08-28 | M5 一期：ChatScreen/ChatViewModel + 五类气泡 + 批量确认卡流（T1/T2/T4）；Gateway 接口 + Orchestrator 真实接线；顺带修复 TrustLedger/MusicRepositoryBase 的 iOS 跨平台缺口（Map.getOrDefault→显式判空；System.currentTimeMillis→跨平台 expect） |
 
+<br />

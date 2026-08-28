@@ -7,6 +7,7 @@ import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmToolCall
 import com.hmp.domain.agent.port.LlmTransport
 import com.hmp.domain.agent.tool.AgentTool
+import com.hmp.domain.agent.tool.ToolPermissionLevel
 import com.hmp.domain.agent.tool.ToolRegistry
 import com.hmp.domain.setting.model.AiEndpointConfig
 import kotlinx.coroutines.flow.toList
@@ -32,11 +33,24 @@ data class AgentResult(
 )
 
 /**
+ * 一次待确认的工具调用（M5-T4 确认卡片：一次 turn 的多项确认聚合展示、逐项勾选）。
+ * @param toolName 工具名（供卡片展示与审计）
+ * @param argsSummary 参数摘要（供用户判断）
+ * @param permissionLevel 许可级（CONFIRM / STRONG_CONFIRM）
+ */
+data class ConfirmRequest(
+    val toolName: String,
+    val argsSummary: String,
+    val permissionLevel: ToolPermissionLevel,
+)
+
+/**
  * 确认门（M5 确认卡片流实现；M4 测试注入脚本化门：全通过 / 全否决 / 按工具）。
- * 返回 true=执行，false=拒绝（拒绝纪律：本次会话不纠缠，跳过不报错）。
+ * 批量语义：一次 turn 可能触发多项需要确认的工具，聚合为 [requests] 一次性请求，
+ * 返回与传入**同序**的批准列表；`false`=该项跳过（拒绝纪律：本次会话不纠缠，不报错）。
  */
 fun interface ConfirmGate {
-    suspend fun request(tool: AgentTool, argsSummary: String): Boolean
+    suspend fun request(requests: List<ConfirmRequest>): List<Boolean>
 }
 
 /** 一次运行的外部上下文输入（供 ContextBudget 三层组装）。 */
@@ -119,8 +133,10 @@ class AgentOrchestrator(
                 content = assistantText.ifBlank { null },
                 toolCalls = toolCalls.map { LlmToolCall(it.id, it.name, it.argumentsJson) },
             )
+            // 批量确认：本轮所有 RequireConfirm 聚合一次请求，得同序批准列表后再逐项执行
+            val approvals = decideApprovals(toolCalls, taskId)
             for (tc in toolCalls) {
-                toolLog += executeOne(tc, messages, taskId)
+                toolLog += executeOne(tc, messages, taskId, approved = approvals[tc.id])
             }
 
             // 步数预算用尽但尚有工具调用已回传、尚未拿到最终回答 → 硬熔断
@@ -179,11 +195,40 @@ class AgentOrchestrator(
         return Triple(text.toString(), calls, failed)
     }
 
-    /** 执行单个工具调用：裁决→确认→执行→回填 role="tool" 消息，并审计。 */
+    /**
+     * 批量确认：对本轮所有需确认（RequireConfirm）的工具聚合一次请求。
+     * - 裁决（PolicyGuard）含审计副作用，在此对**每个工具**执行一次。
+     * - 将 RequireConfirm 的工具收集为 [ConfirmRequest]，一次性交给 [ConfirmGate]，
+     *   得到同序批准列表。
+     * - 返回按 toolCallId 索引的批准表（`true`=执行）；需确认但未获批准 → `false`；
+     *   无需确认的工具不在表中（executeOne 以 null 视作直接执行）。
+     */
+    private suspend fun decideApprovals(
+        toolCalls: List<LlmEvent.ToolCall>,
+        taskId: Long?,
+    ): Map<String, Boolean> {
+        val approvals = mutableMapOf<String, Boolean>()
+        val pending = mutableListOf<LlmEvent.ToolCall>()
+        for (tc in toolCalls) {
+            val tool = registry.find(tc.name) ?: continue // 未知工具由 executeOne 处理为 skipped
+            val decision = policyGuard.decide(tc.name, tool.permissionLevel, taskId)
+            if (decision is PermissionDecision.RequireConfirm) pending += tc
+        }
+        if (pending.isNotEmpty()) {
+            val granted = confirmGate.request(
+                pending.map { ConfirmRequest(it.name, summarizeArgs(it.argumentsJson), registry.find(it.name)!!.permissionLevel) }
+            )
+            pending.forEachIndexed { i, tc -> approvals[tc.id] = granted.getOrElse(i) { false } }
+        }
+        return approvals
+    }
+
+    /** 执行单个工具调用：裁决(在 decideApprovals 已做)→按批准执行→回填 role="tool" 消息，并审计。 */
     private suspend fun executeOne(
         tc: LlmEvent.ToolCall,
         messages: MutableList<LlmMessage>,
         taskId: Long?,
+        approved: Boolean?,
     ): ToolExecutionRecord {
         val tool = registry.find(tc.name)
         if (tool == null) {
@@ -193,16 +238,12 @@ class AgentOrchestrator(
             return ToolExecutionRecord(tc.name, "skipped", "未知工具")
         }
 
-        val decision = policyGuard.decide(tc.name, tool.permissionLevel, taskId)
-        if (decision is PermissionDecision.RequireConfirm) {
-            val argsSummary = summarizeArgs(tc.argumentsJson)
-            val ok = confirmGate.request(tool, argsSummary)
-            if (!ok) {
-                auditLog.record(AuditEntry(tool = tc.name, outcome = "refused",
-                    reason = "用户否决，会话内不纠缠", argsHash = hashCode(tc.name, tc.argumentsJson), taskId = taskId))
-                messages += LlmMessage(role = "tool", toolCallId = tc.id, content = "（用户拒绝执行，已跳过）")
-                return ToolExecutionRecord(tc.name, "refused", "用户拒绝")
-            }
+        // approved != null → 本轮该工具需要确认；false=用户否决（拒绝纪律：不纠缠，跳过不报错）
+        if (approved != null && !approved) {
+            auditLog.record(AuditEntry(tool = tc.name, outcome = "refused",
+                reason = "用户否决，会话内不纠缠", argsHash = hashCode(tc.name, tc.argumentsJson), taskId = taskId))
+            messages += LlmMessage(role = "tool", toolCallId = tc.id, content = "（用户拒绝执行，已跳过）")
+            return ToolExecutionRecord(tc.name, "refused", "用户拒绝")
         }
 
         val outcome = try {
