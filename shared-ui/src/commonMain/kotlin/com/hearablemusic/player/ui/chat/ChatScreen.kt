@@ -2,6 +2,7 @@ package com.hearablemusic.player.ui.chat
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,17 +15,16 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,16 +34,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.hearablemusic.player.ui.common.pages.base.SubScreen
+import com.hearablemusic.player.ui.generated.resources.Res
+import com.hearablemusic.player.ui.generated.resources.chevron_up
 import com.hearablemusic.player.ui.platform.PlaybackController
 import com.hmp.domain.music.MusicInfo
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -84,8 +90,6 @@ fun ChatScreen(
         onSongClick = { music -> scope.launch { playbackController.playWith(music) } },
         onSongMenu = {},
         onPlaylistPlayAll = {},
-        currentPlaying = playbackController.currentPlayingMusic.collectAsState().value,
-        isPlaying = playbackController.isPlaying.collectAsState().value,
         onBackClick = { navController.removeLastOrNull() },
     )
 }
@@ -101,10 +105,9 @@ private fun ChatScreenContent(
     onSongClick: (MusicInfo) -> Unit,
     onSongMenu: (MusicInfo) -> Unit,
     onPlaylistPlayAll: () -> Unit,
-    currentPlaying: MusicInfo?,
-    isPlaying: Boolean,
     onBackClick: () -> Unit,
 ) {
+    var inputFocused by remember { mutableStateOf(false) }
     val callbacks = CompanionCallbacks(
         onSongClick = onSongClick,
         onSongMenu = onSongMenu,
@@ -114,72 +117,45 @@ private fun ChatScreenContent(
         onSkipConfirm = onSkipConfirm,
     )
 
+    // 对话页：用 SubScreen 顶栏（返回 + 标题）；内容列 imePadding —— 键盘弹出时整块内容随之上移重排
     SubScreen(onBackClick = onBackClick, title = "听歌伙伴") {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (currentPlaying != null) {
-                NowPlayingBar(currentPlaying, isPlaying)
-            }
-
-            ChatMessageList(
-                messages = state.messages,
-                running = state.running,
-                runningHint = state.runningHint,
-                callbacks = callbacks,
-                modifier = Modifier.weight(1f),
-            )
-
-            AnimatedVisibility(
-                visible = state.pendingConfirm != null,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            ) {
-                state.pendingConfirm?.let { p ->
-                    ConfirmMatrixCard(
-                        items = p.items,
-                        submitted = p.submitted,
-                        receipt = "",
-                        callbacks = callbacks,
-                    )
-                }
-            }
-
-            ChatInputBar(
-                input = state.input,
-                running = state.running || (state.pendingConfirm != null && !state.pendingConfirm.submitted),
-                onInputChange = onInputChange,
-                onSend = onSend,
-            )
-        }
-    }
-}
-
-@Composable
-private fun NowPlayingBar(music: MusicInfo, isPlaying: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(12.dp),
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
+        Column(
             modifier = Modifier
-                .size(8.dp)
-                .background(
-                    if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    RoundedCornerShape(4.dp),
-                ),
+                .fillMaxSize()
+                .imePadding()
+        ) {
+        ChatMessageList(
+            messages = state.messages,
+            running = state.running,
+            runningHint = state.runningHint,
+            callbacks = callbacks,
+            inputFocused = inputFocused,
+            modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "正在听 ${music.music.title} · ${music.music.artist}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+
+        AnimatedVisibility(
+            visible = state.pendingConfirm != null,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        ) {
+            state.pendingConfirm?.let { p ->
+                ConfirmMatrixCard(
+                    items = p.items,
+                    submitted = p.submitted,
+                    receipt = "",
+                    callbacks = callbacks,
+                )
+            }
+        }
+
+        // 底部输入栏（自绘紧凑输入框 + 圆形发送）
+        ChatInputBar(
+            input = state.input,
+            running = state.running || (state.pendingConfirm != null && !state.pendingConfirm.submitted),
+            onInputChange = onInputChange,
+            onSend = onSend,
+            onFocusChanged = { inputFocused = it },
         )
+        }
     }
 }
 
@@ -189,40 +165,49 @@ private fun ChatMessageList(
     running: Boolean,
     runningHint: String,
     callbacks: CompanionCallbacks,
+    inputFocused: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    var autoScroll by remember { mutableStateOf(true) }
 
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
-            lastVisible >= info.totalItemsCount - 2
-        }.collect { atBottom -> autoScroll = atBottom }
-    }
+    // 新增任何消息（用户/伙伴）→ 自动滚到最底部显示最新一条
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty() && autoScroll) {
-            listState.animateScrollToItem(messages.lastIndex)
+        if (messages.isNotEmpty()) {
+            listState.scrollToItem(messages.lastIndex)
+        }
+    }
+    // 聚焦输入栏（键盘弹出）→ 也滚到底，让最新一条显示在输入栏上方
+    LaunchedEffect(inputFocused) {
+        if (inputFocused && messages.isNotEmpty()) {
+            listState.scrollToItem(messages.lastIndex)
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(messages, key = { it.id }) { message ->
-                CompanionBubble(message = message, callbacks = callbacks)
-            }
-            if (running) {
-                item(key = "running-hint") {
-                    RunningHint(runningHint)
+    var prevHeight by remember { mutableStateOf(Int.MIN_VALUE) }
+    val scrollScope = rememberCoroutineScope()
+
+    LazyColumn(
+        state = listState,
+        modifier = modifier
+            .fillMaxWidth()
+            // 高度变化（键盘弹出/收起撑开内容）→ 布局定型后滚到底，保证最新消息在输入栏上方
+            .onSizeChanged { size ->
+                val h = size.height
+                val changed = prevHeight != Int.MIN_VALUE && h != prevHeight
+                prevHeight = h
+                if (changed && messages.isNotEmpty()) {
+                    scrollScope.launch { listState.scrollToItem(messages.lastIndex) }
                 }
+            },
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        items(messages, key = { it.id }) { message ->
+            CompanionBubble(message = message, callbacks = callbacks)
+        }
+        if (running) {
+            item(key = "running-hint") {
+                RunningHint(runningHint)
             }
         }
     }
@@ -250,37 +235,61 @@ private fun ChatInputBar(
     running: Boolean,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
+    onFocusChanged: (Boolean) -> Unit = {},
 ) {
+    val canSend = input.isNotBlank() && !running
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .imePadding()
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedTextField(
-            value = input,
-            onValueChange = onInputChange,
-            placeholder = { Text("想找歌、整理歌单，或看看听歌排行？") },
-            shape = RoundedCornerShape(22.dp),
-            singleLine = true,
-            enabled = !running,
-            modifier = Modifier.weight(1f),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-        )
-        Spacer(Modifier.width(8.dp))
-        IconButton(
-            onClick = onSend,
-            enabled = input.isNotBlank() && !running,
+        // 紧凑自绘输入框（高 44dp，无内部空白）
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(44.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(22.dp))
+                .padding(horizontal = 14.dp),
+            contentAlignment = Alignment.CenterStart,
         ) {
-            Text(
-                text = "发送",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (input.isNotBlank() && !running) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.widthIn(min = 40.dp),
+            if (input.isEmpty()) {
+                Text(
+                    text = "想找歌、整理歌单，或看看听歌排行？",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+            BasicTextField(
+                value = input,
+                onValueChange = onInputChange,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                singleLine = true,
+                enabled = !running,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { onFocusChanged(it.isFocused) },
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        FilledIconButton(
+            onClick = onSend,
+            enabled = canSend,
+            modifier = Modifier.size(42.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = if (canSend) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (canSend) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.chevron_up),
+                contentDescription = "发送",
+                modifier = Modifier.size(20.dp),
             )
         }
     }

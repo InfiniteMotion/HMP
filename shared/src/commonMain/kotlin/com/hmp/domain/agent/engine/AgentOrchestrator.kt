@@ -6,6 +6,7 @@ import com.hmp.domain.agent.port.LlmEvent
 import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmToolCall
 import com.hmp.domain.agent.port.LlmTransport
+import com.hmp.domain.agent.persona.DefaultCompanionProfiles
 import com.hmp.domain.agent.tool.AgentTool
 import com.hmp.domain.agent.tool.ToolPermissionLevel
 import com.hmp.domain.agent.tool.ToolRegistry
@@ -53,11 +54,19 @@ fun interface ConfirmGate {
     suspend fun request(requests: List<ConfirmRequest>): List<Boolean>
 }
 
-/** 一次运行的外部上下文输入（供 ContextBudget 三层组装）。 */
+/** 一次运行的外部上下文输入（供 ContextBudget 三层组装 + R-T1 首轮注入）。 */
 data class RunContextInput(
     val taskState: String? = null,
     val libraryListText: String? = null,
     val libraryOverviewText: String? = null,
+    // —— R-T1 首轮注入（第一次对话就该到 agent 的内容）——
+    val personaText: String? = null,
+    val recognitionText: String? = null,
+    val timeOfDayText: String? = null,
+    val nowPlayingText: String? = null,
+    val userTitle: String? = null,
+    // —— 跨轮记忆：上一轮及以前的 user/assistant 文本消息（按时间正序，越新越靠后）——
+    val history: List<LlmMessage> = emptyList(),
 )
 
 /**
@@ -93,8 +102,13 @@ class AgentOrchestrator(
         val systemPrompt = buildSystemPrompt(ctx)
         val messages = mutableListOf(
             LlmMessage(role = "system", content = systemPrompt),
-            LlmMessage(role = "user", content = userMessage),
-        )
+        ).apply {
+            // 跨轮记忆：先前对话（user/assistant 文本）接在 system 之后、本次 user 之前
+            addAll(ctx.history)
+            add(LlmMessage(role = "user", content = userMessage))
+        }
+
+        AgentLog.i("run start (task=$taskId): input=${AgentLog.truncate(userMessage)} history=${ctx.history.size} steps_budget=$stepBudget")
 
         val toolLog = mutableListOf<ToolExecutionRecord>()
         var steps = 0
@@ -105,6 +119,7 @@ class AgentOrchestrator(
             // 云端额度：耗尽 → 本地兜底熔断
             if (!contextBudget.spendCloudCall()) {
                 terminated = TerminationReason.CLOUD_QUOTA_EXHAUSTED
+                AgentLog.w("step $steps: cloud quota exhausted -> local fallback")
                 presenceBus.emit(PresenceEvent.CloudQuotaExhausted)
                 auditLog.record(AuditEntry(tool = "orchestrator", outcome = "budget_exhausted",
                     reason = "单日云端额度耗尽，已本地兜底", taskId = taskId))
@@ -113,7 +128,9 @@ class AgentOrchestrator(
             presenceBus.emit(PresenceEvent.TaskProgress(phase = "thinking", active = true))
             steps++
 
+            AgentLog.d("step $steps: calling LLM (tools=${registry.allLlmSpecs.size})")
             val (assistantText, toolCalls, failed) = collectTurn(messages, config)
+            AgentLog.d("step $steps: text=${AgentLog.truncate(assistantText)} toolCalls=${toolCalls.map { it.name }} failed=$failed")
             if (failed) {
                 terminated = TerminationReason.FAILED
                 finalText = "（对话中断，请稍后再试）"
@@ -142,6 +159,7 @@ class AgentOrchestrator(
             // 步数预算用尽但尚有工具调用已回传、尚未拿到最终回答 → 硬熔断
             if (steps >= stepBudget) {
                 terminated = TerminationReason.STEP_BUDGET_EXHAUSTED
+                AgentLog.w("step $steps: step budget exhausted ($steps/$stepBudget)")
                 auditLog.record(AuditEntry(tool = "orchestrator", outcome = "circuit_break",
                     reason = "步数预算耗尽 steps=$steps/${stepBudget}（尚有工具已执行但未获最终回答）",
                     taskId = taskId))
@@ -163,7 +181,9 @@ class AgentOrchestrator(
             stepsUsed = steps,
             toolCalls = toolLog,
             terminatedBy = terminated,
-        )
+        ).also {
+            AgentLog.i("run done: terminated=$terminated steps=$steps tools=${it.toolCalls.size} text=${AgentLog.truncate(finalTextOut)}")
+        }
     }
 
     /** 单次 LLM 调用：收集文本增量 + 工具调用列表；失败时 failed=true。 */
@@ -215,9 +235,11 @@ class AgentOrchestrator(
             if (decision is PermissionDecision.RequireConfirm) pending += tc
         }
         if (pending.isNotEmpty()) {
+            AgentLog.i("confirm request: ${pending.map { it.name }} (${pending.size} 项)")
             val granted = confirmGate.request(
                 pending.map { ConfirmRequest(it.name, summarizeArgs(it.argumentsJson), registry.find(it.name)!!.permissionLevel) }
             )
+            AgentLog.d("confirm granted=${granted}")
             pending.forEachIndexed { i, tc -> approvals[tc.id] = granted.getOrElse(i) { false } }
         }
         return approvals
@@ -270,10 +292,19 @@ class AgentOrchestrator(
             libraryOverviewText = ctx.libraryOverviewText,
             newToolResult = null,
         )
+        // R-T1 首轮注入：人格/称呼 + 当前曲目 + 时段 + 曲库概况 + 认识进度
+        val firstTurn = ContextAssembler.assembleFirstTurnBlock(
+            personaText = ctx.personaText ?: DefaultCompanionProfiles.DEFAULT.personaPrompt,
+            libraryOverview = a.library,
+            recognition = ctx.recognitionText,
+            timeOfDay = ctx.timeOfDayText,
+            nowPlaying = ctx.nowPlayingText,
+            userTitle = ctx.userTitle,
+        )
         return buildString {
-            append("你是听歌伙伴。用中文简洁回应。可调用工具来检索曲库、管理歌单或控制播放。")
+            append(firstTurn.trim())
+            append("\n\n可调用工具来检索曲库、管理歌单或控制播放。用中文简洁回应。")
             a.taskState?.let { append("\n【当前任务】\n").append(it) }
-            a.library?.let { append("\n【曲库概况】\n").append(it) }
         }
     }
 

@@ -1,24 +1,33 @@
 package com.hearablemusic.player.ui.chat
 
+import com.hmp.domain.agent.engine.AgentLog
 import com.hmp.domain.agent.engine.AgentOrchestrator
 import com.hmp.domain.agent.engine.ConfirmGate
 import com.hmp.domain.agent.engine.ConfirmRequest
+import com.hmp.domain.agent.engine.ContextAssembler
 import com.hmp.domain.agent.engine.ContextBudget
+import com.hmp.domain.agent.engine.LibraryOverview
 import com.hmp.domain.agent.engine.PolicyGuard
 import com.hmp.domain.agent.engine.PresenceBus
 import com.hmp.domain.agent.engine.RunContextInput
 import com.hmp.domain.agent.engine.SessionStore
 import com.hmp.domain.agent.engine.TerminationReason
 import com.hmp.domain.agent.engine.TrustLedger
+import com.hmp.domain.agent.persona.DefaultCompanionProfiles
+import com.hmp.domain.agent.port.AgentMessageStore
 import com.hmp.domain.agent.port.AuditLogPort
+import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmTransport
+import com.hmp.domain.agent.port.NowPlayingContextProvider
 import com.hmp.domain.agent.tool.ToolDependencies
 import com.hmp.domain.agent.tool.ToolRegistry
+import com.hmp.domain.music.MusicRepository
 import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hearablemusic.player.ui.platform.currentTimeMillis
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 
 /**
@@ -57,6 +66,7 @@ class ConfirmBridge {
         val turnId = "confirm_${counter++}"
         val deferred = CompletableDeferred<List<Boolean>>()
         pending[turnId] = deferred
+        AgentLog.i("confirm await: turn=$turnId items=${requests.size} waiting...")
         onRequest?.invoke(turnId, requests)
         return deferred.await()
     }
@@ -66,7 +76,10 @@ class ConfirmBridge {
      * @return true 该批次仍待确认（成功投递）；false 该批次已关闭（竞态/已取消）。
      */
     fun submit(turnId: String, approvals: List<Boolean>): Boolean =
-        pending.remove(turnId)?.complete(approvals) ?: false
+        pending.remove(turnId)?.let {
+            AgentLog.i("confirm submit: turn=$turnId approvals=$approvals")
+            it.complete(approvals)
+        } ?: false.also { AgentLog.w("confirm submit: turn=$turnId 已关闭/取消") }
 }
 
 /** 对话引擎接缝（M5-T1）：把一次用户输入换算为面向 UI 的事件流。 */
@@ -97,6 +110,9 @@ class OrchestratorChatGateway(
     private val toolDeps: ToolDependencies,
     private val auditLog: AuditLogPort,
     private val dailyCloudQuota: Int,
+    private val nowPlayingProvider: NowPlayingContextProvider,
+    private val musicRepository: MusicRepository,
+    private val agentMessageStore: AgentMessageStore,
 ) : ChatAgentGateway {
 
     override fun run(
@@ -124,7 +140,8 @@ class OrchestratorChatGateway(
             confirmGate = confirmGate,
         )
         try {
-            val result = orchestrator.run(input, config, ctx)
+            val effectiveCtx = mergeFirstTurnContext(ctx, input)
+            val result = orchestrator.run(input, config, effectiveCtx)
             result.toolCalls.forEach { emit(ChatAgentEvent.ToolExecuted(it)) }
             emit(ChatAgentEvent.Finished(result.text, result.toolCalls, result.terminatedBy))
         } catch (ce: CancellationException) {
@@ -132,6 +149,78 @@ class OrchestratorChatGateway(
         } catch (e: Exception) {
             emit(ChatAgentEvent.Failed(e.message ?: "对话失败"))
         }
+    }
+
+    /** R-T1 接缝：把首轮上下文（人格/当前曲目/时段/曲库概况/认识进度）+ 跨轮记忆合并进调用方传入的 ctx。 */
+    private suspend fun mergeFirstTurnContext(ctx: RunContextInput, input: String): RunContextInput {
+        val first = buildFirstTurnContext()
+        return ctx.copy(
+            personaText = ctx.personaText ?: first.personaText,
+            recognitionText = ctx.recognitionText ?: first.recognitionText,
+            timeOfDayText = ctx.timeOfDayText ?: first.timeOfDayText,
+            nowPlayingText = ctx.nowPlayingText ?: first.nowPlayingText,
+            libraryOverviewText = ctx.libraryOverviewText ?: first.libraryOverviewText,
+            history = ctx.history.ifEmpty { buildHistory(input) },
+        )
+    }
+
+    /** 跨轮记忆：加载最近会话的先前 user/assistant 文本消息（去重当前输入，避免与本次 userMessage 重复）。 */
+    private suspend fun buildHistory(input: String): List<LlmMessage> {
+        val sid = agentMessageStore.currentOrNewSessionId()
+        val mapped = agentMessageStore.loadSession(sid, HISTORY_LIMIT).mapNotNull { m ->
+            val role = when (m.role) {
+                "user" -> "user"
+                "agent", "assistant" -> "assistant"
+                else -> null
+            } ?: return@mapNotNull null
+            LlmMessage(role = role, content = m.content)
+        }
+        // 当前输入已被持久化 → 若历史末尾恰是该 user 文本，则去掉（避免与 userMessage 重复）
+        val deduped =
+            if (mapped.lastOrNull()?.role == "user" && mapped.lastOrNull()?.content == input) mapped.dropLast(1) else mapped
+        AgentLog.i("history loaded: ${deduped.size} 条（含去重 ${mapped.size - deduped.size}）")
+        return deduped
+    }
+
+    private companion object {
+        const val HISTORY_LIMIT = 30
+    }
+
+    /** 从真实数据装配首轮上下文（R-T1）。 */
+    private suspend fun buildFirstTurnContext(): RunContextInput {
+        val now = nowPlayingProvider.getNowPlaying()
+        val nowPlayingText = ContextAssembler.buildNowPlaying(
+            currentTitle = now.currentMusicInfo?.music?.title,
+            currentArtist = now.currentMusicInfo?.music?.artist,
+            isPlaying = now.isPlaying,
+            currentPositionMs = now.currentPositionMs,
+            durationMs = now.durationMs,
+        )
+        val total = musicRepository.getMusicCount().first()
+        val known = musicRepository.getMusicWithExtraCount().first()
+        val recognitionText = ContextAssembler.buildRecognitionProgress(known, total)
+        // v0 近似（UTC 小时）；本地时段待平台化（PlatformTime 仅提供 UTC 毫秒）
+        val hour = ((currentTimeMillis() / 3_600_000L) % 24).toInt()
+        val overviewText = ContextAssembler.buildLibraryOverview(buildLibraryOverview())
+        AgentLog.i("first-turn ctx: persona=${DefaultCompanionProfiles.DEFAULT.personaName} nowPlaying=${now.currentMusicInfo?.music?.title ?: "无"} recognized=$known/$total")
+        return RunContextInput(
+            personaText = DefaultCompanionProfiles.DEFAULT.personaPrompt,
+            recognitionText = recognitionText,
+            timeOfDayText = ContextAssembler.buildTimeOfDay(hour),
+            nowPlayingText = nowPlayingText,
+            libraryOverviewText = overviewText,
+        )
+    }
+
+    /** 曲库概况（概览法，v0：规模 + 常听 + 流派 top；语言/年代分布待数据源补全）。 */
+    private suspend fun buildLibraryOverview(): LibraryOverview {
+        val total = musicRepository.getMusicCount().first()
+        val analytics = musicRepository.getUserUsageAnalytics()
+        return LibraryOverview(
+            totalCount = total,
+            topGenres = analytics.topGenres.map { it.labelDisplayName to it.count },
+            topPlayedSongs = analytics.topPlayedSongs.map { it.title to it.artist },
+        )
     }
 
     private fun timeMillis(): Long = currentTimeMillis()

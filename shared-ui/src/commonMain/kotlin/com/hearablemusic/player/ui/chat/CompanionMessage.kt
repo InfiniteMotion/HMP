@@ -4,6 +4,12 @@ import com.hmp.domain.agent.engine.ToolExecutionRecord
 import com.hmp.domain.music.MusicInfo
 import com.hmp.domain.playlist.Playlist
 
+/** 清洗模型回复中的 Markdown 标记与 ASCII 引号（Compose Text 不解析 Markdown；裸露的 ** / * / ` 显破碎）。 */
+internal fun cleanAgentMarkdown(text: String): String =
+    text.replace("**", "").replace("__", "").replace("`", "").replace("*", "")
+        // ASCII 双引号对 → 中文引号（「」更贴合中文排版）
+        .replace(Regex("\"([^\"]*)\"")) { m -> "「${m.groupValues[1]}」" }
+
 /**
  * M5-T2 五类气泡渲染类型（CompanionBubble 按 renderHint 分发）。
  *
@@ -85,7 +91,7 @@ internal fun buildAssistantBubbles(
             receipt = receipt,
         )
     }
-    val body = text.ifBlank { records.joinToString("\n") { "${it.toolName} → ${it.summary}" } }
+    val body = cleanAgentMarkdown(text.ifBlank { records.joinToString("\n") { "${it.toolName} → ${it.summary}" } })
     if (body.isNotBlank()) {
         out += CompanionMessage(
             id = 0,

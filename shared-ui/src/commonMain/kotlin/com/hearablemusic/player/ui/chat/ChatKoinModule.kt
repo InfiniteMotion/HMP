@@ -2,8 +2,8 @@ package com.hearablemusic.player.ui.chat
 
 import com.hmp.domain.agent.engine.EngineDefaults
 import com.hmp.domain.agent.port.AiExtraEnrichPort
-import com.hmp.domain.agent.port.FakeNowPlayingContextProvider
-import com.hmp.domain.agent.port.FakePlaybackCommandPort
+import com.hmp.domain.agent.port.NowPlayingContextProvider
+import com.hmp.domain.agent.port.PlaybackCommandPort
 import com.hmp.domain.agent.tool.ToolDependencies
 import com.hmp.domain.music.MusicRepository
 import com.hmp.domain.setting.usecase.UserSettingsUseCase
@@ -22,12 +22,15 @@ import org.koin.dsl.module
 val chatGatewayModule = module {
     single { ChatEntryBroker() }
     single { MusicServiceEnrichPort(get(), get()) } bind AiExtraEnrichPort::class
+    // R-T3：真实播放/现在听端口（复用 PlaybackController 桥，替换 M5 的 Fake 占位）
+    single { ControllerNowPlayingProvider(get()) } bind NowPlayingContextProvider::class
+    single { ControllerPlaybackCommandPort(get(), get()) } bind PlaybackCommandPort::class
     single {
         ToolDependencies(
             musicRepository = get(),
             playlistRepository = get(),
-            nowPlayingContextProvider = FakeNowPlayingContextProvider,
-            playbackCommandPort = FakePlaybackCommandPort,
+            nowPlayingContextProvider = get(),
+            playbackCommandPort = get(),
             enrichPort = get(),
         )
     }
@@ -37,6 +40,9 @@ val chatGatewayModule = module {
             toolDeps = get(),
             auditLog = get(),
             dailyCloudQuota = EngineDefaults.DAILY_CLOUD_QUOTA,
+            nowPlayingProvider = get(),
+            musicRepository = get(),
+            agentMessageStore = get(),
         )
     }
 }

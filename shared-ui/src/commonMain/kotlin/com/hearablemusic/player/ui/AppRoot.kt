@@ -478,7 +478,7 @@ fun AppRoot(darkTheme: Boolean) {
                                 // 底部融合栏 = Tab 导航 + 迷你播放器：Tab 页常驻显示（无歌曲时仍提供
                                 // Tab 导航，迷你播放器区显示空态；子页面由进入播放/歌词页才隐藏）
                                 AnimatedVisibility(
-                                    visible = navController.none { it is Routes.Player.Player || it is Routes.Player.Lyrics },
+                                    visible = navController.none { it is Routes.Player.Player || it is Routes.Player.Lyrics || it is Routes.Companion.Chat },
                                     enter = slideInVertically(
                                         initialOffsetY = { it },
                                         animationSpec = tween(durationMillis = AnimationTokens.TRANSITION, easing = AnimationTokens.EASE_IN_OUT)

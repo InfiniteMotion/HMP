@@ -2,6 +2,9 @@ package com.hearablemusic.player.ui.chat
 
 import com.hmp.domain.agent.engine.ConfirmRequest
 import com.hmp.domain.agent.engine.TerminationReason
+import com.hmp.domain.agent.port.AgentMessageStore
+import com.hmp.domain.agent.port.FakePlaybackCommandPort
+import com.hmp.domain.agent.port.StoredAgentMessage
 import com.hmp.domain.agent.tool.ToolPermissionLevel
 import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +38,15 @@ class ChatViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /** R-T5 假会话存储：无历史、append 空实现，不干扰对话流测试。 */
+    private val fakeMessageStore = object : AgentMessageStore {
+        override suspend fun currentOrNewSessionId(): String = "test"
+        override suspend fun append(message: StoredAgentMessage) {}
+        override suspend fun loadSession(sessionId: String, limit: Int): List<StoredAgentMessage> = emptyList()
+    }
+
     private fun vm(gateway: FakeChatAgentGateway) =
-        ChatViewModel(gateway, UserSettingsUseCase(MinimalSettingsRepository()))
+        ChatViewModel(gateway, UserSettingsUseCase(MinimalSettingsRepository()), FakePlaybackCommandPort, fakeMessageStore)
 
     private fun needConfirm() = ChatAgentEvent.NeedConfirm(
         turnId = "t1",

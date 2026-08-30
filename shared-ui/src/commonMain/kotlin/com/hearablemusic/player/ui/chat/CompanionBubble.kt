@@ -13,19 +13,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +44,7 @@ import com.hearablemusic.player.ui.generated.resources.chevron_down
 import com.hearablemusic.player.ui.generated.resources.lightbulb
 import com.hearablemusic.player.ui.generated.resources.more
 import com.hearablemusic.player.ui.generated.resources.play_fill
+import com.hearablemusic.player.ui.generated.resources.player_d
 import com.hearablemusic.player.ui.library.pages.components.AlbumCover
 import com.hearablemusic.player.ui.library.pages.components.musiclist.CurrentPlayingConfig
 import com.hearablemusic.player.ui.library.pages.components.musiclist.EditConfig
@@ -75,15 +80,31 @@ fun CompanionBubble(
     callbacks: CompanionCallbacks = CompanionCallbacks(),
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = if (message.fromUser) Alignment.CenterEnd else Alignment.CenterStart) {
-        val bubbleShape = if (message.fromUser) RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp)
-        else RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)
-        Column(
-            modifier = Modifier
-                .widthInMax()
-                .background(MaterialTheme.colorScheme.surfaceVariant, bubbleShape)
-                .padding(12.dp),
-        ) {
+    if (message.fromUser) {
+        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            BubbleContainer(message, callbacks, user = true)
+        }
+    } else {
+        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+            BubbleContainer(message, callbacks, user = false)
+        }
+    }
+}
+
+/** 气泡容器：用户=品牌实底+白字(右对齐，右上小圆角尾)；伙伴=浅底+深字(左对齐，左上小圆角尾)。 */
+@Composable
+private fun BubbleContainer(message: CompanionMessage, callbacks: CompanionCallbacks, user: Boolean) {
+    val shape = if (user) RoundedCornerShape(20.dp, 6.dp, 20.dp, 20.dp)
+    else RoundedCornerShape(6.dp, 20.dp, 20.dp, 20.dp)
+    val bg = if (user) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
+    val content = if (user) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    Column(
+        modifier = Modifier
+            .widthIn(max = 320.dp)
+            .background(bg, shape)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides content) {
             when (message.renderHint) {
                 CompanionRenderHint.TEXT -> TextBubbleContent(message)
                 CompanionRenderHint.SONG -> SongBubbleContent(message, callbacks)
@@ -209,8 +230,8 @@ fun ConfirmMatrixCard(
 private fun TextBubbleContent(message: CompanionMessage) {
     Text(
         text = message.text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface,
+        style = MaterialTheme.typography.bodyLarge,
+        color = LocalContentColor.current,
     )
     if (message.note.isNotBlank()) {
         Spacer(Modifier.height(4.dp))

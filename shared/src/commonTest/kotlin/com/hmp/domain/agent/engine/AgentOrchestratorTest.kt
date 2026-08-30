@@ -3,6 +3,7 @@ package com.hmp.domain.agent.engine
 import com.hmp.domain.agent.port.FakeNowPlayingContextProvider
 import com.hmp.domain.agent.port.FakePlaybackCommandPort
 import com.hmp.domain.agent.port.LlmEvent
+import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.tool.ToolDependencies
 import com.hmp.domain.agent.tool.ToolRegistry
 import com.hmp.domain.music.Music
@@ -170,5 +171,24 @@ class AgentOrchestratorTest {
         val r = fx.orchestrator.run("hi", config)
         assertEquals(TerminationReason.FAILED, r.terminatedBy)
         assertEquals("failed", fx.audit.outcomes("orchestrator").single())
+    }
+
+    @Test
+    fun `history is prepended so agent remembers prior turn`() = runTest {
+        val t = FakeLlmTransport(perTurnScript = listOf(
+            listOf(LlmEvent.TextDelta("收到"), LlmEvent.Completed),
+        ))
+        val fx = Fixture(t)
+        val history = listOf(
+            LlmMessage(role = "user", content = "帮我建个歌单"),
+            LlmMessage(role = "assistant", content = "建好了，12 首"),
+        )
+        val r = fx.orchestrator.run("再推荐几首", config, RunContextInput(history = history))
+        assertEquals(TerminationReason.ANSWERED, r.terminatedBy)
+        val m = t.calls.first().messages
+        assertEquals("system", m[0].role)
+        assertEquals("user", m[1].role); assertEquals("帮我建个歌单", m[1].content)
+        assertEquals("assistant", m[2].role); assertEquals("建好了，12 首", m[2].content)
+        assertEquals("user", m[3].role); assertEquals("再推荐几首", m[3].content)
     }
 }

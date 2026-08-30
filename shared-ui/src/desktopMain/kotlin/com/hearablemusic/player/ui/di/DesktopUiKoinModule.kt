@@ -71,6 +71,6 @@ val desktopUiModule = module {
     viewModel { LyricsSettingsViewModel(get()) }
     viewModel { RecommendationViewModel(get(), get(), get(), get()) }
     viewModel { UserUsageDataViewModel(get()) }
-    viewModel { ChatViewModel(get(), get()) }
+    viewModel { ChatViewModel(get(), get(), get(), get()) }
     viewModel { ThemeViewModel(get(), get()) }
 }
