@@ -43,7 +43,17 @@ object ToolNames {
     const val SONG_TAG_USER_ADD = "song_tag_user_add"
     const val SONG_TAG_USER_REMOVE = "song_tag_user_remove"
 
-    /** Registry 注册的全部原子工具名（S 阶段 17 个，预留 8 个等底层补完后追加）。 */
+    // ── Master 专属：富化生命周期管理（5 个；仅 MasterAgent LLM 可见，chatbot 不注册）──
+    const val ENRICH_START = "enrich_start"
+    const val ENRICH_PAUSE = "enrich_pause"
+    const val ENRICH_RESUME = "enrich_resume"
+    const val ENRICH_STATUS = "enrich_status"
+    const val ENRICH_RESCAN = "enrich_rescan"
+
+    /**
+     * Registry 默认注册的基础工具名清单（chatbot 模式可见，不含 Master 专属）。
+     * Playback(4) + Playlist CRUD(5) + Playlist 曲目(3) + Library(11) + Song 标签(4) = 27 个。
+     */
     val ALL: List<String> = listOf(
         PLAYBACK_STATE, PLAYBACK_CONTROL, PLAYBACK_PLAY_AT,
         PLAYLIST_LIST, PLAYLIST_DETAIL, PLAYLIST_CREATE, PLAYLIST_RENAME, PLAYLIST_DELETE,
@@ -57,6 +67,17 @@ object ToolNames {
         AGENT_BUDGET,
         SONG_TAG_USER_ADD, SONG_TAG_USER_REMOVE,
     )
+
+    /**
+     * MasterAgent 专属工具名（不进入 chatbot ToolRegistry，ToolDependencies.masterAgentFacade 非空时追加注册）。
+     * 共 5 个：enrich_start / enrich_pause / enrich_resume / enrich_status / enrich_rescan。
+     */
+    val MASTER_EXCLUSIVE: List<String> = listOf(
+        ENRICH_START, ENRICH_PAUSE, ENRICH_RESUME, ENRICH_STATUS, ENRICH_RESCAN,
+    )
+
+    /** MasterAgent 模式下的完整工具清单（基础 + Master 专属 = 32 个）。 */
+    val ALL_COMPLETE: List<String> = ALL + MASTER_EXCLUSIVE
 
     /** 批次 B 新增工具名（需底层补完后才能注册）。 */
     val ALL_BATCH_B: List<String> = listOf(

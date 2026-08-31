@@ -1,5 +1,7 @@
 package com.hmp.domain.music
 
+import com.hmp.domain.agent.enrich.EnrichBatchResult
+import com.hmp.domain.agent.enrich.EnrichHealth
 import com.hmp.domain.setting.model.AiEndpointConfig
 import com.hmp.domain.setting.model.DailyMusicInfo
 import com.hmp.domain.setting.model.ListeningDuration
@@ -117,4 +119,18 @@ interface MusicRepository {
     
     suspend fun exportListeningStatsSnapshot(): com.hmp.domain.backup.ListeningStatsSnapshot
     suspend fun restoreListeningStats(snapshot: com.hmp.domain.backup.ListeningStatsSnapshot)
+
+    // ===== Agent T2: 富化健康度查询 =====
+
+    /** 富化健康度快照（Master 启动时检测覆盖率） */
+    suspend fun getEnrichHealth(): EnrichHealth
+
+    /** 获取未富化的歌曲（没有任何 LLM/AGENT 源标签的），返回前 limit 首 */
+    suspend fun getUnenrichedSongs(limit: Int): List<MusicInfo>
+
+    /** 获取之前富化失败的歌曲重试批次（简化版：low confidence 的） */
+    suspend fun getFailedEnrichSongs(limit: Int): List<MusicInfo>
+
+    /** 最近富化结果验收：自 since 时间戳以来的成功/失败统计 */
+    suspend fun getRecentEnrichResults(since: Long): EnrichBatchResult
 }

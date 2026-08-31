@@ -1,6 +1,8 @@
 package com.hmp.test.fakes
 
 import com.hmp.domain.agent.port.AiExtraEnrichPort
+import com.hmp.domain.agent.enrich.EnrichBatchResult
+import com.hmp.domain.agent.enrich.EnrichHealth
 import com.hmp.domain.backup.ListeningStatsSnapshot
 import com.hmp.domain.backup.MusicUserStateSnapshot
 import com.hmp.domain.music.EditableMusicTags
@@ -105,6 +107,13 @@ class FakeAgentMusicRepository : MusicRepository {
     override suspend fun restoreMusicUserState(snapshot: MusicUserStateSnapshot) {}
     override suspend fun exportListeningStatsSnapshot(): ListeningStatsSnapshot = ListeningStatsSnapshot()
     override suspend fun restoreListeningStats(snapshot: ListeningStatsSnapshot) {}
+
+    // region Agent T2: 富化健康度 stub（Agent 工具层测试暂不涉及）
+    override suspend fun getEnrichHealth(): EnrichHealth = EnrichHealth(0, songs.size, 0)
+    override suspend fun getUnenrichedSongs(limit: Int): List<MusicInfo> = songs.values.take(limit)
+    override suspend fun getFailedEnrichSongs(limit: Int): List<MusicInfo> = emptyList()
+    override suspend fun getRecentEnrichResults(since: Long): EnrichBatchResult = EnrichBatchResult(0, 0)
+    // endregion
 }
 
 /** M3 工具层专用内存 Fake：PlaylistRepository。 */

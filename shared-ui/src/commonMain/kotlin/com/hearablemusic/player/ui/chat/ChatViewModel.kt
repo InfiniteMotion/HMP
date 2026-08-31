@@ -3,7 +3,8 @@ package com.hearablemusic.player.ui.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hearablemusic.player.ui.platform.currentTimeMillis
-import com.hmp.domain.agent.engine.AgentLog
+import com.hmp.domain.agent.infra.AgentLog
+import com.hmp.domain.agent.runtime.ConfirmOutcome
 import com.hmp.domain.agent.funnel.CommandLexicon
 import com.hmp.domain.agent.funnel.FunnelResult
 import com.hmp.domain.agent.port.AgentMessageStore
@@ -125,14 +126,34 @@ class ChatViewModel(
         _state.update { it.copy(pendingConfirm = p.copy(items = items)) }
     }
 
+    /** 切换某项的"总是允许"标记（勾上后该项会自动 selected）。 */
+    fun toggleAlwaysAllowConfirmItem(itemId: String) {
+        val p = _state.value.pendingConfirm ?: return
+        if (p.submitted) return
+        val items = p.items.map {
+            if (it.id == itemId) {
+                val newAlways = !it.alwaysAllow
+                it.copy(alwaysAllow = newAlways, selected = it.selected || newAlways)
+            } else it
+        }
+        _state.update { it.copy(pendingConfirm = p.copy(items = items)) }
+    }
+
     /** 「照做」：把当前勾选提交给引擎，恢复挂起的确认批次（累积到 submittedConfirms）。 */
     fun submitConfirm() {
         val p = _state.value.pendingConfirm ?: return
         if (p.submitted) return
         submittedConfirms += p
-        AgentLog.i("confirm 照做: turn=${p.turnId} selected=${p.items.count { it.selected }}/${p.items.size}")
-        val approvals = p.items.map { it.selected }
-        gatewayBridge?.submit(p.turnId, approvals)
+        val alwaysCount = p.items.count { it.alwaysAllow }
+        AgentLog.i("confirm 照做: turn=${p.turnId} selected=${p.items.count { it.selected }}/${p.items.size} alwaysAllow=$alwaysCount")
+        val outcomes = p.items.map {
+            when {
+                it.alwaysAllow && it.selected -> ConfirmOutcome.AllowAlways
+                it.selected -> ConfirmOutcome.AllowOnce
+                else -> ConfirmOutcome.Deny
+            }
+        }
+        gatewayBridge?.submit(p.turnId, outcomes)
         _state.update { it.copy(pendingConfirm = p.copy(submitted = true)) }
     }
 
@@ -143,8 +164,8 @@ class ChatViewModel(
         val rejected = p.copy(items = p.items.map { it.copy(selected = false) })
         submittedConfirms += rejected
         AgentLog.i("confirm 跳过全部: turn=${p.turnId}")
-        val approvals = List(p.items.size) { false }
-        gatewayBridge?.submit(p.turnId, approvals)
+        val outcomes = List(p.items.size) { ConfirmOutcome.Deny }
+        gatewayBridge?.submit(p.turnId, outcomes)
         _state.update { it.copy(pendingConfirm = rejected.copy(submitted = true)) }
     }
 

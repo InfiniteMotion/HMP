@@ -1,4 +1,4 @@
-package com.hmp.domain.agent.engine
+package com.hmp.domain.agent.infra
 
 /**
  * Agent 运行时日志（KMP 安全：commonMain 用 println，三端一致）。

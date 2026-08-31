@@ -21,11 +21,22 @@ class ToolNotFoundException(name: String) : Exception("未知工具：$name")
 class ToolRegistry(
     tools: List<AgentTool>,
 ) {
-    private val byName: Map<String, AgentTool> = tools.associateBy { it.name }
+    private val byName: MutableMap<String, AgentTool> = tools.associateBy { it.name }.toMutableMap()
 
     init {
         require(tools.map { it.name }.distinct().size == tools.size) { "工具名不能重复" }
-        // 理论完整清单见 ToolNames.ALL；Registry 注册集以当前实现为准（预留常量可暂不注册，等实现后追加）
+    }
+
+    /**
+     * 动态注册工具（供 MasterAgent 在拿到 ToolRegistry 后自行注册 enrich_* 等专属工具）。
+     *
+     * @throws IllegalArgumentException 如果注册的工具名与现有工具重复。
+     */
+    fun register(vararg tools: AgentTool) {
+        tools.forEach { t ->
+            require(!byName.containsKey(t.name)) { "工具名不能重复：${t.name} 已存在" }
+            byName[t.name] = t
+        }
     }
 
     fun all(): List<AgentTool> = byName.values.sortedBy { it.name }
@@ -49,17 +60,13 @@ class ToolRegistry(
 
     companion object {
         /**
-         * 构造完整工具集（S 阶段 5 域 19 原子）。
+         * 构造基础工具集（27 个：Playback 3 + Playlist 8 + Library 11 + Song 4 + agent_budget 1）。
          *
-         * 域前缀统一：
-         * - playback_*：播放控制（playback_state / playback_control / playback_play_at / playback_enqueue）
-         * - playlist_*：歌单管理（list/detail/create/rename/delete + add/remove/reorder）
-         * - library_*：曲库检索（search / similar / stats / recent_history）
-         * - song_*：标签富化（tags_get / enrich_llm）
-         * - agent_budget：会话配额快照
+         * MasterAgent 专属 enrich_* 工具（5 个）由 MasterAgent 在拿到 ToolRegistry 后
+         * 调 `registry.register(EnrichStartTool(facade), ...)` 自行注册——打破 Koin 循环依赖。
          */
-        fun create(deps: ToolDependencies): ToolRegistry = ToolRegistry(
-            listOf(
+        fun create(deps: ToolDependencies): ToolRegistry {
+            val baseTools = listOf(
                 // ── Playback ──
                 GetNowPlayingContextTool(deps),   // playback_state
                 PlaybackControlTool(deps),        // playback_control
@@ -98,6 +105,7 @@ class ToolRegistry(
                 SongTagUserAddTool(deps),        // song_tag_user_add
                 SongTagUserRemoveTool(deps),      // song_tag_user_remove
             )
-        )
+            return ToolRegistry(baseTools)
+        }
     }
 }
