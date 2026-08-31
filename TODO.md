@@ -274,7 +274,7 @@ v5.10 是 v5 系列的最后一个版本，标志着跨平台架构搭建完成�
 
 - [x] **B0** AI 管道三端去重 + Room v2 迁移——MusicRepositoryImpl 三份（1034/910/899 行）中 AI 方法上提 commonMain（去重目标 30-40%，扫描/存储/标签写入等平台特强方法留 actual）+ 新建 agent_task/agent_audit_log/agent_message 三表 + MusicLabel 加 source/confidence/created_at/updated_at（标签溯源先行，迁移测试先行）（M0）
 - [x] **B1** LlmTransport 流式协议——OpenAiCompatibleAdapter 扩展 tools（function-calling）+ 手动 SSE 解析（ByteReadChannel，避 Ktor 3.2 升级）+ temperature 1.3→0.2-0.4 + FakeLlmTransport（M2）
-- [x] **B2** 工具层——ToolSpec DSL（schema 生成+校验）+ 十项工具（包装既有 UseCase）+ ToolRegistry + 工具结果回填语义（M3）
+- [x] **B2** 工具层——ToolSpec DSL + 十项工具（M3 首次交付）+ ToolRegistry + 回填语义 → **迭代**：批次 A 域前缀统一重命名/拆分（17 工具）+ 批次 B 追加 10 原子工具（playback_enqueue + library 聚合 6 个 + song_tag_user_add/remove + agent_budget stub）= 27 原子工具（批次 A 结束 desktopTest 全绿；批次 B 结束 desktopTest 677 全绿，三端编译通过）
 - [x] **B3** 引擎循环——AgentOrchestrator（步数预算 8）+ Scheduler/PolicyGuard/TrustLedger/ContextBudget/SessionStore/PresenceBus + PlaybackCommandPort（:shared 接口，三端适配器复用 Controller 桥）+ 双层预算（云端频率/额度配额）+ FakePlaybackCommandPort 确定性测试（M4）
 - [x] **B4** 对话 UI（纯文字完整体验）——ChatScreen + 五类气泡（text/song/songlist/explain/confirm）+ 确认卡片流 + 锚点系统（三胶囊/轻量浮层/播放页重排/C 键）+ 两级漏斗 + 门面二期 + 搜索框条带（M1 + M5）
 - [ ] **B5** 电台与事件接线——AI 电台三轮协作 / 跳过感知重排 / DJ 衔接预生成 / 存在感呈现（PresenceBus→徽标+侧条+问候轮换）+ 审计日志页（含撤销边界）（M6）

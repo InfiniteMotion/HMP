@@ -36,6 +36,14 @@ class FakeAgentMusicRepository : MusicRepository {
     override fun getMusicInfoById(musicId: Long): Flow<MusicInfo?> = flowOf(songs[musicId])
     override suspend fun getMusicListByArtist(artistName: String): List<MusicInfo> = songs.values.filter { it.music.artist == artistName }
     override suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo> = songs.values.filter { it.music.album == albumName }
+    override suspend fun getAllArtistsSummary(limit: Int): List<Pair<String, Int>> =
+        songs.values.filter { !it.music.artist.isBlank() }
+            .groupBy { it.music.artist }.mapValues { it.value.size }.toList()
+            .sortedByDescending { it.second }.take(limit)
+    override suspend fun getAllAlbumsSummary(limit: Int): List<Pair<String, Int>> =
+        songs.values.filter { !it.music.album.isBlank() }
+            .groupBy { it.music.album }.mapValues { it.value.size }.toList()
+            .sortedByDescending { it.second }.take(limit)
     override suspend fun searchMusic(query: String): List<MusicInfo> =
         songs.values.filter {
             it.music.title.contains(query, ignoreCase = true) || it.music.artist.contains(query, ignoreCase = true)
@@ -52,6 +60,7 @@ class FakeAgentMusicRepository : MusicRepository {
     override fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>> = flowOf(emptyList())
     override suspend fun getMusicIdListByType(label: LabelName): List<Long> = musicIdsByLabel[label] ?: emptyList()
     override suspend fun getMusicLabels(musicId: Long): List<MusicLabel> = emptyList()
+    override suspend fun removeUserMusicLabel(musicId: Long, label: LabelName) {}
     override suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> = Result.success(Unit)
     override suspend fun refreshMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> = Result.success(Unit)
     override suspend fun getSimilarSongsByWeightedLabels(musicId: Long, limit: Int): List<MusicInfo> =

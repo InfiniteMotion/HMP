@@ -6,6 +6,8 @@ import com.hmp.domain.agent.port.NowPlayingContextProvider
 import com.hmp.domain.agent.port.PlaybackCommandPort
 import com.hmp.domain.agent.tool.ToolDependencies
 import com.hmp.domain.music.MusicRepository
+import com.hmp.domain.playlist.PlaylistRepository
+import com.hmp.domain.setting.SettingsRepository
 import com.hmp.domain.setting.usecase.UserSettingsUseCase
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -29,6 +31,7 @@ val chatGatewayModule = module {
         ToolDependencies(
             musicRepository = get(),
             playlistRepository = get(),
+            settingsRepository = get(),
             nowPlayingContextProvider = get(),
             playbackCommandPort = get(),
             enrichPort = get(),

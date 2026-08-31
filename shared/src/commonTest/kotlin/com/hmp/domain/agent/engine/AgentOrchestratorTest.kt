@@ -14,6 +14,7 @@ import com.hmp.test.fakes.FakeAgentPlaylistRepository
 import com.hmp.test.fakes.FakeAiExtraEnrichPort
 import com.hmp.test.fakes.FakeAuditLogPort
 import com.hmp.test.fakes.FakeLlmTransport
+import com.hmp.test.fakes.FakeSettingsRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,6 +45,7 @@ class AgentOrchestratorTest {
             registry = ToolRegistry.create(ToolDependencies(
                 musicRepository = music,
                 playlistRepository = playlists,
+                settingsRepository = FakeSettingsRepository(),
                 nowPlayingContextProvider = FakeNowPlayingContextProvider,
                 playbackCommandPort = FakePlaybackCommandPort,
                 enrichPort = FakeAiExtraEnrichPort(),
@@ -77,7 +79,7 @@ class AgentOrchestratorTest {
     @Test
     fun `tool loop executes then answers`() = runTest {
         val t = FakeLlmTransport(perTurnScript = listOf(
-            listOf(toolCall("c1", "searchLibrary", """{"query":"rock"}"""), LlmEvent.Completed),
+            listOf(toolCall("c1", "library_search", """{"query":"rock"}"""), LlmEvent.Completed),
             listOf(LlmEvent.TextDelta("找到了一首 Rock Anthem。"), LlmEvent.Completed),
         ))
         val fx = Fixture(t).also { it.music.songs[1L] = song(1, "Rock Anthem", "BB") }
@@ -87,7 +89,7 @@ class AgentOrchestratorTest {
         assertEquals(2, r.stepsUsed)
         assertEquals("找到了一首 Rock Anthem。", r.text)
         assertEquals(1, r.toolCalls.size)
-        assertEquals("searchLibrary", r.toolCalls[0].toolName)
+        assertEquals("library_search", r.toolCalls[0].toolName)
         assertEquals("success", r.toolCalls[0].outcome)
         // 第二步请求应包含回传的 assistant tool_calls + tool 结果消息
         val secondCall = t.calls[1].messages
@@ -98,7 +100,7 @@ class AgentOrchestratorTest {
     @Test
     fun `confirm gate deny marks tool refused and does not act`() = runTest {
         val t = FakeLlmTransport(perTurnScript = listOf(
-            listOf(toolCall("c1", "createPlaylist", """{"name":"我的收藏"}"""), LlmEvent.Completed),
+            listOf(toolCall("c1", "playlist_create", """{"name":"我的收藏"}"""), LlmEvent.Completed),
             listOf(LlmEvent.TextDelta("我没有创建。"), LlmEvent.Completed),
         ))
         val fx = Fixture(t, confirmGate = ConfirmGate { r -> List(r.size) { false } })
@@ -106,7 +108,7 @@ class AgentOrchestratorTest {
 
         assertEquals(TerminationReason.ANSWERED, r.terminatedBy)
         assertEquals("refused", r.toolCalls.single().outcome)
-        assertEquals("refused", fx.audit.outcomes("createPlaylist").single())
+        assertEquals("refused", fx.audit.outcomes("playlist_create").single())
         assertTrue(fx.playlists.playlists.isEmpty(), "被拒的歌单不应被创建")
     }
 
@@ -114,8 +116,8 @@ class AgentOrchestratorTest {
     fun `batch confirm approves selected items only`() = runTest {
         val t = FakeLlmTransport(perTurnScript = listOf(
             listOf(
-                toolCall("c1", "createPlaylist", """{"name":"A"}"""),
-                toolCall("c2", "createPlaylist", """{"name":"B"}"""),
+                toolCall("c1", "playlist_create", """{"name":"A"}"""),
+                toolCall("c2", "playlist_create", """{"name":"B"}"""),
                 LlmEvent.Completed,
             ),
             listOf(LlmEvent.TextDelta("建好了 A。"), LlmEvent.Completed),
@@ -134,14 +136,14 @@ class AgentOrchestratorTest {
         // A 执行成功，B 被拒
         assertEquals("success", r.toolCalls[0].outcome)
         assertEquals("refused", r.toolCalls[1].outcome)
-        assertEquals(listOf("success", "refused"), fx.audit.outcomes("createPlaylist"))
+        assertEquals(listOf("success", "refused"), fx.audit.outcomes("playlist_create"))
         assertEquals(listOf("A"), fx.playlists.playlists.values.map { it.name })
     }
 
     @Test
     fun `step budget hard circuit break`() = runTest {
         val t = FakeLlmTransport(perTurnScript = listOf(   // 两轮都返回工具调用
-            listOf(toolCall("c1", "getRecentHistory", """{}"""), LlmEvent.Completed),
+            listOf(toolCall("c1", "library_recent_history", """{}"""), LlmEvent.Completed),
         ))
         val fx = Fixture(t, stepBudget = 2)
         val r = fx.orchestrator.run("不断调用工具", config)

@@ -110,6 +110,24 @@ abstract class MusicRepositoryBase(
         )
     }
 
+    override suspend fun getAllArtistsSummary(limit: Int): List<Pair<String, Int>> =
+        getAllMusicInfoAsList("playCount", "DESC")
+            .filter { !it.music.artist.isBlank() }
+            .groupBy { it.music.artist }
+            .mapValues { (_, list) -> list.size }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(limit)
+
+    override suspend fun getAllAlbumsSummary(limit: Int): List<Pair<String, Int>> =
+        getAllMusicInfoAsList("playCount", "DESC")
+            .filter { !it.music.album.isBlank() }
+            .groupBy { it.music.album }
+            .mapValues { (_, list) -> list.size }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(limit)
+
     override suspend fun searchMusic(query: String): List<MusicInfo> =
         musicAllDao.searchMusic("%$query%").map { it.toDomain() }
 
@@ -243,6 +261,15 @@ abstract class MusicRepositoryBase(
 
     override suspend fun getMusicLabels(musicId: Long): List<MusicLabel> =
         musicLabelDao.getLabelsById(musicId).map { it.toDomain() }
+
+    override suspend fun removeUserMusicLabel(musicId: Long, label: LabelName) {
+        val dataLabel = try {
+            DataLabelName.valueOf(label.name)
+        } catch (e: Exception) {
+            return
+        }
+        musicLabelDao.deleteUserLabel(musicId, dataLabel)
+    }
 
     /** 编辑单曲标签（ID3 元数据）：文件写入委托平台 [MusicTagEditor]（expect/actual），本地曲库记录同步在此。 */
     override suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> =

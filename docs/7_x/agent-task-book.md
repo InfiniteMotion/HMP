@@ -33,6 +33,9 @@
 ```
 M0 地基与还债 ──▶ M2 协议层 ──▶ M3 工具层 ──▶ M4 引擎循环 ──▶ M5 对话与锚点二期 ──▶ M6 电台与事件 ──▶ M7 报告与语音
    (B0)            (B1)          (B2)           (B3)              (B4)                     (B5)               (B6)
+                                                                      ▲
+                                                             R 债务清零 ─┘
+                                                             S 工具层终局 ─┘（批次 A 重命名 17 + 批次 B 追加 10 = 27）
 
 M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完全并行）
 横切：本地化（贯穿 M1-M7）· 测试基建（Fake* 替身随阶段建立）
@@ -43,12 +46,13 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 | M0 | 三端 Repository 去重 + Room v2（B0）   | —           | 全平台编译 + 迁移单测绿 + 既有 650 单测零回归            |
 | M1 | 锚点层一期：三胶囊/浮层/播放页重排/C 键（Fake 驱动）  | —（可与 M0 并行） | 三端编译 + 模拟器锚点交互核验                        |
 | M2 | LlmTransport 流式协议 + tools 参数（B1） | M0          | 协议层单测全绿（SSE 解析/错误路径/5 服务商兼容）            |
-| M3 | 工具层：ToolSpec DSL + 十项工具（B2）      | M2          | 工具校验单测防漂移                               |
+| M3 | 工具层：ToolSpec DSL + 十项工具首次交付；终局由 S 阶段完成（27 原子工具域前缀统一）      | M2          | 工具校验单测防漂移                               |
 | M4 | 引擎循环四件套 + 双层预算（B3）               | M3          | 引擎全行为确定性测试（步数/许可/拒绝/审计断言）               |
 | M5 | 对话页 + 五类气泡 + 确认流 + 门面二期 + 漏斗（B4） | M4 + M1     | 纯文字完整体验三端可用                             |
 | M6 | 电台三轮协作 + 跳过感知 + DJ 衔接 + 审计页（B5）  | M5          | FakeLlm+FakePlaybackCommandPort 电台确定性测试 |
 | M7 | 报告角色 + 伙伴设置页 + 语音档（B6）           | M6          | 语音为独立 gate，可整体延期不影响 v1 完整性              |
-| R  | 债务清零与交互地基修复（首轮注入/漏斗/真实播放端口/多确认/会话持久/M5 收尾 UI） | M5 未完成 + 定义级漏项 | 交互主干（触发→理解→执行→呈现→反馈→审计）闭环；三端编译 |
+| R  | 债务清零与交互地基修复（首轮注入/漏斗/真实播放端口/多确认/会话持久/M5 收尾 UI）✅ 2026-08-30 | M5 未完成 + 定义级漏项 | 交互主干（触发→理解→执行→呈现→反馈→审计）闭环；三端编译 |
+| S  | 工具层终局：批次 A 域前缀统一重命名拆分（17 原子工具）+ 批次 B 追加 Library 聚合/Song USER 标签写入闭环/PlaybackEnqueue（+10 = 27 原子工具）✅ 2026-08-31 | M3 首次交付 + R 阶段暴露出的工具层遗留 | ToolNames.ALL 27 ↔ ToolRegistry 27 注册 1:1；desktopTest 677 全绿；compileAndroidMain/compileKotlinDesktop 通过 |
 
 ***
 
@@ -105,15 +109,15 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 **退出**：协议层单测全绿；现有 AI 功能（富化/每日推荐）回归不破坏。
 
-### M3 工具层（B2，\~4 人天）
+### M3 工具层（B2，\~4 人天）✅ 2026-08-29 首次交付（十项工具原型）；终局迭代见 S 阶段
 
 | ID    | 任务                                                                                                                                                                                                                                                      | 涉及文件                                        | 验收                 |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------ |
 | M3-T1 | `ToolSpec` DSL：手写 schema 生成 + 参数校验器（与 kotlinx.serialization 协同）                                                                                                                                                                                         | 新建 `domain/agent/tool/ToolSpec.kt`          | schema↔校验单测防漂移     |
-| M3-T2 | 十项工具实现 + `ToolRegistry`：read/calc 六项静默（searchLibrary/getListenStats/getRecentHistory/getNowPlayingContext/getSimilarSongs/getMusicExtra）、enrichSong 通知、写三项确认（createPlaylist/addToPlaylist+reorderPlaylist/controlPlayback）；工具描述三段式（行为约束≤50 条/成本提示/替代指引） | 新建 `domain/agent/tool/` 十个实现 + ToolRegistry | 每工具单测（成功/空结果/参数越界） |
+| M3-T2 | **27 原子工具 + ToolRegistry**（批次 A 重命名拆分 17 + 批次 B 追加 10）。域前缀统一：playback_* 瞬时控制/playback_play_at/playback_enqueue、playlist_* 八件套（CRUD+曲目管理+系统歌单保护）、library_* search/similar/stats/recent_history/**artists/albums/tags/songs_by_***、song_* tags_get/enrich_llm/**tag_user_add/tag_user_remove**、agent_budget；批次 B 补 MusicRepository 聚合查询（getAllArtistsSummary/getAllAlbumsSummary）、DAO deleteUserLabel、PlaybackCommand.ADD_TO_QUEUE 枚举 | `domain/agent/tool/` 十个实现文件 + ToolRegistry | ✅ desktopTest 677 全绿；compileAndroidMain/compileKotlinDesktop 通过；FakeAgentMusicRepository/FakeMusicRepository 同步补方法 |
 | M3-T3 | 工具结果回填语义：工具执行结果强制回填上下文（防幻觉型假成功），失败=异常结果入审计                                                                                                                                                                                                              | ToolRegistry                                | 回填与失败路径单测          |
 
-**退出**：工具层单测全绿；工具白名单与许可级可被 M4 引用。
+**退出**：✅ 批次 A 2026-08-29（17 工具重命名拆分）+ 批次 B 2026-08-31（追加 10 工具 = 27 原子工具）；ToolNames.ALL 常量 ↔ ToolRegistry 注册 1:1；desktopTest 677 全绿；compileAndroidMain/compileKotlinDesktop 通过；工具白名单与许可级已被 M4 引用。
 
 ### M4 引擎循环（B3，\~6 人天）——复杂度在护栏，不进循环
 
@@ -167,6 +171,26 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 **gate 规则**：M7-T3/T4 端点不可用或验证不过→**B6 语音整体延期**，报告角色+设置页照常交付——v1 完整性不依赖语音。
 
 ### R 阶段：债务清零与交互地基修复（还债阶段，横切；先于 M5 完成态）✅ 2026-08-30 代码层完成
+
+### S 阶段：工具层终局（批次 A + 批次 B）✅ 2026-08-31 完成
+
+> R 阶段修了工具层遗留（searchLibrary 标签与 id / controlPlayback play_by_id 引导），但 10 工具原型到 27 原子工具的域前缀统一、原子拆分、Library/Song/Playback 域补齐，留到本阶段闭环。**S 阶段独立于 M0-M7 主序列**——M3 首次交付（十项工具）已完成，S 是 R 之后、回到 M4/M6 之前的工具层补全。
+
+| 批次 | 任务 | 结果 |
+|------|------|------|
+| 批次 A | 域前缀统一（playback_*/playlist_*/library_*/song_*）+ 原子拆分（control vs play_at）+ Playlist 八件套（CRUD + 曲目管理 + 系统歌单保护） | ✅ 10 → 17 原子工具；desktopTest 全绿 |
+| 批次 B | Library 域聚合查询 6 个（artists/albums/tags + songs_by_*）+ Song 域 USER 标签写入闭环（tag_user_add/remove，source=USER 永不被模型覆盖）+ PlaybackCommand.ADD_TO_QUEUE + agent_budget stub | ✅ 17 → 27 原子工具；desktopTest 677 全绿；compileAndroidMain/compileKotlinDesktop 通过 |
+
+底层依赖补完（批次 B 触发）：
+- MusicRepository 接口补 getAllArtistsSummary / getAllAlbumsSummary / removeUserMusicLabel
+- MusicRepositoryBase 用 Kotlin 侧 groupBy 实现聚合（不新增 DAO SQL，避免三端平台层同步）
+- MusicLabelDao.deleteUserLabel（硬编码 `source='USER'` 防误删 LLM 富化标签）
+- PlaybackCommand 密封接口补 ADD_TO_QUEUE(Long) 枚举
+- FakeAgentMusicRepository + FakeMusicRepository 同步补 3 方法
+
+ToolNames.ALL 27 常量 ↔ ToolRegistry 27 注册 1:1 匹配；批次 A 结束 desktopTest 全绿；批次 B 结束 desktopTest 677 全绿。
+
+**退出**：工具层 27 原子工具闭环，LLM 可 function-calling 组合出任意编排。
 
 > **进度**：R-T1..R-T6 全部实现（首轮注入/漏斗/真实播放端口/多确认门/会话持久/M5 剩余 UI）。
 > **验收缺口（待补）**：iOS 编译未验证（仅 android/desktop）；门面/搜索条带交互核验未深入；审计页/撤销按定义留 M6；本地化（14 语言）为横切项未做。
@@ -236,6 +260,7 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-08-26 | v1：依据 agent.md（深度合并稿）编制；阶段制 M0-M7，不绑定版本号；B0 归 M0 优先（可在非 agent 版本先行）；语音 gate 明确；挂起参数给建议默认值                                                                                                           |
 | 2026-08-28 | M5 一期：ChatScreen/ChatViewModel + 五类气泡 + 批量确认卡流（T1/T2/T4）；Gateway 接口 + Orchestrator 真实接线；顺带修复 TrustLedger/MusicRepositoryBase 的 iOS 跨平台缺口（Map.getOrDefault→显式判空；System.currentTimeMillis→跨平台 expect） |
+| 2026-08-31 | **M3 工具层终局（批次 A + B）**：批次 A 完成域前缀统一重命名/拆分（17 工具，批次 A 结束 desktopTest 全绿）；批次 B 追加 10 原子工具（playback_enqueue + library 域聚合查询 6 个 + song_tag_user_add/remove + agent_budget stub），Registry 17→27；底层依赖：MusicRepository.getAllArtistsSummary/getAllAlbumsSummary/removeUserMusicLabel（Kotlin 侧 groupBy，不新增 DAO SQL）、MusicLabelDao.deleteUserLabel（source=USER 过滤）、PlaybackCommand.ADD_TO_QUEUE 枚举；ToolNames.ALL 27 常量 ↔ ToolRegistry 注册 1:1 匹配；desktopTest 677 全绿，compileAndroidMain/compileKotlinDesktop 通过；FakeAgentMusicRepository + FakeMusicRepository 同步补 3 方法 |
 | 2026-08-30 | **R 阶段落地**：R-T1 首轮注入（CompanionProfile/ContextAssembler/buildSystemPrompt + gateway 真实装配）、R-T2 漏斗（CommandLexicon + ChatViewModel 接线）、R-T3 真实播放/现在听端口、R-T4 多确认门（submittedConfirms）、R-T5 会话持久（AgentMessageStore/RoomAgentMessageStore + 三端 DI）、R-T6 M5 剩余 UI；工具层修复（searchLibrary 标签+id、controlPlayback play_by_id 引导、getRecentHistory 带标题）；AgentLog 运行时日志；对话页沉浸式 UI 重构（去顶栏/去头像/紧凑输入栏/键盘贴键盘/新增消息与聚焦自动滚底/横滑与页点恢复）。**验收缺口**：iOS 编译未验证、门面/搜索交互核验未深入、审计页/撤销留 M6、本地化横切未做 |
 
 <br />

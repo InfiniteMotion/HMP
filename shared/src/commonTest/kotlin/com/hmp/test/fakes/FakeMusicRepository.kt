@@ -67,6 +67,24 @@ class FakeMusicRepository : MusicRepository {
     override suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo> =
         musicList.filter { it.music.album == albumName }
 
+    override suspend fun getAllArtistsSummary(limit: Int): List<Pair<String, Int>> =
+        musicList
+            .filter { !it.music.artist.isBlank() }
+            .groupBy { it.music.artist }
+            .mapValues { (_, list) -> list.size }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(limit)
+
+    override suspend fun getAllAlbumsSummary(limit: Int): List<Pair<String, Int>> =
+        musicList
+            .filter { !it.music.album.isBlank() }
+            .groupBy { it.music.album }
+            .mapValues { (_, list) -> list.size }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(limit)
+
     override suspend fun searchMusic(query: String): List<MusicInfo> {
         val q = query.lowercase()
         return musicList.filter {
@@ -129,6 +147,10 @@ class FakeMusicRepository : MusicRepository {
 
     override suspend fun getMusicLabels(musicId: Long): List<MusicLabel> =
         labels[musicId] ?: emptyList()
+
+    override suspend fun removeUserMusicLabel(musicId: Long, label: LabelName) {
+        labels[musicId]?.removeAll { it.label == label }
+    }
 
     override suspend fun updateMusicTags(musicId: Long, tags: EditableMusicTags): Result<Unit> {
         val index = musicList.indexOfFirst { it.music.id == musicId }

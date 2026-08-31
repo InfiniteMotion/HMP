@@ -18,6 +18,12 @@ interface MusicRepository {
     fun getMusicInfoById(musicId: Long): Flow<MusicInfo?>
     suspend fun getMusicListByArtist(artistName: String): List<MusicInfo>
     suspend fun getMusicListByAlbum(albumName: String): List<MusicInfo>
+
+    /** 按歌手聚合：返回 (歌手名, 作品数) 列表，按作品数降序。 */
+    suspend fun getAllArtistsSummary(limit: Int): List<Pair<String, Int>>
+
+    /** 按专辑聚合：返回 (专辑名, 曲目数) 列表，按曲目数降序。 */
+    suspend fun getAllAlbumsSummary(limit: Int): List<Pair<String, Int>>
     suspend fun searchMusic(query: String): List<MusicInfo>
 
     // Music Random
@@ -48,6 +54,9 @@ interface MusicRepository {
 
     fun getLabelNamesByType(type: LabelCategory): Flow<List<LabelName>>
     suspend fun getMusicIdListByType(label: LabelName): List<Long>
+
+    /** 删除某首歌的 USER 源标签（只删 source=USER 的；LLM 富化标签不受影响）。 */
+    suspend fun removeUserMusicLabel(musicId: Long, label: LabelName)
     suspend fun getMusicLabels(musicId: Long): List<MusicLabel>
 
     /** 编辑单曲标签（ID3 元数据），写入文件成功后同步更新本地曲库记录。 */
