@@ -1,6 +1,6 @@
 package com.hmp.domain.agent.sub
 
-import com.hmp.domain.agent.infra.AgentLog
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.infra.PresenceBus
 import com.hmp.domain.agent.port.AuditLogPort
 import com.hmp.domain.agent.port.LlmMessage
@@ -100,15 +100,15 @@ class EnrichSubAgent(
     fun assignBatch(batch: List<MusicInfo>) {
         val sent = batchChannel.trySend(batch)
         if (sent.isFailure) {
-            AgentSubAgentLog.w("[$agentId] batchChannel full, dropping ${batch.size} songs")
+            Logger.w("Agent.Enrich") { "[$agentId] batchChannel full, dropping ${batch.size} songs" }
         } else {
-            AgentSubAgentLog.i("[$agentId] batch dispatched: ${batch.size} songs")
+            Logger.i("Agent.Enrich") { "[$agentId] batch dispatched: ${batch.size} songs" }
         }
     }
 
     /** Master 更新注入的 system prompt（F5：Master 注入，Enrich 不自演化） */
     fun updateSystemPrompt(newPrompt: String) {
-        AgentSubAgentLog.i("[$agentId] system prompt updated by Master")
+        Logger.i("Agent.Enrich") { "[$agentId] system prompt updated by Master" }
         systemPrompt = newPrompt
     }
 
@@ -122,21 +122,21 @@ class EnrichSubAgent(
     override suspend fun shutdown() {
         super.shutdown()
         batchChannel.close()
-        AgentSubAgentLog.i("[$agentId] shutdown complete (processed=$processedCount total)")
+        Logger.i("Agent.Enrich") { "[$agentId] shutdown complete (processed=$processedCount total)" }
     }
 
     /** 手动暂停（Master LLM 通过 enrich_pause 工具调） */
     override suspend fun pause() {
         (stopSignal as? com.hmp.domain.agent.runtime.SchedulerStopSignal)?.onSchedulerPaused()
         runState = AgentRunState.PAUSED
-        AgentSubAgentLog.i("[$agentId] manually paused")
+        Logger.i("Agent.Enrich") { "[$agentId] manually paused" }
     }
 
     /** 手动恢复（Master LLM 通过 enrich_resume 工具调） */
     override suspend fun resume() {
         (stopSignal as? com.hmp.domain.agent.runtime.SchedulerStopSignal)?.onSchedulerResumed()
         runState = AgentRunState.RUNNING
-        AgentSubAgentLog.i("[$agentId] manually resumed")
+        Logger.i("Agent.Enrich") { "[$agentId] manually resumed" }
     }
 
     // ===== 执行循环（F6：极简，不做任何决策） =====
@@ -155,7 +155,7 @@ class EnrichSubAgent(
      *   ToolCallExecutor.executeOne(trackMessages=false, messages=null)
      */
     override suspend fun runLoop() {
-        AgentSubAgentLog.i("[$agentId] runLoop start (policyGuard=${policyGuard != null}, agentPolicy=${agentPolicy?.role})")
+        Logger.i("Agent.Enrich") { "[$agentId] runLoop start (policyGuard=${policyGuard != null}, agentPolicy=${agentPolicy?.role})" }
         isActive = true
         runState = AgentRunState.RUNNING
 
@@ -174,7 +174,7 @@ class EnrichSubAgent(
 
             // 熔断：token 配额耗尽或外部 shutdown
             if (stopSignal?.shouldSoftStop() == true) {
-                AgentSubAgentLog.i("[$agentId] stopSignal.shouldSoftStop() → exiting runLoop")
+                Logger.i("Agent.Enrich") { "[$agentId] stopSignal.shouldSoftStop() → exiting runLoop" }
                 break
             }
 
@@ -182,12 +182,12 @@ class EnrichSubAgent(
             val batch = try {
                 batchChannel.receive()
             } catch (e: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
-                AgentSubAgentLog.i("[$agentId] batchChannel closed, exiting")
+                Logger.i("Agent.Enrich") { "[$agentId] batchChannel closed, exiting" }
                 break
             }
 
             currentBatch = batch
-            AgentSubAgentLog.i("[$agentId] received batch: ${batch.size} songs")
+            Logger.i("Agent.Enrich") { "[$agentId] received batch: ${batch.size} songs" }
 
             // ═══ 完整 LLM 执行链路（LlmCallExecutor 统一路径，与 MasterAgent/ReActLoop 复用）═══
             // 1. 构建批次消息（每批次 fresh start，不累积 history）
@@ -207,9 +207,9 @@ class EnrichSubAgent(
                 )
 
                 if (turn.failed) {
-                    AgentSubAgentLog.e("[$agentId] LLM failed: ${turn.failedMessage}")
+                    Logger.e("Agent.Enrich") { "[$agentId] LLM failed: ${turn.failedMessage}" }
                 } else {
-                    AgentSubAgentLog.i("[$agentId] LLM responded: ${turn.toolCalls.size} toolCalls for ${batch.size} songs")
+                    Logger.i("Agent.Enrich") { "[$agentId] LLM responded: ${turn.toolCalls.size} toolCalls for ${batch.size} songs" }
 
                     // ═══ 权限裁决 + 执行（v7.1 P0-②：接入 ToolCallExecutor，不再 DirectToolExecutor 裸跑）═══
                     if (turn.toolCalls.isNotEmpty()) {
@@ -218,24 +218,24 @@ class EnrichSubAgent(
                             toolExecutor.batchDecideApprovals(agentPolicy, turn.toolCalls)
                         } else {
                             // 无 policyGuard/agentPolicy → 旧行为：全自动通过（开发模式兜底）
-                            AgentSubAgentLog.w("[$agentId] no policyGuard/agentPolicy → auto-approve all toolCalls (开发模式)")
+                            Logger.w("Agent.Enrich") { "[$agentId] no policyGuard/agentPolicy → auto-approve all toolCalls (开发模式)" }
                             turn.toolCalls.associate { it.id to true }
                         }
 
                         for (tc in turn.toolCalls) {
                             val approved = approvals[tc.id] ?: false
                             if (!approved) {
-                                AgentSubAgentLog.w("[$agentId] tool ${tc.name} denied by policy, skipping")
+                                Logger.w("Agent.Enrich") { "[$agentId] tool ${tc.name} denied by policy, skipping" }
                                 continue
                             }
                             val record = toolExecutor.executeOne(tc, messages = null, approved = true)
-                            AgentSubAgentLog.d("[$agentId] tool ${tc.name} result: success=${record.outcome}")
+                            Logger.d("Agent.Enrich") { "[$agentId] tool ${tc.name} result: success=${record.outcome}" }
                         }
                     }
                 }
             } else {
                 // 无 LLM config（开发模式 / 未配置 API Key）——跳过 LLM 调用
-                AgentSubAgentLog.w("[$agentId] No AiEndpointConfig available, skipping LLM call (batch=${batch.size})")
+                Logger.w("Agent.Enrich") { "[$agentId] No AiEndpointConfig available, skipping LLM call (batch=${batch.size})" }
             }
 
             // 批次结束：清理 history，保证每个批次 fresh start（不泄漏前序批次的 messages）

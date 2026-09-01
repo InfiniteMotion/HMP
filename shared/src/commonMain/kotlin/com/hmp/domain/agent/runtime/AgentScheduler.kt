@@ -1,5 +1,6 @@
 package com.hmp.domain.agent.runtime
 
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,7 +76,7 @@ class AgentScheduler(
         if (initialState == AgentRunState.RUNNING) {
             scope.launch { runCatching { registration.onResume() } }
         }
-        AgentRuntimeLog.i("[Scheduler] registered ${registration.agentId} priority=${registration.priority} initial=$initialState")
+        Logger.i("Agent.Scheduler") { "[Scheduler] registered ${registration.agentId} priority=${registration.priority} initial=$initialState" }
         return initialState
     }
 
@@ -83,7 +84,7 @@ class AgentScheduler(
     fun unregisterAgent(agentId: String) {
         agents.remove(agentId)
         states.remove(agentId)
-        AgentRuntimeLog.i("[Scheduler] unregistered $agentId")
+        Logger.i("Agent.Scheduler") { "[Scheduler] unregistered $agentId" }
     }
 
     /** 查询 Agent 当前状态 */
@@ -100,7 +101,7 @@ class AgentScheduler(
         if (arbitrationStarted) return
         arbitrationStarted = true
         scope.launch { arbitrationLoop() }
-        AgentRuntimeLog.i("[Scheduler] arbitration loop started")
+        Logger.i("Agent.Scheduler") { "[Scheduler] arbitration loop started" }
     }
 
     /** 停止仲裁循环（应用销毁时调用） */
@@ -111,7 +112,7 @@ class AgentScheduler(
             scope.launch { runCatching { reg.onPause() } }
             states[id] = AgentRunState.PAUSED
         }
-        AgentRuntimeLog.i("[Scheduler] arbitration loop stopped")
+        Logger.i("Agent.Scheduler") { "[Scheduler] arbitration loop stopped" }
     }
 
     private suspend fun arbitrationLoop() {
@@ -123,11 +124,11 @@ class AgentScheduler(
                     states[agentId] = newState
                     when (newState) {
                         AgentRunState.RUNNING -> {
-                            AgentRuntimeLog.i("[Scheduler] $agentId RESUMED (priority=${registration.priority})")
+                            Logger.i("Agent.Scheduler") { "[Scheduler] $agentId RESUMED (priority=${registration.priority})" }
                             runCatching { registration.onResume() }
                         }
                         AgentRunState.PAUSED -> {
-                            AgentRuntimeLog.i("[Scheduler] $agentId PAUSED (priority=${registration.priority})")
+                            Logger.i("Agent.Scheduler") { "[Scheduler] $agentId PAUSED (priority=${registration.priority})" }
                             runCatching { registration.onPause() }
                         }
                         AgentRunState.UNREGISTERED -> Unit

@@ -1,6 +1,6 @@
 package com.hmp.domain.agent.runtime
 
-import com.hmp.domain.agent.infra.AgentLog
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.port.AuditEntry
 import com.hmp.domain.agent.port.AuditLogPort
 import com.hmp.domain.agent.port.LlmEvent
@@ -74,10 +74,10 @@ class ToolCallExecutor(
         if (pending.isNotEmpty()) {
             if (confirmGate == null) {
                 // 后台 Agent 无 confirmGate → RequireConfirm 级工具直接 Denied（安全兜底）
-                AgentLog.w("no confirmGate for agent=${agentPolicy.role}, denying ${pending.size} pending toolCalls")
+                Logger.w("Agent.Tool") { "no confirmGate for agent=${agentPolicy.role}, denying ${pending.size} pending toolCalls" }
                 pending.forEach { approvals[it.id] = false }
             } else {
-                AgentLog.i("confirm request: ${pending.map { it.name }} (${pending.size} 项)")
+                Logger.i("Agent.Tool") { "confirm request: ${pending.map { it.name }} (${pending.size} 项)" }
                 val outcomes = confirmGate.request(
                     pending.map { tc ->
                         ConfirmRequest(
@@ -87,7 +87,7 @@ class ToolCallExecutor(
                         )
                     }
                 )
-                AgentLog.d("confirm outcomes=$outcomes")
+                Logger.d("Agent.Tool") { "confirm outcomes=$outcomes" }
 
                 val trustLedger = agentPolicy.trustLedger
                 val alwaysAllowCandidates = mutableSetOf<String>()

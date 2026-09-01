@@ -1,5 +1,6 @@
 package com.hmp.domain.agent.runtime
 
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.port.LlmEvent
 import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmToolSpec
@@ -61,7 +62,7 @@ class LlmCallExecutor {
             failedMessage = e.message
         }
 
-        AgentRuntimeLog.d("[LlmCall] text=${truncate(text.toString())} toolCalls=${calls.size} failed=$failed")
+        Logger.d("Agent.LlmCall") { "[LlmCall] text=${text.toString().take(79)}… toolCalls=${calls.size} failed=$failed" }
 
         return CollectedLlmResult(
             text = text.toString(),
@@ -70,9 +71,6 @@ class LlmCallExecutor {
             failedMessage = failedMessage,
         )
     }
-
-    private fun truncate(s: String, max: Int = 80): String =
-        if (s.length <= max) s else s.take(max) + "…"
 }
 
 /** 单次 LLM 调用的结构化结果 */

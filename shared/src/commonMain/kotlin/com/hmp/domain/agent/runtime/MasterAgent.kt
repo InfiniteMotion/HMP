@@ -1,6 +1,6 @@
 package com.hmp.domain.agent.runtime
 
-import com.hmp.domain.agent.infra.AgentLog
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.infra.PresenceBus
 import com.hmp.domain.agent.infra.SessionStore
 import com.hmp.domain.agent.policy.AgentPolicy
@@ -95,7 +95,7 @@ class MasterAgent(
                 com.hmp.domain.agent.tool.EnrichStatusTool(this),
                 com.hmp.domain.agent.tool.EnrichRescanTool(this),
             )
-            AgentRuntimeLog.i("[Master] enriched chat ToolRegistry with 5 enrich_* tools (total=${registry.all().size})")
+            Logger.i("Agent.Master") { "[Master] enriched chat ToolRegistry with 5 enrich_* tools (total=${registry.all().size})" }
         }
     }
 
@@ -155,8 +155,13 @@ class MasterAgent(
     private val _subAgents = mutableMapOf<String, com.hmp.domain.agent.sub.SubAgent>()
     val subAgents: Map<String, com.hmp.domain.agent.sub.SubAgent> get() = _subAgents.toMap()
 
-    /** Enrich 当前任务单（null = 无富化任务在跑） */
+    /** Enrich 当前任务单（null = 无富化任务在跑）。
+     * @Volatile：enrichTaskLoop 与 rescanEnrich 分属不同协程，保证 targetCoverage 更新可见 */
+    @Volatile
     private var enrichTask: EnrichTask? = null
+
+    /** 歌曲富化失败重派计数（songId → 已重派次数；超过 [MAX_ENRICH_RETRIES] 次不再重派） */
+    private val enrichRetryCounts = mutableMapOf<Long, Int>()
 
     // ===== 生命周期 =====
 
@@ -167,7 +172,7 @@ class MasterAgent(
      * ③ 检测富化健康度 → 决定是否创建 Enrich
      */
     suspend fun initialize(enrichTransport: LlmTransport? = null) {
-        AgentRuntimeLog.i("[Master] initialize start")
+        Logger.i("Agent.Master") { "[Master] initialize start" }
 
         // ① 启动 Scheduler
         scheduler.startArbitration()
@@ -182,26 +187,26 @@ class MasterAgent(
                 onResume = { /* Master 永不暂停 */ },
             )
         )
-        AgentRuntimeLog.i("[Master] registered with Scheduler priority=1")
+        Logger.i("Agent.Master") { "[Master] registered with Scheduler priority=1" }
 
         // ③ 检测富化健康度 → 决定是否创建 Enrich
         musicRepository?.let { repo ->
             val health = repo.getEnrichHealth()
-            AgentRuntimeLog.i("[Master] enrich health: ${health.enrichedSongCount}/${health.totalSongCount} coverage=${health.coverageRate} lowConf=${health.lowConfidenceCount}")
+            Logger.i("Agent.Master") { "[Master] enrich health: ${health.enrichedSongCount}/${health.totalSongCount} coverage=${health.coverageRate} lowConf=${health.lowConfidenceCount}" }
 
             val defaultTarget = 0.9f // 默认 90% 覆盖率
             if (health.coverageRate < defaultTarget) {
-                AgentRuntimeLog.i("[Master] coverage ${health.coverageRate} < target $defaultTarget -> creating Enrich")
+                Logger.i("Agent.Master") { "[Master] coverage ${health.coverageRate} < target $defaultTarget -> creating Enrich" }
                 startEnrich(EnrichTask(targetCoverage = defaultTarget), enrichTransport)
             } else {
-                AgentRuntimeLog.i("[Master] coverage ${health.coverageRate} >= target $defaultTarget -> skip Enrich")
+                Logger.i("Agent.Master") { "[Master] coverage ${health.coverageRate} >= target $defaultTarget -> skip Enrich" }
             }
-        } ?: AgentRuntimeLog.w("[Master] MusicRepository null, skipping enrich health check")
+        } ?: Logger.w("Agent.Master") { "[Master] MusicRepository null, skipping enrich health check" }
     }
 
     /** 应用销毁时调用，清理所有 SubAgent */
     suspend fun shutdown() {
-        AgentRuntimeLog.i("[Master] shutdown")
+        Logger.i("Agent.Master") { "[Master] shutdown" }
         scheduler.stopArbitration()
         _subAgents.values.forEach { it.shutdown() }
         _subAgents.clear()
@@ -222,21 +227,21 @@ class MasterAgent(
      */
     suspend fun startEnrich(task: EnrichTask, enrichTransport: LlmTransport? = null) {
         if (_subAgents.containsKey("enrich")) {
-            AgentRuntimeLog.w("[Master] Enrich already exists, skip create")
+            Logger.w("Agent.Master") { "[Master] Enrich already exists, skip create" }
             return
         }
 
         val repo = musicRepository
         val registry = chatToolRegistry
         if (repo == null || registry == null) {
-            AgentRuntimeLog.e("[Master] Cannot start Enrich: musicRepository=${repo != null} chatToolRegistry=${registry != null}")
+            Logger.e("Agent.Master") { "[Master] Cannot start Enrich: musicRepository=${repo != null} chatToolRegistry=${registry != null}" }
             return
         }
 
         // 优先用传入的 enrichTransport，退化到构造函数的 enrichTransport，最后退化到 chatTransport
         val effectiveEnrichTransport = enrichTransport ?: this.enrichTransport ?: chatTransport
         if (effectiveEnrichTransport == null) {
-            AgentRuntimeLog.e("[Master] No LlmTransport available for Enrich; aborting startEnrich")
+            Logger.e("Agent.Master") { "[Master] No LlmTransport available for Enrich; aborting startEnrich" }
             return
         }
 
@@ -297,11 +302,11 @@ class MasterAgent(
 
         // ⑦ 启动两个循环：
         //    - enrichAgent.runLoop()  ← 被动执行器，等 batchChannel；Scheduler pause 时 Mutex 挂起
-        //    - enrichTaskLoop(task)   ← Master 派活/验收循环，轻量协程
+        //    - enrichTaskLoop()       ← Master 派活/验收循环，轻量协程（每轮读 enrichTask 字段，rescan 即时生效）
         scope.launch { enrichAgent.runLoop() }
-        scope.launch { enrichTaskLoop(task) }
+        scope.launch { enrichTaskLoop() }
 
-        AgentRuntimeLog.i("[Master] EnrichSubAgent created (batch=${task.maxBatchSize}, targetCoverage=${task.targetCoverage}, config=${enrichConfig != null})")
+        Logger.i("Agent.Master") { "[Master] EnrichSubAgent created (batch=${task.maxBatchSize}, targetCoverage=${task.targetCoverage}, config=${enrichConfig != null})" }
     }
 
     /** Master 下令销毁 Enrich（F1：只有 Master 能下令） */
@@ -311,7 +316,8 @@ class MasterAgent(
             scheduler.unregisterAgent("enrich")
             _subAgents.remove("enrich")
             enrichTask = null
-            AgentRuntimeLog.i("[Master] Enrich stopped")
+            enrichRetryCounts.clear()  // 重置重试计数，下次 startEnrich 重新累计
+            Logger.i("Agent.Master") { "[Master] Enrich stopped" }
         }
     }
 
@@ -322,44 +328,53 @@ class MasterAgent(
      * - 【派发】决定下一批 → enrichAgent.assignBatch(batch)
      * - 【验收】等 5s → 查 DB 实际结果
      * - 达成 targetCoverage → stopEnrich()
-     * - 失败批次 → 重派
+     * - 失败批次 → 重派（每首歌最多重派 [MAX_ENRICH_RETRIES] 次，超过视为永久失败放弃）
+     *
+     * 注意：每轮迭代从 [enrichTask] 字段读取当前 task（而非启动时的参数快照）——
+     * rescanEnrich() 更新 targetCoverage 后下一轮即生效。
      */
-    private suspend fun enrichTaskLoop(task: EnrichTask) {
+    private suspend fun enrichTaskLoop() {
         val enrichAgent = _subAgents["enrich"] as? com.hmp.domain.agent.sub.EnrichSubAgent ?: run {
-            AgentRuntimeLog.e("[Master] enrichTaskLoop: EnrichSubAgent not in _subAgents, abort")
+            Logger.e("Agent.Master") { "[Master] enrichTaskLoop: EnrichSubAgent not in _subAgents, abort" }
             return
         }
-        AgentRuntimeLog.i("[Master] enrichTaskLoop start: target=${task.targetCoverage} batch=${task.maxBatchSize}")
+        Logger.i("Agent.Master") { "[Master] enrichTaskLoop start: target=${enrichTask?.targetCoverage} batch=${enrichTask?.maxBatchSize}" }
         var lastCheckTime = timeProvider()
 
         while (scope.isActive && _subAgents.containsKey("enrich")) {
+            val task = enrichTask ?: break  // task 被清空（stopEnrich 并发触发）→ 退出
             // 【派发】决定下一批
             val nextBatch = musicRepository?.getUnenrichedSongs(task.maxBatchSize) ?: emptyList()
 
             if (nextBatch.isEmpty()) {
                 // 没有新待富化的 → 检查目标是否达成
                 val health = musicRepository?.getEnrichHealth() ?: EnrichHealth(0, 0, 0)
-                AgentRuntimeLog.i("[Master] enrich health: coverage=${health.coverageRate}/${task.targetCoverage} enriched=${health.enrichedSongCount}/${health.totalSongCount}")
+                Logger.i("Agent.Master") { "[Master] enrich health: coverage=${health.coverageRate}/${task.targetCoverage} enriched=${health.enrichedSongCount}/${health.totalSongCount}" }
 
                 if (health.coverageRate >= task.targetCoverage) {
                     // ✅ 验收通过 → 下令销毁 Enrich
-                    AgentRuntimeLog.i("[Master] enrich target achieved (${health.coverageRate} >= ${task.targetCoverage}), shutdown Enrich")
+                    Logger.i("Agent.Master") { "[Master] enrich target achieved (${health.coverageRate} >= ${task.targetCoverage}), shutdown Enrich" }
                     stopEnrich()
                     return
                 } else {
-                    // 可能之前失败了 → 重派失败批次
-                    val failed = musicRepository?.getFailedEnrichSongs(task.maxBatchSize) ?: emptyList()
+                    // 可能之前失败了 → 重派失败批次（每首歌最多重派 MAX_ENRICH_RETRIES 次）
+                    val failed = musicRepository?.getFailedEnrichSongs(task.maxBatchSize)
+                        ?.filter { (enrichRetryCounts[it.music.id] ?: 0) < MAX_ENRICH_RETRIES }
+                        ?: emptyList()
                     if (failed.isNotEmpty()) {
-                        AgentRuntimeLog.i("[Master] retrying ${failed.size} failed songs")
+                        failed.forEach { song ->
+                            enrichRetryCounts[song.music.id] = (enrichRetryCounts[song.music.id] ?: 0) + 1
+                        }
+                        Logger.i("Agent.Master") { "[Master] retrying ${failed.size} failed songs (retries=${failed.map { enrichRetryCounts[it.music.id] }})" }
                         enrichAgent.assignBatch(failed)
                     } else {
-                        AgentRuntimeLog.w("[Master] no unenriched and no failed but coverage ${health.coverageRate} < target ${task.targetCoverage} — waiting 10s")
+                        Logger.w("Agent.Master") { "[Master] no unenriched and no failed but coverage ${health.coverageRate} < target ${task.targetCoverage} — waiting 10s" }
                         delay(10_000)
                     }
                 }
             } else {
                 // 有新批次 → 派给 Enrich
-                AgentRuntimeLog.i("[Master] dispatching batch of ${nextBatch.size} songs to Enrich")
+                Logger.i("Agent.Master") { "[Master] dispatching batch of ${nextBatch.size} songs to Enrich" }
                 enrichAgent.assignBatch(nextBatch)
             }
 
@@ -367,7 +382,7 @@ class MasterAgent(
             delay(5_000)
             val results = musicRepository?.getRecentEnrichResults(since = lastCheckTime)
             if (results != null) {
-                AgentRuntimeLog.i("[Master] enrich batch result: success=${results.successCount} failure=${results.failureCount} rate=${results.successRate}")
+                Logger.i("Agent.Master") { "[Master] enrich batch result: success=${results.successCount} failure=${results.failureCount} rate=${results.successRate}" }
             }
             lastCheckTime = timeProvider()
         }
@@ -412,12 +427,12 @@ class MasterAgent(
 
     override suspend fun pauseEnrich() {
         _subAgents["enrich"]?.pause()
-        AgentRuntimeLog.i("[Master] enrich paused via facade")
+        Logger.i("Agent.Master") { "[Master] enrich paused via facade" }
     }
 
     override suspend fun resumeEnrich() {
         _subAgents["enrich"]?.resume()
-        AgentRuntimeLog.i("[Master] enrich resumed via facade")
+        Logger.i("Agent.Master") { "[Master] enrich resumed via facade" }
     }
 
     override suspend fun rescanEnrich(newTarget: Float?) {
@@ -430,7 +445,7 @@ class MasterAgent(
         val updatedTask = enrichTask?.copy(targetCoverage = newTarget ?: enrichTask!!.targetCoverage)
             ?: EnrichTask(targetCoverage = newTarget ?: 0.9f)
         enrichTask = updatedTask
-        AgentRuntimeLog.i("[Master] enrich rescan triggered, new target=${updatedTask.targetCoverage}")
+        Logger.i("Agent.Master") { "[Master] enrich rescan triggered, new target=${updatedTask.targetCoverage}" }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -474,7 +489,7 @@ class MasterAgent(
         val taskId = chatSessionStore?.apply { startNewSession() }?.currentSessionId()
         val systemPrompt = buildChatSystemPrompt(ctx)
 
-        AgentLog.i("handleUserMessage start (task=$taskId): input=${AgentLog.truncate(userMessage)} history=${ctx.history.size} steps_budget=$stepBudget")
+        Logger.i("Agent.Master") { "handleUserMessage start (task=$taskId): input=${userMessage.take(119)}… history=${ctx.history.size} steps_budget=$stepBudget" }
 
         // ═══ per-Agent AgentPolicy：复用 MasterAgent 实例字段 masterPolicyConfig ═══
         // TrustLedger 每次新建但持有同一个 config 引用 → 用户确认累积的信任跨对话保留
@@ -523,6 +538,11 @@ class MasterAgent(
             append("\n\n可调用工具来检索曲库、管理歌单或控制播放。用中文简洁回应。")
             ctx.taskState?.let { append("\n【当前任务】\n").append(it) }
         }
+    }
+
+    companion object {
+        /** 单首歌富化失败最大重派次数（首次派发不算重派；超过视为永久失败放弃） */
+        const val MAX_ENRICH_RETRIES = 3
     }
 }
 

@@ -1,5 +1,6 @@
 package com.hmp.domain.agent.sub
 
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.runtime.AgentContextBudget
 import com.hmp.domain.agent.runtime.AgentRunState
 import com.hmp.domain.agent.runtime.ToolRegistryView
@@ -49,7 +50,7 @@ abstract class SubAgent(
     open suspend fun shutdown() {
         isActive = false
         contextBudget.releaseLlmClient()
-        AgentSubAgentLog.i("[$agentId] shutdown complete")
+        Logger.i("Agent.SubAgent") { "[$agentId] shutdown complete" }
     }
 
     /**
@@ -59,7 +60,7 @@ abstract class SubAgent(
      */
     open suspend fun pause() {
         runState = AgentRunState.PAUSED
-        AgentSubAgentLog.i("[$agentId] pause() called (default impl — no stopSignal to bridge)")
+        Logger.i("Agent.SubAgent") { "[$agentId] pause() called (default impl — no stopSignal to bridge)" }
     }
 
     /**
@@ -68,7 +69,7 @@ abstract class SubAgent(
      */
     open suspend fun resume() {
         runState = AgentRunState.RUNNING
-        AgentSubAgentLog.i("[$agentId] resume() called (default impl — no stopSignal to bridge)")
+        Logger.i("Agent.SubAgent") { "[$agentId] resume() called (default impl — no stopSignal to bridge)" }
     }
 
     /** 当前运行状态（Master 查询用） */
@@ -78,13 +79,4 @@ abstract class SubAgent(
 
     /** 子类必须实现的执行循环。 */
     abstract suspend fun runLoop()
-}
-
-/** SubAgent 运行时日志 */
-internal object AgentSubAgentLog {
-    private const val TAG = "[AGENT-SUB]"
-    fun d(msg: String) = println("$TAG $msg")
-    fun i(msg: String) = println("$TAG $msg")
-    fun w(msg: String) = println("$TAG [WARN] $msg")
-    fun e(msg: String) = println("$TAG [ERR] $msg")
 }

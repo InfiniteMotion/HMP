@@ -2,8 +2,8 @@ package com.hearablemusic.player.ui.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import com.hearablemusic.player.ui.platform.currentTimeMillis
-import com.hmp.domain.agent.infra.AgentLog
 import com.hmp.domain.agent.runtime.ConfirmOutcome
 import com.hmp.domain.agent.funnel.CommandLexicon
 import com.hmp.domain.agent.funnel.FunnelResult
@@ -65,7 +65,7 @@ class ChatViewModel(
             val sid = agentMessageStore.currentOrNewSessionId()
             sessionId = sid
             val history = agentMessageStore.loadSession(sid, SESSION_LOAD_LIMIT)
-            AgentLog.i("session resume: sid=$sid history=${history.size}")
+            Logger.i("Agent.Chat") { "session resume: sid=$sid history=${history.size}" }
             if (history.isNotEmpty()) {
                 _state.update {
                     it.copy(messages = history.map { m ->
@@ -145,7 +145,7 @@ class ChatViewModel(
         if (p.submitted) return
         submittedConfirms += p
         val alwaysCount = p.items.count { it.alwaysAllow }
-        AgentLog.i("confirm 照做: turn=${p.turnId} selected=${p.items.count { it.selected }}/${p.items.size} alwaysAllow=$alwaysCount")
+        Logger.i("Agent.Chat") { "confirm 照做: turn=${p.turnId} selected=${p.items.count { it.selected }}/${p.items.size} alwaysAllow=$alwaysCount" }
         val outcomes = p.items.map {
             when {
                 it.alwaysAllow && it.selected -> ConfirmOutcome.AllowAlways
@@ -163,7 +163,7 @@ class ChatViewModel(
         if (p.submitted) return
         val rejected = p.copy(items = p.items.map { it.copy(selected = false) })
         submittedConfirms += rejected
-        AgentLog.i("confirm 跳过全部: turn=${p.turnId}")
+        Logger.i("Agent.Chat") { "confirm 跳过全部: turn=${p.turnId}" }
         val outcomes = List(p.items.size) { ConfirmOutcome.Deny }
         gatewayBridge?.submit(p.turnId, outcomes)
         _state.update { it.copy(pendingConfirm = rejected.copy(submitted = true)) }
@@ -182,15 +182,15 @@ class ChatViewModel(
         persist("user", text, CompanionRenderHint.TEXT)
         when (val decision = CommandLexicon.classify(text)) {
             is FunnelResult.Direct -> {
-                AgentLog.i("chat send (funnel=Direct): cmd=${decision.command}")
+                Logger.i("Agent.Chat") { "chat send (funnel=Direct): cmd=${decision.command}" }
                 launchDirect(decision.command)
             }
             FunnelResult.Upgrade -> {
-                AgentLog.i("chat send (funnel=Upgrade): $text")
+                Logger.i("Agent.Chat") { "chat send (funnel=Upgrade): $text" }
                 launchRun(text)
             }
             FunnelResult.Pass -> {
-                AgentLog.d("chat send (funnel=Pass): $text")
+                Logger.d("Agent.Chat") { "chat send (funnel=Pass): $text" }
                 launchRun(text)
             }
         }
@@ -200,7 +200,7 @@ class ChatViewModel(
     private fun launchDirect(command: PlaybackCommand) {
         viewModelScope.launch {
             val (_, msg) = playbackCommandPort.execute(command)
-            AgentLog.i("direct command result: $msg")
+            Logger.i("Agent.Chat") { "direct command result: $msg" }
             _state.update {
                 it.copy(messages = it.messages + CompanionMessage(id = nextId(), fromUser = false, text = msg))
             }
@@ -239,7 +239,7 @@ class ChatViewModel(
                             }
                             bubbles += buildAssistantBubbles(text = event.text, confirmItems = emptyList(), records = event.toolCalls)
                             val ided = bubbles.map { it.copy(id = nextId()) } // 统一分配稳定 id，避免 LazyColumn 撞键（问候=1）
-                            AgentLog.i("chat finished: bubbles=${ided.size} terminated=${event.terminatedBy} text=${AgentLog.truncate(event.text)}")
+                            Logger.i("Agent.Chat") { "chat finished: bubbles=${ided.size} terminated=${event.terminatedBy} text=${event.text.take(119)}…" }
                             ided.forEach { persist("agent", it.text, it.renderHint) }
                             _state.update {
                                 it.copy(
@@ -254,7 +254,7 @@ class ChatViewModel(
                         }
                         is ChatAgentEvent.Failed -> {
                             val err = "（暂时没连上伙伴，稍后再试）"
-                            AgentLog.w("chat failed: ${event.message}")
+                            Logger.w("Agent.Chat") { "chat failed: ${event.message}" }
                             _state.update {
                                 it.copy(
                                     running = false,

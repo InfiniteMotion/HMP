@@ -31,12 +31,12 @@
 ## 2. 阶段总览与依赖图
 
 ```
-M0 地基与还债 ──▶ M2 协议层 ──▶ M3 工具层 ──▶ M4 引擎循环 ──▶ M5 对话与锚点二期 ──▶ M6 电台与事件 ──▶ M7 报告与语音
-   (B0)            (B1)          (B2)           (B3)              (B4)                     (B5)               (B6)
-                                                                      ▲                          ▲
-                                                             R 债务清零 ─┘                          │
-                                                             S 工具层终局 ─┘（批次 A 重命名 17 + 批次 B 追加 10 = 27）    │
-                                                             T Agent 体系 ─── Enrich SubAgent 跑通 + SubAgent 基类 → M6 依赖
+M0 地基与还债 ──▶ M2 协议层 ──▶ M3 工具层 ──▶ M4 引擎循环 ──▶ M5 对话与锚点二期 ──▶ U Kermit 日志治理 ──▶ M6 电台与事件 ──▶ M7 报告与语音
+   (B0)            (B1)          (B2)           (B3)              (B4)                       (横切)              (B5)               (B6)
+                                                                      ▲                          ▲                  ▲
+                                                             R 债务清零 ─┘                          │                  │
+                                                             S 工具层终局 ─┘（批次 A 重命名 17 + 批次 B 追加 10 = 27）          │
+                                                             T Agent 体系 ─── Enrich SubAgent 跑通 + SubAgent 基类 → M6 依赖 ────┘
 
 M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完全并行）
 横切：本地化（贯穿 M1-M7）· 测试基建（Fake* 替身随阶段建立）
@@ -54,7 +54,8 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 | M7 | 报告角色 + 伙伴设置页 + 语音档（B6）           | M6          | 语音为独立 gate，可整体延期不影响 v1 完整性              |
 | R  | 债务清零与交互地基修复（首轮注入/漏斗/真实播放端口/多确认/会话持久/M5 收尾 UI）✅ 2026-08-30 | M5 未完成 + 定义级漏项 | 交互主干（触发→理解→执行→呈现→反馈→审计）闭环；三端编译 |
 | S  | 工具层终局：批次 A 域前缀统一重命名拆分（17 原子工具）+ 批次 B 追加 Library 聚合/Song USER 标签写入闭环/PlaybackEnqueue（+10 = 27 原子工具）✅ 2026-08-31 | M3 首次交付 + R 阶段暴露出的工具层遗留 | ToolNames.ALL 27 ↔ ToolRegistry 27 注册 1:1；desktopTest 677 全绿；compileAndroidMain/compileKotlinDesktop 通过 |
-| T  | Agent 体系终局——Master Agent（唯一大脑：派发/验收/生命周期）+ Enrich SubAgent（纯被动执行器）+ 两层基础设施（AgentContextBudget 每 Agent 独立 + AgentScheduler 全局纯规则仲裁） | S（27 原子工具）+ R（感知锚点） | Enrich SubAgent 端到端跑通 + Master 唯一决策铁则 + 两层 ContextBudget 生效 + Scheduler pause/resume 自动触发 + Radio SubAgent 基类预留（M6 填实现） |
+| T  | Agent 体系终局——Master Agent（唯一大脑：派发/验收/生命周期）+ Enrich SubAgent（纯被动执行器）+ 两层基础设施（AgentContextBudget 每 Agent 独立 + AgentScheduler 全局纯规则仲裁）✅ 2026-08-31 | S（27 原子工具）+ R（感知锚点） | Enrich SubAgent 端到端跑通 + Master 唯一决策铁则 + 两层 ContextBudget 生效 + Scheduler pause/resume 自动触发 + Radio SubAgent 基类预留（M6 填实现） |
+| U  | Kermit 日志体系统一治理——引入 Touchlab Kermit 替换三套 Agent Log object + 66 处裸 println 渐进迁移 + Release 级别裁剪 + 三端原生桥接 | T（Agent 体系是最大消费者） + M5（UI 层有 Log 调用） | AgentLog/AgentRuntimeLog/AgentSubAgentLog 全部删除；Agent 体系 40+ 调用点迁完；三端（Android Logcat / iOS OSLog / Desktop stdout）原生桥接生效；desktopTest 全绿 |
 
 ***
 
@@ -148,6 +149,31 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 | M5-T7 | 两级漏斗：高频指令词表直映射（零 token、50ms 内）；模糊意图升级单轮 agent 任务                                                                                                                                                     | 新建 `domain/agent/funnel/CommandLexicon.kt`                   | 漏斗单测（命中/未命中/升级语义）；FREE 模式可用           |
 
 **退出**：纯文字完整闭环三端可用（锚点→对话→任务→确认→回执）；M5 全部交互并入审计。
+
+### U 阶段：Kermit 日志体系统一治理（横切，\~1 人天）
+
+> **背景**：全项目零统一日志基础设施。Agent 体系自封了三套几乎一模一样的 `object AgentLog` / `AgentRuntimeLog` / `AgentSubAgentLog`（底层全是 println + 不同 TAG 前缀），加上其余 40+ 处裸 println 散落各模块。println 在 Android 上输出到 `System.out`（Logcat 里混在系统输出中无法按 TAG 过滤），iOS 上仅进 App 沙箱 stdout（Xcode Console 看不到）。根因是项目从未引入过 KMP 日志库。
+>
+> **方案**：引入 [Touchlab Kermit 2.1.0](https://github.com/touchlab/Kermit)——KMP 社区事实标准，1k stars，Apache 2.0，三端原生桥接（Android → `android.util.Log` 进 Logcat、iOS → `OSLog` 进系统日志、Desktop → stdout + ANSI 颜色）。零外部依赖代价（纯 Kotlin 库，与 Room/Ktor/Koin 同级别），但立即获得 Logcat TAG 过滤、iOS 系统日志可见、Release 级别裁剪、per-tag 覆盖、测试捕获等能力。
+
+| ID    | 任务                                                                                                                                                                                                 | 涉及文件                                                                                                                       | 验收                                              |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| U-T1 | **依赖引入**：`gradle/libs.versions.toml` 加 `kermit = "2.1.0"` 版本号 + `kermit` library alias（坐标 `co.touchlab:kermit`）；`shared/build.gradle.kts` 的 `commonMain.dependencies` 加 `implementation(libs.kermit)`；同步 shared-ui 的 commonMain（AgentLog 被 UI 层 ChatViewModel/ChatAgentGateway 引用） | `gradle/libs.versions.toml`、`shared/build.gradle.kts`、`shared-ui/build.gradle.kts` | `./gradlew :shared:dependencies` 见 kermit 在 commonMain 类路径；`compileKotlinDesktop` 通过 |
+| U-T2 | **三端初始化**：Android 端 `MusicApplication.onCreate()` 加 `Logger.setMinSeverity(Severity.Debug)`（Release 构建用 `Severity.Warn` 可后续通过 BuildConfig 注入）；Desktop 端 `HmpDesktopApplication.kt` main 加 `Logger.setMinSeverity(Severity.Debug)`；iOS 端 `AppDelegate` 加初始化；三端统一用 `platformLogWriter()`（Android 走 Logcat、iOS 走 OSLog、Desktop 走 System.out） | `android/app/MusicApplication.kt`、`desktop/app/HmpDesktopApplication.kt`、`ios/HMP/AppDelegate.swift`（或 Kotlin 桥接层）           | Android Studio Logcat 过滤 TAG 能看到 Kermit 格式日志；iOS Xcode Console 有子系统日志；Desktop stdout 带 ANSI 颜色 |
+| U-T3 | **Agent 三套 Log 合并**：删除 `AgentLog.kt` / `AgentRuntimeLog`（AgentContextBudget 内的 internal object）/ `AgentSubAgentLog`（SubAgent 内的 internal object）；全项目 ~40 处 Agent 日志调用改为 Kermit `Logger.withTag("Agent.xxx")` 或 `Logger.i("Agent.xxx") { ... }`；Tag 层级：`Agent.Master` / `Agent.Scheduler` / `Agent.Enrich` / `Agent.Tool` / `Agent.ReActLoop` / `Agent.LlmCall`；原 `AgentLog.truncate()` 辅助方法在消息构造层处理（字符串模板里截断） | 删除 `shared/src/commonMain/.../infra/AgentLog.kt`；`AgentContextBudget.kt` 删 8 行；`SubAgent.kt` 删 7 行；改 `MasterAgent.kt`、`ReActLoop.kt`、`ToolCallExecutor.kt`、`LlmCallExecutor.kt`、`EnrichSubAgent.kt`、`AgentScheduler.kt`、`ChatViewModel.kt`、`ChatAgentGateway.kt` | `grep -r "AgentLog\|AgentRuntimeLog\|AgentSubAgentLog" shared/ shared-ui/` 零结果；desktopTest 全绿 |
+| U-T4 | **全局裸 println 渐进迁移 + Release 裁剪**：扫描 `println(` 共 66 处（Agent 已在 U-T3 迁完，剩 ~26 处）——FFmpegAudioEngine(12)、Desktop 窗口/托盘(14)、各 Repository impl(13)、DailyRecommendationUseCase(10)、其他(5)；按模块渐进迁移（本阶段先迁 Repository + DailyRecommendation，Desktop/FFmpeg 可后续）；`Logger.config.minSeverity` 通过 BuildConfig 在 Release 构建注入 `Severity.Warn`（屏蔽 DEBUG/INFO） | `MusicRepositoryImpl.android/desktop/ios.kt`、`GetDailyMusicRecommendationUseCase.kt`、`FFmpegAudioEngine.kt`（可延迟）、三端 `build.gradle.kts` 加 BuildConfig minSeverity | `grep -rn "println(" shared/` 只剩 Desktop/FFmpeg 平台特定实现（可接受）；Release APK 运行 DEBUG/INFO 不输出 |
+
+**退出**：
+- AgentLog / AgentRuntimeLog / AgentSubAgentLog 三个文件全删除
+- Agent 体系 40+ 调用点统一用 Kermit
+- 三端原生桥接生效（Android Logcat TAG 可过滤、iOS 进 Xcode Console、Desktop ANSI 颜色）
+- `compileAndroidMain` / `compileKotlinDesktop` / desktopTest 全绿
+- 66 处裸 println 至少迁完 Repository + Agent + UseCase 域（Desktop/FFmpeg 可延迟到后续阶段）
+
+**刻意纪律**：
+- 不在本阶段引入 `kermit-io`（文件日志轮转）、`kermit-crashlytics`（崩溃上报）等扩展——本地播放器 + 单人开发，console 足够
+- 不做 `withTag` 作用域工厂、Coroutine 上下文传播等高级特性——保持 API 使用极简（静态调用 + TAG 字符串），降低迁移心智成本
+- `truncate()` 辅助方法不复用 Kermit API，在消息字符串模板中内联处理——避免自定义 wrapper 增加间接层
 
 ### M6 电台与事件（B5，\~5 人天）
 

@@ -31,8 +31,12 @@ class AlwaysRunningStopSignal(
  * 替换旧实现里的 while(PAUSED) { delay(500) } 轮询：
  * - 用 Mutex 实现真正挂起 → 零 CPU 唤醒 / 零延迟恢复
  * - 配合 AgentScheduler 的 onResume/onPause 回调：
- *   Scheduler 把状态改成 PAUSED 时调 onPause → pauseMutex.lock() 立刻挂起 Agent
- *   Scheduler 把状态改成 RUNNING 时调 onResume → pauseMutex.unlock() 立刻唤醒 Agent
+ *   Scheduler 把状态改成 PAUSED 时调 onPause → 锁住门闩，Agent 下一个 waitResume() 挂起
+ *   Scheduler 把状态改成 RUNNING 时调 onResume → 释放门闩，挂起的 Agent 立即恢复
+ *
+ * 门闩不变式：pauseRequested=true 时 pauseMutex 必为 locked（由 [onSchedulerPaused] 持有）；
+ * Agent 的 waitResume 通过 lock()/unlock() 配对穿越门闩，**不持有锁跨批次**——
+ * 旧版 tryLock 成功后不释放，Agent 第二个批次就自锁在自己持有的锁上（已修复）。
  *
  * 使用方式：
  *   val stopSignal = SchedulerStopSignal(tokenCounter)
@@ -47,38 +51,47 @@ class SchedulerStopSignal(
     private val tokenCounter: GlobalTokenCounter? = null,
 ) : StopSignal {
 
-    /**
-     * pauseMutex 是"门闩"：
-     * - 初始 unlocked（Agent 可以自由运行）
-     * - Scheduler pause → lock → Agent 下一个 waitResume() 调用就被挂住
-     * - Scheduler resume → unlock → 挂起的 Agent 立即恢复
-     */
+    /** 门闩：pauseRequested=true 时由 onSchedulerPaused 持锁 */
     private val pauseMutex = Mutex(locked = false)
+
+    /** 是否已请求暂停（@Volatile 保证 waitResume 快速路径的可见性） */
+    @Volatile
+    private var pauseRequested: Boolean = false
 
     override fun shouldSoftStop(): Boolean = tokenCounter?.shouldStop() ?: false
 
     /**
      * Agent 每次循环开始时调用。
-     * 如果 Scheduler 之前发了 pause，这里会真挂起（零 CPU 唤醒）。
-     * 如果没 pause（正常 RUNNING），Mutex 是 unlocked，立即返回。
+     * - 未暂停（正常 RUNNING）：快速路径直接返回，零开销
+     * - 已暂停：lock() 挂起（零 CPU 唤醒），直到 onSchedulerResumed 释放门闩；
+     *   拿到锁后立即释放，恢复 unlocked 基态
+     * - while 语义：穿越门闩后若期间又被 pause（pauseRequested 重新置 true），继续等待
      */
     override suspend fun waitResume() {
-        // tryLock() 不阻塞——如果已锁住（Scheduler 发了 pause），返回 false
-        // 然后我们就 lock() 真正挂起，等 Scheduler 的 onResume 回调 unlock
-        if (!pauseMutex.tryLock()) {
-            pauseMutex.lock()  // ← 真正挂起，直到 Scheduler 调 onSchedulerResumed()
+        while (pauseRequested) {
+            try {
+                pauseMutex.lock()  // ← 真正挂起，直到 Scheduler 调 onSchedulerResumed()
+            } finally {
+                // lock/unlock 配对：立即释放，绝不持锁跨批次（旧版死锁根因）
+                runCatching { pauseMutex.unlock() }
+            }
         }
     }
 
-    /** Scheduler 状态变 PAUSED 时调（通过 AgentRegistration.onPause 回调） */
-    fun onSchedulerPaused() {
-        // tryLock 非阻塞——如果当前 unlocked（Agent 还没调 waitResume），就锁住等 Agent 过来挂起
-        // 如果已经锁住（Agent 已经在 waitResume 里挂起了），tryLock 返回 false，不管
-        pauseMutex.tryLock()
+    /**
+     * Scheduler 状态变 PAUSED 时调（通过 AgentRegistration.onPause 回调）。
+     * 幂等：重复 pause 直接返回。suspend 是因为用 lock()（而非 tryLock）锁门闩——
+     * 若 Agent 恰处于 waitResume 的瞬时持锁窗口，等它释放后再锁，保证 pause 不丢失。
+     */
+    suspend fun onSchedulerPaused() {
+        if (pauseRequested) return
+        pauseRequested = true
+        pauseMutex.lock()
     }
 
     /** Scheduler 状态变 RUNNING 时调（通过 AgentRegistration.onResume 回调） */
     fun onSchedulerResumed() {
+        pauseRequested = false
         try { pauseMutex.unlock() } catch (_: IllegalStateException) { /* already unlocked */ }
     }
 }

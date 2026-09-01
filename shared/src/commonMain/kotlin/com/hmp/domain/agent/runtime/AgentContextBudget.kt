@@ -1,5 +1,6 @@
 package com.hmp.domain.agent.runtime
 
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.port.LlmMessage
 import com.hmp.domain.agent.port.LlmToolSpec
 import com.hmp.domain.agent.port.LlmTransport
@@ -123,7 +124,7 @@ class AgentContextBudget(
         estimatedTokenCount = estimatedHistory.sumOf { estimateMessageTokens(it) }
 
         val summary = "[历史压缩] 丢弃 ${discarded.size} 条早期消息，保留最近 ${estimatedHistory.size} 条"
-        AgentRuntimeLog.i("[$agentId] $summary (${estimatedTokenCount}/${maxContextTokens} tokens)")
+        Logger.i("Agent.ContextBudget") { "[$agentId] $summary (${estimatedTokenCount}/${maxContextTokens} tokens)" }
         return summary
     }
 
@@ -142,11 +143,3 @@ class AgentContextBudget(
     }
 }
 
-/** Agent 运行时日志（与 AgentLog 分开，runtime 层专用） */
-internal object AgentRuntimeLog {
-    private const val TAG = "[AGENT-RUNTIME]"
-    fun d(msg: String) = println("$TAG $msg")
-    fun i(msg: String) = println("$TAG $msg")
-    fun w(msg: String) = println("$TAG [WARN] $msg")
-    fun e(msg: String) = println("$TAG [ERR] $msg")
-}

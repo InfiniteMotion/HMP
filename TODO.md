@@ -281,6 +281,11 @@ v5.10 是 v5 系列的最后一个版本，标志着跨平台架构搭建完成�
   - ✅ T3 Enrich 实现：纯被动执行器（AssignBatch→runLoop→写 DB）+ ToolCallExecutor 接入权限体系（不再 DirectToolExecutor 裸跑）
   - ✅ T4 联调 + Radio 预留：Master/Enrich 独立 AgentPolicyConfig（TrustLedger onChange 驱动 trustLevel 升降档）+ ConfirmGate 三种（AllowOnce/AllowAlways/Deny）+ "总是允许" UI 全链路 + Radio SubAgent 基类预留
   - 💡 架构额外收益：四层组件 LlmCallExecutor/ToolCallExecutor/ReActLoop/StopSignal 彻底解耦；权限体系简化 9→6 概念（TrustTier→trustLevel Int、AgentPolicyConfig 2 字段）；TrustLedger 复活为真正驱动 trustLevel 升降档的组件
+- [ ] **U 阶段 Kermit 日志体系统一**——三端原生日志桥接（方案见 docs/7_x/agent-task-book.md U-T1~U-T4）：
+  - [ ] U-T1 依赖引入：gradle/libs.versions.toml 加 Kermit 2.1.0 + shared/commonMain/commonMain 依赖
+  - [ ] U-T2 三端初始化：Android Logcat / Desktop stdout / iOS OSLog + Release 级别裁剪
+  - [ ] U-T3 Agent 三套 Log 合并：删 AgentLog/AgentRuntimeLog/AgentSubAgentLog → Kermit withTag
+  - [ ] U-T4 全局裸 println 渐进迁移：Repository + UseCase 域迁完，Desktop/FFmpeg 可延迟
 - [x] **B3** 引擎循环——AgentOrchestrator（步数预算 8）+ Scheduler/PolicyGuard/TrustLedger/ContextBudget/SessionStore/PresenceBus + PlaybackCommandPort（:shared 接口，三端适配器复用 Controller 桥）+ 双层预算（云端频率/额度配额）+ FakePlaybackCommandPort 确定性测试（M4）
 - [x] **B4** 对话 UI（纯文字完整体验）——ChatScreen + 五类气泡（text/song/songlist/explain/confirm）+ 确认卡片流 + 锚点系统（三胶囊/轻量浮层/播放页重排/C 键）+ 两级漏斗 + 门面二期 + 搜索框条带（M1 + M5）
 - [ ] **B5** 电台与事件接线——AI 电台三轮协作 / 跳过感知重排 / DJ 衔接预生成 / 存在感呈现（PresenceBus→徽标+侧条+问候轮换）+ 审计日志页（含撤销边界）（M6）

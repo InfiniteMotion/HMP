@@ -1,6 +1,6 @@
 package com.hearablemusic.player.ui.chat
 
-import com.hmp.domain.agent.infra.AgentLog
+import co.touchlab.kermit.Logger
 import com.hmp.domain.agent.runtime.ConfirmGate
 import com.hmp.domain.agent.runtime.ConfirmOutcome
 import com.hmp.domain.agent.runtime.ConfirmRequest
@@ -59,7 +59,7 @@ class ConfirmBridge {
         val turnId = "confirm_${counter++}"
         val deferred = CompletableDeferred<List<ConfirmOutcome>>()
         pending[turnId] = deferred
-        AgentLog.i("confirm await: turn=$turnId items=${requests.size} waiting...")
+        Logger.i("Agent.Gateway") { "confirm await: turn=$turnId items=${requests.size} waiting..." }
         onRequest?.invoke(turnId, requests)
         return deferred.await()
     }
@@ -70,9 +70,9 @@ class ConfirmBridge {
      */
     fun submit(turnId: String, outcomes: List<ConfirmOutcome>): Boolean =
         pending.remove(turnId)?.let {
-            AgentLog.i("confirm submit: turn=$turnId outcomes=$outcomes")
+            Logger.i("Agent.Gateway") { "confirm submit: turn=$turnId outcomes=$outcomes" }
             it.complete(outcomes)
-        } ?: false.also { AgentLog.w("confirm submit: turn=$turnId 已关闭/取消") }
+        } ?: false.also { Logger.w("Agent.Gateway") { "confirm submit: turn=$turnId 已关闭/取消" } }
 }
 
 /** 对话引擎接缝（M5-T1）：把一次用户输入换算为面向 UI 的事件流。 */
@@ -156,7 +156,7 @@ class MasterChatGateway(
             LlmMessage(role = role, content = m.content)
         }
         val deduped = if (mapped.lastOrNull()?.role == "user" && mapped.lastOrNull()?.content == input) mapped.dropLast(1) else mapped
-        AgentLog.i("history loaded: ${deduped.size} 条（含去重 ${mapped.size - deduped.size}）")
+        Logger.i("Agent.Gateway") { "history loaded: ${deduped.size} 条（含去重 ${mapped.size - deduped.size}）" }
         return deduped
     }
 
@@ -174,7 +174,7 @@ class MasterChatGateway(
         val recognitionText = ContextAssembler.buildRecognitionProgress(known, total)
         val hour = ((currentTimeMillis() / 3_600_000L) % 24).toInt()
         val overviewText = ContextAssembler.buildLibraryOverview(buildLibraryOverview())
-        AgentLog.i("first-turn ctx: persona=${DefaultCompanionProfiles.DEFAULT.personaName} nowPlaying=${now.currentMusicInfo?.music?.title ?: "无"} recognized=$known/$total")
+        Logger.i("Agent.Gateway") { "first-turn ctx: persona=${DefaultCompanionProfiles.DEFAULT.personaName} nowPlaying=${now.currentMusicInfo?.music?.title ?: "无"} recognized=$known/$total" }
         return RunContextInput(
             personaText = DefaultCompanionProfiles.DEFAULT.personaPrompt,
             recognitionText = recognitionText,
