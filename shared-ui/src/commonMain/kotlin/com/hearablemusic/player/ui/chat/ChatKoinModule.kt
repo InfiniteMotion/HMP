@@ -78,6 +78,9 @@ val chatGatewayModule = module {
             stepBudget = EngineDefaults.STEP_BUDGET,
             // Enrich 后台依赖
             enrichConfig = enrichConfig,
+            // Radio 电台依赖（M6-T1）
+            playbackPort = get(),
+            nowPlayingProvider = get(),
             // Agent 配置持久化（trustLevel + alwaysAllow DataStore 读写）
             settingsRepo = settingsRepo,
         )

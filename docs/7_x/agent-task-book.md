@@ -19,7 +19,7 @@
 | 数据 | Room v2 三表（agent\_task/agent\_audit\_log/agent\_message）+ MusicLabel 溯源四列 + 迁移测试                              |
 | 协议 | LlmTransport（手动 SSE + tools 参数）、RealtimeVoiceTransport（WebSocket，独立 gate）                                     |
 | 工具 | ToolSpec DSL + ToolRegistry + 十项工具（包装既有 UseCase）                                                              |
-| 引擎 | AgentOrchestrator（步数预算 8）+ Scheduler + PolicyGuard + TrustLedger + ContextBudget + SessionStore + PresenceBus |
+| 引擎 | MasterAgent（唯一大脑，对话 handleUserMessage 即原 AgentOrchestrator.run() 循环，步数预算 8）+ AgentScheduler + PolicyGuard + TrustLedger + ContextBudget + SessionStore + PresenceBus |
 | 端口 | PlaybackCommandPort（:shared 定义接口，三端适配器复用现有 Controller 桥）                                                      |
 | UI | 三胶囊底栏、轻量浮层、对话页（五类气泡）、确认卡片流、通知侧条、审计日志页、门面二期、伙伴设置页六分区                                                           |
 | 场景 | 15 场景中的 11 个（一/二/三梯队全量 + 四梯队的听歌报告与遗忘唤醒）                                                                       |
@@ -179,7 +179,7 @@ M1 锚点层一期（B4 的前置 UI 骨架，Fake 数据驱动，与 M0-M7 完�
 
 | ID    | 任务                                                                                                                                           | 涉及文件                                        | 验收                                             |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
-| M6-T1 | AI 电台三轮协作接线：种子认识（第 0 步 enrichSong）→ 本地保底队列（零等待开听）→ 云端全量清单决策 → diff 仲裁回传；开电台=`songlist` 卡（「今夜电台 · 12 首备选」）、播完续歌 SILENT、徽标=电台运行点、每次续选「为什么」入审计页 | AgentOrchestrator 接线 + ChatViewModel        | FakeLlm+FakePlaybackCommandPort 电台确定性测试（三轮各路径） |
+| M6-T1 | AI 电台三轮协作接线：种子认识（第 0 步 enrichSong）→ 本地保底队列（零等待开听）→ 云端全量清单决策 → diff 仲裁回传；开电台=`songlist` 卡（「今夜电台 · 12 首备选」）、播完续歌 SILENT、徽标=电台运行点、每次续选「为什么」入审计页 | MasterAgent + RadioSubAgent 骨架接线 + ChatViewModel + Room Migration 2→3（agent_message.data_json 结构化 songlist） | FakeLlm+FakePlaybackCommandPort 电台确定性测试（三轮各路径） |
 | M6-T2 | 跳过感知重排（连跳 2 首→重排 SILENT+侧条「换了一批安静的，↩恢复」）；一句话切换（浮层→漏斗→执行+侧条+对话页沉淀）                                                                            | PresenceBus 事件接线                            | 事件触发测试                                         |
 | M6-T3 | DJ 衔接预生成（曲间一句，门面问候区轮换+对话页 text 沉淀；播放中不弹浮面硬纪律）                                                                                                | PresenceBus + 门面                            | 预生成零延迟核验；硬纪律断言（手势进行中无浮面）                       |
 | M6-T4 | `AuditLogScreen`：agent\_audit\_log 驱动、时间倒序、每行动作+「为什么」展开（→T0 行为证据）+撤销；撤销边界（被用户改过的动作降级为「删除」走 STRONG\_CONFIRM；重排队列类始终可撤销）                       | 新建 `audit/AuditLogScreen.kt`                | 撤销边界单测                                         |
@@ -232,7 +232,7 @@ ToolNames.ALL 27 常量 ↔ ToolRegistry 27 注册 1:1 匹配；批次 A 结束 
 
 | ID | 任务 | 涉及文件 | 验收 |
 |----|------|---------|------|
-| R-T1 | 首轮上下文注入装配器：CompanionProfile(人格v0)/称呼 + 曲库概览聚合(概览法) + 真实当前曲目(NowPlaying) + 时段 + 认识进度 → 喂进 `RunContextInput` + `buildSystemPrompt` | 新 `engine/ContextAssembler.kt`、`AgentOrchestrator.buildSystemPrompt`、`RunContextInput`、`ChatAgentGateway` | 首轮系统提示含 5 类内容；快照单测；三端编译 |
+| R-T1 | 首轮上下文注入装配器：CompanionProfile(人格v0)/称呼 + 曲库概览聚合(概览法) + 真实当前曲目(NowPlaying) + 时段 + 认识进度 → 喂进 `RunContextInput` + `buildChatSystemPrompt` | 新 `runtime/ContextAssembler.kt`、`MasterAgent.buildChatSystemPrompt`、`RunContextInput`、`ChatAgentGateway` | 首轮系统提示含 5 类内容；快照单测；三端编译 |
 | R-T2 | 两级漏斗 `CommandLexicon`：高频词表直映射(零 token/50ms) + 模糊意图升级 agent + FREE(无Key) 高频命令可用 | 新 `domain/agent/funnel/CommandLexicon.kt` + ChatScreen/浮层接线 | 命中/未命中/升级语义单测；FREE 模式高频命令可用 |
 | R-T3 | 接**真实播放/现在听端口**适配器（复用 `PlaybackController` 桥）替换 Fake | shared-ui `platform/` 新适配器 + `ChatKoinModule` | `controlPlayback` 真实生效；`getNowPlayingContext` 返回真实当前曲目；`:shared` 不反向依赖 shared-ui；Fake 测试保留 |
 | R-T4 | 多确认门修复：`ChatViewModel` 确认槽队列 + `ConfirmBridge` 多批次 | `ChatViewModel.kt`、`ConfirmBridge` | 单轮多次确认不覆盖/不挂起；审批同序测试 |
@@ -699,7 +699,7 @@ T1 基础设施重构 ──▶ T2 Master 内核改造 ──▶ T3 Enrich 实�
 
 | 参数        | 建议默认                                           | 归属                |
 | --------- | ---------------------------------------------- | ----------------- |
-| 步数预算      | 8 步（总纲 7.1 已定）                                 | AgentOrchestrator |
+| 步数预算      | 8 步（总纲 7.1 已定）                                 | MasterAgent.handleUserMessage |
 | 云端频率/额度配额 | 单日云端调用上限 100 次（可配置；额度耗尽→本地兜底）                  | ContextBudget     |
 | 信任阶梯升级阈值  | 同类写动作连续隐式接受 3 次升一档（建议→代劳→静默）                   | TrustLedger       |
 | 跳过感知触发    | 连跳 2 首（总纲场景 2 已定）                              | PresenceBus 事件    |

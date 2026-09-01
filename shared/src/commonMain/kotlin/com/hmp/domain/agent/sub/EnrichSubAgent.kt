@@ -22,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.hmp.platform.Volatile
 
 /**
  * T3 EnrichSubAgent：纯被动执行器（设计铁则 F1-F6）。

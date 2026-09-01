@@ -50,6 +50,11 @@ object ToolNames {
     const val ENRICH_STATUS = "enrich_status"
     const val ENRICH_RESCAN = "enrich_rescan"
 
+    // ── Master 专属：AI 电台管理（3 个；仅 MasterAgent LLM 可见）──
+    const val RADIO_START = "radio_start"
+    const val RADIO_STOP = "radio_stop"
+    const val RADIO_STATUS = "radio_status"
+
     /**
      * Registry 默认注册的基础工具名清单（chatbot 模式可见，不含 Master 专属）。
      * Playback(4) + Playlist CRUD(5) + Playlist 曲目(3) + Library(11) + Song 标签(4) = 27 个。
@@ -70,13 +75,17 @@ object ToolNames {
 
     /**
      * MasterAgent 专属工具名（不进入 chatbot ToolRegistry，ToolDependencies.masterAgentFacade 非空时追加注册）。
-     * 共 5 个：enrich_start / enrich_pause / enrich_resume / enrich_status / enrich_rescan。
+     * 共 8 个：enrich_*(5) + radio_*(3)。
+     *
+     * 注：radio_* 工具常量已定义但当前未注册——电台入口走 MasterChatGateway 前置意图检测短路（确定性关键词匹配），
+     * 不依赖 LLM function-calling。工具注册预留供未来扩展混合意图场景。
      */
     val MASTER_EXCLUSIVE: List<String> = listOf(
         ENRICH_START, ENRICH_PAUSE, ENRICH_RESUME, ENRICH_STATUS, ENRICH_RESCAN,
+        RADIO_START, RADIO_STOP, RADIO_STATUS,
     )
 
-    /** MasterAgent 模式下的完整工具清单（基础 + Master 专属 = 32 个）。 */
+    /** MasterAgent 模式下的完整工具清单（基础 27 + Master 专属 8 = 35 个）。 */
     val ALL_COMPLETE: List<String> = ALL + MASTER_EXCLUSIVE
 
     /** 批次 B 新增工具名（需底层补完后才能注册）。 */
