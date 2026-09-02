@@ -112,15 +112,18 @@ interface ChatAgentGateway {
 // ═══════════════════════════════════════════════════════════════════════
 // T 阶段整合：MasterChatGateway —— 薄壳，对话能力由 MasterAgent 直接提供
 // 不创建 ToolRegistry / PolicyGuard / Transport / ContextBudget 等
-// —— 全从注入的 masterAgent 拿（已在 Koin 里构造好，ToolRegistry 含 5 个 enrich_*）
+// —— 全从注入的 masterAgent 拿；SubAgent 生命周期走内建意图路由
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
  * 唯一网关：对话能力由 MasterAgent.handleUserMessage() 提供。
  *
- * Gateway 只做 UI 侧的上下文组装（首轮/跨轮记忆合并）+ ConfirmGate 桥接；
- * 全链路 Token 统一走 GlobalTokenCounter（MasterAgent 内部），
- * ToolRegistry 含 27 基础 + 5 enrich_* 工具（MasterAgent.init{} 自动注册）。
+ * Gateway 只做 UI 侧的上下文组装（首轮/跨轮记忆合并）+ ConfirmGate 桥接 +
+ * AgentResult → ChatAgentEvent 的转换（如电台启动后查 MusicInfo 渲染 songlist bubble）。
+ *
+ * SubAgent 生命周期管理（enrich pause/resume/status、radio start/stop）
+ * 由 MasterAgent.handleUserMessage() 内建意图路由处理——命中后返回 AgentResult.intentHandled，
+ * Gateway 根据此字段决定 UI 渲染。
  */
 class MasterChatGateway(
     private val masterAgent: MasterAgent,
@@ -138,90 +141,50 @@ class MasterChatGateway(
     ): Flow<ChatAgentEvent> = kotlinx.coroutines.flow.flow {
         bridge.onRequest = { turnId, requests -> emit(ChatAgentEvent.NeedConfirm(turnId, requests)) }
 
-        // ═══ 前置意图检测：电台请求短路（不走 LLM，确定性触发）═══
-        val radioSeed = extractRadioSeed(input)
-        if (radioSeed != null) {
-            Logger.i("Agent.Gateway") { "short-circuit: radio intent detected seed=\"$radioSeed\"" }
-            val radioEvent = runCatching { startRadio(radioSeed) }
-                .onFailure { e ->
-                    Logger.e("Agent.Gateway", e) { "radio start failed" }
-                    emit(ChatAgentEvent.Failed("电台启动失败：${e.message}"))
-                }
-                .getOrNull()
-            if (radioEvent == null) {
-                // runCatching.onFailure 已 emit Failed（异常场景）；此处是 startRadio 返回 emptyList
-                Logger.w("Agent.Gateway") { "radio start returned null (empty playlist)" }
-                emit(ChatAgentEvent.Failed("电台没有找到足够的曲目，换个描述试试？"))
-            } else {
-                emit(radioEvent)
-                emit(ChatAgentEvent.Finished(radioEvent.summary, emptyList(), TerminationReason.ANSWERED))
-            }
-            return@flow
-        }
-
         val confirmGate = ConfirmGate { requests -> bridge.awaitApprovals(requests) }
         try {
             val effectiveCtx = mergeFirstTurnContext(ctx, input)
             val result = masterAgent.handleUserMessage(input, config, effectiveCtx, confirmGate)
-            result.toolCalls.forEach { emit(ChatAgentEvent.ToolExecuted(it)) }
-            emit(ChatAgentEvent.Finished(result.text, result.toolCalls, result.terminatedBy))
+
+            // ── Master 内建意图路由命中（SubAgent 生命周期管理）──
+            // 电台启动需要 Gateway 额外组装 RadioStarted event（查 MusicInfo 渲染 songlist bubble）
+            when (result.intentHandled) {
+                "radio_start" -> {
+                    val playlist = masterAgent.queryRadioPlaylist()
+                    if (playlist != null && playlist.isNotEmpty()) {
+                        val ids = playlist.map { it.musicId }
+                        val musicInfos = runCatching {
+                            musicRepository.getAllMusicInfoAsList("id", "asc")
+                                .filter { it.music.id in ids }
+                        }.getOrDefault(emptyList())
+                        val radioEvent = ChatAgentEvent.RadioStarted(
+                            songs = musicInfos,
+                            seedLabels = playlist.map { it.why },
+                            summary = result.text,
+                        )
+                        Logger.i("Agent.Gateway") { "run: intentHandled=radio_start tracks=${playlist.size}→resolved=${musicInfos.size}" }
+                        emit(radioEvent)
+                        emit(ChatAgentEvent.Finished(result.text, emptyList(), result.terminatedBy))
+                    } else {
+                        Logger.w("Agent.Gateway") { "run: intentHandled=radio_start but playlist empty" }
+                        emit(ChatAgentEvent.Failed(result.text))
+                    }
+                }
+                "radio_stop", "enrich_start", "enrich_stop", "enrich_pause", "enrich_resume", "enrich_rescan", "enrich_status" -> {
+                    // 其他内建意图：直接用 Master 返回的文本渲染回复气泡
+                    emit(ChatAgentEvent.Finished(result.text, emptyList(), result.terminatedBy))
+                }
+                else -> {
+                    // 正常 LLM 对话
+                    result.toolCalls.forEach { emit(ChatAgentEvent.ToolExecuted(it)) }
+                    emit(ChatAgentEvent.Finished(result.text, result.toolCalls, result.terminatedBy))
+                }
+            }
         } catch (ce: kotlinx.coroutines.CancellationException) {
             throw ce
         } catch (e: Exception) {
             emit(ChatAgentEvent.Failed(e.message ?: "对话失败"))
         }
-    }
-
-    /**
-     * 检测用户输入是否为电台请求（确定性关键词匹配，不走 LLM）。
-     *
-     * 触发词（命中任一即短路）：电台 / radio / DJ / 来一段 / 开个 / 放个 / 整个 / 来个 + 音乐风格词
-     * 种子提取：从输入中剔除触发词后剩余文本；为空 → null（用 nowPlaying 自动提取）。
-     *
-     * @return seed 文本（可能为空串表示自动提取）；null 表示不是电台意图
-     */
-    private fun extractRadioSeed(input: String): String? {
-        val lower = input.trim().lowercase()
-        // 强触发词（独立出现即命中）
-        val strongTriggers = listOf("电台", "radio", "dj", "打碟")
-        // 弱触发词（需配合风格/情绪词）
-        val weakTriggers = listOf("来一段", "来一首", "开个", "开个电台", "放个", "放一首", "整个", "来个", "放段", "来点")
-        // 音乐风格/情绪词（与弱触发词配合）
-        val styleHints = listOf(
-            // 中文风格
-            "摇滚", "爵士", "古典", "民谣", "电子", "流行", "嘻哈", "rnb", "蓝调", "金属",
-            "朋克", "雷鬼", "乡村", "灵魂", "放克", "摇滚", "说唱", "edm", "house", "techno",
-            "迪斯科", "后摇", "日摇", "韩流", "轻音乐", "纯音乐", "钢琴曲",
-            // 中文情绪/场景
-            "深夜", "夜晚", "深夜电台", "工作", "学习", "专注", "放松", "运动", "跑步",
-            "开车", "通勤", "咖啡馆", "雨天", "清晨", "早晨", "下午茶", "助眠", "睡觉",
-            "情歌", "伤感", "治愈", "欢快", "激情", "安静", "冥想",
-            // 英文
-            "rock", "jazz", "classical", "folk", "pop", "hiphop", "hip-hop", "blues",
-            "metal", "punk", "reggae", "soul", "funk", "rap", "study", "focus", "chill",
-            "workout", "sleep", "relax", "love songs", "instrumental",
-        )
-
-        val hasStrong = strongTriggers.any { lower.contains(it) }
-        val hasWeakWithStyle = weakTriggers.any { lower.contains(it) } && styleHints.any { lower.contains(it.lowercase()) }
-
-        if (!hasStrong && !hasWeakWithStyle) return null
-
-        // 提取种子：剔除触发词后的剩余文本
-        var seed = input.trim()
-        (strongTriggers + weakTriggers).forEach { t -> seed = seed.replace(t, "", ignoreCase = true) }
-        styleHints.forEach { s -> seed = seed.replace(s, "", ignoreCase = true) }
-        seed = seed.trim().trim('，', '。', '？', '!', '！', '?', '、', ' ', '　')
-
-        // 原始输入中提取风格词作为 seed 候选（比如"来一段摇滚"→ seed="摇滚"）
-        val styleInInput = styleHints.firstOrNull { input.contains(it, ignoreCase = true) }
-        val finalSeed = when {
-            styleInInput != null -> styleInInput
-            seed.isNotBlank() -> seed
-            hasStrong -> ""  // 强触发词但无种子 → 自动提取
-            else -> null     // 不该到这
-        }
-        return finalSeed
     }
 
     private suspend fun mergeFirstTurnContext(ctx: RunContextInput, input: String): RunContextInput {
