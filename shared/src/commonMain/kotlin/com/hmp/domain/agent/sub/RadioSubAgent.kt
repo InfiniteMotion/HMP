@@ -150,6 +150,12 @@ class RadioSubAgent(
         radioState = RadioState.IDLE
         currentPlaylist = emptyList()
         presenceBus?.emit(com.hmp.domain.agent.infra.PresenceEvent.CompanionBadge(visible = false))
+        // W0: emit AgentProgress(total=0) → HelloSubAgent pop RADIO_STATUS 卡
+        presenceBus?.emit(com.hmp.domain.agent.infra.PresenceEvent.AgentProgress(
+            agentId = "radio",
+            processed = 0,
+            total = 0,
+        ))
     }
 
     /**
@@ -431,24 +437,6 @@ data class RadioTrack(
 enum class RadioTrackSource { LOCAL, CLOUD }
 
 // ═══════════════════════════════════════════════════════════════════
-// MusicRepository 扩展（RadioSubAgent 需要但 Repository 接口尚未声明的方法）
-// 这些是 stub——需要在 MusicRepository 接口 + 实现类中补充
+// MusicRepository 扩展（已提升到 MusicRepository 接口）
+// getGlobalTopLabels / getMusicInfoByIds —— 接口方法直接调
 // ═══════════════════════════════════════════════════════════════════
-
-private suspend fun MusicRepository.getGlobalTopLabels(limit: Int): List<LabelName> {
-    // TODO: M6-T1b 正式接线 → 在 MusicRepository 加 getGlobalTopLabels()
-    // 暂返回空列表让 extractSeedLabels 兜底
-    return runCatching {
-        // MusicRepository 可能还没这个方法，用 runCatching 包住
-        emptyList<LabelName>()
-    }.getOrDefault(emptyList())
-}
-
-private suspend fun MusicRepository.getMusicInfoByIds(ids: List<Long>): List<MusicInfo> {
-    // TODO: M6-T1b 正式接线 → 在 MusicRepository 加 getMusicInfoByIds()
-    return runCatching {
-        val all = getAllMusicInfoAsList("id", "asc")
-        val idSet = ids.toSet()
-        all.filter { it.music.id in idSet }
-    }.getOrDefault(emptyList())
-}

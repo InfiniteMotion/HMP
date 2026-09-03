@@ -18,6 +18,7 @@ import com.hmp.domain.agent.port.LlmToolCall
 import com.hmp.domain.agent.port.LlmTransport
 import com.hmp.domain.agent.persona.DefaultCompanionProfiles
 import com.hmp.domain.agent.sub.EnrichSubAgent
+import com.hmp.domain.agent.sub.HelloSubAgent
 import com.hmp.domain.agent.sub.RadioSubAgent
 import com.hmp.domain.agent.sub.SubAgent
 import com.hmp.domain.agent.tool.ToolRegistry
@@ -92,6 +93,10 @@ class MasterAgent(
     // ── Agent 配置持久化（可选；null 则 config 只在 MasterAgent 实例存活期间有效） ──
     /** AgentPolicyConfig DataStore 读写（per-Agent 信任档位 + 永远允许白名单） */
     private val settingsRepo: com.hmp.domain.setting.SettingsRepository? = null,
+
+    // ── W0: HelloSubAgent 持久化 DAO（可选；null 降级内存卡池 + 内存报告叙事） ──
+    private val helloCardCacheDao: com.hmp.data.database.HelloCardCacheDao? = null,
+    private val helloReportNarrativeDao: com.hmp.data.database.HelloReportNarrativeDao? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -198,6 +203,18 @@ class MasterAgent(
                 Logger.i("Agent.Master") { "[Master] coverage ${health.coverageRate} >= target $defaultTarget -> skip Enrich" }
             }
         } ?: Logger.w("Agent.Master") { "[Master] MusicRepository null, skipping enrich health check" }
+
+        // ④ W0: 自动启动 HelloSubAgent（门面副驾驶，Master 默认启动的唯一 SubAgent）
+        if (musicRepository != null) {
+            runCatching { startHello() }
+                .onSuccess { hello ->
+                    if (hello != null) Logger.i("Agent.Master") { "[Master] HelloSubAgent auto-started (cards available)" }
+                    else Logger.w("Agent.Master") { "[Master] startHello returned null (missing deps?)" }
+                }
+                .onFailure { e -> Logger.e("Agent.Master", e) { "[Master] startHello failed (non-fatal)" } }
+        } else {
+            Logger.w("Agent.Master") { "[Master] MusicRepository null, skip auto startHello" }
+        }
     }
 
     /** 应用销毁时调用，清理所有 SubAgent */
@@ -412,6 +429,92 @@ class MasterAgent(
         }
     }
 
+    // ===== Hello 门面副驾驶管理（W0 · F1：Master 唯一决策） =====
+
+    /**
+     * 创建并启动 HelloSubAgent（F1：只有 Master 能调）。
+     *
+     * Hello 是唯一 Master 默认启动的 SubAgent——initialize() 末尾自动调。
+     *
+     * 链路（照着 startRadio 模式，简化版）：
+     * 1. 创建 AgentContextBudget(128K) + ToolRegistryView.empty()（Hello 不调工具）
+     * 2. 实例化 HelloSubAgent → 放进 _subAgents["hello"]
+     * 3. 注册 Scheduler priority=HELLO(4)（永不暂停）
+     * 4. 启动 helloAgent.runLoop()
+     *
+     * H1 骨架：先跑非 LLM 版本（enableLlm=false）。H3 再补 LLM 生成。
+     */
+    suspend fun startHello(): HelloSubAgent? {
+        // ① 幂等守卫
+        _subAgents["hello"]?.let { existing ->
+            return (existing as? HelloSubAgent).also {
+                Logger.w("Agent.Master") { "[Master] Hello already active, skip create" }
+            }
+        }
+
+        // ② 前置依赖 null check —— Hello 没有 Repository/播放上下文就跑不起来
+        val repo = musicRepository ?: run {
+            Logger.w("Agent.Master") { "[Master] musicRepository null, skip startHello" }
+            return null
+        }
+
+        // ③ 构造 AgentContextBudget(128K) + ToolRegistryView.empty()
+        val helloTransport = enrichConfig?.let { chatTransport }
+        val toolView = ToolRegistryView.empty(chatToolRegistry)
+        val stopSignal = SchedulerStopSignal(tokenCounter)
+        val helloSystemPrompt = DefaultCompanionProfiles.DEFAULT.personaPrompt
+
+        // ④ 实例化 HelloSubAgent → _subAgents["hello"]
+        val enableLlm = chatTransport != null && enrichConfig != null
+        val helloAgent = HelloSubAgent(
+            agentId = "hello",
+            contextBudget = AgentContextBudget(
+                agentId = "hello",
+                maxContextTokens = 128_000,
+                llmClient = helloTransport,
+            ),
+            toolRegistryView = toolView,
+            cardCacheDao = helloCardCacheDao,
+            narrativeDao = helloReportNarrativeDao,
+            musicRepository = repo,
+            presenceBus = chatPresenceBus,
+            nowPlayingProvider = nowPlayingProvider,
+            stopSignal = stopSignal,
+            enrichConfig = enrichConfig,
+            fallbackGreetings = fallbackGreetings,
+            enableLlm = enableLlm,
+            radioPlaylistProvider = { queryRadioPlaylist() },
+        )
+        _subAgents["hello"] = helloAgent
+
+        // ⑤ 注册 Scheduler（priority=HELLO=4，永不暂停）
+        scheduler.registerAgent(
+            AgentRegistration(
+                agentId = "hello",
+                priority = AgentPriority.HELLO,
+                tokenUsagePerMin = 500L,  // Hello token 消耗极低（每分钟 tick 不调 LLM）
+                onPause = { stopSignal.onSchedulerPaused() },
+                onResume = { stopSignal.onSchedulerResumed() },
+            )
+        )
+
+        // ⑥ 启动 runLoop
+        scope.launch { helloAgent.runLoop() }
+
+        Logger.i("Agent.Master") { "[Master] HelloSubAgent created (fallbackGreetings=${fallbackGreetings.size}, llm=${helloTransport != null})" }
+        return helloAgent
+    }
+
+    /** Master 下令销毁 Hello */
+    suspend fun stopHello() {
+        _subAgents["hello"]?.let { hello ->
+            hello.shutdown()
+            scheduler.unregisterAgent("hello")
+            _subAgents.remove("hello")
+            Logger.i("Agent.Master") { "[Master] Hello stopped" }
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // M6-T2 跳过感知重排 + M6-T3 DJ 衔接预生成
     // ═══════════════════════════════════════════════════════════════
@@ -535,6 +638,31 @@ class MasterAgent(
 
     fun queryRadioPlaylist(): List<com.hmp.domain.agent.sub.RadioTrack>? =
         (_subAgents["radio"] as? com.hmp.domain.agent.sub.RadioSubAgent)?.queryPlaylist()
+
+    /** 获取 HelloSubAgent 实例（UI 层用于 collect cards StateFlow） */
+    fun helloAgent(): HelloSubAgent? = _subAgents["hello"] as? HelloSubAgent
+
+    /** Hello 当前卡片列表快照（同步返回，测试/日志用） */
+    fun queryHelloCards(): List<com.hmp.domain.agent.sub.SlideCard>? =
+        helloAgent()?.cards?.value
+
+    // ═══ W0 报告叙事段对外接口（P5 收听报告页调用） ═══
+
+    /** P5 🔄 重新生成按钮调——Hello 还没启动返回 null */
+    suspend fun regenerateReportNarrative(
+        timeRange: com.hmp.domain.agent.sub.NarrativeTimeRange
+    ): com.hmp.data.database.HelloReportNarrativeEntity? {
+        val hello = helloAgent() ?: return null
+        return runCatching { hello.regenerateReportNarrative(timeRange) }.getOrNull()
+    }
+
+    /** P5 页面加载时读 DAO——零阻塞 */
+    suspend fun getReportNarrative(
+        timeRange: com.hmp.domain.agent.sub.NarrativeTimeRange
+    ): com.hmp.data.database.HelloReportNarrativeEntity? {
+        val hello = helloAgent() ?: return null
+        return runCatching { hello.getReportNarrative(timeRange) }.getOrNull()
+    }
 
     // ═══ SubAgent 状态查询 & 原生生命周期方法 ═══
 

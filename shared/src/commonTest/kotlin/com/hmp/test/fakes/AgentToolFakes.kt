@@ -113,6 +113,16 @@ class FakeAgentMusicRepository : MusicRepository {
     override suspend fun fetchNextEnrichWorkUnit(bigArtistThreshold: Int, mixGroupSize: Int): com.hmp.domain.agent.enrich.EnrichWorkUnit? = null
     override suspend fun getRecentEnrichResults(since: Long): EnrichBatchResult = EnrichBatchResult(0, 0)
     // endregion
+
+    // ═══ W0 HelloSubAgent stub ═══
+    override suspend fun getRecentSkipRate(limit: Int, days: Int): List<Long> = emptyList()
+    override suspend fun getRecentPlayRate(limit: Int, days: Int): List<Long> = emptyList()
+    override suspend fun getForgottenTracks(days: Int): List<Long> = emptyList()
+    override suspend fun getAnniversaryTracks(date: String): List<Pair<Long, Long>> = emptyList()
+    override suspend fun getGlobalTopLabels(limit: Int): List<com.hmp.domain.enum.LabelName> = emptyList()
+    override suspend fun getMusicInfoByIds(ids: List<Long>): List<MusicInfo> =
+        ids.mapNotNull { songs[it] }
+    override suspend fun getAvgDailyListeningMinutes(days: Int): Float = 0f
 }
 
 /** M3 工具层专用内存 Fake：PlaylistRepository。 */

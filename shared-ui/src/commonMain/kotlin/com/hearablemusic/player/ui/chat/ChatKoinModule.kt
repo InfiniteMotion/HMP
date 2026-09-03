@@ -82,6 +82,9 @@ val chatGatewayModule = module {
             // Radio 电台依赖（M6-T1）
             playbackPort = get(),
             nowPlayingProvider = get(),
+            // W0: HelloSubAgent 持久化 DAO（启用则卡片池 + 报告叙事段落 Room；不注入自动降级内存）
+            helloCardCacheDao = get(),
+            helloReportNarrativeDao = get(),
             // Agent 配置持久化（trustLevel + alwaysAllow DataStore 读写）
             settingsRepo = settingsRepo,
         )

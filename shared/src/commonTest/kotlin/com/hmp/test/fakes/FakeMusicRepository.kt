@@ -347,5 +347,18 @@ class FakeMusicRepository : MusicRepository {
         return EnrichBatchResult(successCount = successMusicIds, failureCount = 0)
     }
 
+    // ═══ W0 HelloSubAgent stub ═══
+    override suspend fun getRecentSkipRate(limit: Int, days: Int): List<Long> = emptyList()
+    override suspend fun getRecentPlayRate(limit: Int, days: Int): List<Long> = emptyList()
+    override suspend fun getForgottenTracks(days: Int): List<Long> = emptyList()
+    override suspend fun getAnniversaryTracks(date: String): List<Pair<Long, Long>> = emptyList()
+    override suspend fun getGlobalTopLabels(limit: Int): List<com.hmp.domain.enum.LabelName> = emptyList()
+    override suspend fun getMusicInfoByIds(ids: List<Long>): List<com.hmp.domain.music.MusicInfo> {
+        if (ids.isEmpty()) return emptyList()
+        val idSet = ids.toSet()
+        return musicList.filter { it.music.id in idSet }
+    }
+    override suspend fun getAvgDailyListeningMinutes(days: Int): Float = 0f
+
     // endregion
 }

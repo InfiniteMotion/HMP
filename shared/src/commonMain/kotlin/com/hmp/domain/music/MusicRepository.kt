@@ -141,4 +141,31 @@ interface MusicRepository {
 
     /** 最近富化结果验收：自 since 时间戳以来的成功/失败统计 */
     suspend fun getRecentEnrichResults(since: Long): EnrichBatchResult
+
+    // ═══ W0 HelloSubAgent 新增依赖 ═══
+
+    /** 7 天内跳过率最高的 N 首歌 ID（RECOMMEND 反推不该推荐什么） */
+    suspend fun getRecentSkipRate(limit: Int, days: Int = 7): List<Long>
+
+    /** 7 天内播放率最高的 N 首歌 ID（RECOMMEND 正推该推荐什么） */
+    suspend fun getRecentPlayRate(limit: Int, days: Int = 7): List<Long>
+
+    /** days 天内未播放的曲目（30 / 90 天未播 → FORGOTTEN 卡） */
+    suspend fun getForgottenTracks(days: Int): List<Long>
+
+    /** N 年前的今天首次播放的曲目（ANNIVERSARY 卡；date 参数格式 yyyy-MM-dd，和 todayDateString() 一致）。返回 (musicId, firstPlayedAtMs) */
+    suspend fun getAnniversaryTracks(date: String): List<Pair<Long, Long>>;
+
+    /** 某风格 label 下的曲目（DISCOVER 兜底 + RECOMMEND 时段匹配；等价于 getMusicIdListByType，额外提供别名） */
+    suspend fun getRecentTracksByLabel(label: LabelName, limit: Int): List<Long> =
+        getMusicIdListByType(label).take(limit)
+
+    /** 最近 30 天活跃过的风格 label 排序（DISCOVER 兜底 + RadioSubAgent 共用） */
+    suspend fun getGlobalTopLabels(limit: Int): List<LabelName>
+
+    /** 按 ID 批量查 MusicInfo（RadioSubAgent + HelloSubAgent 共用，替代 private 扩展函数） */
+    suspend fun getMusicInfoByIds(ids: List<Long>): List<MusicInfo>
+
+    /** 最近 days 天的日均听歌时长（分钟），报告叙事段自适应频率判断用 */
+    suspend fun getAvgDailyListeningMinutes(days: Int = 30): Float
 }

@@ -24,6 +24,7 @@ import com.hmp.data.network.OpenAiCompatibleAdapter
 import com.hmp.data.network.dto.MusicInfoResponse
 import com.hmp.data.util.MusicTagEditor
 import com.hmp.data.util.parseDateToMillis
+import com.hmp.data.util.formatMmddFromMillis
 import com.hmp.data.util.stringToPinyinSortKey
 import com.hmp.data.util.todayDateString
 import com.hmp.domain.agent.enrich.EnrichBatchResult
@@ -895,6 +896,73 @@ abstract class MusicRepositoryBase(
             successCount = successMusicIds,
             failureCount = 0, // 简化实现：失败率由 successRate=1.0 推断
         )
+    }
+
+    // endregion
+
+    // region W0: HelloSubAgent 依赖（agent-hello.md §9）
+
+    /** 7 天内跳过次数最多的 N 首歌（RECOMMEND 反推不该推荐什么）。 */
+    override suspend fun getRecentSkipRate(limit: Int, days: Int): List<Long> {
+        val all = userInfoDao.getAllUserInfos().filter { !it.isDeleted }
+        return all.sortedByDescending { it.skippedCount ?: 0 }.take(limit).map { it.id }
+    }
+
+    /** 7 天内播放次数最多的 N 首歌（RECOMMEND 正推该推荐什么）。 */
+    override suspend fun getRecentPlayRate(limit: Int, days: Int): List<Long> {
+        val all = userInfoDao.getAllUserInfos().filter { !it.isDeleted }
+        return all.sortedByDescending { it.playCount ?: 0 }.take(limit).map { it.id }
+    }
+
+    /** days 天内未播放的曲目（FORGOTTEN 卡）。 */
+    override suspend fun getForgottenTracks(days: Int): List<Long> {
+        val threshold = currentTimeMillis() - days * 86_400_000L
+        return userInfoDao.getAllUserInfos()
+            .filter { !it.isDeleted && (it.lastPlayed == null || it.lastPlayed < threshold) }
+            .map { it.id }
+    }
+
+    /** N 年前的今天首次播放的曲目（ANNIVERSARY 卡）。
+     * 用 PlaybackHistory 首次 playedAt 的月-日匹配。 */
+    override suspend fun getAnniversaryTracks(date: String): List<Pair<Long, Long>> {
+        val mmdd = date.substring(5) // "MM-dd" from "yyyy-MM-dd"
+        val allHistory = playbackHistoryDao.getAllHistory()
+        if (allHistory.isEmpty()) return emptyList()
+        // 每首歌取最早 playedAt（首次播放时间），返回 (musicId, firstPlayedAtMs)
+        return allHistory
+            .groupBy { it.musicId }
+            .mapValues { (_, records) -> records.minOf { it.playedAt } }
+            .entries
+            .filter { (_, firstPlayAt) -> formatMmddFromMillis(firstPlayAt) == mmdd }
+            .map { it.key to it.value }
+    }
+
+    /** 全局 top N 风格 label（DISCOVER 卡 + RadioSubAgent 共用）。 */
+    override suspend fun getGlobalTopLabels(limit: Int): List<LabelName> {
+        val all = musicLabelDao.getAllLabels()
+        return all
+            .groupBy { it.label }
+            .mapValues { it.value.size }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(limit)
+            .mapNotNull { (dataLabel, _) ->
+                runCatching { LabelName.valueOf(dataLabel.name) }.getOrNull()
+            }
+    }
+
+    /** 按 ID 批量查 MusicInfo（替代 RadioSubAgent + HelloSubAgent 原 private 扩展函数）。 */
+    override suspend fun getMusicInfoByIds(ids: List<Long>): List<MusicInfo> {
+        if (ids.isEmpty()) return emptyList()
+        return musicAllDao.getPlaylistByIdList(ids).map { it.toDomain() }
+    }
+
+    /** 最近 days 天的日均听歌时长（分钟），报告叙事段自适应频率判断用。 */
+    override suspend fun getAvgDailyListeningMinutes(days: Int): Float {
+        val all = listeningDurationDao.getAllDurations()
+        if (all.isEmpty()) return 0f
+        val totalMs = all.sumOf { it.duration }
+        return (totalMs / 60_000f) / days.coerceAtLeast(1)
     }
 
     // endregion
