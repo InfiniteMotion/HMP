@@ -29,6 +29,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -641,6 +643,20 @@ class MasterAgent(
 
     /** 获取 HelloSubAgent 实例（UI 层用于 collect cards StateFlow） */
     fun helloAgent(): HelloSubAgent? = _subAgents["hello"] as? HelloSubAgent
+
+    /**
+     * 电台运行态 StateFlow（UI 层直接观察）。
+     *
+     * radio sub-agent 未初始化时返回永远为 null 的 StateFlow；
+     * PLAYING/BUILDING/IDLE 实时反映 RadioSubAgent 内部状态。
+     * 不直接暴露 RadioSubAgent.radioState 以免 UI 层耦合到 SubAgent 实现细节。
+     */
+    val radioState: StateFlow<com.hmp.domain.agent.sub.RadioState?>
+        get() {
+            val radio = _subAgents["radio"] as? RadioSubAgent
+            return radio?.radioState
+                ?: MutableStateFlow(null)
+        }
 
     /** Hello 当前卡片列表快照（同步返回，测试/日志用） */
     fun queryHelloCards(): List<com.hmp.domain.agent.sub.SlideCard>? =

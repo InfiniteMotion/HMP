@@ -6,7 +6,6 @@ import com.hmp.data.database.HelloCardCacheDao
 import com.hmp.data.database.HelloReportNarrativeDao
 import com.hmp.data.database.HelloReportNarrativeEntity
 import com.hmp.data.util.currentHour
-import com.hmp.data.util.millisUntilNextLocalMidnight
 import com.hmp.data.util.todayDateString
 import com.hmp.domain.agent.infra.PresenceBus
 import com.hmp.domain.agent.infra.PresenceEvent
@@ -74,10 +73,13 @@ class HelloSubAgent(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** 卡片池（StateFlow 暴露给 UI collect） */
-    private val cardPool = CardPool(scope)
+    private val cardPool = CardPool()
 
     /** UI collect 的 StateFlow */
     val cards: StateFlow<List<SlideCard>> get() = cardPool.cards
+
+    /** 上次检测到的播放曲目 ID（用于切歌 → GREETING 刷新检测） */
+    @Volatile private var lastTrackId: Long? = null
 
     /** 每日凌晨生成的推荐卡数量 */
     private val dailyRecommendCount = 1
@@ -104,31 +106,34 @@ class HelloSubAgent(
         isActive = true
         runState = AgentRunState.RUNNING
 
-        // ① 启动三个工作协程
-        val presenceJob = scope.launch { collectPresenceEvents() }
-        val dailyJob = scope.launch { dailyRefreshLoop() }
-        val tickJob = scope.launch { minuteTickLoop() }
-
-        // ② 从 DAO 恢复（SharedFlow 丢 DjBlank 的主动补偿）
+        // ── 同步初始化（协程启动前先铺好初始状态，避免 race） ──
+        // ① 从 DAO 恢复今日缓存卡（用 replace，保证顺序稳定）
         runCatching { initializeFromDao() }
             .onFailure { e -> Logger.w("Agent.Hello", e) { "initializeFromDao failed (non-fatal)" } }
 
-        // ③ 立即 push 常驻卡（不等任何事件到来）
+        // ② 检查今日卡是否已生成（one-shot，同步跑完退出）
+        runCatching { dailyRefreshLoop() }
+            .onFailure { e -> Logger.e("Agent.Hello", e) { "dailyRefreshOnce failed" } }
+
+        // ③ 立即 push 常驻卡 + 兜底 GREETING + 检查 Radio 状态
         runCatching { initializeAnchorCards() }
             .onFailure { e -> Logger.w("Agent.Hello", e) { "initializeAnchorCards failed (non-fatal)" } }
 
-        // ④ runLoop 自身只负责暂停/恢复 + 优雅退出（runLoop 自身不检查 agentPaused，它是设置者）
+        // ── 协程启动（初始状态已铺好，PresenceEvent 不会 race） ──
+        val presenceJob = scope.launch { collectPresenceEvents() }
+        val tickJob = scope.launch { minuteTickLoop() }
+
+        // runLoop 自身只负责暂停/恢复 + 优雅退出
         while (scope.isActive && isActive) {
-            agentPaused = true          // D2: runLoop 阻塞期间子协程也停
+            agentPaused = true
             stopSignal?.waitResume()
-            agentPaused = false         // D2: 恢复后子协程继续工作
+            agentPaused = false
             if (stopSignal?.shouldSoftStop() == true) break
             delay(500)
         }
 
-        // ⑤ 清理
+        // 清理
         presenceJob.cancel()
-        dailyJob.cancel()
         tickJob.cancel()
         cardPool.clear()
         runState = AgentRunState.PAUSED
@@ -159,7 +164,7 @@ class HelloSubAgent(
                     val greeting = generateGreeting()
                     cardPool.replace(
                         SlideType.GREETING,
-                        SlideCard(SlideCard.newId(), SlideType.GREETING, greeting, GREETING_DURATION_MS)
+                        SlideCard(SlideCard.newId(), SlideType.GREETING, greeting)
                     )
                 }
                 is PresenceEvent.AgentProgress -> {
@@ -167,7 +172,7 @@ class HelloSubAgent(
                     if (event.total == 0) {
                         // Radio 停止 → pop 电台状态卡
                         Logger.d("Agent.Hello") { "Radio stopped → pop RADIO_STATUS" }
-                        cardPool.popByType(SlideType.RADIO_STATUS)
+                        cardPool.setVisible(SlideType.RADIO_STATUS, false)
                     } else {
                         // Radio 运行中 → replace 电台状态卡
                         val nextTrack = runCatching { radioPlaylistProvider() }
@@ -179,7 +184,7 @@ class HelloSubAgent(
                                 targetCount = event.total,
                                 nextTrackName = nextTrack,
                             ),
-                            displayDurationMs = 0L,  // 常驻
+                            // 常驻
                         )
                         cardPool.replace(SlideType.RADIO_STATUS, status)
                     }
@@ -189,43 +194,44 @@ class HelloSubAgent(
         }
     }
 
-    // ═══ 工作协程 #2：每日凌晨定时 ═══
+    // ═══ 启动检查：今日卡是否已生成 ═══
+    //
+    // 策略：
+    //   - runLoop 启动时立即检查一次（覆盖绝大多数场景：App 每日开关）
+    //   - 跨天兜底交给 minuteTickLoop（每分钟已在跑，加个日期变化检测即可）
+    //   - 不再 while 循环，启动时跑一次就退出
 
     private suspend fun dailyRefreshLoop() {
-        Logger.i("Agent.Hello") { "dailyRefreshLoop started" }
-        while (scope.isActive && isActive && !agentPaused) {
-            // ① 补跑守卫：DAO 存在 → 查 DAO；DAO=null → 内存标志位
-            val today = todayString()
-            val hasTodayCards = cardCacheDao?.let { dao ->
-                val allTodayTypes = runCatching {
-                    dao.getLatestCardTypesByDate(today)
-                }.getOrDefault(emptySet())
-                SlideType.RECOMMEND.name in allTodayTypes
-                    || SlideType.DISCOVER.name in allTodayTypes
-                    || SlideType.FORGOTTEN.name in allTodayTypes
-                    || SlideType.ANNIVERSARY.name in allTodayTypes
-            } ?: todayCardsGenerated
+        Logger.i("Agent.Hello") { "dailyRefreshLoop: one-shot check on start" }
+        runCatching { checkAndRunDailyRefresh() }
+            .onFailure { e -> Logger.e("Agent.Hello", e) { "dailyRefreshOnce failed" } }
+        // 跑完即退出——跨天由 minuteTickLoop 兜底
+    }
 
-            if (!hasTodayCards) {
-                Logger.i("Agent.Hello") { "dailyRefreshLoop: today=$today not yet generated" }
-                runCatching { dailyRefreshOnce() }
-                    .onFailure { e -> Logger.e("Agent.Hello", e) { "dailyRefreshOnce failed" } }
-                if (cardCacheDao == null) {
-                    todayCardsGenerated = true  // 内存模式标记已生成
-                }
-            } else {
-                Logger.d("Agent.Hello") { "dailyRefreshLoop: today=$today already has cards, skip" }
+    /** 核心逻辑：检查今日是否需要跑 dailyRefreshOnce，需要则跑 */
+    private suspend fun checkAndRunDailyRefresh() {
+        val today = todayString()
+        val hasTodayCards = cardCacheDao?.let { dao ->
+            val allTodayTypes = runCatching {
+                dao.getLatestCardTypesByDate(today)
+            }.getOrDefault(emptySet())
+            SlideType.RECOMMEND.name in allTodayTypes
+                || SlideType.DISCOVER.name in allTodayTypes
+                || SlideType.FORGOTTEN.name in allTodayTypes
+                || SlideType.ANNIVERSARY.name in allTodayTypes
+        } ?: todayCardsGenerated
+
+        if (!hasTodayCards) {
+            Logger.i("Agent.Hello") { "dailyRefresh: today=$today not yet generated → run" }
+            runCatching { dailyRefreshOnce() }
+                .onFailure { e -> Logger.e("Agent.Hello", e) { "dailyRefreshOnce failed" } }
+            if (cardCacheDao == null) {
+                todayCardsGenerated = true
             }
-
-            // ② 报告叙事段也在此时检查（MasterAgent.regenerateReportNarrative 可手动触发）
-            runCatching { ensureReportNarrativeUpToDate() }
-                .onFailure { e -> Logger.w("Agent.Hello", e) { "report narrative ensure failed (non-fatal)" } }
-
-            // ③ 睡到明天凌晨
-            val delayMs = millisUntilNextMidnight()
-            Logger.d("Agent.Hello") { "dailyRefreshLoop: sleep ${delayMs / 60_000}min until next midnight" }
-            delay(delayMs.coerceAtLeast(60_000L))
         }
+        // 报告叙事段也在此时检查
+        runCatching { ensureReportNarrativeUpToDate() }
+            .onFailure { e -> Logger.w("Agent.Hello", e) { "report narrative ensure failed" } }
     }
 
     /** 每日批量生成：RECOMMEND + DISCOVER + FORGOTTEN + ANNIVERSARY + 写入 DAO */
@@ -264,7 +270,7 @@ class HelloSubAgent(
             cardPool.replace(SlideType.FORGOTTEN, forgotten)
             allCards += forgotten
         } else {
-            cardPool.popByType(SlideType.FORGOTTEN)
+            cardPool.setVisible(SlideType.FORGOTTEN, false)
         }
 
         // ④ ANNIVERSARY
@@ -273,7 +279,7 @@ class HelloSubAgent(
             cardPool.replace(SlideType.ANNIVERSARY, anniversary)
             allCards += anniversary
         } else {
-            cardPool.popByType(SlideType.ANNIVERSARY)
+            cardPool.setVisible(SlideType.ANNIVERSARY, false)
         }
 
         // ⑤ 写入 DAO
@@ -298,10 +304,20 @@ class HelloSubAgent(
 
     private suspend fun minuteTickLoop() {
         Logger.i("Agent.Hello") { "minuteTickLoop started" }
+        var lastDate = todayString()  // 跨天检测
         while (scope.isActive && isActive && !agentPaused) {
             delay(60_000L)
 
-            // ① 检查时段变化
+            // ① 跨天兜底：App 长驻到明天 → 补跑今日卡
+            val now = todayString()
+            if (now != lastDate) {
+                Logger.i("Agent.Hello") { "minuteTickLoop: date changed $lastDate → $now, run dailyRefreshOnce" }
+                lastDate = now
+                runCatching { checkAndRunDailyRefresh() }
+                    .onFailure { e -> Logger.w("Agent.Hello", e) { "date-change dailyRefresh failed" } }
+            }
+
+            // ② 检查时段变化
             val currentPhase = detectTimePhase(currentHour())
             if (currentPhase != lastPhase) {
                 Logger.i("Agent.Hello") { "minuteTickLoop: phase changed ${lastPhase} → $currentPhase" }
@@ -322,9 +338,10 @@ class HelloSubAgent(
 
     // ═══ 初始化：从 DAO 恢复 + 常驻卡 push ═══
 
-    /** SharedFlow 丢 DjBlank 的主动补偿 */
+    /** SharedFlow 丢 DjBlank 的主动补偿 —— 只恢复今日缓存；用 replace 避免同类型重复 */
     private suspend fun initializeFromDao() {
         val dao = cardCacheDao ?: return
+        val today = todayString()
         val restoreTypes = listOf(
             SlideType.RECOMMEND,
             SlideType.DISCOVER,
@@ -333,28 +350,31 @@ class HelloSubAgent(
         )
         var restored = 0
         for (type in restoreTypes) {
-            val cache = dao.getLatestOfAnyDate(type.name) ?: continue
+            // ✅ 只恢复今日生成的卡，避免昨日过时卡停留在 CardPool
+            val cache = dao.getLatest(type.name, today) ?: continue
             val content = stringToCardContent(type, cache.cardContentJson)
             if (content != null) {
-                val dur = durationForType(type)
-                cardPool.push(SlideCard(SlideCard.newId(), type, content, dur))
+                cardPool.replace(type, SlideCard(SlideCard.newId(), type, content))
                 restored++
             }
         }
-        if (restored > 0) Logger.i("Agent.Hello") { "initializeFromDao: restored $restored cards" }
+        if (restored > 0) Logger.i("Agent.Hello") { "initializeFromDao: restored $restored today=$today cards" }
     }
 
     /** runLoop 启动时立即 push 常驻卡 + 兜底 GREETING + 检查 Radio 状态 */
     private suspend fun initializeAnchorCards() {
-        // ANCHOR（正在听，常驻）
+        // ANCHOR（正在听，常驻）+ 记录初始 trackId 避免首次 refreshAnchorCard 误触发 GREETING replace
         refreshAnchorCard()
+        // refreshAnchorCard 已经把当前 trackId 赋给 lastTrackId 了（如果有在播放的话）
+        // 这里再补一次：如果没在播放（trackId 还是 null），也设为当前值避免后续 refresh 触发
+        val ctx = nowPlayingProvider?.getNowPlaying()
+        lastTrackId = ctx?.currentMusicInfo?.music?.id
 
         // 兜底 GREETING（不依赖 DjBlank）
         val greeting = SlideCard(
             SlideCard.newId(),
             SlideType.GREETING,
             GreetingContent(nextFallbackGreeting(), fromFallback = true, currentTrack = null),
-            GREETING_DURATION_MS,
         )
         cardPool.replace(SlideType.GREETING, greeting)
 
@@ -369,7 +389,6 @@ class HelloSubAgent(
                         targetCount = playlist.size,
                         nextTrackName = playlist.firstOrNull()?.title,
                     ),
-                    0L,
                 )
                 cardPool.replace(SlideType.RADIO_STATUS, status)
                 Logger.i("Agent.Hello") { "initializeAnchorCards: Radio already running → push RADIO_STATUS" }
@@ -389,16 +408,30 @@ class HelloSubAgent(
                 artistName = music?.music?.artist,
                 bpm = null,
                 phase = phase,
+                albumArtUri = music?.music?.albumArtUri,
             ),
-            displayDurationMs = 0L,
-        )
-        cardPool.replace(SlideType.ANCHOR, anchor)
+            )
+        cardPool.replace(SlideType.ANCHOR, anchor, setFocus = false)
+
+        // 切歌检测：trackId 变了 → replace GREETING（覆盖自然播放完/用户点切歌）
+        // DjBlank 事件已经覆盖了 Agent 命令切歌——这里是兜底，每分钟至少检查一次
+        val currentTrackId = music?.music?.id
+        if (currentTrackId != lastTrackId && currentTrackId != null) {
+            Logger.i("Agent.Hello") { "track changed ${lastTrackId} → $currentTrackId → replace GREETING" }
+            lastTrackId = currentTrackId
+            val greeting = SlideCard(
+                SlideCard.newId(),
+                SlideType.GREETING,
+                generateGreeting(),
+            )
+            cardPool.replace(SlideType.GREETING, greeting)
+        }
     }
 
     // ═══ 七种卡型生成（H2 非 LLM 版本，enableLlm=false） ═══
 
-    /** GREETING：DjBlank 触发；H2 走 fallback */
-    private fun generateGreeting(): GreetingContent {
+    /** GREETING：DjBlank 触发；纯问候，不带曲目信息（曲目由 ANCHOR 展示） */
+    private suspend fun generateGreeting(): GreetingContent {
         return GreetingContent(
             text = nextFallbackGreeting(),
             fromFallback = true,
@@ -433,7 +466,6 @@ class HelloSubAgent(
                     reason = reasonForLabel(label),
                     currentPhase = phase,
                 ),
-                RECOMMEND_DURATION_MS,
             )
         }
     }
@@ -458,7 +490,6 @@ class HelloSubAgent(
                         reason = reasonForDiscover(label),
                         trackIds = ids,
                     ),
-                    DISCOVER_DURATION_MS,
                 )
             }
         }
@@ -468,7 +499,6 @@ class HelloSubAgent(
     /** FORGOTTEN：每日凌晨扫历史——优先 getForgottenTracks(30)，没有则 90 天 */
     private suspend fun checkForgotten(): SlideCard? {
         val repo = musicRepository ?: return null
-        // B1: 拿到准确的 days 参数（30 或 90 fallback）
         val (id, days) = runCatching {
             repo.getForgottenTracks(days = 30).firstOrNull()?.let { Pair(it, 30) }
                 ?: repo.getForgottenTracks(days = 90).firstOrNull()?.let { Pair(it, 90) }
@@ -481,10 +511,9 @@ class HelloSubAgent(
             ForgottenContent(
                 trackId = id,
                 trackTitle = info?.music?.title ?: "遗忘曲目",
-                daysSince = days,   // B1: 准确天数，fallback 到 90
-                playCount = 0,
+                daysSince = days,
+                playCount = runCatching { info?.userInfo?.playCount ?: 0 }.getOrDefault(0),
             ),
-            FORGOTTEN_DURATION_MS,
         )
     }
 
@@ -509,7 +538,6 @@ class HelloSubAgent(
                 yearsAgo = yearsAgo,   // B2: 实际年数，从首次播放时间算
                 totalPlays = runCatching { info?.userInfo?.playCount ?: 0 }.getOrDefault(0),
             ),
-            ANNIVERSARY_DURATION_MS,
         )
     }
 
@@ -650,18 +678,7 @@ class HelloSubAgent(
         return g
     }
 
-    private fun durationForType(type: SlideType): Long = when (type) {
-        SlideType.GREETING -> GREETING_DURATION_MS
-        SlideType.RECOMMEND -> RECOMMEND_DURATION_MS
-        SlideType.DISCOVER -> DISCOVER_DURATION_MS
-        SlideType.FORGOTTEN -> FORGOTTEN_DURATION_MS
-        SlideType.ANNIVERSARY -> ANNIVERSARY_DURATION_MS
-        else -> 0L  // 常驻
-    }
-
     private fun todayString(): String = todayDateString()
-
-    private fun millisUntilNextMidnight(): Long = millisUntilNextLocalMidnight()
 
     // ═══ SlideContent JSON 序列化/反序列化 ═══
 
@@ -692,11 +709,6 @@ class HelloSubAgent(
     }
 
     companion object {
-        private const val GREETING_DURATION_MS = 10_000L
-        private const val RECOMMEND_DURATION_MS = 15_000L
-        private const val DISCOVER_DURATION_MS = 12_000L
-        private const val FORGOTTEN_DURATION_MS = 12_000L
-        private const val ANNIVERSARY_DURATION_MS = 15_000L
         private const val DEFAULT_FALLBACK_GREETING_SINGLE = "嗨，继续听歌？"
 
         /** 默认兜底问候列表 */

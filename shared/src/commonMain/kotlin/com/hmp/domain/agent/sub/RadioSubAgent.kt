@@ -20,6 +20,8 @@ import com.hmp.domain.setting.model.AiEndpointConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import com.hmp.platform.Volatile
 
@@ -75,7 +77,10 @@ class RadioSubAgent(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    @Volatile private var radioState: RadioState = RadioState.IDLE
+    /** UI 观察电台运行态。所有赋值点同步更新此 StateFlow。 */
+    private val _radioState = MutableStateFlow(RadioState.IDLE)
+    val radioState: StateFlow<RadioState> = _radioState
+
     @Volatile private var currentPlaylist: List<RadioTrack> = emptyList()
     @Volatile private var seed: String? = null
 
@@ -115,7 +120,7 @@ class RadioSubAgent(
     suspend fun startRadio(seed: String? = null): List<RadioTrack> {
         Logger.i("Agent.Radio") { "startRadio(seed=$seed)" }
         this.seed = seed
-        radioState = RadioState.BUILDING
+        _radioState.value = RadioState.BUILDING
         presenceBus?.emit(com.hmp.domain.agent.infra.PresenceEvent.CompanionBadge(visible = true, label = "电台"))
 
         // Step 0 + Step 1：提取种子 + 本地保底（零阻塞，必返回）
@@ -137,7 +142,7 @@ class RadioSubAgent(
         // 去重仲裁 + 写审计日志
         val arbitrated = diffArbitration(final)
         this.currentPlaylist = arbitrated
-        radioState = RadioState.PLAYING
+        _radioState.value = RadioState.PLAYING
 
         auditLog?.logRadioStart(seedLabels.map { it.name }, arbitrated.size)
         Logger.i("Agent.Radio") { "startRadio: done → ${arbitrated.size} tracks (local=${arbitrated.count { it.source == RadioTrackSource.LOCAL }}, cloud=${arbitrated.count { it.source == RadioTrackSource.CLOUD }})" }
@@ -147,7 +152,7 @@ class RadioSubAgent(
     /** Master 下令停电台 */
     suspend fun stopRadio() {
         Logger.i("Agent.Radio") { "stopRadio()" }
-        radioState = RadioState.IDLE
+        _radioState.value = RadioState.IDLE
         currentPlaylist = emptyList()
         presenceBus?.emit(com.hmp.domain.agent.infra.PresenceEvent.CompanionBadge(visible = false))
         // W0: emit AgentProgress(total=0) → HelloSubAgent pop RADIO_STATUS 卡
@@ -163,8 +168,8 @@ class RadioSubAgent(
      * 列表耗尽时自动重跑三轮协作（用当前播放曲目作为新种子）。
      */
     suspend fun continueRadio(): List<RadioTrack> {
-        if (radioState != RadioState.PLAYING) {
-            Logger.w("Agent.Radio") { "continueRadio: radio not PLAYING (state=$radioState), skip" }
+        if (_radioState.value != RadioState.PLAYING) {
+            Logger.w("Agent.Radio") { "continueRadio: radio not PLAYING (state=${_radioState.value}), skip" }
             return currentPlaylist
         }
         // 简单策略：已经播过前半段 → 取后半段；不足则重新 startRadio
@@ -179,7 +184,7 @@ class RadioSubAgent(
         }
     }
 
-    fun queryState(): RadioState = radioState
+    fun queryState(): RadioState = _radioState.value
     fun queryPlaylist(): List<RadioTrack> = currentPlaylist
 
     // ── M6-T2 跳过感知重排 ──────────────────────────────────
@@ -193,7 +198,7 @@ class RadioSubAgent(
      */
     suspend fun reorder(seedLabels: List<com.hmp.domain.enum.LabelName> = emptyList()): List<RadioTrack> {
         Logger.i("Agent.Radio") { "reorder triggered: seedLabels=${seedLabels.map { it.name }}" }
-        radioState = RadioState.BUILDING
+        _radioState.value = RadioState.BUILDING
         // ① 清空旧播放队列
         runCatching { playbackPort.execute(PlaybackCommand.SKIP_ALL) }
         // ② 用 seedLabels 作为偏好种子重新构建（不传 seed → extractSeedLabels 会用 seedLabels）

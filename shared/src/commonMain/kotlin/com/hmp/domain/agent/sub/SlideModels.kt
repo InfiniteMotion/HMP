@@ -61,6 +61,7 @@ data class AnchorContent(
     val artistName: String?,
     val bpm: Int?,
     val phase: TimePhase?,
+    val albumArtUri: String?,   // 封面 URI（null 表示无封面）
 ) : SlideContent
 
 @Serializable
@@ -113,7 +114,8 @@ data class SlideCard(
     val cardId: String,
     val type: SlideType,
     val content: SlideContent,
-    val displayDurationMs: Long,   // 0 = 常驻
+    val visible: Boolean = true,     // 引擎层决定：这张卡今天是否在 Pager 中展示
+    val focusedAt: Long = 0L,        // replace 时引擎层设为当前时间；>0 时 UI 聚焦展示并暂停轮播
 ) {
     companion object {
         /** KMP commonMain 没有 java.util.UUID，用计数器 + 时间戳 + 随机数生成唯一 ID */
